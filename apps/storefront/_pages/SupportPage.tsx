@@ -1,7 +1,12 @@
 "use client";
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Send, User, Headphones, ArrowLeft, Phone, PhoneOff, Mic, MicOff, MessageSquare, History, BellRing, BellOff, Volume2, Speaker } from "lucide-react";
+import {
+  Bot, Send, User, Headphones, ArrowLeft, Phone, PhoneOff, Mic, MicOff,
+  MessageSquare, History, BellRing, BellOff, Volume2, Speaker, Search,
+  HelpCircle, ShieldCheck, Truck, RefreshCw, Sparkles, FileText, ChevronRight,
+  CheckCircle2, Clock, Mail, ExternalLink, Zap, Lock, LifeBuoy, PackageCheck, AlertCircle
+} from "lucide-react";
 import { Link } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +27,81 @@ interface Msg {
   content: string;
 }
 
+const FAQ_CATEGORIES = [
+  {
+    id: "orders",
+    title: "Orders & Shipping",
+    icon: Truck,
+    description: "Delivery timelines, order tracking, and international shipping options.",
+    faqs: [
+      {
+        q: "How long does shipping take?",
+        a: "Standard delivery inside Bangladesh takes 2–4 business days. International express shipping takes 5–8 business days via DHL/FedEx."
+      },
+      {
+        q: "Can I track my order live?",
+        a: "Yes! Go to [Track Order](/orders) or enter your order ID in the AI chat to get real-time courier updates."
+      },
+      {
+        q: "Do you offer cash on delivery (COD)?",
+        a: "Yes, Cash on Delivery is available across all 64 districts in Bangladesh with open-box inspection."
+      }
+    ]
+  },
+  {
+    id: "returns",
+    title: "Returns & Exchanges",
+    icon: RefreshCw,
+    description: "7-day hassle-free returns, replacement policy, and refund status.",
+    faqs: [
+      {
+        q: "What is your return policy?",
+        a: "We offer a 7-day hassle-free return and exchange policy on all unworn items with original tags intact."
+      },
+      {
+        q: "How do I request a size exchange?",
+        a: "You can initiate a size exchange directly through your Account Profile under Order Details or message Mr. Slime here."
+      },
+      {
+        q: "When will I receive my refund?",
+        a: "Refunds are processed within 24–48 hours after our quality control team inspects the returned item."
+      }
+    ]
+  },
+  {
+    id: "sizing",
+    title: "Sizing & Fit Guide",
+    icon: HelpCircle,
+    description: "European drop shoulder measurements, GSM fabric density, and fit tips.",
+    faqs: [
+      {
+        q: "Are your drop shoulder t-shirts true to size?",
+        a: "Our tees feature a relaxed European oversized fit. For a standard fit, order your normal size. For a super oversized look, size up."
+      },
+      {
+        q: "What fabric GSM do you use?",
+        a: "We use 100% combed cotton ranging from 180 GSM to 240 GSM heavyweight luxury knits."
+      }
+    ]
+  },
+  {
+    id: "payments",
+    title: "Payments & Security",
+    icon: ShieldCheck,
+    description: "bKash, Nagad, Cards, SSLCommerz, and encrypted checkout security.",
+    faqs: [
+      {
+        q: "What payment methods are accepted?",
+        a: "We accept bKash, Nagad, Rocket, Visa, Mastercard, AMEX, SSLCommerz, and Cash on Delivery."
+      },
+      {
+        q: "Is my payment information safe?",
+        a: "All transactions are 256-bit SSL encrypted and processed through PCI-DSS compliant bank gateways."
+      }
+    ]
+  }
+];
+
 /* ── Incoming Call Modal ── */
 const IncomingCallOverlay: React.FC<{
   visible: boolean;
@@ -34,36 +114,42 @@ const IncomingCallOverlay: React.FC<{
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[10005] flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
       >
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.8, opacity: 0 }}
-          className="glass-strong rounded-3xl p-8 max-w-sm w-full mx-4 text-center space-y-6"
+          initial={{ scale: 0.85, y: 20, opacity: 0 }}
+          animate={{ scale: 1, y: 0, opacity: 1 }}
+          exit={{ scale: 0.85, y: 20, opacity: 0 }}
+          className="relative overflow-hidden rounded-3xl bg-slate-900 border border-white/20 p-8 max-w-sm w-full text-center space-y-6 shadow-2xl"
         >
-          <div className="relative mx-auto w-20 h-20">
+          <div className="absolute inset-0 bg-gradient-to-b from-green-500/10 via-transparent to-transparent pointer-events-none" />
+          <div className="relative mx-auto w-24 h-24">
             <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping" />
-            <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
-              <Phone className="w-8 h-8 text-white" />
+            <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
+              <Phone className="w-10 h-10 text-white" />
             </div>
           </div>
           <div>
-            <h3 className="text-xl font-display font-bold text-foreground">Incoming Voice Call</h3>
-            <p className="text-sm text-muted-foreground mt-1">Customer support wants to speak with you</p>
+            <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-[11px] font-semibold tracking-wider uppercase">
+              Incoming Support Call
+            </span>
+            <h3 className="text-xl font-bold font-display text-white mt-2">Voice Support Team</h3>
+            <p className="text-xs text-slate-300 mt-1">Orizino concierge wants to connect with you live</p>
           </div>
-          <div className="flex items-center justify-center gap-6">
+          <div className="flex items-center justify-center gap-6 pt-2">
             <button
               onClick={onReject}
-              className="w-16 h-16 rounded-full bg-destructive/90 hover:bg-destructive flex items-center justify-center transition-all shadow-lg hover:shadow-destructive/30"
+              className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition-all shadow-lg hover:scale-105 active:scale-95"
+              aria-label="Decline Call"
             >
-              <PhoneOff className="w-7 h-7 text-white" />
+              <PhoneOff className="w-7 h-7" />
             </button>
             <button
               onClick={onAccept}
-              className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center transition-all shadow-lg hover:shadow-green-500/30 animate-pulse"
+              className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center transition-all shadow-lg shadow-green-500/40 hover:scale-105 active:scale-95 animate-pulse"
+              aria-label="Accept Call"
             >
-              <Phone className="w-7 h-7 text-white" />
+              <Phone className="w-7 h-7" />
             </button>
           </div>
         </motion.div>
@@ -84,25 +170,30 @@ const ActiveCallBar: React.FC<{
   const fmt = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
   return (
     <motion.div
-      initial={{ y: -40, opacity: 0 }}
+      initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      exit={{ y: -40, opacity: 0 }}
-      className="sticky top-16 z-40 mx-4 mb-4 flex items-center justify-between gap-4 px-5 py-3 rounded-2xl bg-green-500/10 border border-green-500/20 backdrop-blur-sm"
+      exit={{ y: -20, opacity: 0 }}
+      className="mb-6 flex flex-wrap items-center justify-between gap-4 px-6 py-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 backdrop-blur-xl shadow-lg"
     >
       <div className="flex items-center gap-3">
-        <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-        <span className="text-sm font-medium text-green-600">Voice Call Active</span>
-        <span className="text-xs text-muted-foreground font-mono">{fmt(duration)}</span>
+        <span className="relative flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+        </span>
+        <div>
+          <h4 className="text-sm font-semibold text-emerald-400">Live Voice Call Connected</h4>
+          <p className="text-xs text-muted-foreground font-mono">Duration: {fmt(duration)}</p>
+        </div>
       </div>
       <div className="flex items-center gap-2">
-        <Button size="sm" variant="ghost" onClick={onToggleSpeaker} className="h-8 w-8 p-0 rounded-full" title={speakerOn ? "Switch to earpiece" : "Switch to speaker"}>
-          {speakerOn ? <Volume2 className="w-4 h-4 text-green-500" /> : <Speaker className="w-4 h-4 text-muted-foreground" />}
+        <Button size="sm" variant="ghost" onClick={onToggleSpeaker} className="h-9 w-9 p-0 rounded-full bg-background/40 hover:bg-background/80" title={speakerOn ? "Earpiece" : "Speaker"}>
+          {speakerOn ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <Speaker className="w-4 h-4 text-muted-foreground" />}
         </Button>
-        <Button size="sm" variant="ghost" onClick={onToggleMute} className="h-8 w-8 p-0 rounded-full">
-          {muted ? <MicOff className="w-4 h-4 text-destructive" /> : <Mic className="w-4 h-4 text-green-500" />}
+        <Button size="sm" variant="ghost" onClick={onToggleMute} className="h-9 w-9 p-0 rounded-full bg-background/40 hover:bg-background/80">
+          {muted ? <MicOff className="w-4 h-4 text-red-500" /> : <Mic className="w-4 h-4 text-emerald-400" />}
         </Button>
-        <Button size="sm" variant="ghost" onClick={onHangup} className="h-8 w-8 p-0 rounded-full text-destructive hover:bg-destructive/10">
-          <PhoneOff className="w-4 h-4" />
+        <Button size="sm" onClick={onHangup} className="h-9 px-4 rounded-full bg-red-600 hover:bg-red-700 text-white font-medium text-xs gap-1.5 shadow">
+          <PhoneOff className="w-3.5 h-3.5" /> End Call
         </Button>
       </div>
     </motion.div>
@@ -110,14 +201,17 @@ const ActiveCallBar: React.FC<{
 };
 
 const SupportPage: React.FC = () => {
-  useSeoMeta("support", "Support | Store");
+  useSeoMeta("support", "Support & Executive Care | Orizino");
   const { user } = useAuth();
   const { t } = useLanguage();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [tab, setTab] = useState<"chat" | "history">("chat");
+  const [tab, setTab] = useState<"chat" | "faq" | "history" | "settings">("chat");
+  const [faqQuery, setFaqQuery] = useState("");
+  const [openFaqIndex, setOpenFaqIndex] = useState<string | null>(null);
+
   const [pushEnabled, setPushEnabled] = useState<boolean>(
     typeof Notification !== "undefined" && Notification.permission === "granted"
   );
@@ -142,7 +236,6 @@ const SupportPage: React.FC = () => {
 
   useEffect(() => { refreshPushStatus(); }, [refreshPushStatus, pushEnabled]);
 
-  // Auto-subscribe on mount if user already granted permission
   useEffect(() => {
     if (!user || !pushSupported() || Notification.permission !== "granted") return;
     subscribeToPush(user.id).catch(() => {});
@@ -151,7 +244,7 @@ const SupportPage: React.FC = () => {
   const handleEnablePush = async () => {
     if (!user) return;
     if (!pushSupported()) {
-      toast({ title: "Not supported", description: "Push isn't available in this browser.", variant: "destructive" });
+      toast({ title: "Not supported", description: "Push notifications are not supported in this browser.", variant: "destructive" });
       return;
     }
     setPushBusy(true);
@@ -160,26 +253,25 @@ const SupportPage: React.FC = () => {
     if (ok) {
       setPushEnabled(true);
       setPushPermission(Notification.permission);
-      // Refresh "last subscribed" time right away
       await refreshPushStatus();
-      toast({ title: "Notifications enabled", description: "You'll get a ring even when this tab is closed." });
+      toast({ title: "Alerts Enabled", description: "You will receive live support call alerts even when closed." });
     } else {
-      toast({ title: "Permission denied", description: "Allow notifications in your browser settings.", variant: "destructive" });
+      toast({ title: "Permission Denied", description: "Please allow notifications in browser settings.", variant: "destructive" });
     }
   };
 
-  // Call state
+  /* ── WebRTC Voice Call Logic ── */
   const [incomingCall, setIncomingCall] = useState(false);
 
-  // Play/stop ringtone on incoming call
   useEffect(() => {
     if (incomingCall) { playRingtone(); } else { stopRingtone(); }
     return () => stopRingtone();
   }, [incomingCall]);
+
   const [callActive, setCallActive] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [callMuted, setCallMuted] = useState(false);
-  const [speakerOn, setSpeakerOn] = useState(false); // default: earpiece
+  const [speakerOn, setSpeakerOn] = useState(false);
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -190,18 +282,12 @@ const SupportPage: React.FC = () => {
   const callLogIdRef = useRef<string | null>(null);
   const recorderRef = useRef<CallRecorder | null>(null);
 
-  // Apply audio output: earpiece (default/communications) vs speaker
   const applyAudioOutput = useCallback(async (useSpeaker: boolean) => {
     const el = remoteAudioRef.current as any;
     if (!el) return;
     el.volume = 1;
-    // Try to set sinkId where supported (Chromium desktop / some Android)
     if (typeof el.setSinkId === "function") {
-      try {
-        await el.setSinkId(useSpeaker ? "default" : "communications");
-      } catch (e) {
-        // ignore — many mobile browsers don't allow this
-      }
+      try { await el.setSinkId(useSpeaker ? "default" : "communications"); } catch {}
     }
   }, []);
 
@@ -217,7 +303,6 @@ const SupportPage: React.FC = () => {
     try {
       await pc.setRemoteDescription(new RTCSessionDescription({ type: "offer", sdp }));
       pendingOfferRef.current = null;
-      // Drain queued ICE candidates
       for (const c of pendingCandidatesRef.current) {
         try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch (e) { console.warn("ICE add failed", e); }
       }
@@ -239,14 +324,11 @@ const SupportPage: React.FC = () => {
     queryFn: async () => {
       const { data } = await supabase.from("site_settings").select("value").eq("key", "ai_agent_config").maybeSingle();
       const raw = (data?.value as any) || {};
-      return raw && typeof raw === "object" && "value" in raw && typeof raw.value === "object"
-        ? raw.value
-        : raw;
+      return raw && typeof raw === "object" && "value" in raw && typeof raw.value === "object" ? raw.value : raw;
     },
     staleTime: 60_000,
   });
 
-  // Find active support conversation for this user
   const { data: activeConv } = useQuery({
     queryKey: ["user-active-conv", user?.id],
     queryFn: async () => {
@@ -264,19 +346,14 @@ const SupportPage: React.FC = () => {
     staleTime: 30_000,
   });
 
-  // Listen for incoming calls on active conversation
   useEffect(() => {
     if (!activeConv?.id) return;
-
-    const channel = supabase.channel(`call-${activeConv.id}`, {
-      config: { broadcast: { self: false } },
-    });
+    const channel = supabase.channel(`call-${activeConv.id}`, { config: { broadcast: { self: false } } });
 
     channel.on("broadcast", { event: "call-request" }, ({ payload }) => {
       if (payload.action === "incoming") {
         if (payload.callLogId) callLogIdRef.current = payload.callLogId;
         setIncomingCall(true);
-        // Auto-dismiss after 30s
         setTimeout(() => setIncomingCall(false), 30000);
       }
     });
@@ -284,37 +361,26 @@ const SupportPage: React.FC = () => {
     channel.on("broadcast", { event: "call-signal" }, async ({ payload }) => {
       if (payload.type === "offer" && payload.from === "admin") {
         pendingOfferRef.current = payload.sdp;
-        // If peer already exists (user accepted first), process immediately
-        if (peerRef.current) {
-          await processPendingOffer();
-        }
+        if (peerRef.current) await processPendingOffer();
       }
       if (payload.type === "ice-candidate" && payload.from === "admin") {
         const pc = peerRef.current;
         if (pc && pc.remoteDescription) {
           try { await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch (e) { console.warn("ICE add failed", e); }
         } else {
-          // Queue until remote description is set
           pendingCandidatesRef.current.push(payload.candidate);
         }
       }
-      if (payload.type === "hangup") {
-        hangupCall();
-      }
+      if (payload.type === "hangup") { hangupCall(); }
     });
 
     channel.subscribe();
     callChannelRef.current = channel;
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [activeConv?.id]);
 
   const acceptCall = async () => {
     setIncomingCall(false);
-
-    // Respond with accepted
     callChannelRef.current?.send({
       type: "broadcast",
       event: "call-response",
@@ -325,14 +391,12 @@ const SupportPage: React.FC = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localStreamRef.current = stream;
 
-      // Start recording (user side)
       try {
         const rec = new CallRecorder();
         if (rec.start(stream)) recorderRef.current = rec;
       } catch (e) { console.warn("[user call] recorder start failed", e); }
 
       const rtcConfig = await getRTCConfiguration();
-      console.log("[User Call] RTC config:", rtcConfig);
       const pc = new RTCPeerConnection(rtcConfig);
       peerRef.current = pc;
 
@@ -366,11 +430,7 @@ const SupportPage: React.FC = () => {
         }
       };
 
-      // Process pending offer if it already arrived; otherwise the broadcast handler will run it
-      if (pendingOfferRef.current) {
-        await processPendingOffer();
-      }
-
+      if (pendingOfferRef.current) await processPendingOffer();
       setCallActive(true);
     } catch (err) {
       console.error("Failed to accept call:", err);
@@ -387,7 +447,6 @@ const SupportPage: React.FC = () => {
   };
 
   const hangupCall = () => {
-    // Stop & upload user-side recording
     const recorder = recorderRef.current;
     const logId = callLogIdRef.current;
     recorderRef.current = null;
@@ -416,8 +475,8 @@ const SupportPage: React.FC = () => {
     }
   };
 
-  const agentName = aiConfig?.name || "AI Assistant";
-  const welcomeMessage = aiConfig?.welcome_message || "Hi! How can I help you today?";
+  const agentName = aiConfig?.name || "Mr. Slime";
+  const welcomeMessage = aiConfig?.welcome_message || "Hi! I'm Mr. Slime, your Orizino Concierge. How can I assist you today?";
 
   useEffect(() => {
     if (messages.length === 0) {
@@ -429,12 +488,13 @@ const SupportPage: React.FC = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = useCallback(async () => {
-    if (!input.trim() || loading) return;
-    const userMsg: Msg = { role: "user", content: input.trim() };
+  const sendMessage = useCallback(async (customText?: string) => {
+    const textToSend = (customText ?? input).trim();
+    if (!textToSend || loading) return;
+    const userMsg: Msg = { role: "user", content: textToSend };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
-    setInput("");
+    if (!customText) setInput("");
     setLoading(true);
 
     try {
@@ -442,92 +502,91 @@ const SupportPage: React.FC = () => {
         body: { messages: newMessages, context: { userId: user?.id } },
       });
       if (error) throw error;
-      setMessages((prev) => [...prev, { role: "assistant", content: data?.reply || "Sorry, I couldn't process that." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: data?.reply || "I'm having trouble reaching the AI right now." }]);
     } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong. Please try again." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong on my end. Please try again." }]);
     } finally {
       setLoading(false);
     }
   }, [input, messages, loading, user]);
 
+  const filteredFaqs = useMemo(() => {
+    if (!faqQuery.trim()) return FAQ_CATEGORIES;
+    const q = faqQuery.toLowerCase();
+    return FAQ_CATEGORIES.map(cat => ({
+      ...cat,
+      faqs: cat.faqs.filter(f => f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q))
+    })).filter(cat => cat.faqs.length > 0);
+  }, [faqQuery]);
+
+  const handleRequestHandoff = async () => {
+    if (!user) {
+      toast({ title: "Sign in required", description: "Please sign in to request priority human agent support.", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Connecting Live Agent...", description: "Escalating your session to a support specialist." });
+    await sendMessage("I would like to speak with a human support specialist.");
+  };
+
   return (
-    <div className="min-h-screen pb-20 lg:pb-0">
+    <div className="min-h-screen bg-background text-foreground pb-24 pt-4">
       <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
       <IncomingCallOverlay visible={incomingCall} onAccept={acceptCall} onReject={rejectCall} />
 
-      <main className="container mx-auto px-4 py-8 max-w-3xl">
-        <div className="flex items-center gap-3 mb-6">
-          <Link to="/" className="p-2 rounded-xl hover:bg-secondary transition-colors">
-            <ArrowLeft className="w-5 h-5 text-muted-foreground" />
-          </Link>
-          <div className="flex items-center gap-3">
-            {aiConfig?.avatar_type === "image" && aiConfig?.avatar_url ? (
-              <img src={aiConfig.avatar_url} alt={agentName} className="w-12 h-12 rounded-2xl object-cover" />
-            ) : (
-              <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
-                {aiConfig?.avatar_emoji ? <span className="text-xl">{aiConfig.avatar_emoji}</span> : <Bot className="w-6 h-6 text-primary" />}
+      {/* Main Full Width Wrapper */}
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+
+        {/* Executive Hero Header Strip */}
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 dark:border-white/10 bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-950 p-6 sm:p-8 shadow-2xl text-white">
+          <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-[hsl(var(--cherry))]/20 blur-3xl pointer-events-none" />
+          <div className="absolute right-32 -bottom-20 w-48 h-48 rounded-full bg-cherry/10 blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Link to="/" className="inline-flex items-center gap-1 text-xs text-white/70 hover:text-white transition-colors">
+                  <ArrowLeft className="w-3.5 h-3.5" /> Back to Store
+                </Link>
+                <span className="text-white/30">•</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Support Online
+                </span>
               </div>
-            )}
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold font-display text-foreground">
-                {agentName ? `Support (${agentName})` : t("nav.support")}
+              <h1 className="text-3xl sm:text-4xl font-extrabold font-display tracking-tight text-white">
+                Customer Care & Concierge
               </h1>
-              <p className="text-sm text-muted-foreground">{t("nav.support")}</p>
+              <p className="text-sm text-white/70 max-[#640px]:text-xs max-w-xl">
+                Experience instant AI assistance, direct human agent handoff, live voice support, and fast 7-day order resolutions.
+              </p>
+            </div>
+
+            {/* Quick Action Badges */}
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRequestHandoff}
+                className="rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20 text-xs font-medium gap-1.5"
+              >
+                <Headphones className="w-4 h-4 text-cherry" />
+                Human Agent Call
+              </Button>
+
+              <Button
+                size="sm"
+                variant={pushEnabled ? "secondary" : "outline"}
+                onClick={handleEnablePush}
+                disabled={pushBusy || pushEnabled}
+                className="rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20 text-xs font-medium gap-1.5"
+              >
+                {pushEnabled ? <BellRing className="w-4 h-4 text-emerald-400" /> : <BellOff className="w-4 h-4" />}
+                <span>{pushEnabled ? "Alerts On" : "Enable Alerts"}</span>
+              </Button>
             </div>
           </div>
-          <div className="ml-auto">
-            <Button
-              size="sm"
-              variant={pushEnabled ? "secondary" : "outline"}
-              onClick={handleEnablePush}
-              disabled={pushBusy || pushEnabled}
-              className="rounded-xl gap-1.5"
-              title={pushEnabled ? "Push notifications enabled" : "Enable push so calls ring even when this tab is closed"}
-            >
-              {pushEnabled ? <BellRing className="w-4 h-4 text-green-500" /> : <BellOff className="w-4 h-4" />}
-              <span className="hidden sm:inline text-xs">{pushEnabled ? "Notifications on" : "Enable alerts"}</span>
-            </Button>
-          </div>
         </div>
 
-        {/* Tabs: Chat / Call History */}
-        <div className="flex gap-1 p-1 rounded-2xl bg-secondary/30 mb-4 w-fit">
-          <button
-            onClick={() => setTab("chat")}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "chat" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            <MessageSquare className="w-4 h-4" /> Chat
-          </button>
-          <button
-            onClick={() => setTab("history")}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "history" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            <History className="w-4 h-4" /> Call History
-          </button>
-        </div>
-
-        {/* Push notification status */}
-        <div className="mb-4 p-3.5 rounded-2xl bg-secondary/30 border border-border/40 flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${pushPermission === "granted" ? "bg-green-500/15 text-green-500" : pushPermission === "denied" ? "bg-destructive/15 text-destructive" : "bg-amber-500/15 text-amber-500"}`}>
-            {pushPermission === "granted" ? <BellRing className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">
-              {pushPermission === "granted" ? "Push notifications enabled" :
-                pushPermission === "denied" ? "Notifications blocked" :
-                pushPermission === "unsupported" ? "Push not supported in this browser" : "Notifications not enabled"}
-            </p>
-            <p className="text-[11px] text-muted-foreground truncate">
-              {lastPushUpdate ? `Last subscribed ${new Date(lastPushUpdate).toLocaleString()}` : "No device subscribed yet"}
-            </p>
-          </div>
-          {pushPermission !== "granted" && pushPermission !== "unsupported" && (
-            <Button size="sm" variant="outline" onClick={handleEnablePush} disabled={pushBusy} className="rounded-xl text-xs">
-              {pushBusy ? "..." : "Enable"}
-            </Button>
-          )}
-        </div>
-
+        {/* Active Voice Call Overlay Bar */}
         <AnimatePresence>
           {callActive && (
             <ActiveCallBar
@@ -541,94 +600,425 @@ const SupportPage: React.FC = () => {
           )}
         </AnimatePresence>
 
-        {tab === "chat" ? (
-        <div className="glass-strong rounded-3xl overflow-hidden flex flex-col" style={{ height: "calc(100vh - 320px)", minHeight: "400px" }}>
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4">
-            {messages.map((msg, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                {msg.role === "assistant" && (
-                  aiConfig?.avatar_type === "image" && aiConfig?.avatar_url ? (
-                    <img src={aiConfig.avatar_url} alt={agentName} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                      {aiConfig?.avatar_emoji ? <span className="text-base">{aiConfig.avatar_emoji}</span> : <Bot className="w-4 h-4 text-primary" />}
-                    </div>
-                  )
-                )}
-                <div className={`max-w-[75%] rounded-2xl px-5 py-3 ${
-                  msg.role === "user"
-                    ? "bg-primary text-primary-foreground rounded-br-md"
-                    : "bg-secondary text-foreground rounded-bl-md"
-                }`}>
-                  {msg.role === "assistant" ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    </div>
-                  ) : <p className="text-sm">{msg.content}</p>}
-                </div>
-                {msg.role === "user" && (
-                  <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                    <User className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                )}
-              </motion.div>
-            ))}
-            {loading && (
-              <div className="flex gap-3">
-                {aiConfig?.avatar_type === "image" && aiConfig?.avatar_url ? (
-                  <img src={aiConfig.avatar_url} alt={agentName} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center">
-                    {aiConfig?.avatar_emoji ? <span className="text-base">{aiConfig.avatar_emoji}</span> : <Bot className="w-4 h-4 text-primary" />}
-                  </div>
-                )}
-                <div className="bg-secondary rounded-2xl px-5 py-3 flex gap-1.5">
-                  <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" />
-                  <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                </div>
-              </div>
-            )}
+        {/* Quick Shortcut Tiles */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+          <Link
+            to="/orders"
+            className="group relative overflow-hidden p-4 rounded-2xl bg-card border border-border/50 hover:border-cherry/40 hover:shadow-lg transition-all"
+          >
+            <div className="w-9 h-9 rounded-xl bg-cherry/10 text-cherry flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+              <PackageCheck className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-bold text-foreground group-hover:text-cherry transition-colors">Track Orders</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Real-time status & courier tracking</p>
+          </Link>
+
+          <Link
+            to="/support?tab=returns"
+            onClick={() => setTab("faq")}
+            className="group relative overflow-hidden p-4 rounded-2xl bg-card border border-border/50 hover:border-cherry/40 hover:shadow-lg transition-all"
+          >
+            <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+              <RefreshCw className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">7-Day Returns</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Hassle-free size & item exchange</p>
+          </Link>
+
+          <button
+            onClick={() => setTab("faq")}
+            className="group relative overflow-hidden p-4 rounded-2xl bg-card border border-border/50 hover:border-cherry/40 hover:shadow-lg text-left transition-all"
+          >
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+              <HelpCircle className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-bold text-foreground group-hover:text-indigo-500 transition-colors">Knowledge Base</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Instant answers to common questions</p>
+          </button>
+
+          <button
+            onClick={handleRequestHandoff}
+            className="group relative overflow-hidden p-4 rounded-2xl bg-card border border-border/50 hover:border-cherry/40 hover:shadow-lg text-left transition-all"
+          >
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+              <Zap className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-bold text-foreground group-hover:text-emerald-500 transition-colors">Live Support</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Connect with a support specialist</p>
+          </button>
+        </div>
+
+        {/* Tab Switcher Navigation Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-1.5 rounded-2xl bg-card border border-border/50 shadow-sm">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full sm:w-auto">
+            <button
+              onClick={() => setTab("chat")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                tab === "chat"
+                  ? "bg-gradient-to-r from-[hsl(var(--cherry))] to-[hsl(345_75%_25%)] text-white shadow-md"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" /> AI Concierge Chat
+            </button>
+
+            <button
+              onClick={() => setTab("faq")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                tab === "faq"
+                  ? "bg-gradient-to-r from-[hsl(var(--cherry))] to-[hsl(345_75%_25%)] text-white shadow-md"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+              }`}
+            >
+              <FileText className="w-4 h-4" /> Knowledge Base & FAQ
+            </button>
+
+            <button
+              onClick={() => setTab("history")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                tab === "history"
+                  ? "bg-gradient-to-r from-[hsl(var(--cherry))] to-[hsl(345_75%_25%)] text-white shadow-md"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+              }`}
+            >
+              <History className="w-4 h-4" /> Call History
+            </button>
+
+            <button
+              onClick={() => setTab("settings")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                tab === "settings"
+                  ? "bg-gradient-to-r from-[hsl(var(--cherry))] to-[hsl(345_75%_25%)] text-white shadow-md"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+              }`}
+            >
+              <BellRing className="w-4 h-4" /> Alert Preferences
+            </button>
           </div>
 
-          <div className="p-4 border-t border-border">
-            <div className="flex gap-3">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                placeholder={t("nav.search").replace("...", "") + "..."}
-                className="flex-1 bg-secondary rounded-2xl px-5 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-              <Button onClick={sendMessage} disabled={!input.trim() || loading} className="rounded-2xl px-5 h-11">
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
+          <div className="hidden lg:flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 rounded-xl bg-secondary/40">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <span>256-Bit Encrypted Support Sessions</span>
           </div>
         </div>
-        ) : (
-          <div className="glass-strong rounded-3xl p-5 sm:p-6">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <History className="w-5 h-5 text-primary" />
+
+        {/* Tab 1: AI Chat & Concierge Interface */}
+        {tab === "chat" && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Main Chat Panel */}
+            <div className="lg:col-span-8 rounded-3xl bg-card border border-border/50 shadow-xl overflow-hidden flex flex-col h-[650px]">
+              {/* Chat Header Stripe */}
+              <div className="px-6 py-4 border-b border-border/40 bg-gradient-to-r from-secondary/60 via-card to-secondary/60 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    {aiConfig?.avatar_type === "image" && aiConfig?.avatar_url ? (
+                      <img src={aiConfig.avatar_url} alt={agentName} className="w-10 h-10 rounded-2xl object-cover ring-2 ring-cherry/40" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-2xl bg-cherry/10 text-cherry flex items-center justify-center font-bold">
+                        {aiConfig?.avatar_emoji ? <span className="text-lg">{aiConfig.avatar_emoji}</span> : <Bot className="w-5 h-5" />}
+                      </div>
+                    )}
+                    <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-card" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                      {agentName} <span className="text-[10px] px-2 py-0.5 rounded-full bg-cherry/10 text-cherry uppercase font-mono tracking-wider font-semibold">AI Concierge</span>
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground">Always active • Product & Order specialist</p>
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setMessages([{ role: "assistant", content: welcomeMessage }])}
+                  className="rounded-xl text-xs gap-1 text-muted-foreground hover:text-foreground"
+                  title="Clear chat history"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Clear
+                </Button>
               </div>
-              <div>
-                <h2 className="text-lg font-semibold font-display text-foreground">Call History</h2>
-                <p className="text-xs text-muted-foreground">Your recent voice calls with support</p>
+
+              {/* Chat Message Scroll Window */}
+              <div ref={scrollRef} className="flex-1 overflow-y-auto min-w-0 max-w-full overflow-x-hidden p-6 space-y-4">
+                {messages.map((msg, i) => {
+                  const isUser = msg.role === "user";
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`flex gap-3 min-w-0 max-w-full ${isUser ? "justify-end" : "justify-start"}`}
+                    >
+                      {!isUser && (
+                        aiConfig?.avatar_type === "image" && aiConfig?.avatar_url ? (
+                          <img src={aiConfig.avatar_url} alt={agentName} className="w-8 h-8 rounded-xl object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-xl bg-cherry/10 text-cherry flex items-center justify-center flex-shrink-0 font-bold">
+                            {aiConfig?.avatar_emoji ? <span className="text-sm">{aiConfig.avatar_emoji}</span> : <Bot className="w-4 h-4" />}
+                          </div>
+                        )
+                      )}
+
+                      <div
+                        className={`max-w-[80%] min-w-0 px-5 py-3 text-sm rounded-2xl break-words [overflow-wrap:anywhere] ${
+                          isUser
+                            ? "bg-gradient-to-br from-[hsl(var(--cherry))] via-[hsl(345_75%_22%)] to-[hsl(0_70%_12%)] text-white rounded-br-xs border border-white/20 font-medium shadow-md"
+                            : "bg-secondary/70 border border-border/40 text-foreground rounded-bl-xs [&_p]:leading-relaxed"
+                        }`}
+                      >
+                        {!isUser ? (
+                          <div className="prose prose-sm dark:prose-invert max-w-none break-words min-w-0 [overflow-wrap:anywhere] [&_p]:mb-1.5 [&_p]:mt-0">
+                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p>{msg.content}</p>
+                        )}
+                      </div>
+
+                      {isUser && (
+                        <div className="w-8 h-8 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0 ring-1 ring-border/40">
+                          <User className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+
+                {loading && (
+                  <div className="flex gap-3 items-end">
+                    <div className="w-8 h-8 rounded-xl bg-cherry/10 text-cherry flex items-center justify-center font-bold">
+                      <Bot className="w-4 h-4" />
+                    </div>
+                    <div className="bg-secondary/70 border border-border/40 rounded-2xl rounded-bl-xs px-4 py-3 flex gap-1.5">
+                      <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" />
+                      <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Chat Quick Prompts & Composer */}
+              <div className="p-4 border-t border-border/40 bg-gradient-to-t from-background via-card to-card space-y-3">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                  <span className="text-[10px] uppercase font-mono text-muted-foreground whitespace-nowrap">Suggested:</span>
+                  {[
+                    "Where is my order?",
+                    "How do I exchange sizes?",
+                    "Recommend drop shoulder tees",
+                    "Talk to human support"
+                  ].map((prompt) => (
+                    <button
+                      key={prompt}
+                      onClick={() => sendMessage(prompt)}
+                      disabled={loading}
+                      className="px-3 py-1 rounded-full bg-secondary/80 hover:bg-cherry/15 hover:text-cherry border border-border/40 text-[11px] font-medium text-foreground whitespace-nowrap transition-colors disabled:opacity-50"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 bg-secondary/50 rounded-2xl p-1.5 ring-1 ring-border/40 focus-within:ring-cherry/50 focus-within:bg-secondary/70 transition-all">
+                  <input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+                    placeholder="Ask Mr. Slime anything about orders, products, or shipping..."
+                    className="flex-1 bg-transparent px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  />
+                  <Button
+                    onClick={() => sendMessage()}
+                    disabled={!input.trim() || loading}
+                    className="rounded-xl px-5 h-10 bg-gradient-to-r from-[hsl(var(--cherry))] to-[hsl(345_75%_25%)] text-white shadow"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </div>
+
+            {/* Sidebar Support Info & Fast Actions */}
+            <div className="lg:col-span-4 space-y-4">
+              <div className="rounded-3xl bg-card border border-border/50 p-6 space-y-4 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-cherry/10 text-cherry flex items-center justify-center font-bold">
+                    <LifeBuoy className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">Need Human Support?</h3>
+                    <p className="text-xs text-muted-foreground">Our team responds within 15 mins</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  If our AI concierge cannot resolve your inquiry, click below to connect directly with a dedicated human agent.
+                </p>
+
+                <Button
+                  onClick={handleRequestHandoff}
+                  className="w-full rounded-2xl bg-secondary hover:bg-cherry hover:text-white border border-border/50 text-foreground font-semibold text-xs py-5 gap-2 transition-all shadow-sm"
+                >
+                  <Headphones className="w-4 h-4 text-cherry" />
+                  Escalate to Human Agent
+                </Button>
+              </div>
+
+              <div className="rounded-3xl bg-card border border-border/50 p-6 space-y-3.5 shadow-lg">
+                <h4 className="text-xs font-bold text-foreground uppercase tracking-wider font-mono">Customer Service Hours</h4>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between py-1.5 border-b border-border/30">
+                    <span className="text-muted-foreground">Saturday – Thursday:</span>
+                    <span className="font-semibold text-foreground">9:00 AM – 10:00 PM</span>
+                  </div>
+                  <div className="flex justify-between py-1.5 border-b border-border/30">
+                    <span className="text-muted-foreground">Friday:</span>
+                    <span className="font-semibold text-foreground">2:00 PM – 9:00 PM</span>
+                  </div>
+                  <div className="flex justify-between py-1.5">
+                    <span className="text-muted-foreground">AI Assistance:</span>
+                    <span className="font-semibold text-emerald-500">24/7 Unlimited</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-3xl bg-gradient-to-br from-cherry/10 via-card to-card border border-cherry/20 p-6 space-y-3 shadow-lg">
+                <div className="flex items-center gap-2 text-cherry font-bold text-xs uppercase tracking-wider">
+                  <ShieldCheck className="w-4 h-4" /> Guaranteed Quality
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Every Orizino piece comes with a 100% authenticity guarantee and open-box inspection upon delivery.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 2: Knowledge Base & FAQ Accordion */}
+        {tab === "faq" && (
+          <div className="space-y-6">
+            {/* Search Bar */}
+            <div className="relative max-w-2xl mx-auto">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <input
+                type="text"
+                value={faqQuery}
+                onChange={(e) => setFaqQuery(e.target.value)}
+                placeholder="Search topics (e.g. shipping, returns, GSM, bKash)..."
+                className="w-full bg-card border border-border/60 rounded-2xl pl-12 pr-4 py-4 text-sm text-foreground placeholder:text-muted-foreground shadow-lg focus:outline-none focus:ring-2 focus:ring-cherry/50 transition-all"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredFaqs.map((category) => {
+                const Icon = category.icon;
+                return (
+                  <div key={category.id} className="rounded-3xl bg-card border border-border/50 p-6 space-y-4 shadow-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-cherry/10 text-cherry flex items-center justify-center">
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold font-display text-foreground">{category.title}</h3>
+                        <p className="text-xs text-muted-foreground">{category.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-2">
+                      {category.faqs.map((faq, idx) => {
+                        const key = `${category.id}-${idx}`;
+                        const isOpen = openFaqIndex === key;
+                        return (
+                          <div key={key} className="rounded-2xl bg-secondary/30 border border-border/30 overflow-hidden">
+                            <button
+                              onClick={() => setOpenFaqIndex(isOpen ? null : key)}
+                              className="w-full px-4 py-3 text-left flex items-center justify-between text-xs font-semibold text-foreground hover:bg-secondary/50 transition-colors"
+                            >
+                              <span>{faq.q}</span>
+                              <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-90 text-cherry" : ""}`} />
+                            </button>
+                            {isOpen && (
+                              <div className="px-4 pb-3 pt-1 text-xs text-muted-foreground leading-relaxed border-t border-border/20 bg-background/30">
+                                <ReactMarkdown>{faq.a}</ReactMarkdown>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Call History */}
+        {tab === "history" && (
+          <div className="rounded-3xl bg-card border border-border/50 p-6 sm:p-8 shadow-xl space-y-6">
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                  <History className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold font-display text-foreground">Voice Call History</h2>
+                  <p className="text-xs text-muted-foreground">Review your past WebRTC voice support calls and recordings</p>
+                </div>
+              </div>
+
+              <span className="text-xs font-mono px-3 py-1 rounded-full bg-secondary text-muted-foreground">
+                Encrypted Logs
+              </span>
+            </div>
+
             <CallHistoryList limit={50} />
           </div>
         )}
-      </main>
+
+        {/* Tab 4: Push Alert & Preferences */}
+        {tab === "settings" && (
+          <div className="max-w-3xl mx-auto rounded-3xl bg-card border border-border/50 p-6 sm:p-8 shadow-xl space-y-6">
+            <div className="flex items-center gap-4 border-b border-border/40 pb-6">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${pushPermission === "granted" ? "bg-emerald-500/15 text-emerald-500" : "bg-amber-500/15 text-amber-500"}`}>
+                {pushPermission === "granted" ? <BellRing className="w-6 h-6" /> : <BellOff className="w-6 h-6" />}
+              </div>
+              <div>
+                <h2 className="text-lg font-bold font-display text-foreground">Real-Time Ring Notifications</h2>
+                <p className="text-xs text-muted-foreground">Get notified immediately when support agents call you back</p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-secondary/30 border border-border/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground">Browser Push Status</h4>
+                  <p className="text-xs text-muted-foreground">
+                    {pushPermission === "granted" ? "Subscribed on this browser" : "Not yet configured"}
+                  </p>
+                </div>
+                <Button
+                  onClick={handleEnablePush}
+                  disabled={pushBusy || pushPermission === "granted" || pushPermission === "unsupported"}
+                  className="rounded-xl text-xs"
+                >
+                  {pushPermission === "granted" ? "Subscribed" : pushBusy ? "Enabling..." : "Enable Push Alerts"}
+                </Button>
+              </div>
+
+              {lastPushUpdate && (
+                <p className="text-[11px] font-mono text-muted-foreground border-t border-border/30 pt-2">
+                  Last sync timestamp: {new Date(lastPushUpdate).toLocaleString()}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 };
 
 export default SupportPage;
-// code:4ce0
