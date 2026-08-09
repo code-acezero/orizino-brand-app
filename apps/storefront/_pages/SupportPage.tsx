@@ -30,7 +30,7 @@ interface Msg {
 const FAQ_CATEGORIES = [
   {
     id: "orders",
-    title: "Orders & Shipping",
+    title: "Orders & Delivery",
     icon: Truck,
     description: "Delivery timelines, order tracking & shipping.",
     faqs: [
@@ -530,35 +530,8 @@ const SupportPage: React.FC = () => {
       {/* Main Full-Width Wrapper — Matches 100% Inline with Footer (w-full px-4 sm:px-6 lg:px-8 xl:px-10) */}
       <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-8 space-y-5 sm:space-y-6">
 
-        {/* ── MOBILE HEADER (sm:hidden) ── */}
-        <div className="sm:hidden space-y-3 border-b border-border/40 pb-4">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="w-3.5 h-3.5" /> Back
-            </Link>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border border-emerald-500/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Support Online
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold font-display text-foreground">Customer Support</h1>
-              <p className="text-[11px] text-muted-foreground">Concierge & Help Desk</p>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleRequestHandoff}
-              className="h-8 px-3 rounded-xl text-[11px] gap-1 border-border/60"
-            >
-              <Headphones className="w-3 h-3 text-primary" /> Call Agent
-            </Button>
-          </div>
-        </div>
-
-        {/* ── DESKTOP HEADER (hidden sm:flex) ── */}
-        <div className="hidden sm:flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-5">
+        {/* ── UNIFIED RESPONSIVE HEADER ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-5">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Link to="/" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
@@ -566,11 +539,11 @@ const SupportPage: React.FC = () => {
               </Link>
               <span className="text-muted-foreground/40">•</span>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Concierge Online
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Support Online
               </span>
             </div>
-            <h1 className="text-2xl lg:text-3xl font-extrabold font-display tracking-tight text-foreground">
-              Customer Care & Support
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-display tracking-tight text-foreground">
+              Customer Support
             </h1>
             <p className="text-xs text-muted-foreground">
               Instant AI concierge assistance, WebRTC voice support, and fast 7-day resolutions.
@@ -615,54 +588,7 @@ const SupportPage: React.FC = () => {
           )}
         </AnimatePresence>
 
-        {/* Quick Shortcut Tiles Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
-          <Link
-            to="/orders"
-            className="group p-3 sm:p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-xs transition-all"
-          >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-secondary flex items-center justify-center mb-2 text-foreground group-hover:text-primary transition-colors">
-              <PackageCheck className="w-4 h-4" />
-            </div>
-            <h3 className="text-xs sm:text-sm font-bold text-foreground">Track Order</h3>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">Live courier status</p>
-          </Link>
-
-          <button
-            onClick={() => setTab("faq")}
-            className="group p-3 sm:p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-xs text-left transition-all"
-          >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-secondary flex items-center justify-center mb-2 text-foreground group-hover:text-primary transition-colors">
-              <RefreshCw className="w-4 h-4" />
-            </div>
-            <h3 className="text-xs sm:text-sm font-bold text-foreground">7-Day Returns</h3>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">Size & exchange</p>
-          </button>
-
-          <button
-            onClick={() => setTab("faq")}
-            className="group p-3 sm:p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-xs text-left transition-all"
-          >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-secondary flex items-center justify-center mb-2 text-foreground group-hover:text-primary transition-colors">
-              <HelpCircle className="w-4 h-4" />
-            </div>
-            <h3 className="text-xs sm:text-sm font-bold text-foreground">Knowledge Base</h3>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">Instant FAQ guides</p>
-          </button>
-
-          <button
-            onClick={handleRequestHandoff}
-            className="group p-3 sm:p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-xs text-left transition-all"
-          >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-secondary flex items-center justify-center mb-2 text-foreground group-hover:text-primary transition-colors">
-              <Zap className="w-4 h-4" />
-            </div>
-            <h3 className="text-xs sm:text-sm font-bold text-foreground">Live Specialist</h3>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">Human agent call</p>
-          </button>
-        </div>
-
-        {/* Executive Floating Segmented Pill Menu */}
+        {/* Executive Segmented Pill Menu */}
         <div className="p-1.5 bg-secondary/40 backdrop-blur-md rounded-2xl border border-border/40 shadow-xs grid grid-cols-2 sm:grid-cols-4 gap-1.5">
           <button
             onClick={() => setTab("chat")}
@@ -725,7 +651,7 @@ const SupportPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Tab 1: 2-Block Desktop & Mobile Chat Interface */}
+        {/* Tab 1: 2-Block Layout for Chat Interface */}
         {tab === "chat" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
             
@@ -865,36 +791,25 @@ const SupportPage: React.FC = () => {
             {/* Block 2 (Right 4 Cols): Desktop & Mobile Support Information Cards */}
             <div className="lg:col-span-4 space-y-4">
               
-              {/* Card 1: Request Human Agent */}
-              <div className="rounded-2xl bg-card border border-border/40 p-4 sm:p-5 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-                    <LifeBuoy className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-xs sm:text-sm font-bold text-foreground">Human Support Agent</h3>
-                    <p className="text-[10px] sm:text-[11px] text-muted-foreground">Response within 15 mins</p>
-                  </div>
+              {/* Card 1: Direct Order Tracking Link */}
+              <Link
+                to="/orders"
+                className="group p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-xs transition-all flex items-center gap-3.5"
+              >
+                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 group-hover:scale-105 transition-transform">
+                  <PackageCheck className="w-5 h-5" />
                 </div>
-
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Need custom assistance with an order, payment, or fitting? Connect with a support representative directly.
-                </p>
-
-                <Button
-                  onClick={handleRequestHandoff}
-                  variant="outline"
-                  className="w-full rounded-xl border-border/60 text-foreground font-semibold text-xs py-3.5 gap-2 transition-all"
-                >
-                  <Headphones className="w-3.5 h-3.5 text-primary" />
-                  Request Support Specialist
-                </Button>
-              </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xs sm:text-sm font-bold text-foreground group-hover:text-primary transition-colors">Track Live Orders</h3>
+                  <p className="text-[11px] text-muted-foreground truncate">Real-time courier updates & status</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+              </Link>
 
               {/* Card 2: Operating Service Hours */}
               <div className="rounded-2xl bg-card border border-border/40 p-4 sm:p-5 space-y-2.5">
                 <div className="flex items-center gap-2 font-bold text-xs text-foreground uppercase tracking-wider font-mono">
-                  <Clock className="w-3.5 h-3.5 text-primary" /> Support Working Hours
+                  <Clock className="w-3.5 h-3.5 text-primary" /> Service Working Hours
                 </div>
                 <div className="space-y-1.5 text-xs">
                   <div className="flex justify-between py-1 border-b border-border/20">
