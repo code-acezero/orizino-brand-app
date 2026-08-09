@@ -26,5 +26,10 @@
         "./packages/supabase/src/*"
       ]
     }
-  }
+  },
+  "exclude": [
+    "supabase",
+    "**/supabase/functions/**",
+    "node_modules"
+  ]
 }
