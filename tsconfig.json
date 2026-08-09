@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "preserve",
+    "strict": false,
+    "skipLibCheck": true,
+    "paths": {
+      "@orizino/ui": [
+        "./packages/ui/src"
+      ],
+      "@orizino/ui/*": [
+        "./packages/ui/src/*"
+      ],
+      "@orizino/shared": [
+        "./packages/shared/src"
+      ],
+      "@orizino/shared/*": [
+        "./packages/shared/src/*"
+      ],
+      "@orizino/supabase": [
+        "./packages/supabase/src"
+      ],
+      "@orizino/supabase/*": [
+        "./packages/supabase/src/*"
+      ]
+    }
+  }
+}

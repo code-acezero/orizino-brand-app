@@ -1,0 +1,183 @@
+@import "tailwindcss" source(none);
+@source "../";
+@source "../../../../packages/ui/src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Order Ops — iOS / macOS design language.
+ * Reuses the shared shadcn component primitives (@orizino/ui) but supplies
+ * its own token set: light "System Gray 6" surfaces, SF-style system font
+ * stack, iOS blues, and generous corner radii — deliberately different from
+ * masterpanel's dark editorial theme, since this app's brief is "mac and
+ * iOS style" specifically.
+ */
+
+html {
+  scrollbar-gutter: stable;
+}
+
+@theme inline {
+  --font-display: "SF Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: 1.75rem;
+  --radius-4xl: 2.25rem;
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --animate-fade-in: fade-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  --animate-scale-in: scale-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  --animate-sheet-up: sheet-up 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes scale-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+  @keyframes sheet-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+}
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 1rem;
+  max-width: 900px;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+/* iOS "System Gray 6" light theme — the palette behind every Settings/Mail-
+   style app. Primary is iOS system blue; everything else is neutral gray so
+   product/order colors do the talking. */
+@layer base {
+  :root {
+    color-scheme: light;
+
+    --background: 240 20% 97%;      /* systemGroupedBackground */
+    --foreground: 240 6% 10%;       /* label */
+
+    --card: 0 0% 100%;               /* secondarySystemGroupedBackground */
+    --card-foreground: 240 6% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 6% 10%;
+
+    --primary: 211 100% 50%;         /* iOS systemBlue */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 10% 94%;
+    --secondary-foreground: 240 6% 20%;
+
+    --muted: 240 10% 94%;
+    --muted-foreground: 240 4% 46%;  /* secondaryLabel */
+
+    --accent: 211 100% 96%;
+    --accent-foreground: 211 100% 40%;
+
+    --destructive: 4 90% 58%;        /* iOS systemRed */
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;          /* iOS systemGreen */
+    --success-foreground: 0 0% 100%;
+    --warning: 35 100% 50%;          /* iOS systemOrange */
+    --warning-foreground: 0 0% 12%;
+    --info: 211 100% 50%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 240 8% 88%;
+    --input: 240 8% 88%;
+    --ring: 211 100% 50%;
+
+    --radius: 1.125rem;
+
+    --sidebar-background: 240 15% 96%;
+    --sidebar-foreground: 240 6% 15%;
+    --sidebar-primary: 211 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 211 100% 96%;
+    --sidebar-accent-foreground: 211 100% 40%;
+    --sidebar-border: 240 8% 88%;
+    --sidebar-ring: 211 100% 50%;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --background: 0 0% 6%;
+    --foreground: 0 0% 96%;
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 96%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 211 100% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 0 0% 16%;
+    --muted-foreground: 0 0% 62%;
+    --accent: 211 60% 20%;
+    --accent-foreground: 211 100% 75%;
+    --destructive: 4 90% 62%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 211 100% 56%;
+    --sidebar-background: 0 0% 9%;
+    --sidebar-foreground: 0 0% 92%;
+    --sidebar-border: 0 0% 20%;
+  }
+
+  * { border-color: hsl(var(--border)); }
+  body {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none; /* no rubber-band chrome flash inside a WebView */
+  }
+}
+
+/* Safe-area helpers for the notch / home-indicator once wrapped in Capacitor */
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.pl-safe { padding-left: env(safe-area-inset-left); }
+.pr-safe { padding-right: env(safe-area-inset-right); }
+
+/* iOS-style translucent bars — used by the tab bar and top nav */
+.ios-blur {
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  background: hsl(var(--background) / 0.72);
+}

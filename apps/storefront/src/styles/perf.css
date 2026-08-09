@@ -1,0 +1,47 @@
+/*
+ * Mobile perf helpers — invisible to UX.
+ * - Prevent CLS from images/media without intrinsic sizing.
+ * - Respect user motion preferences.
+ * - Stop iOS text auto-inflation.
+ * - Give lazy images a content-visibility boost when offscreen.
+ * Opt-in class `.cv-auto` for below-the-fold sections.
+ */
+
+img,
+video,
+svg,
+canvas,
+iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+img,
+video {
+  vertical-align: middle;
+}
+
+img[loading="lazy"] {
+  content-visibility: auto;
+}
+
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,190 @@
+/* Identity layout presets — each variant tunes the same JSX by selectors.
+ * The public profile wrapper carries [data-identity-layout="<id>"]. */
+
+[data-identity-layout] { --id-radius: 1.5rem; }
+
+/* ── classic (default) ── nothing to override */
+
+/* ── minimal ── quiet card, no cover, generous whitespace */
+[data-identity-layout="minimal"] .id-cover { display: none; }
+[data-identity-layout="minimal"] .id-main { margin-top: 3rem; }
+[data-identity-layout="minimal"] .id-card {
+  background: transparent !important;
+  border: 1px solid hsl(var(--border) / 0.4) !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+[data-identity-layout="minimal"] .id-avatar-wrap { margin-top: 0 !important; }
+[data-identity-layout="minimal"] .id-name { font-weight: 500; letter-spacing: -0.02em; }
+
+/* ── editorial ── serif display, narrow column */
+[data-identity-layout="editorial"] .id-main { max-width: 46rem; }
+[data-identity-layout="editorial"] .id-name {
+  font-family: "Instrument Serif", ui-serif, Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(2.5rem, 5vw + 1rem, 4rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+[data-identity-layout="editorial"] .id-card {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  padding: 0 !important;
+}
+[data-identity-layout="editorial"] .id-cover { height: 24rem; opacity: 0.9; }
+
+/* ── business ── centred landscape card */
+[data-identity-layout="business"] .id-cover { display: none; }
+[data-identity-layout="business"] .id-main {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0 !important;
+  max-width: 42rem;
+}
+[data-identity-layout="business"] .id-card {
+  aspect-ratio: 1.6 / 1;
+  padding: 2rem !important;
+  border-radius: 1.25rem !important;
+}
+[data-identity-layout="business"] .id-avatar-wrap { margin-top: 0 !important; }
+
+/* ── gradient ── vivid full-bleed accent behind card */
+[data-identity-layout="gradient"] {
+  background: radial-gradient(ellipse at top, hsl(var(--primary) / 0.35), transparent 60%),
+              radial-gradient(ellipse at bottom right, hsl(var(--accent) / 0.25), transparent 55%),
+              hsl(var(--background)) !important;
+}
+[data-identity-layout="gradient"] .id-cover {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent))) !important;
+  opacity: 0.85;
+}
+
+/* ── polaroid ── photo-first tilted card */
+[data-identity-layout="polaroid"] .id-cover { display: none; }
+[data-identity-layout="polaroid"] .id-main { margin-top: 3rem; max-width: 34rem; }
+[data-identity-layout="polaroid"] .id-card {
+  transform: rotate(-1.5deg);
+  background: hsl(0 0% 98%) !important;
+  color: hsl(0 0% 10%) !important;
+  padding-bottom: 3.5rem !important;
+  border: 1px solid hsl(0 0% 85%) !important;
+  box-shadow: 0 30px 60px -20px hsl(0 0% 0% / 0.55) !important;
+  border-radius: 4px !important;
+}
+[data-identity-layout="polaroid"] .id-card .id-name,
+[data-identity-layout="polaroid"] .id-card .id-sub,
+[data-identity-layout="polaroid"] .id-card p { color: hsl(0 0% 15%) !important; }
+[data-identity-layout="polaroid"] .id-avatar-wrap img,
+[data-identity-layout="polaroid"] .id-avatar-wrap > div { border-radius: 4px !important; }
+
+/* ── terminal ── mono, green-accent, dark */
+[data-identity-layout="terminal"] {
+  background: #050505 !important;
+  color: #d1ffd1 !important;
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+}
+[data-identity-layout="terminal"] .id-cover { display: none; }
+[data-identity-layout="terminal"] .id-main { margin-top: 3rem; }
+[data-identity-layout="terminal"] .id-card {
+  background: #0a0f0a !important;
+  border: 1px solid #1f3a1f !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+[data-identity-layout="terminal"] .id-name::before { content: "$ "; opacity: 0.6; }
+[data-identity-layout="terminal"] .id-code { color: #7CFC7C !important; background: transparent !important; border: 1px solid #1f3a1f; }
+
+/* ── brutalist ── hard borders, no shadow, oversized */
+[data-identity-layout="brutalist"] {
+  background: hsl(0 0% 96%) !important;
+  color: #0a0a0a !important;
+}
+[data-identity-layout="brutalist"] .id-cover { display: none; }
+[data-identity-layout="brutalist"] .id-main { margin-top: 3rem; }
+[data-identity-layout="brutalist"] .id-card {
+  background: #fff !important;
+  border: 3px solid #0a0a0a !important;
+  border-radius: 0 !important;
+  box-shadow: 8px 8px 0 0 #0a0a0a !important;
+  color: #0a0a0a !important;
+}
+[data-identity-layout="brutalist"] .id-card * { color: inherit; }
+[data-identity-layout="brutalist"] .id-card .id-name { text-transform: uppercase; font-weight: 900; letter-spacing: -0.02em; }
+[data-identity-layout="brutalist"] .id-card .id-chip,
+[data-identity-layout="brutalist"] .id-card .id-pill {
+  border-radius: 0 !important;
+  border: 2px solid #0a0a0a !important;
+  background: #fff !important;
+  color: #0a0a0a !important;
+}
+[data-identity-layout="brutalist"] .id-avatar-wrap img,
+[data-identity-layout="brutalist"] .id-avatar-wrap > div {
+  border-radius: 0 !important;
+  border: 3px solid #0a0a0a !important;
+}
+
+/* ── neon ── glow rings and accent highlights */
+[data-identity-layout="neon"] .id-cover {
+  background: radial-gradient(ellipse at center, hsl(var(--primary) / 0.7), transparent 60%) !important;
+}
+[data-identity-layout="neon"] .id-card {
+  border: 1px solid hsl(var(--primary) / 0.5) !important;
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.35), 0 20px 60px -10px hsl(var(--primary) / 0.45) !important;
+}
+[data-identity-layout="neon"] .id-avatar-wrap img,
+[data-identity-layout="neon"] .id-avatar-wrap > div {
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.6), 0 0 40px hsl(var(--primary) / 0.7) !important;
+  ring-color: hsl(var(--primary)) !important;
+}
+[data-identity-layout="neon"] .id-name {
+  text-shadow: 0 0 24px hsl(var(--primary) / 0.65);
+}
+
+/* ── mono ── grayscale with single accent */
+[data-identity-layout="mono"] .id-cover { filter: grayscale(1) contrast(1.05); }
+[data-identity-layout="mono"] .id-card {
+  background: hsl(0 0% 8%) !important;
+  color: hsl(0 0% 96%) !important;
+  border-color: hsl(0 0% 20%) !important;
+}
+[data-identity-layout="mono"] .id-avatar-wrap img { filter: grayscale(1); }
+[data-identity-layout="mono"] .id-card .id-chip,
+[data-identity-layout="mono"] .id-card .id-pill {
+  background: hsl(0 0% 14%) !important;
+  border-color: hsl(0 0% 25%) !important;
+  color: hsl(0 0% 90%) !important;
+}
+
+/* Brand mark bar — always present */
+.id-brandmark {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  padding-top: max(env(safe-area-inset-top), 0.75rem);
+  background: hsl(var(--background) / 0.75);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid hsl(var(--border) / 0.4);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+[data-identity-layout="polaroid"] .id-brandmark,
+[data-identity-layout="brutalist"] .id-brandmark {
+  background: hsl(0 0% 100% / 0.9);
+  color: #0a0a0a;
+  border-color: rgba(0,0,0,0.15);
+}
+[data-identity-layout="terminal"] .id-brandmark {
+  background: rgba(5,5,5,0.85);
+  color: #d1ffd1;
+  border-color: #1f3a1f;
+}
+
+/* Mobile tuning */
+@media (max-width: 640px) {
+  [data-identity-layout="business"] .id-card { aspect-ratio: auto; }
+  [data-identity-layout="editorial"] .id-name { font-size: clamp(2rem, 8vw, 2.75rem); }
+}

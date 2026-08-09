@@ -1,0 +1,17 @@
+# ─────────────────────────────────────────────────────────────────────
+# Masterpanel Netlify build config
+# If Netlify UI uses a base directory, set it there instead of here.
+# ─────────────────────────────────────────────────────────────────────
+[build]
+  command = "cd ../.. && export NODE_OPTIONS=--max-old-space-size=7168 && npm install --legacy-peer-deps --os=linux --libc=glibc && npm run build:masterpanel"
+  publish = "dist/client"
+
+[build.environment]
+  NODE_VERSION           = "22"
+  NPM_FLAGS              = "--legacy-peer-deps"
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SUPABASE_URL,VITE_SUPABASE_PROJECT_ID,SUPABASE_PUBLISHABLE_KEY,SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,SERVICE_ROLE_KEY,NEXT_PUBLIC_COMPANY_URL,NEXT_PUBLIC_STOREFRONT_URL"
+
+[[headers]]
+  for = "/_build/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

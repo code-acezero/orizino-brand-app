@@ -1,0 +1,48 @@
+{
+  "name": "@orizino/shared",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./contexts/*": {
+      "default": "./src/contexts/*.tsx"
+    },
+    "./hooks/*": {
+      "default": "./src/hooks/*.ts"
+    },
+    "./hooks/use-breakpoint": {
+      "default": "./src/hooks/use-breakpoint.tsx"
+    },
+    "./hooks/use-mobile": {
+      "default": "./src/hooks/use-mobile.tsx"
+    },
+    "./lib/*": {
+      "default": "./src/lib/*.ts"
+    },
+    "./lib/brand-image": {
+      "default": "./src/lib/brand-image.tsx"
+    },
+    "./lib/brand-title": {
+      "default": "./src/lib/brand-title.tsx"
+    },
+    "./lib/router-compat": {
+      "default": "./src/lib/router-compat.tsx"
+    },
+    "./lib/cross-app-urls": {
+      "default": "./src/lib/cross-app-urls.ts"
+    }
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "dependencies": {
+    "framer-motion": "^12.40.0",
+    "lucide-react": "^1.17.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.6.0"
+  }
+}

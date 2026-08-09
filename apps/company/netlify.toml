@@ -1,0 +1,8 @@
+[build]
+  command = "cd ../.. && export NODE_OPTIONS=--max-old-space-size=7168 && npm install --legacy-peer-deps --os=linux --libc=glibc && npm run build:company"
+  publish = "dist/client"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS    = "--legacy-peer-deps"
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_PROJECT_ID,VITE_SUPABASE_URL,VITE_SUPABASE_PROJECT_ID"

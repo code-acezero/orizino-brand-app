@@ -1,0 +1,446 @@
+/* ============================================================
+   Obsidian Loaders — shared styles
+   Palette: obsidian #0a0608 · deep red #b00006 · platinum #fefefe
+   ============================================================ */
+
+/* ---------- Fullscreen wrapper ---------- */
+.ldr-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+}
+.ldr-backdrop {
+  background:
+    radial-gradient(120% 80% at 50% 40%, rgba(176, 0, 6, 0.12) 0%, transparent 60%),
+    rgba(6, 4, 6, 0.86);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+.ldr-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.08;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>");
+}
+
+.ldr-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.ldr-halo {
+  position: absolute;
+  inset: -25%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 26, 46, 0.18), transparent 60%);
+  filter: blur(28px);
+  animation: ldr-halo-pulse 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes ldr-halo-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 0.9;  transform: scale(1.06); }
+}
+
+/* ---------- LogoMark — solid variant (snap-together) ---------- */
+.ldr-shape { transform-origin: 89px 89px; }
+
+.ldr-snap-top {
+  animation: ldr-snap-top 2.4s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+.ldr-snap-right {
+  animation: ldr-snap-right 2.4s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+.ldr-snap-red {
+  animation: ldr-snap-red 2.4s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+.ldr-shape-pulse {
+  filter: drop-shadow(0 0 0 transparent);
+  animation:
+    ldr-snap-red 2.4s cubic-bezier(0.34, 1.56, 0.64, 1) infinite,
+    ldr-red-glow 2.4s ease-in-out infinite;
+}
+@keyframes ldr-snap-top {
+  0%, 18%  { transform: translate(-22px, -18px) rotate(-6deg); opacity: 0; }
+  35%      { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  78%, 100%{ transform: translate(0, 0); opacity: 1; }
+}
+@keyframes ldr-snap-right {
+  0%, 28%  { transform: translate(26px, -8px) rotate(8deg); opacity: 0; }
+  48%      { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  78%, 100%{ transform: translate(0, 0); opacity: 1; }
+}
+@keyframes ldr-snap-red {
+  0%, 38%  { transform: translate(-18px, 26px) rotate(-10deg); opacity: 0; }
+  60%      { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  78%, 100%{ transform: translate(0, 0); opacity: 1; }
+}
+@keyframes ldr-red-glow {
+  0%, 55%   { filter: drop-shadow(0 0 0 transparent); }
+  62%       { filter: drop-shadow(0 0 16px rgba(255, 26, 46, 0.85)); }
+  78%, 100% { filter: drop-shadow(0 0 4px rgba(255, 26, 46, 0.35)); }
+}
+.ldr-burst {
+  transform-origin: 89px 89px;
+  animation: ldr-burst 2.4s ease-out infinite;
+}
+@keyframes ldr-burst {
+  0%, 58%  { opacity: 0; transform: scale(0.3); }
+  62%      { opacity: 0.9; transform: scale(1); }
+  72%      { opacity: 0; transform: scale(2.4); }
+  100%     { opacity: 0; }
+}
+
+/* ---------- Stroke draw variant ---------- */
+.ldr-stroke-path {
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: var(--ldr-len, 320);
+  stroke-dashoffset: var(--ldr-len, 320);
+  animation: ldr-draw 2.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes ldr-draw {
+  0%       { stroke-dashoffset: var(--ldr-len, 320); opacity: 1; }
+  55%      { stroke-dashoffset: 0; opacity: 1; }
+  78%      { stroke-dashoffset: 0; opacity: 0; }
+  100%     { stroke-dashoffset: var(--ldr-len, 320); opacity: 0; }
+}
+.ldr-stroke-fill {
+  opacity: 0;
+  animation: ldr-fillin 2.8s ease-in-out infinite;
+}
+@keyframes ldr-fillin {
+  0%, 50%  { opacity: 0; }
+  62%, 78% { opacity: 1; }
+  100%     { opacity: 0; }
+}
+
+/* ---------- Shimmer variant ---------- */
+.ldr-shimmer-rect {
+  animation: ldr-shimmer 2.4s ease-in-out infinite;
+}
+@keyframes ldr-shimmer {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(280px); }
+}
+
+/* ---------- Liquid fill (rising water inside logo) ---------- */
+.ldr-liquid-level {
+  animation: ldr-liquid-fill 4.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  transform: translateY(140px);
+  transform-box: fill-box;
+}
+.ldr-liquid-wave-a {
+  animation: ldr-liquid-slide-a 2.6s linear infinite;
+}
+.ldr-liquid-wave-b {
+  animation: ldr-liquid-slide-b 3.4s linear infinite;
+}
+@keyframes ldr-liquid-fill {
+  0%   { transform: translateY(140px); }
+  45%  { transform: translateY(-5px); }
+  55%  { transform: translateY(-5px); }
+  100% { transform: translateY(140px); }
+}
+@keyframes ldr-liquid-slide-a {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(200px); }
+}
+@keyframes ldr-liquid-slide-b {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-200px); }
+}
+.ldr-liquid-drop {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+}
+.ldr-liquid-drop-1 { animation: ldr-liquid-drop 2.2s ease-in infinite; animation-delay: 0.2s; }
+.ldr-liquid-drop-2 { animation: ldr-liquid-drop 2.6s ease-in infinite; animation-delay: 0.9s; }
+.ldr-liquid-drop-3 { animation: ldr-liquid-drop 2.4s ease-in infinite; animation-delay: 1.4s; }
+@keyframes ldr-liquid-drop {
+  0%   { transform: translateY(-14px) scale(0.6); opacity: 0; }
+  25%  { transform: translateY(-10px) scale(1);   opacity: 1; }
+  85%  { transform: translateY(2px)   scale(0.9); opacity: 0.9; }
+  100% { transform: translateY(6px)   scale(0.4); opacity: 0; }
+}
+
+/* ---------- Legacy wave (kept for compatibility) ---------- */
+.ldr-wave {
+  animation: ldr-wave-slide 3.2s linear infinite, ldr-wave-rise 4s ease-in-out infinite alternate;
+}
+.ldr-wave-2 {
+  animation: ldr-wave-slide 4s linear infinite reverse, ldr-wave-rise 4.6s ease-in-out infinite alternate;
+}
+@keyframes ldr-wave-slide {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(180px); }
+}
+@keyframes ldr-wave-rise {
+  0%   { transform: translateY(160px); }
+  100% { transform: translateY(40px); }
+}
+
+/* ---------- Section loader (lite) ---------- */
+.ldr-root {
+  display: inline-grid;
+  place-items: center;
+}
+.ldr-lite-ring     { animation: ldr-spin 1.6s linear infinite; }
+.ldr-lite-ring-rev { animation: ldr-spin 2.2s linear infinite reverse; }
+.ldr-lite-core     { animation: ldr-pulse 1.4s ease-in-out infinite; }
+@keyframes ldr-spin  { to { transform: rotate(360deg); } }
+@keyframes ldr-pulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.8; }
+  50%      { transform: scale(1.08); opacity: 1; }
+}
+
+/* ---------- Splash bubble — REAL water bubble (CSS sphere) ---------- */
+.ldr-splash-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+}
+.ldr-bubble-main {
+  animation: ldr-bubble-float 5s ease-in-out infinite;
+}
+@keyframes ldr-bubble-float {
+  0%, 100% { transform: translateY(0) rotate(-0.5deg); }
+  50%      { transform: translateY(-10px) rotate(0.5deg); }
+}
+
+/* The glassy translucent sphere — true soap-bubble feel */
+.ldr-real-bubble {
+  position: relative;
+  border-radius: 50%;
+  /* Almost-clear body with the faintest tint */
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 60%),
+    radial-gradient(circle at 50% 55%, rgba(255, 90, 110, 0.04) 0%, rgba(255, 90, 110, 0) 60%);
+  /* Soft inset highlights only — no hard rim, no specular plate */
+  box-shadow:
+    inset 0 -28px 40px -16px rgba(255, 220, 230, 0.45),     /* bottom caustic */
+    inset  18px -8px 28px -18px rgba(180, 220, 255, 0.18),  /* refracted side light */
+    inset -18px  8px 28px -18px rgba(255, 180, 200, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.10),              /* whisper-thin rim */
+    0 0 90px 8px rgba(255, 26, 46, 0.20),                   /* outer red glow */
+    0 32px 60px -22px rgba(0, 0, 0, 0.55);                  /* ground shadow */
+  backdrop-filter: blur(1px);
+  overflow: hidden;
+  isolation: isolate;
+}
+.ldr-bubble-wobble {
+  animation: ldr-wobble 5s ease-in-out infinite;
+}
+@keyframes ldr-wobble {
+  0%, 100% { border-radius: 50%; transform: scale(1, 1); }
+  25%      { border-radius: 52% 48% 49% 51% / 49% 51% 47% 53%; transform: scale(1.012, 0.988); }
+  50%      { border-radius: 48% 52% 53% 47% / 53% 47% 51% 49%; transform: scale(0.992, 1.008); }
+  75%      { border-radius: 51% 49% 47% 53% / 48% 52% 53% 47%; transform: scale(1.008, 0.992); }
+}
+
+/* Bottom refractive caustic — bright crescent of bent light */
+.ldr-bubble-caustic {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 3%;
+  height: 46%;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 50% 92%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 230, 235, 0.18) 35%, rgba(255, 230, 235, 0) 65%);
+  filter: blur(2px);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* Red bloom seen through the glass */
+.ldr-bubble-bloom {
+  position: absolute;
+  inset: 20% 16% 16% 20%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 60% 70%, rgba(255, 26, 46, 0.28) 0%, rgba(176, 0, 6, 0.10) 45%, transparent 70%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+/* Iridescent rim — thin shimmering edge that drifts around */
+.ldr-bubble-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    conic-gradient(
+      from 180deg,
+      rgba(255, 180, 200, 0) 0%,
+      rgba(180, 220, 255, 0.35) 10%,
+      rgba(255, 200, 220, 0.30) 22%,
+      rgba(255, 255, 255, 0) 38%,
+      rgba(255, 255, 255, 0) 58%,
+      rgba(200, 230, 255, 0.28) 72%,
+      rgba(255, 200, 220, 0.32) 86%,
+      rgba(255, 180, 200, 0) 100%
+    );
+  -webkit-mask:
+    radial-gradient(circle, transparent 66%, #000 68%, #000 73%, transparent 75%);
+          mask:
+    radial-gradient(circle, transparent 66%, #000 68%, #000 73%, transparent 75%);
+  opacity: 0.7;
+  pointer-events: none;
+  animation: ldr-rim-spin 18s linear infinite;
+  mix-blend-mode: screen;
+}
+@keyframes ldr-rim-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Soft crescent highlight along the upper rim — true bubble light, not a stone glare */
+.ldr-bubble-specular {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse 60% 18% at 40% 8%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 70%);
+  filter: blur(2px);
+  opacity: 0.7;
+  pointer-events: none;
+  animation: ldr-spec-drift 7s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+@keyframes ldr-spec-drift {
+  0%, 100% { transform: translate(0, 0); opacity: 0.65; }
+  50%      { transform: translate(3px, 1px); opacity: 0.55; }
+}
+
+/* Tiny point highlight for that wet pinpoint */
+.ldr-bubble-specular-mini {
+  position: absolute;
+  top: 16%;
+  left: 26%;
+  width: 5%;
+  height: 5%;
+  background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%);
+  border-radius: 50%;
+  filter: blur(0.5px);
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.ldr-mini-bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.15) 60%, transparent 80%);
+  box-shadow: inset 0 0 4px rgba(255, 26, 46, 0.25);
+  opacity: 0;
+  animation: ldr-bubble-rise 6s ease-in infinite;
+  pointer-events: none;
+}
+@keyframes ldr-bubble-rise {
+  0%   { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  15%  { opacity: 0.9; }
+  85%  { opacity: 0.6; }
+  100% { transform: translate(var(--drift, 0), -260px) scale(1); opacity: 0; }
+}
+
+/* ---------- Cloud loader ---------- */
+.ldr-cloud-puff-group {
+  transform-origin: center;
+  animation: ldr-cloud-float 5s ease-in-out infinite;
+}
+@keyframes ldr-cloud-float {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(0, -3px); }
+}
+
+.ldr-cloud-puff {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ldr-cloud-puff 4s ease-in-out infinite;
+}
+.ldr-cloud-puff-1 { animation-delay: 0.0s; }
+.ldr-cloud-puff-2 { animation-delay: 0.3s; }
+.ldr-cloud-puff-3 { animation-delay: 0.6s; }
+.ldr-cloud-puff-4 { animation-delay: 0.2s; }
+.ldr-cloud-puff-5 { animation-delay: 0.5s; }
+.ldr-cloud-puff-6 { animation-delay: 0.8s; }
+.ldr-cloud-puff-7 { animation-delay: 0.4s; }
+.ldr-cloud-puff-8 { animation-delay: 0.7s; }
+.ldr-cloud-puff-9 { animation-delay: 1.0s; }
+@keyframes ldr-cloud-puff {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+
+.ldr-cloud-wisp { transform-box: fill-box; }
+.ldr-cloud-wisp-a { animation: ldr-cloud-wisp-a 7s linear infinite; }
+.ldr-cloud-wisp-b { animation: ldr-cloud-wisp-b 8s linear infinite; }
+@keyframes ldr-cloud-wisp-a {
+  0%   { transform: translateX(-30px); opacity: 0; }
+  15%  { opacity: 0.55; }
+  85%  { opacity: 0.55; }
+  100% { transform: translateX(50px); opacity: 0; }
+}
+@keyframes ldr-cloud-wisp-b {
+  0%   { transform: translateX(30px); opacity: 0; }
+  15%  { opacity: 0.4; }
+  85%  { opacity: 0.4; }
+  100% { transform: translateX(-50px); opacity: 0; }
+}
+
+.ldr-cloud-rain {
+  transform-box: fill-box;
+  transform-origin: center top;
+  opacity: 0;
+  animation: ldr-cloud-rain 1.6s ease-in infinite;
+}
+.ldr-cloud-rain-1 { animation-delay: 0.0s; }
+.ldr-cloud-rain-2 { animation-delay: 0.4s; }
+.ldr-cloud-rain-3 { animation-delay: 0.8s; }
+.ldr-cloud-rain-4 { animation-delay: 1.2s; }
+@keyframes ldr-cloud-rain {
+  0%   { transform: translateY(-4px) scaleY(0.4); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(28px) scaleY(1); opacity: 0; }
+}
+
+/* ---------- Enter / Exit transitions ---------- */
+.ldr-anim {
+  transform-origin: center;
+  will-change: transform, opacity, filter;
+}
+.ldr-anim[data-state="enter"] {
+  animation: ldr-anim-enter 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ldr-anim[data-state="exit"] {
+  animation: ldr-anim-exit 360ms cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+@keyframes ldr-anim-enter {
+  from { opacity: 0; transform: scale(0.94); filter: blur(6px); }
+  to   { opacity: 1; transform: scale(1);    filter: blur(0); }
+}
+@keyframes ldr-anim-exit {
+  from { opacity: 1; transform: scale(1);    filter: blur(0); }
+  to   { opacity: 0; transform: scale(1.06); filter: blur(8px); }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .ldr-snap-top, .ldr-snap-right, .ldr-snap-red, .ldr-shape-pulse,
+  .ldr-burst, .ldr-wave, .ldr-wave-2, .ldr-stroke-path, .ldr-stroke-fill,
+  .ldr-shimmer-rect, .ldr-lite-ring, .ldr-lite-ring-rev, .ldr-lite-core,
+  .ldr-liquid-level, .ldr-liquid-wave-a, .ldr-liquid-wave-b, .ldr-liquid-drop,
+  .ldr-bubble-main, .ldr-bubble-wobble, .ldr-bubble-rim, .ldr-bubble-specular,
+  .ldr-mini-bubble, .ldr-halo, .ldr-anim,
+  .ldr-cloud-puff-group, .ldr-cloud-puff, .ldr-cloud-wisp, .ldr-cloud-rain {
+    animation: none !important;
+  }
+}

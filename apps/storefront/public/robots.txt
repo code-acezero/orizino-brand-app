@@ -1,0 +1,17 @@
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /profile
+Disallow: /settings
+Disallow: /checkout
+Disallow: /orders
+Disallow: /reset-password
+Disallow: /wishlist
+
+Sitemap: /sitemap.xml

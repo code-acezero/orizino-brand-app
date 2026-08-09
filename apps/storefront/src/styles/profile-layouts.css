@@ -1,0 +1,130 @@
+/* Profile / Settings appearance system.
+ * A single root wrapper sets [data-profile-layout="..."] and CSS variables
+ * --profile-font-heading / --profile-font-body. Each variant tunes container
+ * width, header treatment, surface style and accent shapes. */
+
+[data-profile-layout] {
+  font-family: var(--profile-font-body, inherit);
+}
+[data-profile-layout] h1,
+[data-profile-layout] h2,
+[data-profile-layout] h3,
+[data-profile-layout] .font-display {
+  font-family: var(--profile-font-heading, inherit);
+  letter-spacing: -0.01em;
+}
+
+/* ---- All layout variants: NO max-width override — controlled by Tailwind in ProfilePage.tsx ---- */
+[data-profile-layout="magazine"] h1 { font-size: clamp(2.25rem, 4vw + 1rem, 3.75rem); line-height: 1.05; }
+[data-profile-layout="magazine"] .glass-strong,
+[data-profile-layout="magazine"] .glass { background: transparent; border-color: hsl(var(--border) / 0.5); backdrop-filter: none; box-shadow: none; }
+
+/* ---- bento-grid ---- */
+[data-profile-layout="bento-grid"] .glass,
+[data-profile-layout="bento-grid"] .glass-strong { border-radius: 1.75rem; }
+[data-profile-layout="bento-grid"] .grid { gap: 0.75rem; }
+
+/* ---- asymmetric ---- */
+[data-profile-layout="asymmetric"] h1 { text-align: left; }
+
+/* ---- sidebar ---- */
+[data-profile-layout="sidebar"] main { padding-left: clamp(1rem, 4vw, 3rem); }
+
+/* ---- split-screen ---- */
+[data-profile-layout="split-screen"] .absolute.inset-x-0.top-0 { height: 22rem; }
+
+/* ---- minimal ---- */
+[data-profile-layout="minimal"] .glass,
+[data-profile-layout="minimal"] .glass-strong {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: 1px solid hsl(var(--border) / 0.6) !important;
+}
+[data-profile-layout="minimal"] .shadow-2xl,
+[data-profile-layout="minimal"] .shadow-lg { box-shadow: none !important; }
+[data-profile-layout="minimal"] .bg-gradient-primary { background: hsl(var(--primary)) !important; }
+[data-profile-layout="minimal"] .absolute.inset-x-0.top-0 { opacity: 0.35; }
+
+/* ---- card-grid ---- */
+[data-profile-layout="card-grid"] .glass,
+[data-profile-layout="card-grid"] .glass-strong { border-radius: 1rem; }
+
+/* ---- editorial ---- */
+[data-profile-layout="editorial"] h1 { font-size: clamp(2.5rem, 5vw + 1rem, 4.5rem); line-height: 1; letter-spacing: -0.03em; }
+[data-profile-layout="editorial"] h2 { font-size: 1.875rem; letter-spacing: -0.02em; }
+
+/* ----- Density — padding-top/bottom are intentionally NOT overridden here;
+   they are controlled by Tailwind pt-* classes in ProfilePage.tsx to avoid
+   fighting cascade specificity issues. Only card padding & spacing tuned. ----- */
+[data-profile-density="compact"] .glass,
+[data-profile-density="compact"] .glass-strong { padding: 0.875rem !important; }
+[data-profile-density="compact"] .space-y-4 > * + * { margin-top: 0.5rem; }
+[data-profile-density="compact"] .space-y-6 > * + * { margin-top: 0.75rem; }
+
+[data-profile-density="spacious"] .glass,
+[data-profile-density="spacious"] .glass-strong { padding: 1.75rem !important; }
+[data-profile-density="spacious"] .space-y-4 > * + * { margin-top: 1.25rem; }
+[data-profile-density="spacious"] .space-y-6 > * + * { margin-top: 2rem; }
+
+/* ----- Rounded ----- */
+[data-profile-rounded="sm"] .rounded-3xl,
+[data-profile-rounded="sm"] .rounded-2xl { border-radius: 0.5rem !important; }
+[data-profile-rounded="md"] .rounded-3xl,
+[data-profile-rounded="md"] .rounded-2xl { border-radius: 0.75rem !important; }
+[data-profile-rounded="lg"] .rounded-3xl,
+[data-profile-rounded="lg"] .rounded-2xl { border-radius: 1rem !important; }
+[data-profile-rounded="xl"] .rounded-3xl,
+[data-profile-rounded="xl"] .rounded-2xl { border-radius: 1.25rem !important; }
+/* "2xl" = default, no override */
+
+/* ----- Mobile responsive layout tuning ----- */
+@media (max-width: 640px) {
+  [data-profile-layout] main { padding-left: 1rem; padding-right: 1rem; }
+  [data-profile-layout] h1 { font-size: clamp(1.75rem, 6vw, 2.25rem); line-height: 1.1; }
+  [data-profile-layout="editorial"] h1,
+  [data-profile-layout="magazine"] h1 { font-size: clamp(2rem, 8vw, 2.75rem); }
+  [data-profile-layout="sidebar"] main,
+  [data-profile-layout="asymmetric"] main { padding-left: 1rem; }
+  [data-profile-layout="bento-grid"] .grid { gap: 0.5rem; }
+  [data-profile-layout="split-screen"] .absolute.inset-x-0.top-0 { height: 14rem; }
+  /* Larger tap targets on mobile */
+  [data-profile-layout] button,
+  [data-profile-layout] a[role="button"] { min-height: 44px; }
+}
+
+/* ----- Mobile nav style (applies to TabsList inside Settings) ----- */
+@media (max-width: 640px) {
+  [data-profile-mobile-nav="segmented"] [role="tablist"] {
+    background: hsl(var(--muted) / 0.6);
+    padding: 4px;
+    border-radius: 999px;
+    gap: 2px;
+  }
+  [data-profile-mobile-nav="segmented"] [role="tablist"] [role="tab"] {
+    border-radius: 999px;
+  }
+  [data-profile-mobile-nav="pill"] [role="tablist"] {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 0.5rem;
+  }
+  [data-profile-mobile-nav="pill"] [role="tablist"]::-webkit-scrollbar { display: none; }
+  [data-profile-mobile-nav="pill"] [role="tablist"] [role="tab"] {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    padding: 0.5rem 1rem;
+    border: 1px solid hsl(var(--border));
+  }
+  [data-profile-mobile-nav="sheet"] [role="tablist"] {
+    position: sticky;
+    bottom: 0;
+    background: hsl(var(--background) / 0.85);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid hsl(var(--border));
+    padding: 0.5rem;
+    z-index: 30;
+  }
+}
+/* code:4ce0 */

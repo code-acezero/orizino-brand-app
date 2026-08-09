@@ -1,0 +1,114 @@
+"use client";
+import * as React from "react";
+
+export type LogoMarkVariant = "solid" | "outline" | "clip";
+
+export interface LogoMarkProps {
+  size?: number;
+  variant?: LogoMarkVariant;
+  uid?: string;
+  showShimmer?: boolean;
+  className?: string;
+  /** Color of the mark. Defaults to white. */
+  color?: string;
+}
+
+/**
+ * Orizino brand mark — three flowing swoosh strokes.
+ * viewBox: 0 0 390.08 386.6
+ * Original SVG uses fill:#fff. Color prop overrides.
+ */
+const PATH_A =
+  "M159.4,300.18c-42.48-5.86-83.72-13.44-124.86-24.27L0,266.03c2.08-.16,3.62.29,5.74.62,32.42,5.02,64.58,8.56,97.45,10.31,16.93.9,32.86.79,49.59-.25,15.42-.95,29.36-4.65,43.68-10.44,31.29-12.64,60.68-27.6,90.9-43.75l-63.47,55.02-111.91,97.11-14.3,11.95,67.7-69.91,6.46-7.81c1.79-2.16.23-5.44-2.23-6.29-3.28-1.14-6.1-1.84-10.21-2.41Z";
+const PATH_B =
+  "M162.86,215.76c-4.44-10.59-8.9-20.35-11.31-31.35-1.22-5.6.66-11.95,2.25-17.49,6.22-21.67,15.6-41.75,26.83-61.4,19.44-34.03,42.53-65.35,68.73-94.33l11.08-11.19c-21.8,30.39-41.05,61.59-56.65,95.5-15.7,34.15-29.39,70.89-29.38,108.74,0,17.44,3.87,33.3,8.07,50.49-8.19-12.43-13.87-25.25-19.62-38.97Z";
+const PATH_C =
+  "M241.78,152.43c11.45.83,22.18,1.27,33.07,4.1,5.55,1.44,10.36,5.99,14.58,9.91,16.52,15.35,30.18,32.79,42.63,51.7,21.55,32.73,39.05,67.49,53.04,103.96l4.97,14.94c-17.25-33.18-36.36-64.47-59.55-93.72-23.36-29.45-49.93-58.28-83.69-75.38-15.55-7.88-31.45-11.61-48.68-15.64,14.79-1.68,28.79-.94,43.63.13Z";
+
+const LogoMark: React.FC<LogoMarkProps> = ({
+  size = 220,
+  variant = "solid",
+  uid = "ldr",
+  showShimmer = false,
+  className = "",
+  color = "#ffffff",
+}) => {
+  const idShimmer = `${uid}-grad-shimmer`;
+  const idClip = `${uid}-clip-all`;
+
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 390.08 386.6"
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id={idShimmer} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
+          <stop offset="45%" stopColor="#ffffff" stopOpacity="0" />
+          <stop offset="50%" stopColor="#ffffff" stopOpacity="0.85" />
+          <stop offset="55%" stopColor="#ffffff" stopOpacity="0" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </linearGradient>
+        <clipPath id={idClip}>
+          <path d={PATH_A} />
+          <path d={PATH_B} />
+          <path d={PATH_C} />
+        </clipPath>
+      </defs>
+
+      {variant === "solid" && (
+        <g fill={color}>
+          <path d={PATH_A} className="ldr-shape ldr-snap-top" />
+          <path d={PATH_B} className="ldr-shape ldr-snap-right" />
+          <path
+            d={PATH_C}
+            className={showShimmer ? "ldr-shape ldr-snap-red" : "ldr-shape ldr-shape-pulse"}
+          />
+        </g>
+      )}
+
+      {variant === "outline" && (
+        <g>
+          {[PATH_A, PATH_B, PATH_C].map((d, i) => (
+            <path
+              key={`s-${i}`}
+              d={d}
+              fill="none"
+              stroke={color}
+              className="ldr-stroke-path"
+              style={{ "--ldr-len": 800, animationDelay: `${i * 0.12}s` } as React.CSSProperties}
+            />
+          ))}
+          {[PATH_A, PATH_B, PATH_C].map((d, i) => (
+            <path
+              key={`f-${i}`}
+              d={d}
+              fill={color}
+              className="ldr-stroke-fill"
+              style={{ animationDelay: `${i * 0.12}s` }}
+            />
+          ))}
+        </g>
+      )}
+
+      {showShimmer && (
+        <g clipPath={`url(#${idClip})`}>
+          <rect
+            x="-200"
+            y="-50"
+            width="140"
+            height="500"
+            fill={`url(#${idShimmer})`}
+            className="ldr-shimmer-rect"
+          />
+        </g>
+      )}
+    </svg>
+  );
+};
+
+export default LogoMark;

@@ -1,0 +1,131 @@
+/* Storefront appearance system.
+ * Wrapper sets [data-storefront-layout="..."] and CSS variables
+ * --storefront-font-heading / --storefront-font-body. Each variant tunes
+ * container width, hero treatment, surface style, and density.
+ * Scoped to the storefront layout shell so admin pages are unaffected. */
+
+[data-storefront-layout] {
+  font-family: var(--storefront-font-body, var(--font-body, inherit));
+}
+[data-storefront-layout] h1,
+[data-storefront-layout] h2,
+[data-storefront-layout] h3,
+[data-storefront-layout] .font-display,
+[data-storefront-layout] .heading-editorial,
+[data-storefront-layout] .font-editorial {
+  font-family: var(--storefront-font-heading, var(--font-title, var(--font-display, inherit)));
+  letter-spacing: -0.01em;
+}
+
+/* ---- hero-grid (default) ---- */
+[data-storefront-layout="hero-grid"] main > section,
+[data-storefront-layout="hero-grid"] main > div { max-width: 80rem; margin-left: auto; margin-right: auto; }
+
+/* ---- magazine ---- */
+[data-storefront-layout="magazine"] main { max-width: 56rem; margin-left: auto; margin-right: auto; }
+[data-storefront-layout="magazine"] h1 { font-size: clamp(2.5rem, 5vw + 1rem, 4.25rem); line-height: 1.05; }
+[data-storefront-layout="magazine"] .glass,
+[data-storefront-layout="magazine"] .glass-strong { background: transparent; backdrop-filter: none; box-shadow: none; border-color: hsl(var(--border) / 0.5); }
+
+/* ---- bento ---- */
+[data-storefront-layout="bento"] .rounded-3xl,
+[data-storefront-layout="bento"] .rounded-2xl { border-radius: 1.75rem; }
+[data-storefront-layout="bento"] .grid { gap: 0.75rem; }
+
+/* ---- split-screen ---- */
+[data-storefront-layout="split-screen"] main > section:first-child { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center; }
+
+/* ---- full-bleed ---- */
+[data-storefront-layout="full-bleed"] main { max-width: none; padding-left: 0; padding-right: 0; }
+[data-storefront-layout="full-bleed"] main > section { padding-left: clamp(1rem, 4vw, 4rem); padding-right: clamp(1rem, 4vw, 4rem); }
+
+/* ---- minimal ---- */
+[data-storefront-layout="minimal"] .glass,
+[data-storefront-layout="minimal"] .glass-strong {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: 1px solid hsl(var(--border) / 0.6) !important;
+}
+[data-storefront-layout="minimal"] .shadow-2xl,
+[data-storefront-layout="minimal"] .shadow-xl,
+[data-storefront-layout="minimal"] .shadow-lg { box-shadow: none !important; }
+[data-storefront-layout="minimal"] .bg-gradient-primary,
+[data-storefront-layout="minimal"] .bg-gradient-to-br,
+[data-storefront-layout="minimal"] .bg-gradient-to-r { background: hsl(var(--background)) !important; }
+
+/* ---- editorial ---- */
+[data-storefront-layout="editorial"] main { max-width: 72rem; margin-left: auto; margin-right: auto; }
+[data-storefront-layout="editorial"] h1 { font-size: clamp(2.75rem, 6vw + 1rem, 5rem); line-height: 1; letter-spacing: -0.03em; }
+[data-storefront-layout="editorial"] h2 { font-size: 2rem; letter-spacing: -0.02em; }
+[data-storefront-layout="editorial"] main > section { padding-top: 3rem; padding-bottom: 3rem; }
+
+/* ---- compact-grid ---- */
+[data-storefront-layout="compact-grid"] .grid { gap: 0.5rem; }
+[data-storefront-layout="compact-grid"] .rounded-3xl,
+[data-storefront-layout="compact-grid"] .rounded-2xl { border-radius: 0.75rem; }
+
+/* ---- boutique ---- */
+[data-storefront-layout="boutique"] main { max-width: 44rem; margin-left: auto; margin-right: auto; text-align: center; }
+[data-storefront-layout="boutique"] h1 { font-size: clamp(2.25rem, 4vw + 1rem, 3.5rem); }
+
+/* ---- showcase ---- */
+[data-storefront-layout="showcase"] main > section:first-child { padding-top: 0; }
+
+/* ----- Density ----- */
+[data-storefront-density="compact"] main > section,
+[data-storefront-density="compact"] main > div { padding-top: 1rem; padding-bottom: 1rem; }
+[data-storefront-density="compact"] .space-y-6 > * + * { margin-top: 0.75rem; }
+[data-storefront-density="compact"] .space-y-8 > * + * { margin-top: 1rem; }
+
+[data-storefront-density="spacious"] main > section,
+[data-storefront-density="spacious"] main > div { padding-top: 2.5rem; padding-bottom: 3rem; }
+[data-storefront-density="spacious"] .space-y-6 > * + * { margin-top: 2rem; }
+[data-storefront-density="spacious"] .space-y-8 > * + * { margin-top: 2.5rem; }
+
+/* ----- Rounded ----- */
+[data-storefront-rounded="sm"] .rounded-3xl,
+[data-storefront-rounded="sm"] .rounded-2xl { border-radius: 0.5rem !important; }
+[data-storefront-rounded="md"] .rounded-3xl,
+[data-storefront-rounded="md"] .rounded-2xl { border-radius: 0.75rem !important; }
+[data-storefront-rounded="lg"] .rounded-3xl,
+[data-storefront-rounded="lg"] .rounded-2xl { border-radius: 1rem !important; }
+[data-storefront-rounded="xl"] .rounded-3xl,
+[data-storefront-rounded="xl"] .rounded-2xl { border-radius: 1.25rem !important; }
+
+/* ----- Mobile responsive layout tuning ----- */
+@media (max-width: 640px) {
+  [data-storefront-layout] main > section { padding-left: 1rem; padding-right: 1rem; }
+  [data-storefront-layout] h1 { font-size: clamp(1.875rem, 7vw, 2.5rem); line-height: 1.1; }
+  [data-storefront-layout="editorial"] h1,
+  [data-storefront-layout="magazine"] h1 { font-size: clamp(2.125rem, 9vw, 3rem); }
+  [data-storefront-layout="split-screen"] main > section:first-child { grid-template-columns: 1fr; gap: 1rem; }
+  [data-storefront-layout="bento"] .grid { gap: 0.5rem; }
+  [data-storefront-layout="boutique"] main { padding-left: 1rem; padding-right: 1rem; }
+  [data-storefront-layout] button,
+  [data-storefront-layout] a[role="button"] { min-height: 44px; }
+}
+
+/* ----- Mobile nav style (applies to bottom nav / segmented tabs in storefront) ----- */
+@media (max-width: 640px) {
+  [data-storefront-mobile-nav="segmented"] [role="tablist"] {
+    background: hsl(var(--muted) / 0.6);
+    padding: 4px;
+    border-radius: 999px;
+    gap: 2px;
+  }
+  [data-storefront-mobile-nav="segmented"] [role="tablist"] [role="tab"] { border-radius: 999px; }
+  [data-storefront-mobile-nav="pill"] [role="tablist"] {
+    display: flex; overflow-x: auto; scrollbar-width: none; gap: 0.5rem;
+  }
+  [data-storefront-mobile-nav="pill"] [role="tablist"]::-webkit-scrollbar { display: none; }
+  [data-storefront-mobile-nav="pill"] [role="tablist"] [role="tab"] {
+    flex: 0 0 auto; border-radius: 999px; padding: 0.5rem 1rem; border: 1px solid hsl(var(--border));
+  }
+  [data-storefront-mobile-nav="sheet"] [data-bottom-nav] {
+    background: hsl(var(--background) / 0.85) !important;
+    backdrop-filter: blur(14px);
+    border-top: 1px solid hsl(var(--border));
+  }
+}
+/* code:4ce0 */

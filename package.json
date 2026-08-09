@@ -1,0 +1,27 @@
+{
+  "name": "orizino-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:company": "npm run dev --workspace=apps/company",
+    "dev:storefront": "npm run dev --workspace=apps/storefront",
+    "dev:masterpanel": "npm run dev --workspace=apps/masterpanel",
+    "dev:orderops": "npm run dev --workspace=apps/orderops",
+    "build:company": "npm run build --workspace=apps/company",
+    "build:storefront": "npm run build --workspace=apps/storefront",
+    "build:masterpanel": "npm run build --workspace=apps/masterpanel",
+    "build:orderops": "npm run build --workspace=apps/orderops",
+    "build": "npm run build:company && npm run build:storefront && npm run build:masterpanel && npm run build:orderops"
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "postcss": "^8.5.26"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
+}

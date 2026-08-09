@@ -1,0 +1,24 @@
+# ─────────────────────────────────────────────────────────────────────
+# Order Ops Netlify build config — a plain static SPA (no SSR), so this
+# publishes straight from `dist/`. HashRouter means no SPA-fallback
+# redirect rule is needed for client-side routes to work on refresh.
+# If Netlify UI uses a base directory, set it there instead of here.
+# ─────────────────────────────────────────────────────────────────────
+[build]
+  command = "cd ../.. && npm install --legacy-peer-deps --os=linux --libc=glibc && npm run build:orderops"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION           = "22"
+  NPM_FLAGS              = "--legacy-peer-deps"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_PROJECT_ID,VITE_SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_URL"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
