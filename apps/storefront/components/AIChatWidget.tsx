@@ -1392,7 +1392,7 @@ const AIChatWidget: React.FC = () => {
                       className={`absolute top-1/2 -translate-y-1/2 ${launcherPos.edge === "left" ? "left-[calc(100%+8px)]" : "right-[calc(100%+8px)]"} pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-300 hidden sm:block`}
                     >
                       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/95 backdrop-blur-xl border border-white/10 shadow-lg whitespace-nowrap">
-                        <Sparkles className="w-3 h-3 text-primary" />
+                        <MessageSquare className="w-3 h-3 text-cherry" />
                         <span className="text-[11px] font-medium text-foreground">{fabHoverLabel}</span>
                       </div>
                     </div>
