@@ -5,7 +5,7 @@ import {
   Bot, Send, User, Headphones, ArrowLeft, Phone, PhoneOff, Mic, MicOff,
   MessageSquare, History, BellRing, BellOff, Volume2, Speaker, Search,
   HelpCircle, ShieldCheck, Truck, RefreshCw, FileText, ChevronRight,
-  Zap, LifeBuoy, PackageCheck, AlertCircle, Sparkles
+  Zap, LifeBuoy, PackageCheck, AlertCircle, Sparkles, Clock
 } from "lucide-react";
 import { Link } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,9 +30,9 @@ interface Msg {
 const FAQ_CATEGORIES = [
   {
     id: "orders",
-    title: "Orders & Delivery",
+    title: "Orders & Shipping",
     icon: Truck,
-    description: "Shipping timelines, order tracking & international options.",
+    description: "Delivery timelines, order tracking & shipping.",
     faqs: [
       {
         q: "How long does shipping take?",
@@ -50,7 +50,7 @@ const FAQ_CATEGORIES = [
   },
   {
     id: "returns",
-    title: "Returns & Exchange",
+    title: "Returns & Exchanges",
     icon: RefreshCw,
     description: "7-day easy returns & size exchange policy.",
     faqs: [
@@ -70,7 +70,7 @@ const FAQ_CATEGORIES = [
   },
   {
     id: "sizing",
-    title: "Sizing & Fabric",
+    title: "Sizing & Fabric Guide",
     icon: HelpCircle,
     description: "European drop shoulder fit & cotton GSM density.",
     faqs: [
@@ -86,7 +86,7 @@ const FAQ_CATEGORIES = [
   },
   {
     id: "payments",
-    title: "Payment Security",
+    title: "Payments & Security",
     icon: ShieldCheck,
     description: "bKash, Nagad, Cards & 256-bit SSL encryption.",
     faqs: [
@@ -170,12 +170,12 @@ const ActiveCallBar: React.FC<{
       initial={{ y: -10, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: -10, opacity: 0 }}
-      className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-foreground"
+      className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-5 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-foreground"
     >
       <div className="flex items-center gap-2.5">
         <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
         <div>
-          <h4 className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Voice Call Connected</h4>
+          <h4 className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Live Voice Call Active</h4>
           <p className="text-[11px] font-mono text-muted-foreground">{fmt(duration)}</p>
         </div>
       </div>
@@ -195,7 +195,7 @@ const ActiveCallBar: React.FC<{
 };
 
 const SupportPage: React.FC = () => {
-  useSeoMeta("support", "Customer Support | Orizino");
+  useSeoMeta("support", "Customer Support & Care | Orizino");
   const { user } = useAuth();
   const { t } = useLanguage();
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -518,7 +518,7 @@ const SupportPage: React.FC = () => {
       toast({ title: "Sign in required", description: "Please sign in to request human support.", variant: "destructive" });
       return;
     }
-    toast({ title: "Escalating Session", description: "Connecting your chat with a human specialist." });
+    toast({ title: "Connecting Live Agent", description: "Escalating your session to a support specialist." });
     await sendMessage("I would like to speak with a human support specialist.");
   };
 
@@ -527,11 +527,38 @@ const SupportPage: React.FC = () => {
       <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
       <IncomingCallOverlay visible={incomingCall} onAccept={acceptCall} onReject={rejectCall} />
 
-      {/* Main Full Width Wrapper — Matches 100% Inline with Footer (w-full px-4 sm:px-6 lg:px-8 xl:px-10) */}
-      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 space-y-6 sm:space-y-8">
+      {/* Main Full-Width Wrapper — Matches 100% Inline with Footer (w-full px-4 sm:px-6 lg:px-8 xl:px-10) */}
+      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-8 space-y-5 sm:space-y-6">
 
-        {/* Minimal Clean Header Strip */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-5 sm:pb-6">
+        {/* ── MOBILE HEADER (sm:hidden) ── */}
+        <div className="sm:hidden space-y-3 border-b border-border/40 pb-4">
+          <div className="flex items-center justify-between">
+            <Link to="/" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="w-3.5 h-3.5" /> Back
+            </Link>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Support Online
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold font-display text-foreground">Customer Support</h1>
+              <p className="text-[11px] text-muted-foreground">Concierge & Help Desk</p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleRequestHandoff}
+              className="h-8 px-3 rounded-xl text-[11px] gap-1 border-border/60"
+            >
+              <Headphones className="w-3 h-3 text-primary" /> Call Agent
+            </Button>
+          </div>
+        </div>
+
+        {/* ── DESKTOP HEADER (hidden sm:flex) ── */}
+        <div className="hidden sm:flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-5">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Link to="/" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
@@ -539,14 +566,14 @@ const SupportPage: React.FC = () => {
               </Link>
               <span className="text-muted-foreground/40">•</span>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Support Online
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Concierge Online
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-display tracking-tight text-foreground">
-              Customer Support
+            <h1 className="text-2xl lg:text-3xl font-extrabold font-display tracking-tight text-foreground">
+              Customer Care & Support
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Instant AI assistance, live voice support, and fast order resolutions.
+            <p className="text-xs text-muted-foreground">
+              Instant AI concierge assistance, WebRTC voice support, and fast 7-day resolutions.
             </p>
           </div>
 
@@ -558,7 +585,7 @@ const SupportPage: React.FC = () => {
               className="rounded-xl text-xs gap-1.5 h-9 px-3.5 border-border/60"
             >
               <Headphones className="w-3.5 h-3.5 text-primary" />
-              <span>Human Agent</span>
+              <span>Human Specialist</span>
             </Button>
 
             <Button
@@ -569,7 +596,7 @@ const SupportPage: React.FC = () => {
               className="rounded-xl text-xs gap-1.5 h-9 px-3.5 border-border/60"
             >
               {pushEnabled ? <BellRing className="w-3.5 h-3.5 text-emerald-500" /> : <BellOff className="w-3.5 h-3.5" />}
-              <span>{pushEnabled ? "Alerts On" : "Push Alerts"}</span>
+              <span>{pushEnabled ? "Alerts Active" : "Enable Push"}</span>
             </Button>
           </div>
         </div>
@@ -588,50 +615,50 @@ const SupportPage: React.FC = () => {
           )}
         </AnimatePresence>
 
-        {/* Minimal Quick Action Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        {/* Quick Shortcut Tiles Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
           <Link
             to="/orders"
-            className="group p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-sm transition-all"
+            className="group p-3 sm:p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-xs transition-all"
           >
-            <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center mb-2.5 text-foreground group-hover:text-primary transition-colors">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-secondary flex items-center justify-center mb-2 text-foreground group-hover:text-primary transition-colors">
               <PackageCheck className="w-4 h-4" />
             </div>
             <h3 className="text-xs sm:text-sm font-bold text-foreground">Track Order</h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Live status & courier</p>
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">Live courier status</p>
           </Link>
 
           <button
             onClick={() => setTab("faq")}
-            className="group p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-sm text-left transition-all"
+            className="group p-3 sm:p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-xs text-left transition-all"
           >
-            <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center mb-2.5 text-foreground group-hover:text-primary transition-colors">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-secondary flex items-center justify-center mb-2 text-foreground group-hover:text-primary transition-colors">
               <RefreshCw className="w-4 h-4" />
             </div>
             <h3 className="text-xs sm:text-sm font-bold text-foreground">7-Day Returns</h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Size & item exchange</p>
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">Size & exchange</p>
           </button>
 
           <button
             onClick={() => setTab("faq")}
-            className="group p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-sm text-left transition-all"
+            className="group p-3 sm:p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-xs text-left transition-all"
           >
-            <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center mb-2.5 text-foreground group-hover:text-primary transition-colors">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-secondary flex items-center justify-center mb-2 text-foreground group-hover:text-primary transition-colors">
               <HelpCircle className="w-4 h-4" />
             </div>
             <h3 className="text-xs sm:text-sm font-bold text-foreground">Knowledge Base</h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Instant FAQ guides</p>
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">Instant FAQ guides</p>
           </button>
 
           <button
             onClick={handleRequestHandoff}
-            className="group p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-sm text-left transition-all"
+            className="group p-3 sm:p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-xs text-left transition-all"
           >
-            <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center mb-2.5 text-foreground group-hover:text-primary transition-colors">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-secondary flex items-center justify-center mb-2 text-foreground group-hover:text-primary transition-colors">
               <Zap className="w-4 h-4" />
             </div>
             <h3 className="text-xs sm:text-sm font-bold text-foreground">Live Specialist</h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Connect with agent</p>
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">Human agent call</p>
           </button>
         </div>
 
@@ -639,7 +666,7 @@ const SupportPage: React.FC = () => {
         <div className="flex items-center gap-1 border-b border-border/40 pb-px overflow-x-auto scrollbar-none">
           <button
             onClick={() => setTab("chat")}
-            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
               tab === "chat"
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -650,7 +677,7 @@ const SupportPage: React.FC = () => {
 
           <button
             onClick={() => setTab("faq")}
-            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
               tab === "faq"
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -661,7 +688,7 @@ const SupportPage: React.FC = () => {
 
           <button
             onClick={() => setTab("history")}
-            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
               tab === "history"
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -672,39 +699,41 @@ const SupportPage: React.FC = () => {
 
           <button
             onClick={() => setTab("settings")}
-            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
               tab === "settings"
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <BellRing className="w-3.5 h-3.5" /> Notification Alerts
+            <BellRing className="w-3.5 h-3.5" /> Call Alerts
           </button>
         </div>
 
-        {/* Tab 1: AI Chat Interface */}
+        {/* Tab 1: 2-Block Desktop & Mobile Chat Interface */}
         {tab === "chat" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Main Chat Panel */}
-            <div className="lg:col-span-8 rounded-2xl bg-card border border-border/40 shadow-sm overflow-hidden flex flex-col h-[580px] sm:h-[620px]">
-              {/* Minimal Header Stripe */}
-              <div className="px-5 py-3.5 border-b border-border/40 bg-secondary/30 flex items-center justify-between">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+            
+            {/* Block 1 (Left 8 Cols): AI Concierge Chat Container */}
+            <div className="lg:col-span-8 rounded-2xl bg-card border border-border/40 shadow-xs overflow-hidden flex flex-col h-[520px] sm:h-[580px] lg:h-[620px]">
+              
+              {/* Chat Header Stripe */}
+              <div className="px-4 sm:px-5 py-3 border-b border-border/40 bg-secondary/30 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     {aiConfig?.avatar_type === "image" && aiConfig?.avatar_url ? (
-                      <img src={aiConfig.avatar_url} alt={agentName} className="w-9 h-9 rounded-xl object-cover" />
+                      <img src={aiConfig.avatar_url} alt={agentName} className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-cover" />
                     ) : (
-                      <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-                        {aiConfig?.avatar_emoji ? <span className="text-base">{aiConfig.avatar_emoji}</span> : <Bot className="w-4 h-4" />}
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                        {aiConfig?.avatar_emoji ? <span className="text-sm sm:text-base">{aiConfig.avatar_emoji}</span> : <Bot className="w-4 h-4" />}
                       </div>
                     )}
                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
                   </div>
                   <div>
                     <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
-                      {agentName} <span className="text-[9px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-mono uppercase">AI Assistant</span>
+                      {agentName} <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground font-mono uppercase">AI Assistant</span>
                     </h3>
-                    <p className="text-[11px] text-muted-foreground">Product & Order Specialist</p>
+                    <p className="text-[10px] sm:text-[11px] text-muted-foreground">Product & Order Specialist</p>
                   </div>
                 </div>
 
@@ -712,42 +741,42 @@ const SupportPage: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => setMessages([{ role: "assistant", content: welcomeMessage }])}
-                  className="rounded-lg text-[11px] h-8 px-2.5 text-muted-foreground hover:text-foreground"
+                  className="rounded-lg text-[11px] h-7 px-2 text-muted-foreground hover:text-foreground"
                 >
-                  <RefreshCw className="w-3 h-3 mr-1" /> Reset
+                  <RefreshCw className="w-3 h-3 mr-1" /> Clear
                 </Button>
               </div>
 
-              {/* Chat Scroll View */}
-              <div ref={scrollRef} className="flex-1 overflow-y-auto min-w-0 max-w-full overflow-x-hidden p-4 sm:p-6 space-y-4">
+              {/* Chat Messages Window */}
+              <div ref={scrollRef} className="flex-1 overflow-y-auto min-w-0 max-w-full overflow-x-hidden p-3.5 sm:p-5 space-y-3.5">
                 {messages.map((msg, i) => {
                   const isUser = msg.role === "user";
                   return (
                     <motion.div
                       key={i}
-                      initial={{ opacity: 0, y: 5 }}
+                      initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`flex gap-3 min-w-0 max-w-full ${isUser ? "justify-end" : "justify-start"}`}
+                      className={`flex gap-2.5 sm:gap-3 min-w-0 max-w-full ${isUser ? "justify-end" : "justify-start"}`}
                     >
                       {!isUser && (
                         aiConfig?.avatar_type === "image" && aiConfig?.avatar_url ? (
-                          <img src={aiConfig.avatar_url} alt={agentName} className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover flex-shrink-0" />
+                          <img src={aiConfig.avatar_url} alt={agentName} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
                         ) : (
-                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 font-bold">
+                          <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 font-bold">
                             {aiConfig?.avatar_emoji ? <span className="text-xs">{aiConfig.avatar_emoji}</span> : <Bot className="w-3.5 h-3.5" />}
                           </div>
                         )
                       )}
 
                       <div
-                        className={`max-w-[85%] sm:max-w-[80%] min-w-0 px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm rounded-2xl break-words [overflow-wrap:anywhere] ${
+                        className={`max-w-[88%] sm:max-w-[80%] min-w-0 px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm rounded-2xl break-words [overflow-wrap:anywhere] ${
                           isUser
                             ? "bg-primary text-primary-foreground rounded-br-xs font-medium"
                             : "bg-secondary/60 border border-border/40 text-foreground rounded-bl-xs [&_p]:leading-relaxed"
                         }`}
                       >
                         {!isUser ? (
-                          <div className="prose prose-sm dark:prose-invert max-w-none break-words min-w-0 [overflow-wrap:anywhere] [&_p]:mb-1.5 [&_p]:mt-0 text-xs sm:text-sm">
+                          <div className="prose prose-sm dark:prose-invert max-w-none break-words min-w-0 [overflow-wrap:anywhere] [&_p]:mb-1 [&_p]:mt-0 text-xs sm:text-sm">
                             <ReactMarkdown>{msg.content}</ReactMarkdown>
                           </div>
                         ) : (
@@ -756,7 +785,7 @@ const SupportPage: React.FC = () => {
                       </div>
 
                       {isUser && (
-                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                        <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
                           <User className="w-3.5 h-3.5 text-muted-foreground" />
                         </div>
                       )}
@@ -765,11 +794,11 @@ const SupportPage: React.FC = () => {
                 })}
 
                 {loading && (
-                  <div className="flex gap-3 items-end">
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
+                  <div className="flex gap-2.5 items-end">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
                       <Bot className="w-3.5 h-3.5" />
                     </div>
-                    <div className="bg-secondary/60 border border-border/40 rounded-2xl rounded-bl-xs px-4 py-2.5 flex gap-1.5">
+                    <div className="bg-secondary/60 border border-border/40 rounded-2xl rounded-bl-xs px-3.5 py-2 flex gap-1.5">
                       <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" />
                       <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
                       <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
@@ -779,19 +808,19 @@ const SupportPage: React.FC = () => {
               </div>
 
               {/* Chat Composer */}
-              <div className="p-3 sm:p-4 border-t border-border/40 bg-card space-y-2.5">
+              <div className="p-3 border-t border-border/40 bg-card space-y-2">
                 <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
                   {[
-                    "Where is my order?",
-                    "Size exchange policy",
-                    "Recommended tees",
-                    "Human support agent"
+                    "Track my order",
+                    "Exchange sizes",
+                    "Best oversized tees",
+                    "Talk to agent"
                   ].map((prompt) => (
                     <button
                       key={prompt}
                       onClick={() => sendMessage(prompt)}
                       disabled={loading}
-                      className="px-3 py-1 rounded-full bg-secondary/70 hover:bg-secondary border border-border/40 text-[11px] font-medium text-foreground whitespace-nowrap transition-colors disabled:opacity-50"
+                      className="px-2.5 py-1 rounded-full bg-secondary/70 hover:bg-secondary border border-border/40 text-[10.5px] font-medium text-foreground whitespace-nowrap transition-colors disabled:opacity-50"
                     >
                       {prompt}
                     </button>
@@ -803,13 +832,13 @@ const SupportPage: React.FC = () => {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                    placeholder="Type your message..."
-                    className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                    placeholder="Ask Mr. Slime anything..."
+                    className="flex-1 bg-transparent px-3 py-1.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                   />
                   <Button
                     onClick={() => sendMessage()}
                     disabled={!input.trim() || loading}
-                    className="rounded-lg px-4 h-9 text-xs font-semibold"
+                    className="rounded-lg px-3.5 h-8 text-xs font-semibold"
                   >
                     <Send className="w-3.5 h-3.5" />
                   </Button>
@@ -817,57 +846,73 @@ const SupportPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Sidebar Support Info */}
+            {/* Block 2 (Right 4 Cols): Desktop & Mobile Support Information Cards */}
             <div className="lg:col-span-4 space-y-4">
-              <div className="rounded-2xl bg-card border border-border/40 p-5 space-y-3.5">
+              
+              {/* Card 1: Request Human Agent */}
+              <div className="rounded-2xl bg-card border border-border/40 p-4 sm:p-5 space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
                     <LifeBuoy className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-xs sm:text-sm font-bold text-foreground">Need Human Support?</h3>
-                    <p className="text-[11px] text-muted-foreground">Average response: 15 minutes</p>
+                    <h3 className="text-xs sm:text-sm font-bold text-foreground">Human Support Agent</h3>
+                    <p className="text-[10px] sm:text-[11px] text-muted-foreground">Response within 15 mins</p>
                   </div>
                 </div>
 
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Connect with a dedicated customer care specialist for complex order inquiries or custom fitting advice.
+                  Need custom assistance with an order, payment, or fitting? Connect with a support representative directly.
                 </p>
 
                 <Button
                   onClick={handleRequestHandoff}
                   variant="outline"
-                  className="w-full rounded-xl border-border/60 text-foreground font-semibold text-xs py-4 gap-2 transition-all"
+                  className="w-full rounded-xl border-border/60 text-foreground font-semibold text-xs py-3.5 gap-2 transition-all"
                 >
                   <Headphones className="w-3.5 h-3.5 text-primary" />
-                  Request Human Specialist
+                  Request Support Specialist
                 </Button>
               </div>
 
-              <div className="rounded-2xl bg-card border border-border/40 p-5 space-y-3">
-                <h4 className="text-[11px] font-bold text-foreground uppercase tracking-wider font-mono">Customer Service Hours</h4>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between py-1 border-b border-border/30">
+              {/* Card 2: Operating Service Hours */}
+              <div className="rounded-2xl bg-card border border-border/40 p-4 sm:p-5 space-y-2.5">
+                <div className="flex items-center gap-2 font-bold text-xs text-foreground uppercase tracking-wider font-mono">
+                  <Clock className="w-3.5 h-3.5 text-primary" /> Support Working Hours
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between py-1 border-b border-border/20">
                     <span className="text-muted-foreground">Sat – Thu:</span>
                     <span className="font-semibold text-foreground">9:00 AM – 10:00 PM</span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-border/30">
+                  <div className="flex justify-between py-1 border-b border-border/20">
                     <span className="text-muted-foreground">Friday:</span>
                     <span className="font-semibold text-foreground">2:00 PM – 9:00 PM</span>
                   </div>
                   <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">AI Support:</span>
+                    <span className="text-muted-foreground">AI Concierge:</span>
                     <span className="font-semibold text-emerald-500">24/7 Active</span>
                   </div>
                 </div>
               </div>
+
+              {/* Card 3: Quality Guarantee */}
+              <div className="rounded-2xl bg-secondary/30 border border-border/40 p-4 space-y-2">
+                <div className="flex items-center gap-2 text-foreground font-bold text-xs">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" /> Authentic Quality Guaranteed
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Every Orizino product includes open-box inspection upon delivery and 7-day easy exchanges.
+                </p>
+              </div>
+
             </div>
           </div>
         )}
 
         {/* Tab 2: Knowledge Base & FAQ */}
         {tab === "faq" && (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div className="relative max-w-xl mx-auto">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
@@ -875,21 +920,21 @@ const SupportPage: React.FC = () => {
                 value={faqQuery}
                 onChange={(e) => setFaqQuery(e.target.value)}
                 placeholder="Search topics (e.g. shipping, returns, GSM)..."
-                className="w-full bg-card border border-border/60 rounded-xl pl-10 pr-4 py-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                className="w-full bg-card border border-border/60 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
               {filteredFaqs.map((category) => {
                 const Icon = category.icon;
                 return (
-                  <div key={category.id} className="rounded-2xl bg-card border border-border/40 p-5 space-y-3.5">
+                  <div key={category.id} className="rounded-2xl bg-card border border-border/40 p-4 sm:p-5 space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                         <Icon className="w-4 h-4" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold font-display text-foreground">{category.title}</h3>
+                        <h3 className="text-xs sm:text-sm font-bold font-display text-foreground">{category.title}</h3>
                         <p className="text-[11px] text-muted-foreground">{category.description}</p>
                       </div>
                     </div>
@@ -902,13 +947,13 @@ const SupportPage: React.FC = () => {
                           <div key={key} className="rounded-xl bg-secondary/30 border border-border/30 overflow-hidden">
                             <button
                               onClick={() => setOpenFaqIndex(isOpen ? null : key)}
-                              className="w-full px-4 py-2.5 text-left flex items-center justify-between text-xs font-semibold text-foreground hover:bg-secondary/50 transition-colors"
+                              className="w-full px-3.5 py-2.5 text-left flex items-center justify-between text-xs font-semibold text-foreground hover:bg-secondary/50 transition-colors"
                             >
                               <span>{faq.q}</span>
                               <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isOpen ? "rotate-90 text-primary" : ""}`} />
                             </button>
                             {isOpen && (
-                              <div className="px-4 pb-3 pt-1 text-xs text-muted-foreground leading-relaxed border-t border-border/20 bg-background/30">
+                              <div className="px-3.5 pb-3 pt-1 text-xs text-muted-foreground leading-relaxed border-t border-border/20 bg-background/30">
                                 <ReactMarkdown>{faq.a}</ReactMarkdown>
                               </div>
                             )}
@@ -925,15 +970,15 @@ const SupportPage: React.FC = () => {
 
         {/* Tab 3: Call History */}
         {tab === "history" && (
-          <div className="rounded-2xl bg-card border border-border/40 p-5 sm:p-6 space-y-4">
+          <div className="rounded-2xl bg-card border border-border/40 p-4 sm:p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-border/40 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
                   <History className="w-4 h-4" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold font-display text-foreground">Voice Call History</h2>
-                  <p className="text-xs text-muted-foreground">Review past WebRTC voice support calls</p>
+                  <h2 className="text-sm sm:text-base font-bold font-display text-foreground">Voice Call History</h2>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground">Review past WebRTC voice support calls</p>
                 </div>
               </div>
 
@@ -948,14 +993,14 @@ const SupportPage: React.FC = () => {
 
         {/* Tab 4: Notifications Settings */}
         {tab === "settings" && (
-          <div className="max-w-2xl mx-auto rounded-2xl bg-card border border-border/40 p-5 sm:p-6 space-y-5">
+          <div className="max-w-2xl mx-auto rounded-2xl bg-card border border-border/40 p-4 sm:p-6 space-y-4">
             <div className="flex items-center gap-4 border-b border-border/40 pb-4">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${pushPermission === "granted" ? "bg-emerald-500/15 text-emerald-500" : "bg-amber-500/15 text-amber-500"}`}>
-                {pushPermission === "granted" ? <BellRing className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center ${pushPermission === "granted" ? "bg-emerald-500/15 text-emerald-500" : "bg-amber-500/15 text-amber-500"}`}>
+                {pushPermission === "granted" ? <BellRing className="w-4 h-4 sm:w-5 sm:h-5" /> : <BellOff className="w-4 h-4 sm:w-5 sm:h-5" />}
               </div>
               <div>
-                <h2 className="text-base font-bold font-display text-foreground">Real-Time Call Alerts</h2>
-                <p className="text-xs text-muted-foreground">Receive push notifications when agents call you</p>
+                <h2 className="text-sm sm:text-base font-bold font-display text-foreground">Real-Time Call Alerts</h2>
+                <p className="text-[11px] sm:text-xs text-muted-foreground">Receive push notifications when agents call you</p>
               </div>
             </div>
 
