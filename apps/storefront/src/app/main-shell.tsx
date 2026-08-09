@@ -5,6 +5,8 @@ import Footer from "@/components/Footer";
 import { useLayout } from "@/contexts/LayoutContext";
 import { useLocation } from "@/lib/router-compat";
 
+import RouteTransitionLoader from "@/components/RouteTransitionLoader";
+
 export default function MainShell({ children }: { children: React.ReactNode }) {
   const { productTray } = useLayout();
   const location = useLocation();
@@ -14,6 +16,7 @@ export default function MainShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <RouteTransitionLoader />
       <React.Suspense fallback={null}>
         <Navbar bottomNavProductTray={productTray as any} />
       </React.Suspense>

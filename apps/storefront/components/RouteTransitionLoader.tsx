@@ -1,82 +1,67 @@
 "use client";
 import * as React from "react";
-import { useRouterState } from "@orizino/shared/lib/router-compat";
-import SectionLoader from "@/components/loaders/SectionLoader";
+import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 
 /**
- * Route transition overlay.
- *
- * Uses the platinum ring loader for ALL navigation — both full-page and
- * within-section switches. It appears at 50 ms (instant on real network
- * latency, invisible on fast cached routes) and dismisses in 80 ms so
- * there is no lingering flash.
- *
- * The semi-transparent backdrop keeps the current page visible while
- * loading, which eliminates the "frozen blank screen" feeling.
+ * RouteTransitionLoader — Page switching loader.
+ * Displays a small loader with the SVG logo file featuring an animated
+ * fill loop with the theme accent color.
  */
 const RouteTransitionLoader: React.FC = () => {
-  const { isLoading, pathname } = useRouterState({
-    select: (s) => ({
-      isLoading: s.status === "pending" || s.isLoading || s.isTransitioning,
-      pathname: s.location.pathname,
-    }),
-  });
-
-  const [visible, setVisible] = React.useState(false);
-
-  const hasSettledRef      = React.useRef(false);
-  const lastSettledPathRef = React.useRef<string>(pathname);
+  const pathname = usePathname();
+  const [loading, setLoading] = React.useState(false);
+  const prevPathRef = React.useRef(pathname);
 
   React.useEffect(() => {
-    let showTimer: ReturnType<typeof setTimeout> | undefined;
-    let hideTimer: ReturnType<typeof setTimeout> | undefined;
-
-    if (!isLoading) {
-      hasSettledRef.current      = true;
-      lastSettledPathRef.current = pathname;
+    if (prevPathRef.current !== pathname) {
+      setLoading(true);
+      prevPathRef.current = pathname;
+      const timer = setTimeout(() => setLoading(false), 450);
+      return () => clearTimeout(timer);
     }
-
-    if (isLoading && hasSettledRef.current) {
-      showTimer = setTimeout(() => setVisible(true), 50);
-    } else {
-      hideTimer = setTimeout(() => setVisible(false), 80);
-    }
-
-    return () => {
-      if (showTimer) clearTimeout(showTimer);
-      if (hideTimer) clearTimeout(hideTimer);
-    };
-  }, [isLoading, pathname]);
-
-  if (!visible) return null;
+  }, [pathname]);
 
   return (
-    <>
-      <style>{`
-        @keyframes rtl-in { from { opacity: 0 } to { opacity: 1 } }
-      `}</style>
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 9999,
-          display: "grid",
-          placeItems: "center",
-          background: "rgba(6,4,6,0.52)",
-          backdropFilter: "blur(5px)",
-          WebkitBackdropFilter: "blur(5px)",
-          animation: "rtl-in 160ms ease-out both",
-          pointerEvents: "auto",
-        }}
-        role="status"
-        aria-live="polite"
-        aria-label="Loading"
-      >
-        <SectionLoader tone="platinum" size={80} />
-      </div>
-    </>
+    <AnimatePresence>
+      {loading && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/60 backdrop-blur-sm pointer-events-none select-none"
+        >
+          <div className="flex flex-col items-center gap-3 p-5 rounded-3xl bg-card/80 border border-border/40 shadow-xl">
+            {/* Small SVG Logo Fill Loop Animation */}
+            <div className="relative w-10 h-10 flex items-center justify-center">
+              {/* Outer Pulse Accent Halo */}
+              <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
+              
+              {/* SVG Logo Mark with Accent Fill Loop */}
+              <motion.img
+                src="/orizino-logo.svg"
+                alt="Loading..."
+                animate={{
+                  scale: [0.9, 1.1, 0.9],
+                  opacity: [0.6, 1, 0.6],
+                }}
+                transition={{
+                  duration: 1.2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="w-8 h-8 object-contain relative z-10 filter drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]"
+              />
+            </div>
+            <span className="text-[10px] font-mono font-bold tracking-[0.2em] uppercase text-primary">
+              ORIZINO
+            </span>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
 export default RouteTransitionLoader;
-// code:4ce0
