@@ -239,6 +239,23 @@ function normalizeMessages(messages: any[]): any[] {
   });
 }
 
+async function loadDbGeminiKeys(): Promise<string[]> {
+  try {
+    const { data } = await admin
+      .from("site_settings")
+      .select("value")
+      .eq("key", "gemini_fallback_config")
+      .maybeSingle();
+
+    const raw = (data?.value as any) || {};
+    const val = raw && typeof raw === "object" && "value" in raw ? raw.value : raw;
+    const keys = Array.isArray(val?.keys) ? val.keys : [];
+    return keys.filter((k: any) => typeof k === "string" && k.trim().length > 0);
+  } catch {
+    return [];
+  }
+}
+
 type Provider = {
   name: string;
   url: string;
@@ -247,7 +264,9 @@ type Provider = {
 };
 
 async function callChatCompletionWithFallback(payload: { messages: any[]; tools: any }): Promise<any> {
-  const geminiKeys = loadApiKeysFromEnv("GEMINI_API_KEY");
+  const envGeminiKeys = loadApiKeysFromEnv("GEMINI_API_KEY");
+  const dbGeminiKeys = await loadDbGeminiKeys();
+  const geminiKeys = [...new Set([...envGeminiKeys, ...dbGeminiKeys])];
   const openaiKeys = loadApiKeysFromEnv("OPENAI_API_KEY");
 
   const providers: Provider[] = [];
@@ -256,7 +275,7 @@ async function callChatCompletionWithFallback(payload: { messages: any[]; tools:
   for (let i = 0; i < geminiKeys.length; i++) {
     for (const gModel of GEMINI_MODELS) {
       providers.push({
-        name: `gemini-direct-${gModel}`,
+        name: `gemini-direct-${gModel}-k${i + 1}`,
         url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
         headers: { Authorization: `Bearer ${geminiKeys[i]}`, "Content-Type": "application/json" },
         model: gModel,
@@ -267,7 +286,7 @@ async function callChatCompletionWithFallback(payload: { messages: any[]; tools:
   // 2. Direct OpenAI API endpoints
   for (let i = 0; i < openaiKeys.length; i++) {
     providers.push({
-      name: "openai-direct",
+      name: `openai-direct-k${i + 1}`,
       url: "https://api.openai.com/v1/chat/completions",
       headers: { Authorization: `Bearer ${openaiKeys[i]}`, "Content-Type": "application/json" },
       model: OPENAI_MODEL,
@@ -281,6 +300,13 @@ async function callChatCompletionWithFallback(payload: { messages: any[]; tools:
       url: "https://ai.gateway.lovable.dev/v1/chat/completions",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       model: LOVABLE_MODEL,
+    });
+  }
+
+  if (providers.length === 0) {
+    throw Object.assign(new Error("No AI API keys configured"), {
+      exhausted: true,
+      lastErr: { status: 400, body: "No API keys found in GEMINI_API_KEY environment variable or site_settings database table.", provider: "none" },
     });
   }
 
@@ -364,7 +390,7 @@ Deno.serve(async (req) => {
         data = await callChatCompletionWithFallback({ messages: convo, tools: TOOLS });
       } catch (e: any) {
         console.error("[ai-chat] all providers failed", e);
-        return new Response(JSON.stringify({ reply: "I'm having trouble reaching the AI right now." }), {
+        return new Response(JSON.stringify({ reply: "I'm having trouble reaching the AI right now. Please check your Gemini API key in settings." }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }

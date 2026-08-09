@@ -1527,7 +1527,7 @@ const AIChatWidget: React.FC = () => {
             {activeTab === "chat" ? (
               <>
                 {/* Messages */}
-                <div ref={scrollRef} className="relative flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                <div ref={scrollRef} className="relative flex-1 overflow-y-auto min-w-0 max-w-full overflow-x-hidden px-4 py-4 space-y-3">
                   <div className="pointer-events-none sticky top-0 -mt-4 -mx-4 h-4 bg-gradient-to-b from-card/85 to-transparent z-10" />
                   {messages.map((msg, i) => {
                     const isUser = msg.role === "user";
@@ -1537,12 +1537,12 @@ const AIChatWidget: React.FC = () => {
                         initial={{ opacity: 0, y: 6, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        className={`group/msg flex gap-2 items-end ${isUser ? "justify-end" : "justify-start"}`}
+                        className={`group/msg flex gap-2 items-end min-w-0 max-w-full ${isUser ? "justify-end" : "justify-start"}`}
                       >
                         {!isUser && <AgentAvatar size="w-8 h-8" iconSize="w-3.5 h-3.5" />}
                         <div
                           title={new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          className={`relative max-w-[82%] px-4 py-2.5 text-sm transition-all rounded-2xl ${
+                          className={`relative max-w-[82%] min-w-0 px-4 py-2.5 text-sm transition-all rounded-2xl break-words [overflow-wrap:anywhere] ${
                             isUser
                               ? "bg-gradient-to-br from-[hsl(var(--cherry))] via-[hsl(345_75%_22%)] to-[hsl(0_70%_12%)] text-white rounded-br-xs border border-white/20 font-medium shadow-sm"
                               : "bg-secondary/80 dark:bg-card/80 border border-border/40 text-foreground rounded-bl-xs [&_p]:leading-relaxed"
@@ -1562,7 +1562,7 @@ const AIChatWidget: React.FC = () => {
                             </div>
                           )}
                           {!isUser ? (
-                            <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:mb-1 [&_p]:mt-0">
+                            <div className="prose prose-sm dark:prose-invert max-w-none break-words min-w-0 [overflow-wrap:anywhere] [&_p]:mb-1 [&_p]:mt-0">
                               <ReactMarkdown
                                 components={{
                                   img: ({ node, ...props }) => (
