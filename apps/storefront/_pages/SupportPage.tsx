@@ -555,7 +555,7 @@ const SupportPage: React.FC = () => {
               <h1 className="text-3xl sm:text-4xl font-extrabold font-display tracking-tight text-white">
                 Customer Care & Concierge
               </h1>
-              <p className="text-sm text-white/70 max-[#640px]:text-xs max-w-xl">
+              <p className="text-sm text-white/70 max-sm:text-xs max-w-xl">
                 Experience instant AI assistance, direct human agent handoff, live voice support, and fast 7-day order resolutions.
               </p>
             </div>
