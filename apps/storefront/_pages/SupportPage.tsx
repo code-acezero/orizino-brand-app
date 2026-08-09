@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Bot, Send, User, Headphones, ArrowLeft, Phone, PhoneOff, Mic, MicOff,
   MessageSquare, History, BellRing, BellOff, Volume2, Speaker, Search,
-  HelpCircle, ShieldCheck, Truck, RefreshCw, Sparkles, FileText, ChevronRight,
-  CheckCircle2, Clock, Mail, ExternalLink, Zap, Lock, LifeBuoy, PackageCheck, AlertCircle, Sparkle
+  HelpCircle, ShieldCheck, Truck, RefreshCw, FileText, ChevronRight,
+  Zap, LifeBuoy, PackageCheck, AlertCircle, Sparkles
 } from "lucide-react";
 import { Link } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,73 +30,73 @@ interface Msg {
 const FAQ_CATEGORIES = [
   {
     id: "orders",
-    title: "Orders & Shipping",
+    title: "Orders & Delivery",
     icon: Truck,
-    description: "Delivery timelines, tracking, and shipping options.",
+    description: "Shipping timelines, order tracking & international options.",
     faqs: [
       {
         q: "How long does shipping take?",
-        a: "Standard delivery inside Bangladesh takes 2–4 business days. International express shipping takes 5–8 business days via DHL/FedEx."
+        a: "Standard delivery inside Bangladesh takes 2–4 business days. Express shipping takes 5–8 business days via DHL/FedEx."
       },
       {
-        q: "Can I track my order live?",
-        a: "Yes! Go to [Track Order](/orders) or enter your order ID in the AI chat to get real-time status."
+        q: "How can I track my order?",
+        a: "You can track your order live under [Orders](/orders) or by sending your Order ID to our AI concierge here."
       },
       {
-        q: "Do you offer cash on delivery (COD)?",
-        a: "Yes, Cash on Delivery is available across all 64 districts in Bangladesh with open-box inspection."
+        q: "Do you offer Cash on Delivery?",
+        a: "Yes, Cash on Delivery is available nationwide across all 64 districts in Bangladesh."
       }
     ]
   },
   {
     id: "returns",
-    title: "Returns & Exchanges",
+    title: "Returns & Exchange",
     icon: RefreshCw,
-    description: "7-day hassle-free returns & size replacement.",
+    description: "7-day easy returns & size exchange policy.",
     faqs: [
       {
         q: "What is your return policy?",
         a: "We offer a 7-day hassle-free return and exchange policy on all unworn items with original tags intact."
       },
       {
-        q: "How do I request a size exchange?",
-        a: "You can initiate a size exchange directly through your Account Profile under Order Details or message Mr. Slime here."
+        q: "How do I request a size replacement?",
+        a: "Go to your Account Profile under Order History or request a replacement directly through Mr. Slime in this chat."
       },
       {
-        q: "When will I receive my refund?",
-        a: "Refunds are processed within 24–48 hours after quality inspection."
+        q: "When will my refund be processed?",
+        a: "Refunds are issued within 24–48 hours after quality verification."
       }
     ]
   },
   {
     id: "sizing",
-    title: "Sizing & Fit Guide",
+    title: "Sizing & Fabric",
     icon: HelpCircle,
-    description: "European drop shoulder measurements & fabric density.",
+    description: "European drop shoulder fit & cotton GSM density.",
     faqs: [
       {
-        q: "Are your drop shoulder t-shirts true to size?",
-        a: "Our tees feature a relaxed European oversized fit. For a standard fit, order your normal size. For a super oversized look, size up."
+        q: "What is your size fit guide?",
+        a: "Our t-shirts feature a relaxed European oversized fit. For a standard fit, order your normal size. For a super oversized look, select one size up."
       },
       {
-        q: "What fabric GSM do you use?",
-        a: "We use 100% combed cotton ranging from 180 GSM to 240 GSM heavyweight luxury knits."
+        q: "What fabric quality do you use?",
+        a: "We use 100% combed cotton ranging from 180 GSM to 240 GSM luxury knits."
       }
     ]
   },
   {
     id: "payments",
-    title: "Payments & Security",
+    title: "Payment Security",
     icon: ShieldCheck,
-    description: "bKash, Nagad, Cards, and SSLCommerz encryption.",
+    description: "bKash, Nagad, Cards & 256-bit SSL encryption.",
     faqs: [
       {
-        q: "What payment methods are accepted?",
+        q: "Which payment methods are accepted?",
         a: "We accept bKash, Nagad, Rocket, Visa, Mastercard, AMEX, SSLCommerz, and Cash on Delivery."
       },
       {
-        q: "Is my payment information safe?",
-        a: "All transactions are 256-bit SSL encrypted and processed through PCI-DSS compliant bank gateways."
+        q: "Is checkout secure?",
+        a: "Yes, all transactions are 256-bit SSL encrypted and PCI-DSS compliant."
       }
     ]
   }
@@ -114,42 +114,39 @@ const IncomingCallOverlay: React.FC<{
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[10005] flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+        className="fixed inset-0 z-[10005] flex items-center justify-center bg-background/80 backdrop-blur-md p-4"
       >
         <motion.div
-          initial={{ scale: 0.85, y: 20, opacity: 0 }}
+          initial={{ scale: 0.9, y: 15, opacity: 0 }}
           animate={{ scale: 1, y: 0, opacity: 1 }}
-          exit={{ scale: 0.85, y: 20, opacity: 0 }}
-          className="relative overflow-hidden rounded-3xl bg-slate-900 border border-white/20 p-6 sm:p-8 max-w-sm w-full text-center space-y-6 shadow-2xl"
+          exit={{ scale: 0.9, y: 15, opacity: 0 }}
+          className="relative overflow-hidden rounded-3xl bg-card border border-border p-6 sm:p-8 max-w-sm w-full text-center space-y-6 shadow-2xl"
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-green-500/10 via-transparent to-transparent pointer-events-none" />
-          <div className="relative mx-auto w-20 h-20 sm:w-24 sm:h-24">
-            <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping" />
-            <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
-              <Phone className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-            </div>
+          <div className="mx-auto w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-emerald-500/10 flex items-center justify-center relative">
+            <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping" />
+            <Phone className="w-8 h-8 text-emerald-500 relative z-10" />
           </div>
           <div>
-            <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase">
-              Incoming Voice Call
+            <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium tracking-wide uppercase">
+              Incoming Support Call
             </span>
-            <h3 className="text-lg sm:text-xl font-bold font-display text-white mt-2">Support Specialist</h3>
-            <p className="text-xs text-slate-300 mt-1">Orizino concierge is connecting live</p>
+            <h3 className="text-lg font-bold font-display text-foreground mt-2">Support Specialist</h3>
+            <p className="text-xs text-muted-foreground mt-1">Orizino concierge is calling live</p>
           </div>
-          <div className="flex items-center justify-center gap-6 pt-2">
+          <div className="flex items-center justify-center gap-5 pt-1">
             <button
               onClick={onReject}
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition-all shadow-lg hover:scale-105 active:scale-95"
+              className="w-14 h-14 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-md"
               aria-label="Decline Call"
             >
-              <PhoneOff className="w-6 h-6 sm:w-7 sm:h-7" />
+              <PhoneOff className="w-6 h-6" />
             </button>
             <button
               onClick={onAccept}
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center transition-all shadow-lg shadow-green-500/40 hover:scale-105 active:scale-95 animate-pulse"
+              className="w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-md animate-pulse"
               aria-label="Accept Call"
             >
-              <Phone className="w-6 h-6 sm:w-7 sm:h-7" />
+              <Phone className="w-6 h-6" />
             </button>
           </div>
         </motion.div>
@@ -170,30 +167,27 @@ const ActiveCallBar: React.FC<{
   const fmt = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
   return (
     <motion.div
-      initial={{ y: -15, opacity: 0 }}
+      initial={{ y: -10, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      exit={{ y: -15, opacity: 0 }}
-      className="mb-4 flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 backdrop-blur-xl shadow-lg"
+      exit={{ y: -10, opacity: 0 }}
+      className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-foreground"
     >
-      <div className="flex items-center gap-3">
-        <span className="relative flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
-        </span>
+      <div className="flex items-center gap-2.5">
+        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
         <div>
-          <h4 className="text-xs sm:text-sm font-semibold text-emerald-400">Live Voice Call Connected</h4>
-          <p className="text-[11px] text-muted-foreground font-mono">Duration: {fmt(duration)}</p>
+          <h4 className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Voice Call Connected</h4>
+          <p className="text-[11px] font-mono text-muted-foreground">{fmt(duration)}</p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Button size="sm" variant="ghost" onClick={onToggleSpeaker} className="h-8 w-8 p-0 rounded-full bg-background/40 hover:bg-background/80">
-          {speakerOn ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <Speaker className="w-4 h-4 text-muted-foreground" />}
+      <div className="flex items-center gap-1.5">
+        <Button size="sm" variant="ghost" onClick={onToggleSpeaker} className="h-8 w-8 p-0 rounded-lg">
+          {speakerOn ? <Volume2 className="w-4 h-4 text-emerald-500" /> : <Speaker className="w-4 h-4 text-muted-foreground" />}
         </Button>
-        <Button size="sm" variant="ghost" onClick={onToggleMute} className="h-8 w-8 p-0 rounded-full bg-background/40 hover:bg-background/80">
-          {muted ? <MicOff className="w-4 h-4 text-red-500" /> : <Mic className="w-4 h-4 text-emerald-400" />}
+        <Button size="sm" variant="ghost" onClick={onToggleMute} className="h-8 w-8 p-0 rounded-lg">
+          {muted ? <MicOff className="w-4 h-4 text-destructive" /> : <Mic className="w-4 h-4 text-emerald-500" />}
         </Button>
-        <Button size="sm" onClick={onHangup} className="h-8 px-3 rounded-full bg-red-600 hover:bg-red-700 text-white font-medium text-xs gap-1 shadow">
-          <PhoneOff className="w-3.5 h-3.5" /> Hangup
+        <Button size="sm" onClick={onHangup} className="h-8 px-3 rounded-lg bg-destructive text-destructive-foreground text-xs gap-1">
+          <PhoneOff className="w-3.5 h-3.5" /> End Call
         </Button>
       </div>
     </motion.div>
@@ -201,7 +195,7 @@ const ActiveCallBar: React.FC<{
 };
 
 const SupportPage: React.FC = () => {
-  useSeoMeta("support", "Customer Support & Care | Orizino");
+  useSeoMeta("support", "Customer Support | Orizino");
   const { user } = useAuth();
   const { t } = useLanguage();
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -254,7 +248,7 @@ const SupportPage: React.FC = () => {
       setPushEnabled(true);
       setPushPermission(Notification.permission);
       await refreshPushStatus();
-      toast({ title: "Alerts Enabled", description: "You will receive live call alerts even when closed." });
+      toast({ title: "Alerts Enabled", description: "You will receive live call notifications." });
     } else {
       toast({ title: "Permission Denied", description: "Please allow notifications in browser settings.", variant: "destructive" });
     }
@@ -505,6 +499,8 @@ const SupportPage: React.FC = () => {
       setMessages((prev) => [...prev, { role: "assistant", content: data?.reply || "I'm having trouble reaching the AI right now." }]);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong on my end. Please try again." }]);
+    } finally {
+      setLoading(false);
     }
   }, [input, messages, loading, user]);
 
@@ -519,70 +515,62 @@ const SupportPage: React.FC = () => {
 
   const handleRequestHandoff = async () => {
     if (!user) {
-      toast({ title: "Sign in required", description: "Please sign in to request priority human agent support.", variant: "destructive" });
+      toast({ title: "Sign in required", description: "Please sign in to request human support.", variant: "destructive" });
       return;
     }
-    toast({ title: "Connecting Live Support...", description: "Escalating your conversation to a human support specialist." });
+    toast({ title: "Escalating Session", description: "Connecting your chat with a human specialist." });
     await sendMessage("I would like to speak with a human support specialist.");
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20 pt-2 sm:pt-4">
+    <div className="min-h-screen bg-background text-foreground pb-20">
       <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
       <IncomingCallOverlay visible={incomingCall} onAccept={acceptCall} onReject={rejectCall} />
 
-      {/* Main Full Width Wrapper — Matches Footer Width (w-full px-4 sm:px-6 lg:px-8 xl:px-10) */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 space-y-4 sm:space-y-6">
+      {/* Main Full Width Wrapper — Matches 100% Inline with Footer (w-full px-4 sm:px-6 lg:px-8 xl:px-10) */}
+      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
-        {/* Hero Header Strip — Responsive for Mobile & Desktop */}
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-white/15 dark:border-white/10 bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-950 p-4 sm:p-6 lg:p-8 shadow-xl text-white">
-          <div className="absolute -right-16 -top-16 w-48 h-48 sm:w-64 sm:h-64 rounded-full bg-[hsl(var(--cherry))]/20 blur-3xl pointer-events-none" />
-          <div className="absolute right-32 -bottom-20 w-36 h-36 sm:w-48 sm:h-48 rounded-full bg-cherry/10 blur-2xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
-            <div className="space-y-1.5 sm:space-y-2">
-              <div className="flex items-center gap-2">
-                <Link to="/" className="inline-flex items-center gap-1 text-xs text-white/70 hover:text-white transition-colors">
-                  <ArrowLeft className="w-3.5 h-3.5" /> Back to Store
-                </Link>
-                <span className="text-white/30">•</span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] sm:text-[11px] font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Concierge Online
-                </span>
-              </div>
-
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-display tracking-tight text-white">
-                Customer Care & Support
-              </h1>
-
-              <p className="text-xs sm:text-sm text-white/70 max-w-xl leading-relaxed">
-                Instant AI resolution, priority human agent handoff, WebRTC voice assistance, and 7-day easy resolutions.
-              </p>
+        {/* Minimal Clean Header Strip */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-5 sm:pb-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Link to="/" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                <ArrowLeft className="w-3.5 h-3.5" /> Back to Store
+              </Link>
+              <span className="text-muted-foreground/40">•</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Support Online
+              </span>
             </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-display tracking-tight text-foreground">
+              Customer Support
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Instant AI assistance, live voice support, and fast order resolutions.
+            </p>
+          </div>
 
-            {/* Quick Action Badges */}
-            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto pt-1 sm:pt-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRequestHandoff}
-                className="rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20 text-xs font-medium gap-1.5 flex-1 sm:flex-initial"
-              >
-                <Headphones className="w-3.5 h-3.5 text-cherry" />
-                Human Agent Call
-              </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRequestHandoff}
+              className="rounded-xl text-xs gap-1.5 h-9 px-3.5 border-border/60"
+            >
+              <Headphones className="w-3.5 h-3.5 text-primary" />
+              <span>Human Agent</span>
+            </Button>
 
-              <Button
-                size="sm"
-                variant={pushEnabled ? "secondary" : "outline"}
-                onClick={handleEnablePush}
-                disabled={pushBusy || pushEnabled}
-                className="rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20 text-xs font-medium gap-1.5 flex-1 sm:flex-initial"
-              >
-                {pushEnabled ? <BellRing className="w-3.5 h-3.5 text-emerald-400" /> : <BellOff className="w-3.5 h-3.5" />}
-                <span>{pushEnabled ? "Alerts On" : "Enable Push"}</span>
-              </Button>
-            </div>
+            <Button
+              size="sm"
+              variant={pushEnabled ? "secondary" : "outline"}
+              onClick={handleEnablePush}
+              disabled={pushBusy || pushEnabled}
+              className="rounded-xl text-xs gap-1.5 h-9 px-3.5 border-border/60"
+            >
+              {pushEnabled ? <BellRing className="w-3.5 h-3.5 text-emerald-500" /> : <BellOff className="w-3.5 h-3.5" />}
+              <span>{pushEnabled ? "Alerts On" : "Push Alerts"}</span>
+            </Button>
           </div>
         </div>
 
@@ -600,161 +588,153 @@ const SupportPage: React.FC = () => {
           )}
         </AnimatePresence>
 
-        {/* Quick Shortcut Tiles */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+        {/* Minimal Quick Action Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <Link
             to="/orders"
-            className="group relative overflow-hidden p-3.5 sm:p-4 rounded-2xl bg-card border border-border/50 hover:border-cherry/40 hover:shadow-lg transition-all"
+            className="group p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-sm transition-all"
           >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-cherry/10 text-cherry flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-              <PackageCheck className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center mb-2.5 text-foreground group-hover:text-primary transition-colors">
+              <PackageCheck className="w-4 h-4" />
             </div>
-            <h3 className="text-xs sm:text-sm font-bold text-foreground group-hover:text-cherry transition-colors">Track Orders</h3>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">Live courier status</p>
+            <h3 className="text-xs sm:text-sm font-bold text-foreground">Track Order</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Live status & courier</p>
           </Link>
 
           <button
             onClick={() => setTab("faq")}
-            className="group relative overflow-hidden p-3.5 sm:p-4 rounded-2xl bg-card border border-border/50 hover:border-cherry/40 hover:shadow-lg text-left transition-all"
+            className="group p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-sm text-left transition-all"
           >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-              <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center mb-2.5 text-foreground group-hover:text-primary transition-colors">
+              <RefreshCw className="w-4 h-4" />
             </div>
-            <h3 className="text-xs sm:text-sm font-bold text-foreground group-hover:text-primary transition-colors">7-Day Returns</h3>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">Easy size exchange</p>
+            <h3 className="text-xs sm:text-sm font-bold text-foreground">7-Day Returns</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Size & item exchange</p>
           </button>
 
           <button
             onClick={() => setTab("faq")}
-            className="group relative overflow-hidden p-3.5 sm:p-4 rounded-2xl bg-card border border-border/50 hover:border-cherry/40 hover:shadow-lg text-left transition-all"
+            className="group p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-sm text-left transition-all"
           >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-              <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center mb-2.5 text-foreground group-hover:text-primary transition-colors">
+              <HelpCircle className="w-4 h-4" />
             </div>
-            <h3 className="text-xs sm:text-sm font-bold text-foreground group-hover:text-indigo-500 transition-colors">Knowledge Base</h3>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">Instant FAQ guides</p>
+            <h3 className="text-xs sm:text-sm font-bold text-foreground">Knowledge Base</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Instant FAQ guides</p>
           </button>
 
           <button
             onClick={handleRequestHandoff}
-            className="group relative overflow-hidden p-3.5 sm:p-4 rounded-2xl bg-card border border-border/50 hover:border-cherry/40 hover:shadow-lg text-left transition-all"
+            className="group p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-sm text-left transition-all"
           >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-              <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center mb-2.5 text-foreground group-hover:text-primary transition-colors">
+              <Zap className="w-4 h-4" />
             </div>
-            <h3 className="text-xs sm:text-sm font-bold text-foreground group-hover:text-emerald-500 transition-colors">Live Support</h3>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">Human specialist</p>
+            <h3 className="text-xs sm:text-sm font-bold text-foreground">Live Specialist</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Connect with agent</p>
           </button>
         </div>
 
-        {/* Tab Switcher Navigation Bar */}
-        <div className="flex items-center justify-between p-1.5 rounded-2xl bg-card border border-border/50 shadow-sm overflow-x-auto scrollbar-none">
-          <div className="flex items-center gap-1 sm:gap-1.5 w-full sm:w-auto">
-            <button
-              onClick={() => setTab("chat")}
-              className={`flex items-center gap-1.5 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex-1 sm:flex-initial justify-center ${
-                tab === "chat"
-                  ? "bg-gradient-to-r from-[hsl(var(--cherry))] to-[hsl(345_75%_25%)] text-white shadow-md"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
-              }`}
-            >
-              <MessageSquare className="w-3.5 h-3.5" /> AI Chat
-            </button>
+        {/* Minimal Tab Switcher Navigation */}
+        <div className="flex items-center gap-1 border-b border-border/40 pb-px overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => setTab("chat")}
+            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
+              tab === "chat"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" /> AI Chat Concierge
+          </button>
 
-            <button
-              onClick={() => setTab("faq")}
-              className={`flex items-center gap-1.5 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex-1 sm:flex-initial justify-center ${
-                tab === "faq"
-                  ? "bg-gradient-to-r from-[hsl(var(--cherry))] to-[hsl(345_75%_25%)] text-white shadow-md"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" /> FAQs
-            </button>
+          <button
+            onClick={() => setTab("faq")}
+            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
+              tab === "faq"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" /> Knowledge Base & FAQs
+          </button>
 
-            <button
-              onClick={() => setTab("history")}
-              className={`flex items-center gap-1.5 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex-1 sm:flex-initial justify-center ${
-                tab === "history"
-                  ? "bg-gradient-to-r from-[hsl(var(--cherry))] to-[hsl(345_75%_25%)] text-white shadow-md"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
-              }`}
-            >
-              <History className="w-3.5 h-3.5" /> Calls
-            </button>
+          <button
+            onClick={() => setTab("history")}
+            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
+              tab === "history"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <History className="w-3.5 h-3.5" /> Call History
+          </button>
 
-            <button
-              onClick={() => setTab("settings")}
-              className={`flex items-center gap-1.5 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex-1 sm:flex-initial justify-center ${
-                tab === "settings"
-                  ? "bg-gradient-to-r from-[hsl(var(--cherry))] to-[hsl(345_75%_25%)] text-white shadow-md"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
-              }`}
-            >
-              <BellRing className="w-3.5 h-3.5" /> Alerts
-            </button>
-          </div>
-
-          <div className="hidden lg:flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 rounded-xl bg-secondary/40">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>256-Bit Encrypted Sessions</span>
-          </div>
+          <button
+            onClick={() => setTab("settings")}
+            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
+              tab === "settings"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <BellRing className="w-3.5 h-3.5" /> Notification Alerts
+          </button>
         </div>
 
-        {/* Tab 1: AI Chat & Concierge Interface */}
+        {/* Tab 1: AI Chat Interface */}
         {tab === "chat" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* Main Chat Panel */}
-            <div className="lg:col-span-8 rounded-2xl sm:rounded-3xl bg-card border border-border/50 shadow-xl overflow-hidden flex flex-col h-[560px] sm:h-[620px]">
-              {/* Chat Header Stripe */}
-              <div className="px-4 sm:px-6 py-3.5 border-b border-border/40 bg-gradient-to-r from-secondary/60 via-card to-secondary/60 flex items-center justify-between">
+            <div className="lg:col-span-8 rounded-2xl bg-card border border-border/40 shadow-sm overflow-hidden flex flex-col h-[580px] sm:h-[620px]">
+              {/* Minimal Header Stripe */}
+              <div className="px-5 py-3.5 border-b border-border/40 bg-secondary/30 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     {aiConfig?.avatar_type === "image" && aiConfig?.avatar_url ? (
-                      <img src={aiConfig.avatar_url} alt={agentName} className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl object-cover ring-2 ring-cherry/40" />
+                      <img src={aiConfig.avatar_url} alt={agentName} className="w-9 h-9 rounded-xl object-cover" />
                     ) : (
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-cherry/10 text-cherry flex items-center justify-center font-bold">
-                        {aiConfig?.avatar_emoji ? <span className="text-base sm:text-lg">{aiConfig.avatar_emoji}</span> : <Bot className="w-5 h-5" />}
+                      <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                        {aiConfig?.avatar_emoji ? <span className="text-base">{aiConfig.avatar_emoji}</span> : <Bot className="w-4 h-4" />}
                       </div>
                     )}
                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
                   </div>
                   <div>
                     <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
-                      {agentName} <span className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full bg-cherry/10 text-cherry font-mono uppercase tracking-wider font-semibold">AI Concierge</span>
+                      {agentName} <span className="text-[9px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-mono uppercase">AI Assistant</span>
                     </h3>
-                    <p className="text-[10px] sm:text-[11px] text-muted-foreground">Product & Order Specialist</p>
+                    <p className="text-[11px] text-muted-foreground">Product & Order Specialist</p>
                   </div>
                 </div>
 
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => setMessages([{ role: "assistant", content: welcomeMessage }])}
-                  className="rounded-xl text-[11px] h-8 px-2.5 gap-1 text-muted-foreground hover:text-foreground"
-                  title="Clear chat history"
+                  className="rounded-lg text-[11px] h-8 px-2.5 text-muted-foreground hover:text-foreground"
                 >
-                  <RefreshCw className="w-3 h-3" /> Reset
+                  <RefreshCw className="w-3 h-3 mr-1" /> Reset
                 </Button>
               </div>
 
-              {/* Chat Message Scroll Window */}
-              <div ref={scrollRef} className="flex-1 overflow-y-auto min-w-0 max-w-full overflow-x-hidden p-4 sm:p-6 space-y-3.5">
+              {/* Chat Scroll View */}
+              <div ref={scrollRef} className="flex-1 overflow-y-auto min-w-0 max-w-full overflow-x-hidden p-4 sm:p-6 space-y-4">
                 {messages.map((msg, i) => {
                   const isUser = msg.role === "user";
                   return (
                     <motion.div
                       key={i}
-                      initial={{ opacity: 0, y: 6 }}
+                      initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`flex gap-2.5 sm:gap-3 min-w-0 max-w-full ${isUser ? "justify-end" : "justify-start"}`}
+                      className={`flex gap-3 min-w-0 max-w-full ${isUser ? "justify-end" : "justify-start"}`}
                     >
                       {!isUser && (
                         aiConfig?.avatar_type === "image" && aiConfig?.avatar_url ? (
-                          <img src={aiConfig.avatar_url} alt={agentName} className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl object-cover flex-shrink-0" />
+                          <img src={aiConfig.avatar_url} alt={agentName} className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover flex-shrink-0" />
                         ) : (
-                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-cherry/10 text-cherry flex items-center justify-center flex-shrink-0 font-bold">
-                            {aiConfig?.avatar_emoji ? <span className="text-xs sm:text-sm">{aiConfig.avatar_emoji}</span> : <Bot className="w-3.5 h-3.5" />}
+                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 font-bold">
+                            {aiConfig?.avatar_emoji ? <span className="text-xs">{aiConfig.avatar_emoji}</span> : <Bot className="w-3.5 h-3.5" />}
                           </div>
                         )
                       )}
@@ -762,8 +742,8 @@ const SupportPage: React.FC = () => {
                       <div
                         className={`max-w-[85%] sm:max-w-[80%] min-w-0 px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm rounded-2xl break-words [overflow-wrap:anywhere] ${
                           isUser
-                            ? "bg-gradient-to-br from-[hsl(var(--cherry))] via-[hsl(345_75%_22%)] to-[hsl(0_70%_12%)] text-white rounded-br-xs border border-white/20 font-medium shadow-md"
-                            : "bg-secondary/70 border border-border/40 text-foreground rounded-bl-xs [&_p]:leading-relaxed"
+                            ? "bg-primary text-primary-foreground rounded-br-xs font-medium"
+                            : "bg-secondary/60 border border-border/40 text-foreground rounded-bl-xs [&_p]:leading-relaxed"
                         }`}
                       >
                         {!isUser ? (
@@ -776,7 +756,7 @@ const SupportPage: React.FC = () => {
                       </div>
 
                       {isUser && (
-                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-secondary flex items-center justify-center flex-shrink-0 ring-1 ring-border/40">
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
                           <User className="w-3.5 h-3.5 text-muted-foreground" />
                         </div>
                       )}
@@ -785,11 +765,11 @@ const SupportPage: React.FC = () => {
                 })}
 
                 {loading && (
-                  <div className="flex gap-2.5 items-end">
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-cherry/10 text-cherry flex items-center justify-center font-bold">
+                  <div className="flex gap-3 items-end">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
                       <Bot className="w-3.5 h-3.5" />
                     </div>
-                    <div className="bg-secondary/70 border border-border/40 rounded-2xl rounded-bl-xs px-4 py-2.5 flex gap-1.5">
+                    <div className="bg-secondary/60 border border-border/40 rounded-2xl rounded-bl-xs px-4 py-2.5 flex gap-1.5">
                       <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" />
                       <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
                       <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
@@ -798,77 +778,77 @@ const SupportPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Chat Quick Prompts & Composer */}
-              <div className="p-3 sm:p-4 border-t border-border/40 bg-gradient-to-t from-background via-card to-card space-y-2.5">
+              {/* Chat Composer */}
+              <div className="p-3 sm:p-4 border-t border-border/40 bg-card space-y-2.5">
                 <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
-                  <span className="text-[9px] uppercase font-mono text-muted-foreground whitespace-nowrap hidden sm:inline">Suggested:</span>
                   {[
                     "Where is my order?",
-                    "Size exchange info",
-                    "Best oversized tees",
-                    "Talk to human support"
+                    "Size exchange policy",
+                    "Recommended tees",
+                    "Human support agent"
                   ].map((prompt) => (
                     <button
                       key={prompt}
                       onClick={() => sendMessage(prompt)}
                       disabled={loading}
-                      className="px-2.5 py-1 rounded-full bg-secondary/80 hover:bg-cherry/15 hover:text-cherry border border-border/40 text-[10.5px] font-medium text-foreground whitespace-nowrap transition-colors disabled:opacity-50"
+                      className="px-3 py-1 rounded-full bg-secondary/70 hover:bg-secondary border border-border/40 text-[11px] font-medium text-foreground whitespace-nowrap transition-colors disabled:opacity-50"
                     >
                       {prompt}
                     </button>
                   ))}
                 </div>
 
-                <div className="flex items-center gap-2 bg-secondary/50 rounded-2xl p-1 sm:p-1.5 ring-1 ring-border/40 focus-within:ring-cherry/50 focus-within:bg-secondary/70 transition-all">
+                <div className="flex items-center gap-2 bg-secondary/40 rounded-xl p-1.5 border border-border/40 focus-within:border-primary/50 transition-all">
                   <input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                    placeholder="Ask Mr. Slime anything..."
-                    className="flex-1 bg-transparent px-3 sm:px-4 py-2 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                    placeholder="Type your message..."
+                    className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                   />
                   <Button
                     onClick={() => sendMessage()}
                     disabled={!input.trim() || loading}
-                    className="rounded-xl px-4 sm:px-5 h-9 sm:h-10 bg-gradient-to-r from-[hsl(var(--cherry))] to-[hsl(345_75%_25%)] text-white shadow"
+                    className="rounded-lg px-4 h-9 text-xs font-semibold"
                   >
-                    <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <Send className="w-3.5 h-3.5" />
                   </Button>
                 </div>
               </div>
             </div>
 
-            {/* Sidebar Support Info & Fast Actions (Desktop + Mobile Stack) */}
+            {/* Sidebar Support Info */}
             <div className="lg:col-span-4 space-y-4">
-              <div className="rounded-2xl sm:rounded-3xl bg-card border border-border/50 p-5 sm:p-6 space-y-4 shadow-lg">
+              <div className="rounded-2xl bg-card border border-border/40 p-5 space-y-3.5">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-cherry/10 text-cherry flex items-center justify-center font-bold">
-                    <LifeBuoy className="w-5 h-5" />
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                    <LifeBuoy className="w-4 h-4" />
                   </div>
                   <div>
                     <h3 className="text-xs sm:text-sm font-bold text-foreground">Need Human Support?</h3>
-                    <p className="text-[11px] text-muted-foreground">Response within 15 mins</p>
+                    <p className="text-[11px] text-muted-foreground">Average response: 15 minutes</p>
                   </div>
                 </div>
 
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  If our AI concierge cannot resolve your inquiry, connect directly with a support specialist.
+                  Connect with a dedicated customer care specialist for complex order inquiries or custom fitting advice.
                 </p>
 
                 <Button
                   onClick={handleRequestHandoff}
-                  className="w-full rounded-2xl bg-secondary hover:bg-cherry hover:text-white border border-border/50 text-foreground font-semibold text-xs py-4 sm:py-5 gap-2 transition-all shadow-sm"
+                  variant="outline"
+                  className="w-full rounded-xl border-border/60 text-foreground font-semibold text-xs py-4 gap-2 transition-all"
                 >
-                  <Headphones className="w-4 h-4 text-cherry" />
-                  Escalate to Human Agent
+                  <Headphones className="w-3.5 h-3.5 text-primary" />
+                  Request Human Specialist
                 </Button>
               </div>
 
-              <div className="rounded-2xl sm:rounded-3xl bg-card border border-border/50 p-5 sm:p-6 space-y-3 shadow-lg">
-                <h4 className="text-[11px] font-bold text-foreground uppercase tracking-wider font-mono">Service Hours</h4>
+              <div className="rounded-2xl bg-card border border-border/40 p-5 space-y-3">
+                <h4 className="text-[11px] font-bold text-foreground uppercase tracking-wider font-mono">Customer Service Hours</h4>
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between py-1 border-b border-border/30">
-                    <span className="text-muted-foreground">Saturday – Thursday:</span>
+                    <span className="text-muted-foreground">Sat – Thu:</span>
                     <span className="font-semibold text-foreground">9:00 AM – 10:00 PM</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border/30">
@@ -876,7 +856,7 @@ const SupportPage: React.FC = () => {
                     <span className="font-semibold text-foreground">2:00 PM – 9:00 PM</span>
                   </div>
                   <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">AI Assistance:</span>
+                    <span className="text-muted-foreground">AI Support:</span>
                     <span className="font-semibold text-emerald-500">24/7 Active</span>
                   </div>
                 </div>
@@ -885,17 +865,17 @@ const SupportPage: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 2: Knowledge Base & FAQ Accordion */}
+        {/* Tab 2: Knowledge Base & FAQ */}
         {tab === "faq" && (
-          <div className="space-y-5 sm:space-y-6">
-            <div className="relative max-w-2xl mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <div className="space-y-6">
+            <div className="relative max-w-xl mx-auto">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
                 value={faqQuery}
                 onChange={(e) => setFaqQuery(e.target.value)}
-                placeholder="Search topics (e.g. shipping, returns, GSM, bKash)..."
-                className="w-full bg-card border border-border/60 rounded-2xl pl-11 pr-4 py-3.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground shadow-lg focus:outline-none focus:ring-2 focus:ring-cherry/50 transition-all"
+                placeholder="Search topics (e.g. shipping, returns, GSM)..."
+                className="w-full bg-card border border-border/60 rounded-xl pl-10 pr-4 py-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all"
               />
             </div>
 
@@ -903,32 +883,32 @@ const SupportPage: React.FC = () => {
               {filteredFaqs.map((category) => {
                 const Icon = category.icon;
                 return (
-                  <div key={category.id} className="rounded-2xl sm:rounded-3xl bg-card border border-border/50 p-5 sm:p-6 space-y-3.5 shadow-lg">
+                  <div key={category.id} className="rounded-2xl bg-card border border-border/40 p-5 space-y-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-cherry/10 text-cherry flex items-center justify-center">
-                        <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                        <Icon className="w-4 h-4" />
                       </div>
                       <div>
-                        <h3 className="text-sm sm:text-base font-bold font-display text-foreground">{category.title}</h3>
-                        <p className="text-[11px] sm:text-xs text-muted-foreground">{category.description}</p>
+                        <h3 className="text-sm font-bold font-display text-foreground">{category.title}</h3>
+                        <p className="text-[11px] text-muted-foreground">{category.description}</p>
                       </div>
                     </div>
 
-                    <div className="space-y-2.5 pt-1">
+                    <div className="space-y-2 pt-1">
                       {category.faqs.map((faq, idx) => {
                         const key = `${category.id}-${idx}`;
                         const isOpen = openFaqIndex === key;
                         return (
-                          <div key={key} className="rounded-xl sm:rounded-2xl bg-secondary/30 border border-border/30 overflow-hidden">
+                          <div key={key} className="rounded-xl bg-secondary/30 border border-border/30 overflow-hidden">
                             <button
                               onClick={() => setOpenFaqIndex(isOpen ? null : key)}
-                              className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 text-left flex items-center justify-between text-xs font-semibold text-foreground hover:bg-secondary/50 transition-colors"
+                              className="w-full px-4 py-2.5 text-left flex items-center justify-between text-xs font-semibold text-foreground hover:bg-secondary/50 transition-colors"
                             >
                               <span>{faq.q}</span>
-                              <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isOpen ? "rotate-90 text-cherry" : ""}`} />
+                              <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isOpen ? "rotate-90 text-primary" : ""}`} />
                             </button>
                             {isOpen && (
-                              <div className="px-3.5 pb-3 pt-1 text-xs text-muted-foreground leading-relaxed border-t border-border/20 bg-background/30">
+                              <div className="px-4 pb-3 pt-1 text-xs text-muted-foreground leading-relaxed border-t border-border/20 bg-background/30">
                                 <ReactMarkdown>{faq.a}</ReactMarkdown>
                               </div>
                             )}
@@ -945,15 +925,15 @@ const SupportPage: React.FC = () => {
 
         {/* Tab 3: Call History */}
         {tab === "history" && (
-          <div className="rounded-2xl sm:rounded-3xl bg-card border border-border/50 p-5 sm:p-8 shadow-xl space-y-5">
+          <div className="rounded-2xl bg-card border border-border/40 p-5 sm:p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-border/40 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                  <History className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                  <History className="w-4 h-4" />
                 </div>
                 <div>
-                  <h2 className="text-base sm:text-lg font-bold font-display text-foreground">Voice Call History</h2>
-                  <p className="text-xs text-muted-foreground">Review past voice calls and recordings</p>
+                  <h2 className="text-base font-bold font-display text-foreground">Voice Call History</h2>
+                  <p className="text-xs text-muted-foreground">Review past WebRTC voice support calls</p>
                 </div>
               </div>
 
@@ -966,31 +946,31 @@ const SupportPage: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 4: Push Alert & Preferences */}
+        {/* Tab 4: Notifications Settings */}
         {tab === "settings" && (
-          <div className="max-w-3xl mx-auto rounded-2xl sm:rounded-3xl bg-card border border-border/50 p-5 sm:p-8 shadow-xl space-y-5">
-            <div className="flex items-center gap-4 border-b border-border/40 pb-5">
-              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center ${pushPermission === "granted" ? "bg-emerald-500/15 text-emerald-500" : "bg-amber-500/15 text-amber-500"}`}>
-                {pushPermission === "granted" ? <BellRing className="w-5 h-5 sm:w-6 sm:h-6" /> : <BellOff className="w-5 h-5 sm:w-6 sm:h-6" />}
+          <div className="max-w-2xl mx-auto rounded-2xl bg-card border border-border/40 p-5 sm:p-6 space-y-5">
+            <div className="flex items-center gap-4 border-b border-border/40 pb-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${pushPermission === "granted" ? "bg-emerald-500/15 text-emerald-500" : "bg-amber-500/15 text-amber-500"}`}>
+                {pushPermission === "granted" ? <BellRing className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
               </div>
               <div>
-                <h2 className="text-base sm:text-lg font-bold font-display text-foreground">Real-Time Call Alerts</h2>
-                <p className="text-xs text-muted-foreground">Get notified immediately when support calls you</p>
+                <h2 className="text-base font-bold font-display text-foreground">Real-Time Call Alerts</h2>
+                <p className="text-xs text-muted-foreground">Receive push notifications when agents call you</p>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-secondary/30 border border-border/40 space-y-3">
+            <div className="p-4 rounded-xl bg-secondary/30 border border-border/40 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-xs sm:text-sm font-semibold text-foreground">Browser Push Alerts</h4>
+                  <h4 className="text-xs sm:text-sm font-semibold text-foreground">Browser Push Status</h4>
                   <p className="text-[11px] text-muted-foreground">
-                    {pushPermission === "granted" ? "Subscribed on this device" : "Not enabled yet"}
+                    {pushPermission === "granted" ? "Subscribed on this browser" : "Not enabled"}
                   </p>
                 </div>
                 <Button
                   onClick={handleEnablePush}
                   disabled={pushBusy || pushPermission === "granted" || pushPermission === "unsupported"}
-                  className="rounded-xl text-xs h-8 px-3"
+                  className="rounded-lg text-xs h-8 px-3"
                 >
                   {pushPermission === "granted" ? "Subscribed" : pushBusy ? "Enabling..." : "Enable Push"}
                 </Button>
@@ -1005,7 +985,7 @@ const SupportPage: React.FC = () => {
           </div>
         )}
 
-      </div>
+      </main>
     </div>
   );
 };
