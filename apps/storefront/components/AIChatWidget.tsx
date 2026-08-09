@@ -951,60 +951,7 @@ const AIChatWidget: React.FC = () => {
     })();
   }, [loading, messages, user, buildPageContext]);
 
-  // Cinematic welcome: shown at most once per day per browser.
-  useEffect(() => {
-    if (!widgetSettings || !widgetSettings.welcome_enabled) return;
-    if (isAdminPage || isLandingPage || !isEnabled) return;
-    if (typeof window === "undefined") return;
 
-    const today = new Date().toISOString().slice(0, 10);
-    const shownKey = user ? `u:${user.id}` : "guest";
-    let shown = "";
-    let lastVisit = "";
-    try {
-      shown = localStorage.getItem("orizino:welcomeShownOn") || "";
-      lastVisit = localStorage.getItem("orizino:lastVisit") || "";
-    } catch {}
-    // Re-greet whenever the auth identity changes (e.g. after login),
-    // even if a greeting was already shown earlier today as a guest.
-    if (shown === `${today}|${shownKey}`) {
-      try { localStorage.setItem("orizino:lastVisit", today); } catch {}
-      return;
-    }
-
-    const pick = (arr: string[]) => (arr.length ? arr[Math.floor(Math.random() * arr.length)] : "");
-    let template = "";
-    if (user && widgetSettings.welcome_returning_logged_in.length) {
-      template = pick(widgetSettings.welcome_returning_logged_in);
-    } else if (!lastVisit) {
-      template = widgetSettings.welcome_first_time;
-    } else {
-      const days = Math.max(0, Math.floor((Date.now() - new Date(lastVisit).getTime()) / 86400000));
-      if (days <= 1) template = pick(widgetSettings.welcome_returning_today);
-      else if (days <= 7) template = pick(widgetSettings.welcome_returning_week);
-      else template = pick(widgetSettings.welcome_returning_long);
-    }
-    if (!template) template = widgetSettings.welcome_first_time;
-
-    const finalText = template
-      .replace(/\{name\}/gi, userDisplayName || "there")
-      .replace(/\{brand\}/gi, "Orizino");
-
-    // Delay a moment so the FAB has mounted/positioned first.
-    const t = setTimeout(() => {
-      setWelcomeText(finalText);
-      setWelcomeVisible(true);
-      try {
-        localStorage.setItem("orizino:welcomeShownOn", `${today}|${shownKey}`);
-        localStorage.setItem("orizino:lastVisit", today);
-      } catch {}
-    }, 900);
-    const holdMs = Math.max(1500, widgetSettings.welcome_cinematic_duration_ms ?? 3000);
-    const tHide = setTimeout(() => setWelcomeVisible(false), 900 + holdMs);
-    return () => { clearTimeout(t); clearTimeout(tHide); };
-    // Run once per settings load; gating via localStorage prevents repeats.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widgetSettings?.id, isAdminPage, isLandingPage, isEnabled, user?.id]);
 
   const requestLiveSupport = async () => {
     if (!user) return;
@@ -1144,8 +1091,8 @@ const AIChatWidget: React.FC = () => {
             aria-label="Open support chat (drag to reposition)"
           >
             {(() => {
-              // Greeting mode: the FAB itself grows into a wide rounded-rect bubble.
-              const greetingShowing = welcomeVisible && !open;
+              // Greeting mode completely disabled per user preference.
+              const greetingShowing = false;
               // Compute greeting dimensions (responsive, capped to viewport).
               const vw = typeof window !== "undefined" ? window.innerWidth : 420;
               const greetW = Math.min(320, vw - 32);
@@ -1199,9 +1146,9 @@ const AIChatWidget: React.FC = () => {
                     transition={{ repeat: Infinity, duration: incomingCall ? 0.9 : 3.4, ease: "easeInOut" }}
                   />
 
-                  {/* Water bubble orb — darkened liquid glass drop for high text contrast in light mode */}
+                  {/* Water bubble orb — transparent liquid glass drop */}
                   <motion.div
-                    className={`relative overflow-hidden border border-white/25 dark:border-white/15 ring-1 ring-black/20 dark:ring-white/20 shadow-[inset_0_2px_5px_rgba(255,255,255,0.45),0_12px_32px_-6px_rgba(0,0,0,0.3)] group-hover:scale-[1.04] transition-[width,height] duration-500 bg-slate-900/85 dark:bg-card/90 text-white backdrop-blur-2xl ${fabBubbleExtraClass}`}
+                    className={`relative overflow-hidden border border-white/35 dark:border-white/20 ring-1 ring-black/15 dark:ring-white/20 shadow-[inset_0_2px_6px_rgba(255,255,255,0.4),0_8px_24px_-4px_rgba(0,0,0,0.25)] group-hover:scale-[1.04] transition-[width,height] duration-500 bg-slate-900/40 dark:bg-black/35 text-white backdrop-blur-xl ${fabBubbleExtraClass}`}
                     style={{
                       width: boxW,
                       height: boxH,
