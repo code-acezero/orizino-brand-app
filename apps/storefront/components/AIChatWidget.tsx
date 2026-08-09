@@ -1199,9 +1199,9 @@ const AIChatWidget: React.FC = () => {
                     transition={{ repeat: Infinity, duration: incomingCall ? 0.9 : 3.4, ease: "easeInOut" }}
                   />
 
-                  {/* Water bubble orb — clear transparent pure water glass drop (light & dark mode ready) */}
+                  {/* Water bubble orb — darkened liquid glass drop for high text contrast in light mode */}
                   <motion.div
-                    className={`relative overflow-hidden border border-white/60 dark:border-white/25 ring-1 ring-black/10 dark:ring-white/20 shadow-[inset_0_2px_8px_rgba(255,255,255,0.95),inset_0_-2px_6px_rgba(0,0,0,0.08),0_10px_28px_-6px_rgba(0,0,0,0.18)] dark:shadow-[inset_0_2px_6px_rgba(255,255,255,0.45),0_8px_24px_-4px_rgba(0,0,0,0.4)] group-hover:scale-[1.04] transition-[width,height] duration-500 bg-white/45 dark:bg-black/30 backdrop-blur-xl ${fabBubbleExtraClass}`}
+                    className={`relative overflow-hidden border border-white/25 dark:border-white/15 ring-1 ring-black/20 dark:ring-white/20 shadow-[inset_0_2px_5px_rgba(255,255,255,0.45),0_12px_32px_-6px_rgba(0,0,0,0.3)] group-hover:scale-[1.04] transition-[width,height] duration-500 bg-slate-900/85 dark:bg-card/90 text-white backdrop-blur-2xl ${fabBubbleExtraClass}`}
                     style={{
                       width: boxW,
                       height: boxH,
@@ -1366,11 +1366,11 @@ const AIChatWidget: React.FC = () => {
                             <motion.span
                               key={underwaterIdx}
                               initial={{ opacity: 0, y: 8, filter: "blur(3px)" }}
-                              animate={{ opacity: 0.9, y: 0, filter: "blur(0.4px)" }}
+                              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                               exit={{ opacity: 0, y: -8, filter: "blur(3px)" }}
                               transition={{ duration: 0.7 }}
-                              className="text-white drop-shadow font-semibold tracking-wide text-center px-1"
-                              style={{ fontSize: Math.max(8, Math.round(renderSize / 8)) }}
+                              className="text-white font-bold tracking-wide text-center px-1 [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]"
+                              style={{ fontSize: Math.max(8.5, Math.round(renderSize / 8)) }}
                             >
                               {fabUnderwaterTexts[underwaterIdx % fabUnderwaterTexts.length]}
                             </motion.span>
