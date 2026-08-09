@@ -210,13 +210,13 @@ const Footer: React.FC = () => {
             <div className="flex flex-col gap-3">
               {/* 1. Logo Title (Bigger) + Suffix + Underline */}
               <div className="w-fit flex flex-col gap-1 group shrink-0">
-                <Link href="/" className="inline-flex items-center gap-2">
+                <Link href="/" className="inline-flex items-center gap-2.5 sm:gap-3">
                   {logoUrl && (
-                    <BrandLogo logoUrl={logoUrl} alt={siteName} className="h-6 w-8 sm:h-7 sm:w-9 transition-all duration-300 group-hover:scale-105" />
+                    <BrandLogo logoUrl={logoUrl} alt={siteName} className="h-6 w-8 sm:h-7 sm:w-9 lg:h-10 lg:w-13 transition-all duration-300 group-hover:scale-105" />
                   )}
-                  <div className="flex items-baseline gap-1.5">
+                  <div className="flex items-baseline gap-1.5 sm:gap-2">
                     <span
-                      className="text-xl sm:text-2xl lg:text-3xl tracking-[0.14em] uppercase text-foreground font-extrabold group-hover:text-primary transition-colors duration-300"
+                      className="text-xl sm:text-2xl lg:text-4xl xl:text-5xl tracking-[0.14em] uppercase text-foreground font-extrabold group-hover:text-primary transition-colors duration-300"
                       style={{
                         fontFamily: titleFont
                           ? `'${titleFont}', var(--font-title, var(--font-display))`
@@ -226,7 +226,7 @@ const Footer: React.FC = () => {
                       {siteName}
                     </span>
                     {brandSuffix && (
-                      <span className="text-xs font-bold tracking-widest text-primary/80 uppercase transition-colors group-hover:text-primary">
+                      <span className="text-xs lg:text-sm font-bold tracking-widest text-primary/80 uppercase transition-colors group-hover:text-primary">
                         {brandSuffix}
                       </span>
                     )}
