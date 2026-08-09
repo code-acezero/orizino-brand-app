@@ -552,16 +552,6 @@ const SupportPage: React.FC = () => {
 
           <div className="flex items-center gap-2 shrink-0">
             <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRequestHandoff}
-              className="rounded-xl text-xs gap-1.5 h-9 px-3.5 border-border/60"
-            >
-              <Headphones className="w-3.5 h-3.5 text-primary" />
-              <span>Human Specialist</span>
-            </Button>
-
-            <Button
               size="sm"
               variant={pushEnabled ? "secondary" : "outline"}
               onClick={handleEnablePush}
@@ -791,13 +781,39 @@ const SupportPage: React.FC = () => {
             {/* Block 2 (Right 4 Cols): Desktop & Mobile Support Information Cards */}
             <div className="lg:col-span-4 space-y-4">
               
-              {/* Card 1: Direct Order Tracking Link */}
+              {/* Card 1: Request Human Support Agent */}
+              <div className="rounded-2xl bg-card border border-border/40 p-4 sm:p-5 space-y-3 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                    <LifeBuoy className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold text-foreground">Human Support Agent</h3>
+                    <p className="text-[10px] sm:text-[11px] text-muted-foreground">Response within 15 mins</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Need custom assistance with an order, payment, or fitting? Connect with a support representative directly.
+                </p>
+
+                <Button
+                  onClick={handleRequestHandoff}
+                  variant="outline"
+                  className="w-full rounded-xl border-border/60 text-foreground font-semibold text-xs py-4 gap-2 transition-all hover:bg-primary hover:text-primary-foreground"
+                >
+                  <Headphones className="w-3.5 h-3.5" />
+                  Request Support Specialist
+                </Button>
+              </div>
+
+              {/* Card 2: Direct Order Tracking Link */}
               <Link
                 to="/orders"
                 className="group p-4 rounded-2xl bg-card border border-border/40 hover:border-primary/40 hover:shadow-xs transition-all flex items-center gap-3.5"
               >
-                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 group-hover:scale-105 transition-transform">
-                  <PackageCheck className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-secondary text-foreground flex items-center justify-center font-bold shrink-0 group-hover:text-primary group-hover:scale-105 transition-all">
+                  <PackageCheck className="w-4.5 h-4.5" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xs sm:text-sm font-bold text-foreground group-hover:text-primary transition-colors">Track Live Orders</h3>
