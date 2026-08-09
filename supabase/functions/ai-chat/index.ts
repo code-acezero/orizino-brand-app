@@ -239,21 +239,31 @@ function normalizeMessages(messages: any[]): any[] {
   });
 }
 
-async function loadDbGeminiKeys(): Promise<string[]> {
+async function loadDbKeys(settingKey: string): Promise<string[]> {
   try {
     const { data } = await admin
       .from("site_settings")
       .select("value")
-      .eq("key", "gemini_fallback_config")
+      .eq("key", settingKey)
       .maybeSingle();
 
     const raw = (data?.value as any) || {};
     const val = raw && typeof raw === "object" && "value" in raw ? raw.value : raw;
-    const keys = Array.isArray(val?.keys) ? val.keys : [];
+    const keys = Array.isArray(val?.keys)
+      ? val.keys
+      : typeof val?.key === "string" && val.key.trim()
+        ? [val.key.trim()]
+        : [];
     return keys.filter((k: any) => typeof k === "string" && k.trim().length > 0);
   } catch {
     return [];
   }
+}
+
+async function getAllKeysForProvider(envPrefix: string, dbSettingKey: string): Promise<string[]> {
+  const envKeys = loadApiKeysFromEnv(envPrefix);
+  const dbKeys = await loadDbKeys(dbSettingKey);
+  return [...new Set([...envKeys, ...dbKeys])];
 }
 
 type Provider = {
@@ -264,18 +274,17 @@ type Provider = {
 };
 
 async function callChatCompletionWithFallback(payload: { messages: any[]; tools: any }): Promise<any> {
-  const envGeminiKeys = loadApiKeysFromEnv("GEMINI_API_KEY");
-  const dbGeminiKeys = await loadDbGeminiKeys();
-  const geminiKeys = [...new Set([...envGeminiKeys, ...dbGeminiKeys])];
-  const openaiKeys = loadApiKeysFromEnv("OPENAI_API_KEY");
+  const geminiKeys = await getAllKeysForProvider("GEMINI_API_KEY", "gemini_fallback_config");
+  const openaiKeys = await getAllKeysForProvider("OPENAI_API_KEY", "openai_fallback_config");
+  const lovableKeys = await getAllKeysForProvider("LOVABLE_API_KEY", "lovable_fallback_config");
 
   const providers: Provider[] = [];
 
-  // 1. Direct Gemini API endpoints (Free limits: gemini-2.5-flash / gemini-2.0-flash / gemini-1.5-flash)
+  // Priority 1: Google Gemini (Default with multiple key rotation)
   for (let i = 0; i < geminiKeys.length; i++) {
     for (const gModel of GEMINI_MODELS) {
       providers.push({
-        name: `gemini-direct-${gModel}-k${i + 1}`,
+        name: `gemini-direct-${gModel}-key${i + 1}`,
         url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
         headers: { Authorization: `Bearer ${geminiKeys[i]}`, "Content-Type": "application/json" },
         model: gModel,
@@ -283,30 +292,34 @@ async function callChatCompletionWithFallback(payload: { messages: any[]; tools:
     }
   }
 
-  // 2. Direct OpenAI API endpoints
+  // Priority 2: Direct OpenAI (2nd Fallback with multiple key rotation)
   for (let i = 0; i < openaiKeys.length; i++) {
-    providers.push({
-      name: `openai-direct-k${i + 1}`,
-      url: "https://api.openai.com/v1/chat/completions",
-      headers: { Authorization: `Bearer ${openaiKeys[i]}`, "Content-Type": "application/json" },
-      model: OPENAI_MODEL,
-    });
+    for (const oModel of ["gpt-4o-mini", "gpt-4o"]) {
+      providers.push({
+        name: `openai-direct-${oModel}-key${i + 1}`,
+        url: "https://api.openai.com/v1/chat/completions",
+        headers: { Authorization: `Bearer ${openaiKeys[i]}`, "Content-Type": "application/json" },
+        model: oModel,
+      });
+    }
   }
 
-  // 3. Lovable AI Gateway
-  if (LOVABLE_API_KEY) {
-    providers.push({
-      name: "lovable-gateway",
-      url: "https://ai.gateway.lovable.dev/v1/chat/completions",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      model: LOVABLE_MODEL,
-    });
+  // Priority 3: Lovable AI Gateway (3rd Fallback with multiple key rotation)
+  for (let i = 0; i < lovableKeys.length; i++) {
+    for (const lModel of ["google/gemini-2.5-flash", "openai/gpt-4o-mini"]) {
+      providers.push({
+        name: `lovable-gateway-${lModel}-key${i + 1}`,
+        url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+        headers: { Authorization: `Bearer ${lovableKeys[i]}`, "Content-Type": "application/json" },
+        model: lModel,
+      });
+    }
   }
 
   if (providers.length === 0) {
     throw Object.assign(new Error("No AI API keys configured"), {
       exhausted: true,
-      lastErr: { status: 400, body: "No API keys found in GEMINI_API_KEY environment variable or site_settings database table.", provider: "none" },
+      lastErr: { status: 400, body: "No API keys found in environment variables (GEMINI_API_KEY, OPENAI_API_KEY, LOVABLE_API_KEY) or database settings.", provider: "none" },
     });
   }
 
@@ -351,14 +364,17 @@ Deno.serve(async (req) => {
     const body = await req.json();
 
     if (body?.action === "status") {
-      const gKeys = loadApiKeysFromEnv("GEMINI_API_KEY");
-      const oKeys = loadApiKeysFromEnv("OPENAI_API_KEY");
+      const gKeys = await getAllKeysForProvider("GEMINI_API_KEY", "gemini_fallback_config");
+      const oKeys = await getAllKeysForProvider("OPENAI_API_KEY", "openai_fallback_config");
+      const lKeys = await getAllKeysForProvider("LOVABLE_API_KEY", "lovable_fallback_config");
       return new Response(
         JSON.stringify({
           geminiKeysCount: gKeys.length,
           openaiKeysCount: oKeys.length,
-          lovableConfigured: !!LOVABLE_API_KEY,
-          primaryGeminiModel: GEMINI_MODELS[0],
+          lovableKeysCount: lKeys.length,
+          defaultProvider: "Google Gemini (gemini-2.5-flash)",
+          secondFallback: "OpenAI (gpt-4o-mini)",
+          thirdFallback: "Lovable AI Gateway",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
