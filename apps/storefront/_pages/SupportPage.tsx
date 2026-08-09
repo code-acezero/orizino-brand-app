@@ -662,50 +662,66 @@ const SupportPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Minimal Tab Switcher Navigation */}
-        <div className="flex items-center gap-1 border-b border-border/40 pb-px overflow-x-auto scrollbar-none">
+        {/* Executive Floating Segmented Pill Menu */}
+        <div className="p-1.5 bg-secondary/40 backdrop-blur-md rounded-2xl border border-border/40 shadow-xs grid grid-cols-2 sm:grid-cols-4 gap-1.5">
           <button
             onClick={() => setTab("chat")}
-            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
               tab === "chat"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "bg-card text-foreground shadow-sm ring-1 ring-border/50 font-semibold"
+                : "text-muted-foreground hover:text-foreground hover:bg-card/50"
             }`}
           >
-            <MessageSquare className="w-3.5 h-3.5" /> AI Chat Concierge
+            <MessageSquare className={`w-3.5 h-3.5 ${tab === "chat" ? "text-primary" : ""}`} />
+            <span>AI Concierge</span>
+            <span className="hidden md:inline-block ml-auto text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              24/7
+            </span>
           </button>
 
           <button
             onClick={() => setTab("faq")}
-            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
               tab === "faq"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "bg-card text-foreground shadow-sm ring-1 ring-border/50 font-semibold"
+                : "text-muted-foreground hover:text-foreground hover:bg-card/50"
             }`}
           >
-            <FileText className="w-3.5 h-3.5" /> Knowledge Base & FAQs
+            <FileText className={`w-3.5 h-3.5 ${tab === "faq" ? "text-primary" : ""}`} />
+            <span>Knowledge Base</span>
+            <span className="hidden md:inline-block ml-auto text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
+              FAQs
+            </span>
           </button>
 
           <button
             onClick={() => setTab("history")}
-            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
               tab === "history"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "bg-card text-foreground shadow-sm ring-1 ring-border/50 font-semibold"
+                : "text-muted-foreground hover:text-foreground hover:bg-card/50"
             }`}
           >
-            <History className="w-3.5 h-3.5" /> Call History
+            <History className={`w-3.5 h-3.5 ${tab === "history" ? "text-primary" : ""}`} />
+            <span>Call History</span>
+            <span className="hidden md:inline-block ml-auto text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
+              Logs
+            </span>
           </button>
 
           <button
             onClick={() => setTab("settings")}
-            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 border-b-2 text-xs font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
               tab === "settings"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "bg-card text-foreground shadow-sm ring-1 ring-border/50 font-semibold"
+                : "text-muted-foreground hover:text-foreground hover:bg-card/50"
             }`}
           >
-            <BellRing className="w-3.5 h-3.5" /> Call Alerts
+            <BellRing className={`w-3.5 h-3.5 ${tab === "settings" ? "text-emerald-500" : ""}`} />
+            <span>Call Alerts</span>
+            <span className={`hidden md:inline-block ml-auto text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded ${pushEnabled ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-secondary text-muted-foreground"}`}>
+              {pushEnabled ? "ON" : "OFF"}
+            </span>
           </button>
         </div>
 
