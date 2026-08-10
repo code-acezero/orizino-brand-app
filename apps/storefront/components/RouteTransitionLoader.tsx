@@ -32,31 +32,41 @@ const RouteTransitionLoader: React.FC = () => {
           transition={{ duration: 0.15 }}
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/70 backdrop-blur-sm pointer-events-none select-none"
         >
-          <div className="flex flex-col items-center gap-2.5 p-4 sm:p-5 rounded-3xl bg-card/90 border border-border/50 shadow-xl">
-            {/* Small SVG Logo Fill Loop Animation */}
-            <div className="relative w-10 h-10 flex items-center justify-center">
-              {/* Outer Pulse Accent Halo */}
-              <div className="absolute inset-0 rounded-full bg-foreground/10 animate-ping" />
-              
-              {/* SVG Logo Mark — White in Dark Mode, Dark in Light Mode */}
-              <motion.img
-                src="/orizino-logo.svg"
-                alt="Loading..."
-                animate={{
-                  scale: [0.9, 1.1, 0.9],
-                  opacity: [0.6, 1, 0.6],
-                }}
-                transition={{
-                  duration: 1.2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="w-8 h-8 object-contain relative z-10 brightness-0 dark:invert"
-              />
-            </div>
-            <span className="text-[10px] font-mono font-bold tracking-[0.25em] uppercase text-foreground">
-              ORIZINO
-            </span>
+          {/* Minimal cinematic loop: Just the vector logo itself */}
+          <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center text-foreground">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 539.27 565.14"
+              className="w-full h-full"
+            >
+              {[
+                "M11.31,303.01l10.42,10.61,102.73,114.11c-16.27-34.27-34.28-66.2-53.79-98.11L0,219.52l41.25-42.82,104.13-107.09C169.3,45.99,192.23,22.22,218.19,0l-71.11,101.28L55.74,232.06c26,65.57,52.95,130.16,81.76,194.32l12.16,25.25,71.16,112.86L52.01,416.82l-40.7-113.8Z",
+                "M510.24,351.74l-23.18,64.87-169.05,148.54,27.52-44.45,45.28-70.91,30.12-65.82,16.7-38.98,46-113.02-81.21-116.77-25.93-36.85L321.38.16c14.41,11.93,26.61,24.47,40.1,37.05l86.76,87.48,77.26,80.22,13.77,14.47-52.64,81.42c-26.66,41.23-50.32,83.4-72.56,127.58l33.83-36.98,79.5-88.8-17.16,49.14Z",
+                "M356.28,185.04l26.95,46.73-36.12,40.33-32.01,35.6-5.9,33.94-22.1,115.86-19.75,106.98-25.06-136.06-23.26-120.77-10.57-11.82-57.13-64.08,17.38-30.41,40.24-67.6c-.28,10.99,4.75,22.09,2.63,32.95l-18.99,63.2,44.02,68.95,9.75,55.81,20.97,113.31,20.22-107.91,10.47-61.52,44.22-68.68-19.37-63.68,2.55-32.17,30.86,51.02Z",
+              ].map((d, index) => (
+                <motion.path
+                  key={index}
+                  d={d}
+                  stroke="currentColor"
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="currentColor"
+                  initial={{ pathLength: 0, fillOpacity: 0 }}
+                  animate={{
+                    pathLength: [0, 1, 1, 1, 0],
+                    fillOpacity: [0, 0, 1, 0, 0],
+                  }}
+                  transition={{
+                    duration: 2.8,
+                    ease: "easeInOut",
+                    repeat: Infinity,
+                    repeatType: "loop",
+                    times: [0, 0.35, 0.5, 0.65, 1],
+                  }}
+                />
+              ))}
+            </svg>
           </div>
         </motion.div>
       )}
