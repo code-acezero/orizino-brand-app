@@ -94,7 +94,7 @@ const BrandStoryBlock: React.FC<BrandStoryBlockProps> = ({
             <p className="font-editorial italic text-3xl text-foreground/90 opacity-90">
               Orizino
             </p>
-            <p className="section-label text-foreground/40">Est. 2023 · Kushtia</p>
+            <p className="section-label text-foreground/40">Est. 2026 · Kushtia</p>
           </div>
           {/* Watermark */}
           <div
