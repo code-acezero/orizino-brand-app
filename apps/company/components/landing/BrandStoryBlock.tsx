@@ -2,6 +2,8 @@
 import React, { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BrandStoryBlockProps {
   imageUrl?: string;
@@ -14,6 +16,28 @@ const BrandStoryBlock: React.FC<BrandStoryBlockProps> = ({
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-10%" });
+
+  const { data: brandMeta } = useQuery({
+    queryKey: ["brand-meta"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("key, value")
+        .in("key", ["site_name", "brand_establishment_year", "brand_origin"]);
+      
+      const map: Record<string, string> = {};
+      data?.forEach((s) => {
+        const val = s.value;
+        map[s.key] = typeof val === "object" && val !== null ? (val as any).value ?? val : val;
+      });
+      return map;
+    },
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const siteName = brandMeta?.site_name || "Orizino";
+  const estYear = brandMeta?.brand_establishment_year || "2026";
+  const origin = brandMeta?.brand_origin || "Kushtia";
 
   const fallbackBg =
     "linear-gradient(135deg, hsl(var(--charcoal)) 0%, hsl(0 3% 14%) 100%)";
@@ -78,7 +102,7 @@ const BrandStoryBlock: React.FC<BrandStoryBlockProps> = ({
       {imageUrl ? (
         <img
           src={imageUrl}
-          alt="Orizino brand story"
+          alt={`${siteName} brand story`}
           className="w-full h-full object-cover absolute inset-0"
           loading="lazy"
         />
@@ -91,9 +115,9 @@ const BrandStoryBlock: React.FC<BrandStoryBlockProps> = ({
           <div className="space-y-2">
             <div className="w-16 h-px bg-cherry" />
             <p className="font-editorial italic text-4xl text-cream opacity-80">
-              Orizino
+              {siteName}
             </p>
-            <p className="section-label text-cream/40">Est. 2023 · Dhaka</p>
+            <p className="section-label text-cream/40">Est. {estYear} · {origin}</p>
           </div>
           {/* Watermark */}
           <div
@@ -101,9 +125,9 @@ const BrandStoryBlock: React.FC<BrandStoryBlockProps> = ({
             style={{ opacity: 0.04 }}
           >
             <span
-              className="font-editorial text-cream text-[12vw] font-bold tracking-tighter whitespace-nowrap"
+              className="font-editorial text-cream text-[12vw] font-bold tracking-tighter whitespace-nowrap uppercase"
             >
-              ORIZINO
+              {siteName}
             </span>
           </div>
         </div>
