@@ -295,22 +295,22 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </div>
 
           {/* ── Action buttons: Share & Wishlist ── */}
-          <div className="absolute bottom-12 right-2.5 z-20 flex flex-col gap-2">
+          <div className="absolute bottom-12 right-2.5 z-20 flex flex-col gap-3">
             <button
               onClick={handleShare}
               aria-label="Share product"
-              className={`w-8 h-8 rounded-full bg-background/80 backdrop-blur-md border border-cream/10 flex items-center justify-center transition-all duration-300 ${
+              className={`flex items-center justify-center transition-all duration-300 text-foreground/80 filter drop-shadow-md ${
                 hovered ? "opacity-100 scale-100 translate-x-0" : "opacity-0 scale-90 translate-x-4 pointer-events-none"
-              } hover:bg-primary hover:text-primary-foreground hover:scale-110`}
+              } hover:text-primary hover:scale-110`}
               style={{
                 transition: "all 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
                 willChange: "transform, opacity",
               }}
             >
-              <Share2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+              <Share2 className="w-5 h-5" strokeWidth={1.5} />
             </button>
             <button
-              className={`w-8 h-8 rounded-full flex items-center justify-center bg-background/80 backdrop-blur-md border border-cream/10 transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:scale-110 ${
+              className={`flex items-center justify-center transition-all duration-300 hover:text-primary hover:scale-110 text-foreground/80 filter drop-shadow-md ${
                 hovered ? "opacity-100 scale-100 translate-x-0" : "opacity-0 scale-90 translate-x-4 pointer-events-none"
               }`}
               style={{
@@ -322,7 +322,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               aria-label={inWishlist ? "Remove from wishlist" : "Save"}
             >
               <Heart
-                className="w-3.5 h-3.5 transition-colors"
+                className="w-5 h-5 transition-colors"
                 strokeWidth={1.5}
                 style={{
                   fill: inWishlist ? "hsl(var(--cherry))" : "transparent",
