@@ -19,9 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import ImageUpload from "@/components/ImageUpload";
 import VideoUpload from "@/components/VideoUpload";
 import { toast } from "@/lib/app-toast";
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Pencil, Trash2, Settings2, Layers, GripVertical, Copy, Link2, Palette, Wand2, Eye, Monitor, Smartphone, ChevronLeft, ChevronRight, Play, Pause, Image, FileText, Sparkles, LayoutGrid, Type, ArrowUp, ArrowDown, RotateCcw } from "lucide-react";
-import ColorPicker from "@/components/ui/color-picker";
+import { Plus, Pencil, Trash2, Settings2, Layers, GripVertical, Copy, Link2, Palette, Wand2, Eye, Monitor, Smartphone, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Play, Pause, Image, FileText, LayoutGrid, Type, ArrowUp, ArrowDown, RotateCcw, Check } from "lucide-react";
 import { useDragReorder } from "@/hooks/use-drag-reorder";
 
 const FONT_FAMILY_MAP: Record<string, string> = {
@@ -437,7 +435,7 @@ const AdminShowcase = () => {
           <TabsTrigger value="slides" className="flex items-center gap-1"><Layers className="w-4 h-4" /> Hero Slides</TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-1"><Settings2 className="w-4 h-4" /> Slider Settings</TabsTrigger>
           <TabsTrigger value="effects" className="flex items-center gap-1"><Wand2 className="w-4 h-4" /> Motion Effects</TabsTrigger>
-          <TabsTrigger value="product-showcase" className="flex items-center gap-1"><Sparkles className="w-4 h-4" /> Cinematic Product Showcase</TabsTrigger>
+          <TabsTrigger value="product-showcase" className="flex items-center gap-1"><LayoutGrid className="w-4 h-4" /> Cinematic Product Showcase</TabsTrigger>
           <TabsTrigger value="collections-strip" className="flex items-center gap-1"><LayoutGrid className="w-4 h-4" /> Collections Strip</TabsTrigger>
           <TabsTrigger value="marquee-strip" className="flex items-center gap-1"><Type className="w-4 h-4" /> Marquee Strip</TabsTrigger>
         </TabsList>
@@ -1108,8 +1106,8 @@ const emptyEntry: ShowcaseEntry = {
 export function ProductShowcaseTab() {
   const qc = useQueryClient();
   const [entries, setEntries] = useState<ShowcaseEntry[]>([]);
-  const [editing, setEditing] = useState<ShowcaseEntry | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Load existing config
   const { data: savedConfig, isLoading } = useQuery({
@@ -1143,7 +1141,6 @@ export function ProductShowcaseTab() {
 
   const [isEnabled, setIsEnabled] = useState(true);
   const [showFeatured, setShowFeatured] = useState(false);
-
   const hasInitialized = useRef(false);
 
   useEffect(() => {
@@ -1152,6 +1149,9 @@ export function ProductShowcaseTab() {
         setEntries(savedConfig as ShowcaseEntry[]);
         setIsEnabled(true);
         setShowFeatured(false);
+        if (!selectedId && (savedConfig as ShowcaseEntry[]).length > 0) {
+          setSelectedId((savedConfig as ShowcaseEntry[])[0].id);
+        }
       } else if (typeof savedConfig === "object") {
         const feat = Boolean(savedConfig.show_featured || savedConfig.show_featured_fallback || savedConfig.show_featured_products);
         setIsEnabled(savedConfig.is_enabled !== false);
@@ -1160,42 +1160,38 @@ export function ProductShowcaseTab() {
         const existingEntries = Array.isArray(savedConfig.entries) ? (savedConfig.entries as ShowcaseEntry[]) : [];
         if (existingEntries.length > 0) {
           setEntries(existingEntries);
+          if (!selectedId) {
+            setSelectedId(existingEntries[0].id);
+          }
         } else if (feat && products.length > 0 && !hasInitialized.current) {
           hasInitialized.current = true;
-          // Auto-populate featured cards into entries so the admin can edit/remove them immediately!
           const featuredProds = products.filter((p: any) => p.is_featured);
           const targetProds = featuredProds.length > 0 ? featuredProds : products.slice(0, 4);
           if (targetProds.length > 0) {
-            const autoCards: ShowcaseEntry[] = targetProds.map((prod: any, idx: number) => {
-              const layoutType: "featured" | "tall" | "wide" | "square" =
-                idx === 0 ? "featured" : idx === 1 ? "tall" : idx === 2 ? "wide" : "square";
-              const cardStyle: "glass" | "dark" | "cherry" =
-                idx % 3 === 0 ? "glass" : idx % 3 === 1 ? "dark" : "cherry";
-
-              return {
-                id: crypto.randomUUID(),
-                title: prod.name,
-                subtitle: "Heavyweight Collection",
-                badge_tag: idx === 1 ? "EDITORIAL SILHOUETTE" : "LIMITED DROP",
-                image_url: prod.thumbnail || "",
-                video_url: "",
-                markdown_specs: "Fabric: 100% Heavyweight Cotton\nWeight: 240+ GSM European Fit\nFit: Oversized Drop Shoulder\nStatus: Available Now",
-                product_id: prod.id,
-                cta_text: "Shop Piece",
-                cta_link: `/product/${prod.slug}`,
-                layout_type: layoutType,
-                card_style: cardStyle,
-                content_position: idx === 1 ? "side" : "bottom-left",
-                show_price: true,
-                price_position: "top",
-                stock_status: "In Stock",
-                show_gallery: false,
-                follow_card_id: null,
-                is_active: true,
-                sort_order: idx,
-              };
-            });
+            const autoCards: ShowcaseEntry[] = targetProds.map((prod: any, idx: number) => ({
+              id: crypto.randomUUID(),
+              title: prod.name,
+              subtitle: "Heavyweight Collection",
+              badge_tag: idx === 1 ? "EDITORIAL SILHOUETTE" : "LIMITED DROP",
+              image_url: prod.thumbnail || "",
+              video_url: "",
+              markdown_specs: "Fabric: 100% Heavyweight Cotton\nWeight: 240+ GSM European Fit\nFit: Oversized Drop Shoulder\nStatus: Available Now",
+              product_id: prod.id,
+              cta_text: "Shop Piece",
+              cta_link: `/product/${prod.slug}`,
+              layout_type: idx === 0 ? "featured" : idx === 1 ? "tall" : idx === 2 ? "wide" : "square",
+              card_style: idx % 3 === 0 ? "glass" : idx % 3 === 1 ? "dark" : "cherry",
+              content_position: idx === 1 ? "side" : "bottom-left",
+              show_price: true,
+              price_position: "top",
+              stock_status: "In Stock",
+              show_gallery: false,
+              follow_card_id: null,
+              is_active: true,
+              sort_order: idx,
+            }));
             setEntries(autoCards);
+            setSelectedId(autoCards[0].id);
             saveConfig(autoCards, savedConfig.is_enabled !== false, feat);
           }
         }
@@ -1205,6 +1201,7 @@ export function ProductShowcaseTab() {
 
   const saveConfig = async (updatedEntries: ShowcaseEntry[], updatedIsEnabled: boolean, updatedShowFeatured: boolean) => {
     try {
+      setIsSaving(true);
       const { error } = await supabase
         .from("site_settings")
         .upsert(
@@ -1222,101 +1219,79 @@ export function ProductShowcaseTab() {
       if (error) throw error;
       qc.invalidateQueries({ queryKey: ["product-showcase-config"] });
       qc.invalidateQueries({ queryKey: ["product-showcase-config-admin"] });
-      toast.success("Product showcase saved");
+      toast.success("Cinematic Showcase saved successfully");
     } catch (e: any) {
       toast.error(e?.message || "Failed to save product showcase");
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleToggleSettings = (key: 'isEnabled' | 'showFeatured', val: boolean) => {
-    const nextEnabled = key === 'isEnabled' ? val : isEnabled;
-    const nextFeatured = key === 'showFeatured' ? val : showFeatured;
-    if (key === 'isEnabled') setIsEnabled(val);
-    if (key === 'showFeatured') {
-      setShowFeatured(val);
-      if (val && entries.length === 0) {
-        const featuredProds = products.filter((p: any) => p.is_featured);
-        const targetProds = featuredProds.length > 0 ? featuredProds : products.slice(0, 4);
-        if (targetProds.length > 0) {
-          const autoCards: ShowcaseEntry[] = targetProds.map((prod: any, idx: number) => {
-            const layoutType: "featured" | "tall" | "wide" | "square" =
-              idx === 0 ? "featured" : idx === 1 ? "tall" : idx === 2 ? "wide" : "square";
-            const cardStyle: "glass" | "dark" | "cherry" =
-              idx % 3 === 0 ? "glass" : idx % 3 === 1 ? "dark" : "cherry";
+  const handleManualSave = () => {
+    saveConfig(entries, isEnabled, showFeatured);
+  };
 
-            return {
-              id: crypto.randomUUID(),
-              title: prod.name,
-              subtitle: "Heavyweight Collection",
-              badge_tag: idx === 1 ? "EDITORIAL SILHOUETTE" : "LIMITED DROP",
-              image_url: prod.thumbnail || "",
-              video_url: "",
-              markdown_specs: "Fabric: 100% Heavyweight Cotton\nWeight: 240+ GSM European Fit\nFit: Oversized Drop Shoulder\nStatus: Available Now",
-              product_id: prod.id,
-              cta_text: "Shop Piece",
-              cta_link: `/product/${prod.slug}`,
-              layout_type: layoutType,
-              card_style: cardStyle,
-              content_position: idx === 1 ? "side" : "bottom-left",
-              show_price: true,
-              price_position: "top",
-              stock_status: "In Stock",
-              show_gallery: false,
-              follow_card_id: null,
-              is_active: true,
-              sort_order: idx,
-            };
-          });
-          setEntries(autoCards);
-          saveConfig(autoCards, nextEnabled, true);
-          toast.success(`Generated ${autoCards.length} featured product cards ready for individual customization!`);
-          return;
-        }
-      }
+  const updateCard = (id: string, patch: Partial<ShowcaseEntry>) => {
+    setEntries((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  };
+
+  const handleAddCard = () => {
+    const newEntry: ShowcaseEntry = {
+      ...emptyEntry,
+      id: crypto.randomUUID(),
+      title: "New Editorial Bento Card",
+      subtitle: "Limited Silhouette",
+      badge_tag: "LIMITED DROP",
+      layout_type: "auto",
+      card_style: "glass",
+      content_position: "bottom-left",
+      show_price: true,
+      price_position: "top",
+      stock_status: "In Stock",
+      is_active: true,
+      sort_order: entries.length,
+    };
+    const next = [...entries, newEntry];
+    setEntries(next);
+    setSelectedId(newEntry.id);
+    toast.success("New card added and opened in inspector");
+  };
+
+  const handleDuplicateCard = (card: ShowcaseEntry, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const dupe: ShowcaseEntry = {
+      ...card,
+      id: crypto.randomUUID(),
+      title: `${card.title || "Card"} (Copy)`,
+      sort_order: entries.length,
+    };
+    const next = [...entries, dupe];
+    setEntries(next);
+    setSelectedId(dupe.id);
+    toast.success("Card duplicated and selected");
+  };
+
+  const handleDeleteCard = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = entries
+      .filter((c) => c.id !== id)
+      .map((c) => (c.follow_card_id === id ? { ...c, follow_card_id: null } : c));
+    next.forEach((c, idx) => (c.sort_order = idx));
+    setEntries(next);
+    if (selectedId === id) {
+      setSelectedId(next[0]?.id || null);
     }
-    saveConfig(entries, nextEnabled, nextFeatured);
+    toast.info("Card removed");
   };
 
-  const saveEntries = async (updated: ShowcaseEntry[]) => {
-    setEntries(updated);
-    saveConfig(updated, isEnabled, showFeatured);
-  };
-
-  const openEdit = (entry?: ShowcaseEntry) => {
-    setEditing(entry || { ...emptyEntry, id: crypto.randomUUID(), sort_order: entries.length });
-    setDialogOpen(true);
-  };
-
-  const handleSave = () => {
-    if (!editing) return;
-    const exists = entries.find((e) => e.id === editing.id);
-    const updated = exists
-      ? entries.map((e) => (e.id === editing.id ? editing : e))
-      : [...entries, editing];
-    saveEntries(updated);
-    setDialogOpen(false);
-    setEditing(null);
-  };
-
-  const handleDelete = (id: string) => {
-    // If other cards follow this deleted card, unlink them gracefully
-    const updated = entries
-      .filter((e) => e.id !== id)
-      .map((e) => (e.follow_card_id === id ? { ...e, follow_card_id: null } : e));
-    saveEntries(updated);
-  };
-
-  const handleToggle = (id: string) => {
-    saveEntries(entries.map((e) => (e.id === id ? { ...e, is_active: !e.is_active } : e)));
-  };
-
-  const moveEntry = (idx: number, dir: -1 | 1) => {
-    const arr = [...entries];
+  const handleMoveCard = (idx: number, dir: -1 | 1, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = [...entries];
     const newIdx = idx + dir;
-    if (newIdx < 0 || newIdx >= arr.length) return;
-    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-    arr.forEach((e, i) => (e.sort_order = i));
-    saveEntries(arr);
+    if (newIdx < 0 || newIdx >= next.length) return;
+    [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
+    next.forEach((c, i) => (c.sort_order = i));
+    setEntries(next);
   };
 
   const handleImportFeaturedProducts = () => {
@@ -1365,25 +1340,27 @@ export function ProductShowcaseTab() {
       ...newCards.filter((nc) => !entries.some((e) => e.product_id === nc.product_id || e.id === nc.id)),
     ];
     merged.forEach((e, i) => (e.sort_order = i));
-    saveEntries(merged);
-    toast.success(`Imported ${newCards.length} featured product cards. You can now customize each card individually!`);
+    setEntries(merged);
+    if (merged.length > 0 && !selectedId) {
+      setSelectedId(merged[0].id);
+    }
+    toast.success(`Imported ${newCards.length} featured products into the Bento Deck`);
   };
 
   const handleAutofillFromProduct = (productId: string) => {
-    if (!editing) return;
+    if (!selectedCard) return;
     const prod = products.find((p: any) => p.id === productId);
     if (!prod) return;
 
-    setEditing({
-      ...editing,
+    updateCard(selectedCard.id, {
       product_id: prod.id,
       title: prod.name,
-      image_url: prod.thumbnail || editing.image_url,
+      image_url: prod.thumbnail || selectedCard.image_url,
       cta_link: `/product/${prod.slug}`,
-      subtitle: editing.subtitle || "Heavyweight Collection",
+      subtitle: selectedCard.subtitle || "Heavyweight Collection",
       show_price: true,
-      price_position: editing.price_position || "top",
-      markdown_specs: editing.markdown_specs || "Fabric: 100% Heavyweight Cotton\nWeight: 240+ GSM\nFit: Oversized Drop Shoulder\nStatus: In Stock",
+      price_position: selectedCard.price_position || "top",
+      markdown_specs: selectedCard.markdown_specs || "Fabric: 100% Heavyweight Cotton\nWeight: 240+ GSM\nFit: Oversized Drop Shoulder\nStatus: In Stock",
     });
     toast.info(`Pre-filled card details from "${prod.name}"`);
   };
@@ -1404,259 +1381,479 @@ export function ProductShowcaseTab() {
             stock_status: sourceCard.stock_status,
           }
     );
-    saveEntries(updated);
+    setEntries(updated);
     toast.success("Applied this card's styling and layout to all other cards!");
   };
 
+  const selectedCard = entries.find((e) => e.id === selectedId) || null;
+  const selectedIndex = selectedCard ? entries.findIndex((e) => e.id === selectedCard.id) : -1;
+  const selectedParentCard = selectedCard?.follow_card_id ? entries.find((p) => p.id === selectedCard.follow_card_id) : null;
+  const linkedProduct = selectedCard?.product_id ? products.find((p: any) => p.id === selectedCard.product_id) : null;
+
   return (
     <div className="space-y-6">
-      <Card className="border-border/50 overflow-hidden">
-        <CardHeader className="border-b border-border/50 bg-secondary/20 pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg font-medium flex items-center gap-2">
-                <Settings2 className="w-5 h-5 text-primary" />
-                Configuration & Settings
-              </CardTitle>
-              <CardDescription>
-                General settings for the Cinematic Product Showcase (Bento Grid)
-              </CardDescription>
-            </div>
+      {/* ── TOP SYMMETRICAL CONTROL BAR ── */}
+      <div className="sticky top-[52px] z-20 bg-background/90 backdrop-blur-xl py-3 px-4 md:px-6 rounded-2xl border border-border/50 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+            <LayoutGrid className="w-5 h-5" />
           </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid sm:grid-cols-2 gap-6">
-            <div className="flex flex-col gap-1.5 p-4 rounded-xl border border-border/50 bg-secondary/10">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Enable Showcase Section</Label>
-                <Switch 
-                  checked={isEnabled} 
-                  onCheckedChange={(val) => handleToggleSettings('isEnabled', val)} 
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Toggle the visibility of the entire bento grid on the storefront.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-1.5 p-4 rounded-xl border border-border/50 bg-secondary/10">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Show Featured Fallback</Label>
-                <Switch 
-                  checked={showFeatured} 
-                  onCheckedChange={(val) => handleToggleSettings('showFeatured', val)} 
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                If no entries are configured below, show top featured products automatically.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-border/50 overflow-hidden">
-        <CardHeader className="border-b border-border/50 bg-secondary/20 pb-4">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <CardTitle className="text-lg font-medium flex items-center gap-2">
-                <LayoutGrid className="w-5 h-5 text-primary" />
-                Bento Style Product Showcase ({entries.length} Cards)
-              </CardTitle>
-              <CardDescription>
-                Each card has individual styling, media, layout, and specs. You can also configure cards to follow a master card.
-              </CardDescription>
-            </div>
+          <div>
             <div className="flex items-center gap-2">
-              <Button onClick={handleImportFeaturedProducts} variant="outline" size="sm" className="gap-1.5 text-xs font-semibold">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                Import Featured Products
-              </Button>
-              <Button onClick={() => openEdit()} className="gap-1.5" size="sm">
-                <Plus className="h-4 w-4" /> Add Bento Card
-              </Button>
+              <h2 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+                Cinematic Bento Showcase
+              </h2>
+              <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary bg-primary/5">
+                {entries.filter(e => e.is_active !== false).length} Active / {entries.length} Total
+              </Badge>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0 pt-4">
-
-      {entries.length === 0 && !isLoading && (
-        <Card className="glass m-4">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Sparkles className="w-10 h-10 text-muted-foreground mb-3" />
-            <h3 className="font-semibold mb-1">No Bento Cards configured yet</h3>
-            <p className="text-xs text-muted-foreground mb-5 max-w-md">
-              You can import all your featured products into customizable Bento cards with 1-click, or create custom editorial cards from scratch.
+            <p className="text-xs text-muted-foreground">
+              Configure symmetrical bento architecture, luxury styling presets, and editorial copy.
             </p>
-            <div className="flex items-center gap-3">
-              <Button onClick={handleImportFeaturedProducts} className="gap-2">
-                <Sparkles className="h-4 w-4" />
-                Import Featured Products as Cards
-              </Button>
-              <Button onClick={() => openEdit()} variant="outline">
-                <Plus className="h-4 w-4 mr-1" />
-                Create Blank Card
+          </div>
+        </div>
+
+        {/* Global Controls & Actions */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border/40 bg-secondary/15">
+            <Label className="text-xs font-medium cursor-pointer">Section Enabled</Label>
+            <Switch
+              checked={isEnabled}
+              onCheckedChange={(val) => setIsEnabled(val)}
+            />
+          </div>
+
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border/40 bg-secondary/15">
+            <Label className="text-xs font-medium cursor-pointer">Auto Fallback</Label>
+            <Switch
+              checked={showFeatured}
+              onCheckedChange={(val) => setShowFeatured(val)}
+            />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleImportFeaturedProducts}
+            className="h-9 px-3 text-xs font-semibold gap-1.5 border-border/60 hover:bg-secondary/20"
+          >
+            <Layers className="w-3.5 h-3.5 text-primary" />
+            Import Featured
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleAddCard}
+            className="h-9 px-3 text-xs font-semibold gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Bento Card
+          </Button>
+
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleManualSave}
+            disabled={isSaving}
+            className="h-9 px-5 text-xs font-bold shadow-sm gap-1.5"
+          >
+            <Check className="w-3.5 h-3.5" />
+            {isSaving ? "Saving…" : "Save Showcase"}
+          </Button>
+        </div>
+      </div>
+
+      {/* ── MAIN SYMMETRICAL SPLIT WORKSPACE (NO POPUP) ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+        
+        {/* LEFT COLUMN: Bento Cards Deck */}
+        <div className="xl:col-span-5 space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
+                Bento Deck ({entries.length})
+              </h3>
+            </div>
+            <span className="text-[11px] text-muted-foreground font-mono">
+              Click a card to inspect & edit
+            </span>
+          </div>
+
+          {entries.length === 0 && !isLoading ? (
+            <div className="py-16 px-6 text-center border border-dashed border-border/60 rounded-2xl bg-card/30">
+              <LayoutGrid className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+              <h4 className="text-sm font-bold text-foreground mb-1">No Bento Cards in Deck</h4>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-4">
+                Import featured catalog pieces or create custom editorial bento cards.
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                <Button onClick={handleImportFeaturedProducts} size="sm" className="text-xs gap-1.5">
+                  <Layers className="w-3.5 h-3.5" /> Import Featured
+                </Button>
+                <Button onClick={handleAddCard} variant="outline" size="sm" className="text-xs gap-1.5">
+                  <Plus className="w-3.5 h-3.5" /> Blank Card
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {entries
+                .sort((a, b) => a.sort_order - b.sort_order)
+                .map((entry, idx) => {
+                  const isSelected = selectedId === entry.id;
+                  const prod = products.find((p: any) => p.id === entry.product_id);
+                  const parent = entry.follow_card_id ? entries.find((p) => p.id === entry.follow_card_id) : null;
+                  const isActive = entry.is_active !== false;
+
+                  return (
+                    <div
+                      key={entry.id}
+                      onClick={() => setSelectedId(entry.id)}
+                      className={`group relative p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                        isSelected
+                          ? "border-primary bg-primary/5 shadow-md ring-2 ring-primary/30"
+                          : "border-border/50 bg-card/40 hover:border-border hover:bg-card/75 shadow-sm"
+                      } ${!isActive && !isSelected ? "opacity-60" : ""}`}
+                    >
+                      <div className="flex items-center gap-3.5">
+                        {/* Thumbnail + Layout badge */}
+                        <div className="relative w-20 h-16 rounded-xl overflow-hidden bg-secondary/30 shrink-0 border border-border/40">
+                          {entry.image_url ? (
+                            <img src={entry.image_url} alt="" className="w-full h-full object-cover" />
+                          ) : prod?.thumbnail ? (
+                            <img src={prod.thumbnail} alt="" className="w-full h-full object-cover" />
+                          ) : entry.video_url ? (
+                            <div className="w-full h-full flex items-center justify-center text-primary bg-primary/10">
+                              <Play className="w-5 h-5" />
+                            </div>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                              <Image className="w-5 h-5" />
+                            </div>
+                          )}
+
+                          <span className="absolute bottom-1 right-1 font-mono text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-background/80 backdrop-blur-xs border border-white/10 text-foreground">
+                            {entry.layout_type || "auto"}
+                          </span>
+                        </div>
+
+                        {/* Title & Metadata */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1 mb-0.5">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-mono font-bold shrink-0 ${
+                                isSelected ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                              }`}>
+                                {idx + 1}
+                              </span>
+                              <p className={`text-xs font-bold truncate ${isSelected ? "text-primary" : "text-foreground"}`}>
+                                {entry.title || prod?.name || "Untitled Bento Card"}
+                              </p>
+                            </div>
+                            {prod?.price && (
+                              <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                                ৳{Number(prod.price).toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="text-[10.5px] text-muted-foreground truncate mb-1.5">
+                            {prod ? `Linked: ${prod.name}` : entry.subtitle || "No product linked"}
+                          </p>
+
+                          {/* Attribute Tags */}
+                          <div className="flex flex-wrap gap-1 items-center">
+                            {parent ? (
+                              <span className="text-[8.5px] font-mono font-semibold px-1.5 py-0.5 rounded border border-primary/30 text-primary bg-primary/10">
+                                🔗 Follows #{entries.findIndex(x => x.id === parent.id) + 1}
+                              </span>
+                            ) : (
+                              <span className="text-[8.5px] font-mono px-1.5 py-0.5 rounded border border-border/60 bg-secondary/30 text-muted-foreground">
+                                ⚙️ Individual
+                              </span>
+                            )}
+                            <span className="text-[8.5px] font-mono uppercase px-1.5 py-0.5 rounded border border-border/60 bg-secondary/30 text-foreground/80">
+                              {entry.card_style || "glass"}
+                            </span>
+                            {entry.badge_tag && (
+                              <span className="text-[8.5px] font-mono uppercase px-1.5 py-0.5 rounded bg-background/60 border border-white/10 text-cherry dark:text-foreground/90 font-bold">
+                                {entry.badge_tag}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Quick Controls */}
+                        <div className="flex flex-col items-center gap-1 shrink-0 pl-1 border-l border-border/30">
+                          <div className="flex items-center gap-0.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                              onClick={(e) => handleMoveCard(idx, -1, e)}
+                              disabled={idx === 0}
+                              title="Move Up"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                              onClick={(e) => handleMoveCard(idx, 1, e)}
+                              disabled={idx === entries.length - 1}
+                              title="Move Down"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 pt-0.5">
+                            <Switch
+                              checked={isActive}
+                              onCheckedChange={(val) => {
+                                updateCard(entry.id, { is_active: val });
+                              }}
+                              className="scale-75 origin-center"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-primary"
+                              onClick={(e) => handleDuplicateCard(entry, e)}
+                              title="Duplicate Card"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                              onClick={(e) => handleDeleteCard(entry.id, e)}
+                              title="Delete Card"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN: Dedicated Symmetrical Card Inspector */}
+        <div className="xl:col-span-7 sticky top-[130px] self-start max-h-[calc(100vh-150px)] overflow-y-auto pr-1">
+          {!selectedCard ? (
+            <div className="py-20 px-8 rounded-2xl border border-dashed border-border/50 bg-card/20 text-center flex flex-col items-center justify-center">
+              <LayoutGrid className="w-12 h-12 text-muted-foreground/30 mb-3" />
+              <h3 className="text-base font-bold text-foreground mb-1">No Card Selected for Inspection</h3>
+              <p className="text-xs text-muted-foreground max-w-sm mb-4">
+                Select any card from the deck on the left to edit its content, layout, styling, and specs inline.
+              </p>
+              <Button onClick={handleAddCard} size="sm" className="text-xs gap-1.5">
+                <Plus className="w-3.5 h-3.5" /> Create New Card
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <Card className="border-border/50 bg-card/50 backdrop-blur-md shadow-md overflow-hidden">
+              {/* Header */}
+              <CardHeader className="border-b border-border/30 bg-secondary/15 p-4 sm:p-5 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="w-7 h-7 rounded-lg bg-primary text-primary-foreground font-mono font-bold text-xs flex items-center justify-center shrink-0">
+                    #{selectedIndex + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <CardTitle className="text-sm sm:text-base font-bold truncate">
+                      {selectedCard.title || "Untitled Card"}
+                    </CardTitle>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {selectedCard.layout_type || "auto"} span • {selectedCard.card_style || "glass"} theme
+                    </p>
+                  </div>
+                </div>
 
-      {/* Entries List */}
-      <div className="space-y-3 p-4">
-        {entries
-          .sort((a, b) => a.sort_order - b.sort_order)
-          .map((entry, idx) => {
-            const product = products.find((p: any) => p.id === entry.product_id);
-            const parentCard = entry.follow_card_id ? entries.find((p) => p.id === entry.follow_card_id) : null;
-            return (
-              <Card key={entry.id} className={`glass ${!entry.is_active ? "opacity-50" : ""}`}>
-                <CardContent className="p-4 flex items-center gap-4">
-                  {/* Thumbnail */}
-                  <div className="w-20 h-14 rounded-lg overflow-hidden bg-secondary/30 shrink-0 border border-border/50">
-                    {entry.image_url ? (
-                      <img src={entry.image_url} alt="" className="w-full h-full object-cover" />
-                    ) : product?.thumbnail ? (
-                      <img src={product.thumbnail} alt="" className="w-full h-full object-cover" />
-                    ) : entry.video_url ? (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                        <Play className="w-5 h-5 text-primary" />
-                      </div>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                        <Image className="w-5 h-5" />
-                      </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {selectedCard.product_id && selectedCard.product_id !== "none" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAutofillFromProduct(selectedCard.product_id!)}
+                      className="h-8 px-2.5 text-xs font-semibold gap-1 border-border/60 hover:bg-secondary/30"
+                      title="Re-sync title, image, price, and slug from product"
+                    >
+                      <RotateCcw className="w-3 h-3 text-primary" /> Sync Product
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applyStyleToAllCards(selectedCard)}
+                    className="h-8 px-2.5 text-xs font-semibold gap-1 border-primary/30 text-primary hover:bg-primary/10"
+                    title="Apply this card's styling and layout to all deck cards"
+                  >
+                    <Copy className="w-3 h-3" /> Apply to All
+                  </Button>
+                </div>
+              </CardHeader>
+
+              <CardContent className="p-5 space-y-6">
+                {/* 1. PRODUCT BINDING */}
+                <section className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                      <span className="w-4 h-4 rounded bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold">1</span>
+                      Linked Catalog Product
+                    </Label>
+                    {linkedProduct && (
+                      <span className="font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        ৳{Number(linkedProduct.price).toLocaleString()}
+                      </span>
                     )}
                   </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold truncate">{entry.title || product?.name || "Untitled Bento Card"}</p>
-                      {product?.price && (
-                        <span className="font-mono text-xs font-bold text-primary">
-                          ৳{Number(product.price).toLocaleString()}
+                  <Select
+                    value={selectedCard.product_id || "none"}
+                    onValueChange={(v) => {
+                      if (v === "none") {
+                        updateCard(selectedCard.id, { product_id: null });
+                      } else {
+                        const prod = products.find((p: any) => p.id === v);
+                        updateCard(selectedCard.id, {
+                          product_id: v,
+                          title: selectedCard.title || prod?.name || "",
+                          image_url: selectedCard.image_url || prod?.thumbnail || "",
+                          cta_link: prod ? `/product/${prod.slug}` : selectedCard.cta_link,
+                          subtitle: selectedCard.subtitle || "Heavyweight Collection",
+                        });
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="bg-background/50 border-border/60 h-10 text-xs">
+                      <SelectValue placeholder="Select catalog product..." />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[280px]">
+                      <SelectItem value="none">Custom / Unlinked Card (No Catalog Product)</SelectItem>
+                      {products.map((p: any) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.is_featured ? "★ " : ""}{p.name} {p.price ? `(৳${Number(p.price).toLocaleString()})` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </section>
+
+                <div className="h-px bg-border/40" />
+
+                {/* 2. EDITORIAL CONTENT & TYPOGRAPHY */}
+                <section className="space-y-3">
+                  <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <span className="w-4 h-4 rounded bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold">2</span>
+                    Editorial Content & Copy
+                  </Label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-foreground/80">Card Title / Headline</Label>
+                      <Input
+                        value={selectedCard.title}
+                        onChange={(e) => updateCard(selectedCard.id, { title: e.target.value })}
+                        placeholder="e.g. Heavyweight Kuro Hoodie"
+                        className="bg-background/50 border-border/50 text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-foreground/80">Subtitle / Tagline</Label>
+                      <Input
+                        value={selectedCard.subtitle || ""}
+                        onChange={(e) => updateCard(selectedCard.id, { subtitle: e.target.value })}
+                        placeholder="e.g. 240+ GSM European Fit"
+                        className="bg-background/50 border-border/50 text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-foreground/80">CTA Button Text</Label>
+                      <Input
+                        value={selectedCard.cta_text}
+                        onChange={(e) => updateCard(selectedCard.id, { cta_text: e.target.value })}
+                        placeholder="Shop Piece"
+                        className="bg-background/50 border-border/50 text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-foreground/80">CTA Destination Link</Label>
+                      <Input
+                        value={selectedCard.cta_link}
+                        onChange={(e) => updateCard(selectedCard.id, { cta_link: e.target.value })}
+                        placeholder="/product/slug or /inventory"
+                        className="bg-background/50 border-border/50 text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-semibold text-foreground/80">Top Pill Badge Tag</Label>
+                        <span className="text-[9px] font-mono text-cherry dark:text-foreground/90 font-bold">Accent in Light Mode</span>
+                      </div>
+                      <Input
+                        value={selectedCard.badge_tag || ""}
+                        onChange={(e) => updateCard(selectedCard.id, { badge_tag: e.target.value })}
+                        placeholder="e.g. EDITORIAL SILHOUETTE, LIMITED DROP"
+                        className="bg-background/50 border-border/50 text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-foreground/80">Stock / Availability Status</Label>
+                      <Input
+                        value={selectedCard.stock_status || ""}
+                        onChange={(e) => updateCard(selectedCard.id, { stock_status: e.target.value })}
+                        placeholder="e.g. In Stock, Limited Edition"
+                        className="bg-background/50 border-border/50 text-xs"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <div className="h-px bg-border/40" />
+
+                {/* 3. BENTO ARCHITECTURE & VISUAL THEME */}
+                <section className="space-y-3">
+                  <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <span className="w-4 h-4 rounded bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold">3</span>
+                    Bento Architecture & Styling
+                  </Label>
+
+                  {/* Inheritance / Follow mode */}
+                  <div className="p-3 rounded-xl border border-border/50 bg-secondary/10 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold text-foreground/90">Style Inheritance</Label>
+                      {selectedParentCard && (
+                        <span className="text-[10px] font-mono font-bold text-primary">
+                          Following #{entries.findIndex(x => x.id === selectedParentCard.id) + 1}
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-muted-foreground truncate">
-                      {product ? `Linked: ${product.name}` : entry.subtitle || "No product linked"}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5 mt-1.5">
-                      {parentCard ? (
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-primary/50 text-primary bg-primary/10">
-                          🔗 Follows: {parentCard.title || "Card"}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-border/70">
-                          ⚙️ Individual Config
-                        </Badge>
-                      )}
-                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 uppercase">
-                        {entry.layout_type || "auto"}
-                      </Badge>
-                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 capitalize">
-                        {entry.card_style || "glass"} style
-                      </Badge>
-                      {entry.badge_tag && (
-                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 text-cherry dark:text-foreground/90 font-medium">
-                          {entry.badge_tag}
-                        </Badge>
-                      )}
-                      {entry.show_price !== false && (
-                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 text-emerald-600 dark:text-emerald-400">
-                          Price {entry.price_position || "top"}
-                        </Badge>
-                      )}
-                      {entry.image_url && <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Custom Image</Badge>}
-                      {entry.video_url && <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Video</Badge>}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => moveEntry(idx, -1)} disabled={idx === 0}>
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => moveEntry(idx, 1)} disabled={idx === entries.length - 1}>
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                    <Switch checked={entry.is_active} onCheckedChange={() => handleToggle(entry.id)} />
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(entry)} title="Customize Card">
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Bento Card?</AlertDialogTitle>
-                          <AlertDialogDescription>This will remove this card from the home page Bento showcase.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(entry.id)}>Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-      </div>
-      </CardContent>
-      </Card>
-
-      {/* Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between pr-6">
-              <span>{editing?.id && entries.find((e) => e.id === editing.id) ? "Customize Bento Card" : "Add Bento Card"}</span>
-              {editing?.product_id && editing.product_id !== "none" && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleAutofillFromProduct(editing.product_id!)}
-                  className="text-xs h-7 gap-1"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-primary" /> Auto-fill from Product
-                </Button>
-              )}
-            </DialogTitle>
-          </DialogHeader>
-          {editing && (
-            <div className="space-y-5 pt-2">
-              {/* Configuration Mode & Inheritance */}
-              <div className="p-4 rounded-xl border border-border/60 bg-secondary/15 space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-semibold flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-primary" /> Styling & Layout Configuration Mode
-                  </Label>
-                  {editing.follow_card_id && editing.follow_card_id !== "none" && (
-                    <Badge variant="outline" className="text-[10px] text-primary border-primary/40 bg-primary/10">
-                      Following Card
-                    </Badge>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1 block">Configuration Source</Label>
                     <Select
-                      value={editing.follow_card_id || "none"}
+                      value={selectedCard.follow_card_id || "none"}
                       onValueChange={(v) => {
                         if (v === "none") {
-                          setEditing({ ...editing, follow_card_id: null });
+                          updateCard(selectedCard.id, { follow_card_id: null });
                         } else {
                           const target = entries.find((e) => e.id === v);
                           if (target) {
-                            setEditing({
-                              ...editing,
+                            updateCard(selectedCard.id, {
                               follow_card_id: v,
                               layout_type: target.layout_type,
                               card_style: target.card_style,
@@ -1667,16 +1864,18 @@ export function ProductShowcaseTab() {
                               badge_tag: target.badge_tag,
                               stock_status: target.stock_status,
                             });
-                            toast.info(`Config set to follow "${target.title || 'Selected Card'}"`);
+                            toast.info(`Inheriting style from "${target.title || 'Selected Card'}"`);
                           }
                         }
                       }}
                     >
-                      <SelectTrigger><SelectValue placeholder="Individual (Custom Config)" /></SelectTrigger>
+                      <SelectTrigger className="bg-background/50 border-border/50 h-9 text-xs">
+                        <SelectValue placeholder="Individual Custom Config" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">⚙️ Individual Custom Config (Independent)</SelectItem>
                         {entries
-                          .filter((e) => e.id !== editing.id)
+                          .filter((e) => e.id !== selectedCard.id)
                           .map((e, i) => (
                             <SelectItem key={e.id} value={e.id}>
                               🔗 Follow #{i + 1}: {e.title || "Untitled Card"} ({e.card_style || "glass"}, {e.layout_type || "auto"})
@@ -1686,273 +1885,190 @@ export function ProductShowcaseTab() {
                     </Select>
                   </div>
 
-                  <div className="flex items-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => applyStyleToAllCards(editing)}
-                      className="w-full h-9 text-xs font-semibold gap-1.5"
-                    >
-                      <Copy className="w-3.5 h-3.5 text-primary" /> Apply This Style to All Cards
-                    </Button>
-                  </div>
-                </div>
-                {editing.follow_card_id && editing.follow_card_id !== "none" && (
-                  <p className="text-[11px] text-primary/80 bg-primary/5 p-2 rounded-lg border border-primary/20">
-                    ℹ️ This card will dynamically inherit layout span, aesthetic theme, alignment, and badge styling from the selected parent card. You can still set its unique product, title, image/video, and specs below.
-                  </p>
-                )}
-              </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-foreground/80">Grid Span Ratio</Label>
+                      <Select
+                        value={selectedCard.layout_type || "auto"}
+                        onValueChange={(v: any) => updateCard(selectedCard.id, { layout_type: v })}
+                      >
+                        <SelectTrigger className="bg-background/50 border-border/50 h-9 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto">Auto (Smart Flow)</SelectItem>
+                          <SelectItem value="featured">Featured (2×2 Hero)</SelectItem>
+                          <SelectItem value="tall">Portrait (1×2 Tall)</SelectItem>
+                          <SelectItem value="wide">Landscape (2×1 Wide)</SelectItem>
+                          <SelectItem value="square">Square (1×1 Compact)</SelectItem>
+                          <SelectItem value="full">Full Width (4×1 Banner)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              {/* Link Product */}
-              <div className="p-4 rounded-xl border border-border/60 bg-secondary/15 space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-semibold flex items-center gap-2">
-                    <Link2 className="w-4 h-4 text-primary" /> Link Product (Featured or Catalog)
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-foreground/80">Aesthetic Theme</Label>
+                      <Select
+                        value={selectedCard.card_style || "glass"}
+                        onValueChange={(v: any) => updateCard(selectedCard.id, { card_style: v })}
+                      >
+                        <SelectTrigger className="bg-background/50 border-border/50 h-9 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="glass">Frosted Glassmorphism</SelectItem>
+                          <SelectItem value="dark">Deep Obsidian</SelectItem>
+                          <SelectItem value="cherry">Editorial Crimson Accent</SelectItem>
+                          <SelectItem value="minimal">Clean Minimal Luxe</SelectItem>
+                          <SelectItem value="monochrome">Monochrome Slate</SelectItem>
+                          <SelectItem value="gold">Gold Heritage</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-foreground/80">Content Alignment</Label>
+                      <Select
+                        value={selectedCard.content_position || "bottom-left"}
+                        onValueChange={(v: any) => updateCard(selectedCard.id, { content_position: v })}
+                      >
+                        <SelectTrigger className="bg-background/50 border-border/50 h-9 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bottom-left">Bottom Left (Standard)</SelectItem>
+                          <SelectItem value="side">Side Vertical 90° (Editorial)</SelectItem>
+                          <SelectItem value="bottom-center">Bottom Center</SelectItem>
+                          <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                          <SelectItem value="top-left">Top Left</SelectItem>
+                          <SelectItem value="center">Center Focused</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Price Badge Toggle & Position */}
+                  <div className="p-3 rounded-xl border border-border/50 bg-secondary/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={selectedCard.show_price !== false}
+                        onCheckedChange={(val) => updateCard(selectedCard.id, { show_price: val })}
+                      />
+                      <div>
+                        <Label className="text-xs font-semibold">Display Price Badge</Label>
+                        <p className="text-[10px] text-muted-foreground">Format and display price from linked product.</p>
+                      </div>
+                    </div>
+                    {selectedCard.show_price !== false && (
+                      <div className="flex items-center gap-2">
+                        <Label className="text-[11px] text-muted-foreground shrink-0">Badge Position:</Label>
+                        <Select
+                          value={selectedCard.price_position || "top"}
+                          onValueChange={(v: any) => updateCard(selectedCard.id, { price_position: v })}
+                        >
+                          <SelectTrigger className="w-[130px] h-8 text-xs bg-background/50"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="top">Top Right Pill</SelectItem>
+                            <SelectItem value="bottom">Bottom Bar</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <div className="h-px bg-border/40" />
+
+                {/* 4. MEDIA ASSETS */}
+                <section className="space-y-3">
+                  <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <span className="w-4 h-4 rounded bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold">4</span>
+                    Media Assets (Image & Video)
                   </Label>
-                  {editing.product_id && editing.product_id !== "none" && (
-                    <span className="text-[11px] text-primary font-mono font-bold">Product Linked</span>
-                  )}
-                </div>
-                <Select
-                  value={editing.product_id || "none"}
-                  onValueChange={(v) => {
-                    if (v === "none") {
-                      setEditing({ ...editing, product_id: null });
-                    } else {
-                      const prod = products.find((p: any) => p.id === v);
-                      setEditing({
-                        ...editing,
-                        product_id: v,
-                        title: editing.title ? editing.title : (prod?.name || ""),
-                        image_url: editing.image_url ? editing.image_url : (prod?.thumbnail || ""),
-                        cta_link: prod ? `/product/${prod.slug}` : editing.cta_link,
-                        subtitle: editing.subtitle ? editing.subtitle : "Heavyweight Collection",
-                      });
-                    }
-                  }}
-                >
-                  <SelectTrigger><SelectValue placeholder="Select a product to link..." /></SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    <SelectItem value="none">Custom / Unlinked Card (No product)</SelectItem>
-                    {products.map((p: any) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.is_featured ? "★ " : ""}{p.name} {p.price ? `(৳${Number(p.price).toLocaleString()})` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
 
-              {/* Title & Subtitle */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Card Headline / Title</Label>
-                  <Input 
-                    value={editing.title} 
-                    onChange={(e) => setEditing({ ...editing, title: e.target.value })} 
-                    placeholder="e.g. Heavyweight Kuro Hoodie" 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Card Subtitle / Tagline</Label>
-                  <Input 
-                    value={editing.subtitle || ""} 
-                    onChange={(e) => setEditing({ ...editing, subtitle: e.target.value })} 
-                    placeholder="e.g. 240+ GSM European Fit" 
-                  />
-                </div>
-              </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-foreground/80">Card Image (Direct Upload)</Label>
+                      <ImageUpload
+                        value={selectedCard.image_url}
+                        onUploaded={(url) => updateCard(selectedCard.id, { image_url: url || "" })}
+                        bucket="banners"
+                        folder="showcase"
+                      />
+                    </div>
 
-              {/* Badge Tag & Stock Status */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Top Pill Badge Tag</Label>
-                  <Input 
-                    value={editing.badge_tag || ""} 
-                    onChange={(e) => setEditing({ ...editing, badge_tag: e.target.value })} 
-                    placeholder="e.g. EDITORIAL SILHOUETTE, LIMITED DROP" 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Stock / Availability Label</Label>
-                  <Input 
-                    value={editing.stock_status || ""} 
-                    onChange={(e) => setEditing({ ...editing, stock_status: e.target.value })} 
-                    placeholder="e.g. In Stock, Limited Edition" 
-                  />
-                </div>
-              </div>
-
-              {/* Layout, Style, & Alignment Selectors */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Grid Span / Ratio</Label>
-                  <Select value={editing.layout_type || "auto"} onValueChange={(v: any) => setEditing({ ...editing, layout_type: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="auto">Auto (Dynamic Ratio)</SelectItem>
-                      <SelectItem value="featured">Featured Hero (2x2 Span)</SelectItem>
-                      <SelectItem value="tall">Tall Portrait (1x2 Span)</SelectItem>
-                      <SelectItem value="wide">Wide Landscape (2x1 Span)</SelectItem>
-                      <SelectItem value="square">Square Standard (1x1 Span)</SelectItem>
-                      <SelectItem value="full">Full Width Banner (4x1 Span)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Aesthetic Card Theme</Label>
-                  <Select value={editing.card_style || "glass"} onValueChange={(v: any) => setEditing({ ...editing, card_style: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="glass">Glassmorphism Overlay</SelectItem>
-                      <SelectItem value="dark">Obsidian Dark</SelectItem>
-                      <SelectItem value="cherry">Cherry Crimson Accent</SelectItem>
-                      <SelectItem value="minimal">Minimal Luxe</SelectItem>
-                      <SelectItem value="monochrome">Monochrome Slate</SelectItem>
-                      <SelectItem value="gold">Gold Heritage</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Content Layout & Align</Label>
-                  <Select 
-                    value={editing.content_position || "bottom-left"} 
-                    onValueChange={(v: any) => setEditing({ ...editing, content_position: v })}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bottom-left">Bottom Left (Standard)</SelectItem>
-                      <SelectItem value="bottom-center">Bottom Center</SelectItem>
-                      <SelectItem value="bottom-right">Bottom Right</SelectItem>
-                      <SelectItem value="top-left">Top Left</SelectItem>
-                      <SelectItem value="center">Center Focused</SelectItem>
-                      <SelectItem value="side">Side Vertical 90° (Editorial)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Price Badge Display Settings */}
-              <div className="p-4 rounded-xl border border-border/50 bg-secondary/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={editing.show_price !== false}
-                    onCheckedChange={(val) => setEditing({ ...editing, show_price: val })}
-                  />
-                  <div>
-                    <Label className="text-sm font-medium">Show Price Badge</Label>
-                    <p className="text-xs text-muted-foreground">Display formatted price on the card from the linked product.</p>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-foreground/80">Card Video (Looped Background)</Label>
+                      <VideoUpload
+                        value={selectedCard.video_url}
+                        onUploaded={(url) => updateCard(selectedCard.id, { video_url: url || "" })}
+                        bucket="banners"
+                        folder="showcase-video"
+                      />
+                    </div>
                   </div>
-                </div>
-                {editing.show_price !== false && (
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground shrink-0">Badge Position:</Label>
-                    <Select
-                      value={editing.price_position || "top"}
-                      onValueChange={(v: any) => setEditing({ ...editing, price_position: v })}
-                    >
-                      <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="top">Top Right Pill</SelectItem>
-                        <SelectItem value="bottom">Bottom CTA Bar</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
+                </section>
 
-              {/* Hero Image */}
-              <div className="space-y-2">
-                <Label>Card Image (Upload custom image or defaults to product thumbnail)</Label>
-                <ImageUpload value={editing.image_url} onUploaded={(url) => setEditing({ ...editing, image_url: url || "" })} bucket="banners" folder="showcase" />
-              </div>
+                <div className="h-px bg-border/40" />
 
-              {/* Hero Video */}
-              <div className="space-y-2">
-                <Label>Card Video (Optional, loops in background)</Label>
-                <VideoUpload value={editing.video_url} onUploaded={(url) => setEditing({ ...editing, video_url: url || "" })} bucket="banners" folder="showcase-video" />
-              </div>
-
-              {/* Gallery Carousel Toggle */}
-              {editing.product_id && editing.product_id !== "none" && (
-                <div className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-secondary/20">
-                  <div>
-                    <p className="text-sm font-medium">Show Product Gallery Carousel</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Uses the linked product's uploaded gallery images as an interactive carousel in the card.</p>
-                  </div>
-                  <Switch
-                    checked={!!editing.show_gallery}
-                    onCheckedChange={(v) => setEditing({ ...editing, show_gallery: v })}
-                  />
-                </div>
-              )}
-
-              {/* CTA */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>CTA Button Text</Label>
-                  <Input value={editing.cta_text} onChange={(e) => setEditing({ ...editing, cta_text: e.target.value })} placeholder="Explore Piece" />
-                </div>
-                <div className="space-y-2">
-                  <Label>CTA Button Link</Label>
-                  <Input value={editing.cta_link} onChange={(e) => setEditing({ ...editing, cta_link: e.target.value })} placeholder="/product/slug" />
-                </div>
-              </div>
-
-              {/* Markdown Specs */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2"><FileText className="w-4 h-4" /> Product Material Specifications (Markdown)</Label>
-                  <div className="flex gap-1.5">
+                {/* 5. MATERIAL SPECS & LIVE PREVIEW */}
+                <section className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                      <span className="w-4 h-4 rounded bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold">5</span>
+                      Material Specs & Live Panel Preview
+                    </Label>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-6 text-[10px] px-2"
-                      onClick={() => setEditing({ ...editing, markdown_specs: "Fabric: 100% Heavyweight Cotton\nWeight: 240+ GSM\nFit: Oversized Silhouette\nStatus: In Stock" })}
+                      className="h-6 text-[10px] px-2 text-primary"
+                      onClick={() => updateCard(selectedCard.id, { markdown_specs: "Fabric: 100% Heavyweight Cotton\nWeight: 240+ GSM European Fit\nFit: Oversized Silhouette\nStatus: In Stock" })}
                     >
-                      Preset Specs
+                      Insert Preset Specs
                     </Button>
                   </div>
-                </div>
-                <p className="text-[10px] text-muted-foreground">Use "Key: Value" pairs (e.g. Fabric: 100% Cotton). Renders in a sleek frosted panel inside the card.</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Textarea
-                    value={editing.markdown_specs}
-                    onChange={(e) => setEditing({ ...editing, markdown_specs: e.target.value })}
-                    className="min-h-[160px] font-mono text-xs"
-                    placeholder={"Fabric: 100% Premium Cotton\nWeight: 240+ GSM Heavyweight\nFit: Oversized Drop Shoulder"}
-                  />
-                  <div className="border rounded-lg p-3 bg-secondary/20 min-h-[160px] max-h-[220px] overflow-y-auto">
-                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-2 font-bold">Specs Live Preview</p>
-                    {editing.markdown_specs?.split("\n").map((line, i) => {
-                      const t = line.trim();
-                      if (!t) return null;
-                      if (t.includes(":") && !t.startsWith("http")) {
-                        const [key, ...v] = t.split(":");
-                        return (
-                          <div key={i} className="flex justify-between py-0.5 border-b border-border/30 last:border-0">
-                            <span className="text-[9px] text-muted-foreground uppercase font-mono">{key.trim()}</span>
-                            <span className="text-[10px] font-semibold">{v.join(":").trim()}</span>
-                          </div>
-                        );
-                      }
-                      return <p key={i} className="text-[10px] text-muted-foreground">{t}</p>;
-                    })}
-                  </div>
-                </div>
-              </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t">
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleSave}>Save Bento Card</Button>
-              </div>
-            </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Textarea
+                        value={selectedCard.markdown_specs}
+                        onChange={(e) => updateCard(selectedCard.id, { markdown_specs: e.target.value })}
+                        className="min-h-[140px] font-mono text-xs bg-background/50 border-border/50 resize-none"
+                        placeholder="Fabric: 100% Premium Cotton\nWeight: 240+ GSM Heavyweight\nFit: Oversized Drop Shoulder"
+                      />
+                      <p className="text-[10px] text-muted-foreground">Format each line as "Label: Value".</p>
+                    </div>
+
+                    <div className="border border-border/40 rounded-xl p-3.5 bg-secondary/15 min-h-[140px] flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center gap-1.5 border-b border-border/30 pb-1 mb-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                          <span className="font-mono text-[9px] font-bold tracking-widest uppercase text-foreground/80">
+                            Specs Live Card Render
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {selectedCard.markdown_specs?.split("\n").filter(l => l.trim()).map((line, i) => {
+                            const parts = line.split(":");
+                            const key = parts[0]?.trim();
+                            const val = parts.slice(1).join(":").trim();
+                            return (
+                              <div key={i} className="flex justify-between items-center text-[10px]">
+                                <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">{key}</span>
+                                <span className="font-semibold text-foreground truncate max-w-[120px]">{val || key}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-border/20 flex items-center justify-between text-[10px] text-muted-foreground font-mono">
+                        <span>{selectedCard.stock_status || "In Stock"}</span>
+                        <span className="text-primary font-bold">{selectedCard.cta_text || "Shop Piece"} →</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </CardContent>
+            </Card>
           )}
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
     </div>
   );
 }

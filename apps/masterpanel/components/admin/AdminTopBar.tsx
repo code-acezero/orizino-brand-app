@@ -124,7 +124,7 @@ const AdminTopBar: React.FC<Props> = ({
       <SidebarTrigger className="text-muted-foreground hover:text-foreground shrink-0" />
 
       {leading && <div className="min-w-0 flex-1 flex items-center gap-2 overflow-hidden">{leading}</div>}
-      {center}
+      {center && <div className="shrink-0 flex items-center">{center}</div>}
 
       {showCommand && onOpenPalette && (
         <button
