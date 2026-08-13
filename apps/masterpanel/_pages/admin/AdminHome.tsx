@@ -230,15 +230,6 @@ const AdminHome = () => {
     },
   });
 
-  const { data: showcaseRow } = useQuery({
-    queryKey: ["admin-product-showcase-config"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("site_settings").select("*").eq("key", "product_showcase_config").maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
-
   const defaultSectionOrder = [
     { id: "hero", label: "Cinematic Hero Slider", icon: "🎠", visible: true, title: "", subtitle: "", product_count: 0, columns: 4, view_all_link: "" },
     { id: "marquee", label: "Brand Ticker Marquee", icon: "🔤", visible: true, title: "", subtitle: "", product_count: 0, columns: 4, view_all_link: "" },
@@ -492,21 +483,6 @@ const AdminHome = () => {
     }
   }, [mosaicRow]);
 
-  useEffect(() => {
-    if (showcaseRow?.value) {
-      const val = showcaseRow.value as any;
-      const config = val?.value ?? val;
-      if (config && typeof config === "object") {
-        setShowcaseConfig((prev) => ({
-          ...prev,
-          is_enabled: config.is_enabled !== false,
-          show_featured: Boolean(config.show_featured || config.show_featured_fallback || config.show_featured_products),
-          entries: Array.isArray(config.entries) ? config.entries : Array.isArray(config) ? config : [],
-        }));
-      }
-    }
-  }, [showcaseRow]);
-
   const saveSpecs = useMutation({
     mutationFn: async () => {
       await saveSiteSettings({ data: { entries: [{ key: "home_specs_config", value: { value: specsConfig } }] } });
@@ -563,23 +539,6 @@ const AdminHome = () => {
       qc.invalidateQueries({ queryKey: ["admin-home-category-mosaic"] });
       qc.invalidateQueries({ queryKey: ["home-category-mosaic-config"] });
       toast.success("Category mosaic saved");
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const saveShowcase = useMutation({
-    mutationFn: async () => {
-      const payload = {
-        is_enabled: showcaseConfig.is_enabled,
-        show_featured: showcaseConfig.show_featured,
-        entries: showcaseConfig.entries.map((e, i) => ({ ...e, sort_order: i })),
-      };
-      await saveSiteSettings({ data: { entries: [{ key: "product_showcase_config", value: { value: payload } }] } });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-product-showcase-config"] });
-      qc.invalidateQueries({ queryKey: ["product-showcase-config"] });
-      toast.success("Cinematic Showcase saved");
     },
     onError: (e) => toast.error(e.message),
   });
