@@ -949,21 +949,23 @@ a, button, [role="button"] {
 }
 
 /* ── Brand utility classes ── */
-.font-editorial { font-family: var(--font-title, var(--font-display, 'Playfair Display', serif)); }
-.font-sans-brand { font-family: var(--font-body, 'DM Sans', sans-serif); }
+@layer utilities {
+  .font-editorial { font-family: var(--font-title, var(--font-display, 'Playfair Display', serif)); }
+  .font-sans-brand { font-family: var(--font-body, 'DM Sans', sans-serif); }
 
-.text-cherry { color: hsl(var(--cherry)); }
-.bg-cherry { background-color: hsl(var(--cherry)); }
-.border-cherry { border-color: hsl(var(--cherry)); }
+  .text-cherry { color: hsl(var(--cherry)); }
+  .bg-cherry { background-color: hsl(var(--cherry)); }
+  .border-cherry { border-color: hsl(var(--cherry)); }
 
-.text-cream { color: hsl(var(--cream)); }
-.bg-cream { background-color: hsl(var(--cream)); }
-.text-cream-deep { color: hsl(var(--cream-deep)); }
-.bg-cream-deep { background-color: hsl(var(--cream-deep)); }
-.border-cream-deep { border-color: hsl(var(--cream-deep)); }
+  .text-cream { color: hsl(var(--cream)); }
+  .bg-cream { background-color: hsl(var(--cream)); }
+  .text-cream-deep { color: hsl(var(--cream-deep)); }
+  .bg-cream-deep { background-color: hsl(var(--cream-deep)); }
+  .border-cream-deep { border-color: hsl(var(--cream-deep)); }
 
-.text-charcoal { color: hsl(var(--charcoal)); }
-.bg-charcoal { background-color: hsl(var(--charcoal)); }
+  .text-charcoal { color: hsl(var(--charcoal)); }
+  .bg-charcoal { background-color: hsl(var(--charcoal)); }
+}
 
 /* Cherry underline link effect */
 .link-cherry {
@@ -1217,13 +1219,6 @@ button, a, [role="button"] {
   color: hsl(var(--cherry));
   font-weight: 500;
 }
-
-/* Cherry colour reference for inline style overrides */
-.text-cherry { color: hsl(var(--cherry)); }
-.bg-cherry { background: hsl(var(--cherry)); }
-.border-cherry { border-color: hsl(var(--cherry)); }
-.text-cream { color: hsl(var(--cream)); }
-.bg-cream { background: hsl(var(--cream)); }
 
 /* Charcoal mid shade for layered surfaces */
 :root { --charcoal-mid: 60 3% 14%; }

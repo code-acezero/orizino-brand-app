@@ -70,12 +70,12 @@ const ALL_NAV_LABELS = [
 ];
 
 export const SEGMENT_TO_NAV_LABELS: Record<string, string[]> = {
-  "": ["Overview"], // master panel home — only back-link
-  master: ALL_NAV_LABELS,
+  "": ["Overview"],     // Master Panel Home shows Overview section (Master Controls)
+  master: ["Overview"], // /master merged with home
   ...Object.fromEntries(
     MASTER_SECTIONS.filter((s) => s.key !== "master").map((s) => [
       s.segment,
-      ["Overview", s.label],
+      [s.label],
     ]),
   ),
 };

@@ -91,7 +91,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^4.3.4",
     "lightningcss": "1.29.1",
     "nitro": "latest",
     "tailwindcss": "^4",

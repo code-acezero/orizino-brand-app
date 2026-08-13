@@ -12,7 +12,7 @@ const fontDisplay = "'Cinzel', 'Cormorant Garamond', ui-serif, Georgia, serif";
 const fontMono = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace";
 
 const inputBase =
-  "w-full bg-transparent border-b border-foreground/15 py-2.5 text-[11px] tracking-[0.18em] uppercase focus:outline-none focus:border-foreground/70 transition-colors placeholder:text-foreground/20";
+  "w-full bg-transparent border-b border-foreground/15 py-2.5 text-[11px] tracking-[0.18em] focus:outline-none focus:border-foreground/70 transition-colors placeholder:text-foreground/20";
 
 const submitBtn =
   "w-full rounded-full bg-foreground text-background py-3.5 text-[10px] font-bold tracking-[0.35em] uppercase inline-flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-500 hover:opacity-85 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
@@ -213,7 +213,7 @@ export default function ResetPasswordPage() {
                         autoComplete="new-password"
                         aria-invalid={!!error}
                         aria-describedby={error ? errorId : undefined}
-                        className={`${inputBase} normal-case`}
+                        className={inputBase}
                       />
                     </div>
 
@@ -235,7 +235,7 @@ export default function ResetPasswordPage() {
                         autoComplete="new-password"
                         aria-invalid={!!error}
                         aria-describedby={error ? errorId : undefined}
-                        className={`${inputBase} normal-case`}
+                        className={inputBase}
                       />
                     </div>
                   </div>

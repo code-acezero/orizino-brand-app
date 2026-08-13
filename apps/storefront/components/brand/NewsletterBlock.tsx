@@ -70,7 +70,7 @@ const NewsletterBlock: React.FC = () => {
           ) : (
             <form
               onSubmit={handleSubmit}
-              className="w-full max-w-md flex gap-0"
+              className="relative w-full max-w-md mt-2"
             >
               <input
                 type="email"
@@ -78,15 +78,15 @@ const NewsletterBlock: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
-                className="flex-1 px-5 py-3.5 text-sm font-sans-brand outline-none border border-r-0 border-border bg-background text-foreground transition-colors focus:border-primary dark:focus:border-foreground"
+                className="w-full pl-6 pr-14 py-4 rounded-full text-sm font-sans-brand outline-none border border-border/40 bg-background/50 backdrop-blur-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-300 focus:border-primary/50 focus:bg-background/80 hover:border-border/60"
               />
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-shrink-0 px-6 py-3.5 bg-primary dark:bg-foreground text-primary-foreground dark:text-background font-medium hover:opacity-90 transition-opacity"
+                className="absolute right-1.5 top-1.5 bottom-1.5 aspect-square flex items-center justify-center rounded-full bg-foreground text-background hover:scale-[1.05] active:scale-[0.95] transition-all disabled:opacity-50 disabled:hover:scale-100"
               >
                 {submitting ? (
-                  <span className="w-4 h-4 border border-current border-t-transparent rounded-full animate-spin" />
+                  <span className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <ArrowRight className="w-4 h-4" />
                 )}

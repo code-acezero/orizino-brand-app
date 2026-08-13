@@ -11,7 +11,7 @@ const postcssContent = `export default {
 };
 `;
 
-for (const app of ["company", "storefront", "masterpanel", "orderops"]) {
+for (const app of ["brandhome", "storefront", "masterpanel", "orderops"]) {
   fs.writeFileSync(path.join(root, "apps", app, "postcss.config.mjs"), postcssContent);
 }
 
@@ -43,7 +43,7 @@ if (fs.existsSync(uiPkgPath)) {
   fs.writeFileSync(uiPkgPath, JSON.stringify(pkg, null, 2));
 }
 
-// 3. Fix layout.tsx in company app
+// 3. Fix layout.tsx in brandhome app
 const companyLayout = `import type { Metadata } from "next";
 import "@/src/styles/app.css";
 import Providers from "@/src/app/providers";
@@ -63,6 +63,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   );
 }
 `;
-fs.writeFileSync(path.join(root, "apps/company/src/app/layout.tsx"), companyLayout);
+fs.writeFileSync(path.join(root, "apps/brandhome/src/app/layout.tsx"), companyLayout);
 
 console.log("Applied PostCSS config and package dependencies successfully!");

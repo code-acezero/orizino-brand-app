@@ -15,6 +15,7 @@ import { allAdminItems } from "./admin-nav";
 import AutoSkeleton from "@/components/skeletons/AutoSkeleton";
 import AdminTopBar from "./AdminTopBar";
 import { cn } from "@/lib/utils";
+import { RelatedSettingsNav } from "./RelatedSettingsNav";
 
 
 const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
@@ -101,6 +102,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
               <React.Suspense fallback={<AutoSkeleton />}>
                 {children}
               </React.Suspense>
+              <RelatedSettingsNav />
             </div>
           </main>
           <AdminFooter onOpenShortcuts={() => setHelpOpen(true)} />

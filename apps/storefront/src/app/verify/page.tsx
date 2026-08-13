@@ -2,7 +2,7 @@
 import { useServerFn } from "@orizino/shared/lib/server-fn-compat";
 import { VerifyScannerPage } from "@orizino/shared";
 import { useAuth } from "@orizino/shared";
-import { getCompanyUrl } from "@/lib/cross-app-urls";
+import { getBrandHomeUrl } from "@/lib/cross-app-urls";
 import { useScannerConfig } from "@/hooks/use-scanner-config";
 import { verifyPublicSerial, verifyOwnedSerial } from "@/lib/verify.functions";
 
@@ -39,7 +39,7 @@ export default function VerifyEntryPage() {
       onLookup={lookup}
       isSignedIn={!!user}
       homePath="/"
-      learnMoreHref={`${getCompanyUrl()}/scanner-info`}
+      learnMoreHref={`${getBrandHomeUrl()}/scanner-info`}
       content={cfg}
     />
   );

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { Search, ArrowLeft, ChevronDown, Star, StarOff, LayoutGrid, UserCircle2, MapPin, IdCard, KeyRound, Users2, Inbox, History, Smartphone } from "lucide-react";
+import { Search, ArrowLeft, ChevronDown, ChevronUp, Star, StarOff, LayoutGrid, UserCircle2, MapPin, IdCard, KeyRound, Users2, Inbox, History, Smartphone, ShoppingCart, Tag, Palette, Activity, Settings, Home, Send } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "@/lib/router-compat";
 import { storefrontHref, shopHref, getBackToShopLabel, getBackToShopLabelShort, orderOpsHref } from "@/lib/cross-app-urls";
@@ -21,13 +21,34 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { adminNav, type AdminNavItem } from "./admin-nav";
+import { cn } from "@/lib/utils";
 
+import { BrandImage } from "@/lib/brand-image";
 import {
   SECTION_LABELS,
   SEGMENT_TO_NAV_LABELS,
   SECTION_LANDING_PATHS,
 } from "@/lib/master-sections";
+
+const MASTER_CONTROL_ITEMS = [
+  { title: "Sales & Operations", url: "/sales", icon: ShoppingCart, color: "#f59e0b", section: "orders" },
+  { title: "Marketing Management", url: "/marketing", icon: Search, color: "#f97316", section: "seo" },
+  { title: "Email Marketing", url: "/email", icon: Send, color: "#06b6d4", section: "customers" },
+  { title: "Affiliate Program", url: "/affiliate", icon: Tag, color: "#84cc16", section: "affiliate" },
+  { title: "Brand & Storefront", url: "/brand", icon: Palette, color: "#ec4899", section: "storefront_ui" },
+  { title: "Backend & System", url: "/system", icon: Activity, color: "#38bdf8", section: "settings" },
+  { title: "Settings & AI", url: "/settings-ai", icon: Settings, color: "#94a3b8", section: "settings" },
+  { title: "Team & Access", url: "/team", icon: Users2, color: "#a855f7", section: "employees" },
+];
 
 const splitNavUrl = (url: string) => {
   const [path, query = ""] = url.split("?");
@@ -68,18 +89,20 @@ export function AdminSidebar() {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const { pinned, toggle: togglePin } = usePinned();
 
-  const isMasterPanelHome = location.pathname === "/";
+  const isMasterPanelHome = location.pathname === "/" || location.pathname === "/master";
   const headerTitle = isMasterPanelHome ? "Master Panel" : "Control Panel";
   const sectionLabel = (() => {
     const seg = location.pathname.replace(/\/+$/, "").split("/")[1] ?? "";
     return SECTION_LABELS[seg] ?? "Admin Management";
   })();
 
-  // Only show nav sections relevant to the current route segment
+  // Only show nav sections relevant to the current route segment (unless actively searching)
   const visibleNavLabels = (() => {
+    if (query.trim()) return null;
     const seg = location.pathname.replace(/\/+$/, "").split("/")[1] ?? "";
     return SEGMENT_TO_NAV_LABELS[seg] ?? ["Overview", "Sales & Operations"];
   })();
+
 
   // Master Control is only shown when user has access to 2+ sections (or is admin)
   const canSeeMasterControl = !!staff?.isAdmin || role === "admin" ||
@@ -91,7 +114,7 @@ export function AdminSidebar() {
       const { data } = await supabase
         .from("site_settings")
         .select("key, value")
-        .in("key", ["site_name", "logo_url", "site_icon_url", "logo_display_style"]);
+        .in("key", ["site_name", "logo_url", "site_icon_url", "logo_display_style", "logo_color_filter", "logo_tint_color"]);
       const map: Record<string, any> = {};
       data?.forEach((s) => {
         const val: any = s.value;
@@ -104,6 +127,8 @@ export function AdminSidebar() {
   const siteName = (siteSettings?.site_name as string) || "";
   const logoUrl = (siteSettings?.logo_url as string) || "/orizino-logo.svg";
   const siteIconUrl = (siteSettings?.site_icon_url as string) || "/orizino-logo.svg";
+  const logoFilter = (siteSettings?.logo_color_filter as any) || "none";
+  const logoTint = (siteSettings?.logo_tint_color as string) || "#ffffff";
   const logoStyle = (siteSettings?.logo_display_style as string) || "rounded";
   const logoShapeClass =
     logoStyle === "square"
@@ -200,15 +225,11 @@ export function AdminSidebar() {
   };
 
   // Auto-open the group containing the active route (parent or any descendant).
+  // Auto-open the group containing the active route (parent or any descendant).
   useEffect(() => {
     const next: Record<string, boolean> = {};
     const walk = (item: AdminNavItem) => {
       if (!item.children?.length) return;
-      if (item.url === "/master") {
-        next[item.url] = isMasterPanelHome;
-        item.children.forEach((c) => walk(c as AdminNavItem));
-        return;
-      }
       if (isActive(item.url) || hasActiveDescendant(item)) {
         next[item.url] = true;
       }
@@ -226,11 +247,8 @@ export function AdminSidebar() {
     const isAdmin = !!staff?.isAdmin || role === "admin";
     const hasAnyGrant = (staff?.accessible?.length ?? 0) > 0;
     const sectionFiltered = items.filter((i) => {
-      // "Master Panel" (home) is rendered as a footer button, not in the nav
-      if (i.url === "/") return false;
       if (isAdmin) return true;
-      // Master Control item: require 2+ accessible sections
-      if (i.url === "/master") return canSeeMasterControl;
+      if (i.url === "/" || i.url === "/master") return true;
       if (i.section) return staff?.hasAccess(i.section) ?? false;
       // No section assigned — fall back to legacy rule
       return hasAnyGrant ? false : !i.adminOnly;
@@ -262,10 +280,7 @@ export function AdminSidebar() {
     const descendantActive = hasChildren && hasActiveDescendant(item);
     const ownActive = isActive(item.url);
     const active = ownActive && !descendantActive;
-    const isMasterItem = item.url === "/master";
-    const defaultOpen = isMasterItem
-      ? isMasterPanelHome
-      : (ownActive || descendantActive);
+    const defaultOpen = ownActive || descendantActive;
     const open = openGroups[item.url] ?? defaultOpen;
     const isPinned = pinned.includes(item.url);
 
@@ -276,23 +291,19 @@ export function AdminSidebar() {
             asChild={!hasChildren}
             size="sm"
             tooltip={collapsed ? item.title : undefined}
-            onClick={hasChildren ? () => {
-              if (collapsed) {
-                navigate(item.url);
-                closeOnMobile();
-              } else {
-                setOpenGroups((p) => ({ ...p, [item.url]: !(p[item.url] ?? open) }));
-              }
+            onClick={hasChildren ? (e) => {
+              e.preventDefault();
+              setOpenGroups((p) => ({ ...p, [item.url]: !(p[item.url] ?? defaultOpen) }));
             } : undefined}
             className={
               (active
-                ? "h-9 text-[13px] bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary font-medium relative before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:rounded-full before:bg-primary rounded-lg"
+                ? "h-9 text-[13px] bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary font-medium rounded-lg"
                 : "h-9 text-[13px] text-muted-foreground hover:bg-muted/50 hover:text-foreground rounded-lg") +
               (!collapsed && showPin ? (hasChildren ? " pr-12" : " pr-7") : "")
             }
           >
             {hasChildren ? (
-              <span className="w-full flex items-center gap-2">
+              <span className="w-full flex items-center gap-2 cursor-pointer">
                 <item.icon className="shrink-0 !size-[15px]" />
                 <span className="truncate flex-1 text-left">{item.title}</span>
                 {!collapsed && (
@@ -350,31 +361,35 @@ export function AdminSidebar() {
               return (
                 <div key={child.url}>
                   <div className="flex items-center">
-                    <NavLink
-                      to={child.url}
-                      onClick={closeOnMobile}
-                      className={`flex-1 flex items-center h-7 px-2 rounded-md text-[12px] transition-colors ${
-                        cActive
-                          ? "text-primary bg-primary/8 font-medium"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                      }`}
-                    >
-                      <span className="truncate">{child.title}</span>
-                    </NavLink>
-                    {hasSub && (
+                    {hasSub ? (
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
+                        onClick={() => {
                           setOpenGroups((p) => ({ ...p, [child.url]: !(p[child.url] ?? subOpen) }));
                         }}
-                        className="p-1 rounded hover:bg-muted/50 text-muted-foreground"
-                        title={subOpen ? "Collapse" : "Expand"}
+                        className={`flex-1 flex items-center justify-between h-7 px-2 rounded-md text-[12px] transition-colors ${
+                          cActive
+                            ? "text-primary bg-primary/8 font-medium"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                        }`}
                       >
+                        <span className="truncate">{child.title}</span>
                         <ChevronDown
                           className={`!size-3 transition-transform duration-200 ${subOpen ? "rotate-180" : ""}`}
                         />
                       </button>
+                    ) : (
+                      <NavLink
+                        to={child.url}
+                        onClick={closeOnMobile}
+                        className={`flex-1 flex items-center h-7 px-2 rounded-md text-[12px] transition-colors ${
+                          cActive
+                            ? "text-primary bg-primary/8 font-medium"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                        }`}
+                      >
+                        <span className="truncate">{child.title}</span>
+                      </NavLink>
                     )}
                   </div>
                   {hasSub && subOpen && (
@@ -414,15 +429,19 @@ export function AdminSidebar() {
       <SidebarHeader className="border-b border-border/40 group-data-[collapsible=icon]:p-2 p-3">
         <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center">
           {logoUrl ? (
-            <img
+            <BrandImage
               src={logoUrl}
               alt={siteName}
+              filter={logoFilter}
+              customColor={logoTint}
               className="w-6 h-6 rounded object-contain shrink-0"
             />
           ) : siteIconUrl ? (
-            <img
+            <BrandImage
               src={siteIconUrl}
               alt={siteName}
+              filter={logoFilter}
+              customColor={logoTint}
               className="w-6 h-6 rounded object-contain shrink-0"
             />
           ) : (
@@ -599,13 +618,14 @@ export function AdminSidebar() {
         )}
 
         {!(normalizedCurrentPath === "/master/profile" || normalizedCurrentPath.startsWith("/master/profile/")) && adminNav.map((section) => {
-          if (!visibleNavLabels.includes(section.label)) return null;
+          if (visibleNavLabels && !visibleNavLabels.includes(section.label)) return null;
           const filtered = filterItems(section.items);
           if (filtered.length === 0) return null;
           return (
             <SidebarGroup key={section.label} className="px-0 py-1">
               {!collapsed && (
-                <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60 font-semibold px-3 h-6">
+                <SidebarGroupLabel className="text-[10.5px] uppercase tracking-[0.16em] text-primary/80 font-bold px-3 h-7 mt-2 flex items-center gap-1.5 select-none">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
                   {section.label}
                 </SidebarGroupLabel>
               )}
@@ -622,24 +642,96 @@ export function AdminSidebar() {
 
       <SidebarFooter className="p-2 border-t border-border/40">
         <SidebarMenu className="gap-0.5">
-          {!isMasterPanelHome && canSeeMasterControl && (
+          {!isMasterPanelHome && (
             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                size="sm"
-                tooltip={collapsed ? "Back to Master Panel" : undefined}
-                className="h-8 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg"
-              >
-                <NavLink
-                  to="/"
-                  end
-                  onClick={closeOnMobile}
-                  className="inline-flex items-center gap-2 h-8 px-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors w-full"
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton
+                    asChild
+                    size="sm"
+                    tooltip={collapsed ? "Master Controls" : undefined}
+                    className="h-8 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg group/btn cursor-pointer w-full"
+                  >
+                    <button type="button" className="flex items-center gap-2 h-8 px-2 text-[13px] text-muted-foreground group-hover/btn:text-foreground rounded-lg transition-colors w-full">
+                      <LayoutGrid className="shrink-0 !size-[15px] text-primary" />
+                      <span className="truncate flex-1 text-left font-medium">Master Controls</span>
+                      <ChevronUp className="shrink-0 !size-3.5 text-muted-foreground/70 transition-transform duration-200 group-data-[state=open]/btn:rotate-180" />
+                    </button>
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  side="top"
+                  align="start"
+                  sideOffset={8}
+                  className="w-[var(--radix-dropdown-menu-trigger-width)] rounded-xl border border-border/80 bg-background/95 backdrop-blur-xl p-1.5 shadow-2xl z-50 space-y-1"
                 >
-                  <LayoutGrid className="shrink-0 !size-[15px]" />
-                  <span className="truncate"><span className="lg:hidden">Master Panel</span><span className="hidden lg:inline">Back to Master Panel</span></span>
-                </NavLink>
-              </SidebarMenuButton>
+                  <DropdownMenuLabel className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                    <span>Master Controls</span>
+                    <span className="text-[10px] text-primary font-semibold">Quick Switch</span>
+                  </DropdownMenuLabel>
+
+                  <DropdownMenuItem asChild>
+                    <NavLink
+                      to="/"
+                      end
+                      onClick={closeOnMobile}
+                      className={cn(
+                        "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer",
+                        isMasterPanelHome
+                          ? "bg-primary/15 text-primary border border-primary/30 font-bold"
+                          : "text-foreground bg-muted/30 hover:bg-muted/60"
+                      )}
+                    >
+                      <Home className="w-4 h-4 text-primary shrink-0" />
+                      <span className="flex-1">Master Panel Home</span>
+                      {isMasterPanelHome && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                      )}
+                    </NavLink>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator className="my-1 bg-border/40" />
+
+                  <div className="space-y-0.5 max-h-[300px] overflow-y-auto pr-0.5">
+                    {MASTER_CONTROL_ITEMS.filter((item) => {
+                      const isAdmin = !!staff?.isAdmin || role === "admin";
+                      if (isAdmin) return true;
+                      return staff?.hasAccess(item.section) ?? false;
+                    }).map((item) => {
+                      const Icon = item.icon;
+                      const isSectionActive = normalizedCurrentPath === item.url || normalizedCurrentPath.startsWith(item.url + "/");
+                      return (
+                        <DropdownMenuItem key={item.url} asChild>
+                          <NavLink
+                            to={item.url}
+                            onClick={closeOnMobile}
+                            className={cn(
+                              "flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer",
+                              isSectionActive
+                                ? "bg-primary/15 text-primary font-bold border border-primary/30"
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted/60 font-medium"
+                            )}
+                          >
+                            <div
+                              className="w-5 h-5 rounded flex items-center justify-center shrink-0"
+                              style={{
+                                backgroundColor: isSectionActive ? `${item.color}35` : `${item.color}18`,
+                                border: `1px solid ${isSectionActive ? item.color : item.color + "30"}`
+                              }}
+                            >
+                              <Icon className="w-3 h-3" style={{ color: item.color }} />
+                            </div>
+                            <span className="truncate flex-1">{item.title}</span>
+                            {isSectionActive && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                            )}
+                          </NavLink>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </SidebarMenuItem>
           )}
           <SidebarMenuItem>
@@ -653,10 +745,13 @@ export function AdminSidebar() {
                 href={orderOpsHref()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 h-8 px-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors w-full"
+                className="flex items-center gap-2 h-8 px-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors w-full"
               >
                 <Smartphone className="shrink-0 !size-[15px]" />
-                <span className="truncate"><span className="lg:hidden">Order Ops</span><span className="hidden lg:inline">Open Order Ops</span></span>
+                <span className="truncate flex-1 text-left font-medium">
+                  <span className="lg:hidden">Order Ops</span>
+                  <span className="hidden lg:inline">Open Order Ops</span>
+                </span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -671,10 +766,13 @@ export function AdminSidebar() {
                 href={shopHref()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 h-8 px-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors w-full"
+                className="flex items-center gap-2 h-8 px-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors w-full"
               >
                 <ArrowLeft className="shrink-0 !size-[15px]" />
-                <span className="truncate"><span className="lg:hidden">{getBackToShopLabelShort()}</span><span className="hidden lg:inline">{getBackToShopLabel()}</span></span>
+                <span className="truncate flex-1 text-left font-medium">
+                  <span className="lg:hidden">{getBackToShopLabelShort()}</span>
+                  <span className="hidden lg:inline">{getBackToShopLabel()}</span>
+                </span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

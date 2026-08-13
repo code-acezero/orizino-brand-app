@@ -7,17 +7,18 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:company": "npm run dev --workspace=apps/company",
+    "dev:brandhome": "npm run dev --workspace=apps/brandhome",
     "dev:storefront": "npm run dev --workspace=apps/storefront",
     "dev:masterpanel": "npm run dev --workspace=apps/masterpanel",
     "dev:orderops": "npm run dev --workspace=apps/orderops",
-    "build:company": "npm run build --workspace=apps/company",
+    "build:brandhome": "npm run build --workspace=apps/brandhome",
     "build:storefront": "npm run build --workspace=apps/storefront",
     "build:masterpanel": "npm run build --workspace=apps/masterpanel",
     "build:orderops": "npm run build --workspace=apps/orderops",
-    "build": "npm run build:company && npm run build:storefront && npm run build:masterpanel && npm run build:orderops"
+    "build": "npm run build:brandhome && npm run build:storefront && npm run build:masterpanel && npm run build:orderops"
   },
   "dependencies": {
+    "@babel/parser": "^8.0.4",
     "@tailwindcss/postcss": "^4.3.3",
     "postcss": "^8.5.26"
   },

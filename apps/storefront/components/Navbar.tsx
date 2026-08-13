@@ -249,7 +249,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
           scrolled ? "bg-background/95 backdrop-blur-md border-b border-border/80 shadow-sm" : "bg-transparent border-b-0 border-transparent shadow-none"
         }`}
       >
-        <div className="w-full px-4 sm:px-5 lg:px-7 xl:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10">
           {/* Main bar */}
           <div className="flex items-center h-12 lg:h-14 gap-3 relative">
             {/* Brand Logo & Title with skeleton fallback — Logo at corner, Title centered on mobile */}

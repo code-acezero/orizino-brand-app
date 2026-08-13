@@ -136,6 +136,24 @@ const CategoryMosaic: React.FC = () => {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.05 });
 
+  const { data: dbConfig } = useQuery({
+    queryKey: ["home-category-mosaic-config"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "home_category_mosaic_config")
+        .maybeSingle();
+      if (!data?.value) return null;
+      const val = data.value as any;
+      return val?.value ?? val;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const isEnabled = dbConfig?.is_enabled ?? true;
+  const title = dbConfig?.title || "Shop the collection";
+
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ["categories-mosaic"],
     queryFn: async () => {
@@ -183,6 +201,7 @@ const CategoryMosaic: React.FC = () => {
     );
   }
 
+  if (!isEnabled) return null;
   if (categories.length === 0) return null;
 
   const count = categories.length;
@@ -197,7 +216,7 @@ const CategoryMosaic: React.FC = () => {
         transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
       >
         <h2 className="heading-editorial text-3xl sm:text-4xl text-foreground">
-          Shop the collection
+          {title}
         </h2>
       </motion.div>
 

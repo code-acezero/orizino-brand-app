@@ -41,7 +41,16 @@ export function useSiteSettings<T extends Record<string, any>>(defaults: T) {
       const entries = Object.entries(form).filter(([k]) =>
         keys ? (keys as string[]).includes(k) : true
       );
-      await saveSiteSettings({ data: { entries: entries.map(([key, value]) => ({ key, value: { value } })) } });
+      const updatedAt = new Date().toISOString();
+      for (const [key, value] of entries) {
+        const { error } = await supabase
+          .from("site_settings")
+          .upsert(
+            { key, value: { value }, updated_at: updatedAt },
+            { onConflict: "key" }
+          );
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-settings"] });

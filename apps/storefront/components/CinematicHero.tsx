@@ -361,12 +361,12 @@ const CinematicHero: React.FC = () => {
                 </motion.div>
               </motion.div>
 
-              {/* Overlay — Reduced shadow effect */}
+              {/* Overlay — Seamless bottom shadow blend */}
               <div
                 className="absolute inset-0"
                 style={{
                   background:
-                    "linear-gradient(90deg, hsl(var(--background) / 0.55) 0%, hsl(var(--background) / 0.3) 35%, hsl(var(--background) / 0.08) 65%, transparent 100%), linear-gradient(180deg, transparent 40%, hsl(var(--background) / 0.45) 100%)",
+                    "linear-gradient(90deg, hsl(var(--background) / 0.55) 0%, hsl(var(--background) / 0.3) 35%, hsl(var(--background) / 0.08) 65%, transparent 100%), linear-gradient(180deg, transparent 30%, hsl(var(--background) / 0.5) 75%, hsl(var(--background)) 100%)",
                 }}
               />
             </>

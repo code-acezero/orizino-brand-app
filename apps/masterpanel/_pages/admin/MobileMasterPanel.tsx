@@ -58,7 +58,11 @@ const GROUPS: Group[] = [
   {
     key: "brand", title: "Branding & CMS",
     items: [
-      { key: "landing",    title: "Company Landing", sub: "Corporate site editor", url: "/brand/landing",         icon: Home,         color: "#ec4899" },
+      { key: "landing",    title: "BrandHome Landing", sub: "Corporate site editor", url: "/brand/landing",         icon: Home,         color: "#ec4899" },
+      { key: "docs",       title: "Docs / Legal",    sub: "Policies and terms",    url: "/brand/docs",            icon: FileText,     color: "#ec4899" },
+      { key: "news",       title: "News & Blog",     sub: "Articles and posts",    url: "/brand/news",            icon: Megaphone,    color: "#ec4899" },
+      { key: "track",      title: "Order Tracking",  sub: "Tracking page layout",  url: "/brand/track",           icon: Truck,        color: "#ec4899" },
+      { key: "scanner-info",title: "Scanner Info",   sub: "NFC scan details",      url: "/brand/scanner-info",    icon: ScanLine,     color: "#ec4899" },
       { key: "sf-home",    title: "Storefront Home", sub: "Home page composer",    url: "/brand/home",            icon: Layers,       color: "#ec4899" },
       { key: "appearance", title: "Appearance",      sub: "Theme & tokens",        url: "/brand/appearance",      icon: Palette,      color: "#ec4899" },
       { key: "banners",    title: "Banners",         sub: "Hero & promo slots",    url: "/brand/banners",         icon: ImageIcon,    color: "#ec4899" },

@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
 import { useNavigate } from "@/lib/router-compat";
-import { useQuery } from "@tanstack/react-query";
-import { LogOut, Command, Activity, Keyboard, User, ChevronDown, Bell, IdCard } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { LogOut, Command, Activity, Keyboard, User, ChevronDown, Bell, IdCard, Sun, Moon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminRole } from "@/components/AdminRoute";
@@ -78,6 +78,36 @@ const AdminTopBar: React.FC<Props> = ({
     staleTime: 10 * 60 * 1000,
   });
 
+  const queryClient = useQueryClient();
+  const { data: modeSetting } = useQuery({
+    queryKey: ["site-mode-admin-topbar"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("key, value")
+        .eq("key", "site_mode")
+        .maybeSingle();
+      const val = data?.value;
+      return typeof val === "object" && val !== null ? (val as any).value ?? val : val || "dark";
+    },
+    staleTime: 30 * 1000,
+  });
+
+  const isLight = modeSetting === "light" || (typeof document !== "undefined" && document.documentElement.classList.contains("light"));
+
+  const toggleMode = async () => {
+    const nextMode = isLight ? "dark" : "light";
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.toggle("light", nextMode === "light");
+    }
+    await supabase.from("site_settings").upsert(
+      { key: "site_mode", value: { value: nextMode } },
+      { onConflict: "key" }
+    );
+    queryClient.invalidateQueries({ queryKey: ["site-mode-admin-topbar"] });
+    queryClient.invalidateQueries({ queryKey: ["site-settings"] });
+  };
+
   const showProfileSkeleton = !!user && profileLoading;
   const firstName = profile?.full_name?.trim().split(/\s+/)[0] || user?.email?.split("@")[0] || "";
   const initials = firstName ? firstName.slice(0, 2).toUpperCase() : "AD";
@@ -87,7 +117,7 @@ const AdminTopBar: React.FC<Props> = ({
   return (
     <header
       className={cn(
-        "h-14 flex items-center gap-1.5 sm:gap-2 border-b border-border/60 px-2 sm:px-4 bg-background/70 backdrop-blur-xl sticky top-0 z-20 w-full max-w-full",
+        "h-14 flex items-center gap-1.5 sm:gap-2 border-b border-border/60 px-2 sm:px-4 bg-background/70 backdrop-blur-xl sticky top-0 z-30 w-full max-w-full shrink-0",
         className,
       )}
     >
@@ -161,6 +191,16 @@ const AdminTopBar: React.FC<Props> = ({
             <Keyboard className="w-4 h-4" />
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={toggleMode}
+          title={isLight ? "Switch to dark mode" : "Switch to light mode"}
+          aria-label="Toggle dark/light mode"
+          className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0 cursor-pointer"
+        >
+          {isLight ? <Moon className="w-4 h-4 text-amber-500" /> : <Sun className="w-4 h-4 text-amber-400" />}
+        </button>
 
         <NotificationBell adminMode />
 

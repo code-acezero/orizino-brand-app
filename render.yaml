@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: orizino-brandhome
+    env: node
+    buildCommand: npm install && npm run build:brandhome
+    startCommand: npm --prefix apps/brandhome run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+  - type: web
+    name: orizino-storefront
+    env: node
+    buildCommand: npm install && npm run build:storefront
+    startCommand: npm --prefix apps/storefront run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+  - type: web
+    name: orizino-masterpanel
+    env: node
+    buildCommand: npm install && npm run build:masterpanel
+    startCommand: npm --prefix apps/masterpanel run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+  - type: web
+    name: orizino-orderops
+    env: node
+    buildCommand: npm install && npm run build:orderops
+    startCommand: npm --prefix apps/orderops run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20

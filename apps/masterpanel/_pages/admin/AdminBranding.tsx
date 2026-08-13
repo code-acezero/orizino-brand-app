@@ -20,6 +20,7 @@ import {
   Wand2,
   RotateCcw,
   Save,
+  ArrowRight,
 } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
 import { Textarea } from "@/components/ui/textarea";
@@ -675,36 +676,197 @@ const AdminBranding = () => {
   return (
     <div className="space-y-6 pb-28">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex items-start justify-between gap-4 flex-wrap pb-2 border-b border-border/40">
         <div>
-          <h1 className="text-2xl font-display font-bold tracking-tight">Brand Identity</h1>
+          <h1 className="text-2xl font-display font-black tracking-tight flex items-center gap-2">
+            <Palette className="w-6 h-6 text-primary" />
+            Brand Identity Hub
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Logo, icon, typography, and the words that define your store.
+            Configure luxury logo styling, typography, color filters, and site-wide theme defaults.
           </p>
         </div>
-        <Badge variant="outline" className="rounded-full gap-1.5 px-3 py-1 text-[11px]">
-          <Palette className="w-3 h-3 text-primary" />
-          Live preview enabled
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className="rounded-full gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+            <Check className="w-3.5 h-3.5" />
+            Live Preview Synchronized
+          </Badge>
+          {isDirty && (
+            <Button size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="h-9 text-xs font-bold rounded-xl shadow-md">
+              <Save className="w-3.5 h-3.5 mr-1.5" />
+              {saveMutation.isPending ? "Saving…" : "Save Changes"}
+            </Button>
+          )}
+        </div>
       </div>
-
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="hidden">
-          <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
-          <TabsTrigger value="logo" className="text-xs">Logo &amp; icon</TabsTrigger>
-          <TabsTrigger value="shape" className="text-xs">Shape &amp; effects</TabsTrigger>
-          <TabsTrigger value="color" className="text-xs">Color filter</TabsTrigger>
-          <TabsTrigger value="typography" className="text-xs">Typography</TabsTrigger>
-          <TabsTrigger value="voice" className="text-xs">Brand voice</TabsTrigger>
-          <TabsTrigger value="theme" className="text-xs">Site theme</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
       {/* Two-column workspace */}
-      <div className={cn("grid gap-6", tab !== "overview" && "xl:grid-cols-[1fr_420px]")}>
-        {/* LEFT: Identity editors */}
-        {tab !== "overview" && (
+      <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
+        {/* LEFT: Identity editors & Overview */}
         <div className="space-y-6">
+          {/* Executive Overview Tab */}
+          {tab === "overview" && (
+            <div className="space-y-6">
+              {/* Executive Brand Identity Hero Card */}
+              <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-background p-6 md:p-8 shadow-xl">
+                <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2.5">
+                      <Badge variant="outline" className="rounded-full bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs px-3 py-1 font-bold">
+                        <Check className="w-3 h-3 mr-1" /> Telemetry & System Assets Synchronized
+                      </Badge>
+                    </div>
+                    <h2 className="text-2xl font-display font-black tracking-tight text-foreground">
+                      {siteName || "ORIZINO"} {brandSuffix}
+                    </h2>
+                    <p className="text-xs md:text-sm text-muted-foreground max-w-xl leading-relaxed">
+                      {siteDescription || "Luxury Storefront & E-commerce Brand Experience"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button variant="outline" size="sm" onClick={() => setTab("logo")} className="rounded-xl text-xs font-semibold gap-2 border-border/60">
+                      <ImageIcon className="w-3.5 h-3.5" /> Edit Assets
+                    </Button>
+                    <Button size="sm" onClick={() => setTab("theme")} className="rounded-xl text-xs font-bold gap-2 shadow-md">
+                      <Palette className="w-3.5 h-3.5" /> Customize Theme
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Identity Metric & Spec Cards Grid */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* 1. Logo & Icon Overview Card */}
+                <Card className="border-border/60 rounded-2xl bg-card/60 backdrop-blur-sm hover:border-primary/40 transition-all">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                          <ImageIcon className="h-4 w-4" />
+                        </div>
+                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Logo & Favicon</CardTitle>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => setTab("logo")} className="h-7 text-[11px] font-semibold text-primary">
+                        Configure <ArrowRight className="w-3 h-3 ml-1" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-4 p-3 rounded-xl bg-secondary/30 border border-border/40">
+                      <div className={cn("w-14 h-14 rounded-xl bg-secondary/60 border border-border/50 flex items-center justify-center p-1.5 overflow-hidden shrink-0", styleObj.cls)}>
+                        {logoUrl ? (
+                          <BrandImage src={logoUrl} alt="Logo" filter={logoFilter} customColor={logoTint} className="w-full h-full" />
+                        ) : (
+                          <span className="font-bold text-lg text-foreground">{siteName?.charAt(0) || "O"}</span>
+                        )}
+                      </div>
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Badge variant="secondary" className="text-[10px] px-2 py-0.5 rounded-md font-mono">{logoStyle}</Badge>
+                          <Badge variant="outline" className="text-[10px] px-2 py-0.5 rounded-md">{logoFilter} filter</Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground truncate">{logoUrl ? "Custom SVG/PNG Asset Active" : "Default System Logo"}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 2. Color Filters & Palette Overview Card */}
+                <Card className="border-border/60 rounded-2xl bg-card/60 backdrop-blur-sm hover:border-primary/40 transition-all">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                          <Palette className="h-4 w-4" />
+                        </div>
+                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Color Palette & Contrast</CardTitle>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => setTab("color")} className="h-7 text-[11px] font-semibold text-primary">
+                        Configure <ArrowRight className="w-3 h-3 ml-1" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="p-3 rounded-xl bg-secondary/30 border border-border/40 space-y-2">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-muted-foreground">Auto Contrast Tint</span>
+                        <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Cream Vanilla / Charcoal</Badge>
+                      </div>
+                      <div className="grid grid-cols-5 gap-1.5 pt-1">
+                        <div className="h-6 rounded-md bg-primary flex items-center justify-center text-[9px] font-mono text-primary-foreground font-bold" title="Primary">Pri</div>
+                        <div className="h-6 rounded-md bg-secondary flex items-center justify-center text-[9px] font-mono text-secondary-foreground" title="Secondary">Sec</div>
+                        <div className="h-6 rounded-md bg-card border border-border flex items-center justify-center text-[9px] font-mono text-card-foreground" title="Card">Card</div>
+                        <div className="h-6 rounded-md bg-muted flex items-center justify-center text-[9px] font-mono text-muted-foreground" title="Muted">Mut</div>
+                        <div className="h-6 rounded-md bg-accent flex items-center justify-center text-[9px] font-mono text-accent-foreground" title="Accent">Acc</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 3. Typography & Display Font Overview Card */}
+                <Card className="border-border/60 rounded-2xl bg-card/60 backdrop-blur-sm hover:border-primary/40 transition-all">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                          <Type className="h-4 w-4" />
+                        </div>
+                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Typography Engine</CardTitle>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => setTab("typography")} className="h-7 text-[11px] font-semibold text-primary">
+                        Configure <ArrowRight className="w-3 h-3 ml-1" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="p-3 rounded-xl bg-secondary/30 border border-border/40 space-y-2">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-muted-foreground">Active Display Font</span>
+                        <span className="font-semibold text-foreground">{titleFont || "System Default"}</span>
+                      </div>
+                      <div className="pt-1 text-center border-t border-border/30">
+                        {renderTitle("text-xl font-bold truncate block")}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 4. Brand Voice & Corporate Info Card */}
+                <Card className="border-border/60 rounded-2xl bg-card/60 backdrop-blur-sm hover:border-primary/40 transition-all">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                          <Globe className="h-4 w-4" />
+                        </div>
+                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Corporate Voice & Contact</CardTitle>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => setTab("voice")} className="h-7 text-[11px] font-semibold text-primary">
+                        Configure <ArrowRight className="w-3 h-3 ml-1" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="p-3 rounded-xl bg-secondary/30 border border-border/40 space-y-1.5 text-[11px]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Contact Email</span>
+                        <span className="font-medium text-foreground">{contactEmail || "Not specified"}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Contact Phone</span>
+                        <span className="font-medium text-foreground">{contactPhone || "Not specified"}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Support Portal</span>
+                        <span className="font-medium text-primary truncate max-w-[140px]">{supportUrl || "Disabled"}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+
           {/* Logo & Icon assets */}
           {show("logo") && (
           <div className="grid gap-6 md:grid-cols-2">
@@ -713,7 +875,7 @@ const AdminBranding = () => {
                 <div className="flex items-center gap-4">
                   <div
                     className={cn(
-                      "w-20 h-20 shrink-0 overflow-hidden relative bg-gradient-to-br from-primary/20 to-primary/5",
+                      "w-20 h-20 shrink-0 overflow-hidden relative bg-secondary/40 border border-border/50 flex items-center justify-center p-2",
                       styleObj.cls,
                       getEffectClass(logoEffect)
                     )}
@@ -1129,13 +1291,10 @@ const AdminBranding = () => {
           </SectionCard>
           )}
 
-
-          {tab === "theme" && <SiteThemePanel />}
+          {show("theme") && <SiteThemePanel />}
         </div>
-        )}
 
-        {/* RIGHT: Live preview rail */}
-        <div className={cn("space-y-4", tab !== "overview" && "xl:sticky xl:top-20 xl:self-start")}>
+        <div className="space-y-4 xl:sticky xl:top-20 xl:self-start">
           <Card className="border-border/60 rounded-2xl overflow-hidden bg-gradient-to-br from-card/80 to-card/40 backdrop-blur">
             <CardHeader className="pb-3 border-b border-border/40">
               <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2">

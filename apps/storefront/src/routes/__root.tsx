@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import * as React from "react";
 import {
   HeadContent,
@@ -20,7 +19,7 @@ export const Route = createRootRoute({
     // Runs before the route tree renders — both on the initial SSR request
     // and on client-side navigation — so cross-app-urls.ts's cache is
     // already populated by the time any component calls
-    // storefrontHref()/companyHref()/etc. during render.
+    // storefrontHref()/brandHomeHref()/etc. during render.
     try {
       const redirects = await getExternalRedirects();
       setExternalRedirects(redirects as any);

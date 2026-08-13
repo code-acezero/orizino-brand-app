@@ -101,27 +101,41 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { data: role, isLoading: roleLoading, isError: roleError, error: roleErrorObj, refetch: refetchRole } = useQuery({
     queryKey: ["user-admin-role", user?.id],
     queryFn: async (): Promise<AdminRole> => {
-      const { data: isAdmin, error: adminErr } = await supabase.rpc("has_role", {
-        _user_id: user!.id,
-        _role: "admin",
-      });
-      if (adminErr) {
-        console.error("[AdminRoute] has_role(admin) failed:", adminErr);
-        throw adminErr;
+      if (!user?.id) return null;
+      try {
+        // Primary check: RPC function
+        const { data: isAdmin } = await supabase.rpc("has_role", {
+          _user_id: user.id,
+          _role: "admin",
+        });
+        if (isAdmin) return "admin";
+
+        const { data: isMod } = await supabase.rpc("has_role", {
+          _user_id: user.id,
+          _role: "moderator",
+        });
+        if (isMod) return "moderator";
+
+        // Secondary fallback: Direct query on user_roles (protected by RLS "Users can view own roles")
+        const { data: userRoles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id);
+
+        if (userRoles && userRoles.length > 0) {
+          const roles = userRoles.map((r: any) => r.role);
+          if (roles.includes("admin") || roles.includes("master_admin")) return "admin";
+          if (roles.includes("moderator")) return "moderator";
+        }
+
+        return null;
+      } catch (err) {
+        console.error("[AdminRoute] Role check exception:", err);
+        return null;
       }
-      if (isAdmin) return "admin";
-      const { data: isMod, error: modErr } = await supabase.rpc("has_role", {
-        _user_id: user!.id,
-        _role: "moderator",
-      });
-      if (modErr) {
-        console.error("[AdminRoute] has_role(moderator) failed:", modErr);
-        throw modErr;
-      }
-      if (isMod) return "moderator";
-      return null;
     },
-    enabled: !!user,
+    enabled: !!user && !!user.id,
+    staleTime: 60 * 1000,
     retry: 2,
   });
 

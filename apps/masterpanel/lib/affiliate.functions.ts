@@ -1,5 +1,7 @@
+"use server";
+
 import { createServerFn } from "@/lib/server-fn-compat";
-import { getRequest } from "@/lib/server-fn-compat.server";
+import { getRequestHeader } from "@orizino/shared/lib/server-fn-compat";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -32,9 +34,8 @@ export const trackAffiliateClick = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!affiliate) return { ok: false };
 
-    const req = getRequest();
-    const ip = req?.headers.get("cf-connecting-ip") || req?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
-    const ua = req?.headers.get("user-agent") || null;
+    const ip = await getRequestHeader("cf-connecting-ip") || (await getRequestHeader("x-forwarded-for"))?.split(",")[0]?.trim() || null;
+    const ua = await getRequestHeader("user-agent") || null;
     const { device } = parseUA(ua);
 
     await supabaseAdmin.from("affiliate_clicks").insert({

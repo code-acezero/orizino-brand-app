@@ -28,19 +28,23 @@ export interface ShowcaseEntry {
   id: string;
   title?: string;
   subtitle?: string;
+  badge_tag?: string;
   image_url?: string;
   video_url?: string;
   markdown_specs?: string;
   product_id?: string | null;
   cta_text?: string;
   cta_link?: string;
-  layout_type?: "auto" | "featured" | "tall" | "wide" | "square";
-  card_style?: "glass" | "dark" | "cherry" | "minimal";
+  layout_type?: "auto" | "featured" | "tall" | "wide" | "square" | "full";
+  card_style?: "glass" | "dark" | "cherry" | "minimal" | "monochrome" | "gold" | "custom";
+  custom_bg?: string;
   content_position?: "top-left" | "top-center" | "top-right" | "bottom-left" | "bottom-center" | "bottom-right" | "center" | "left" | "right" | "top" | "bottom" | "side";
   text_align?: "left" | "center" | "right";
   show_price?: boolean;
   price_position?: "top" | "bottom" | "none";
+  stock_status?: string;
   show_gallery?: boolean; // show product image gallery carousel
+  follow_card_id?: string | null; // ID of card to inherit/follow styling from
   is_active?: boolean;
   sort_order?: number;
 }
@@ -245,16 +249,29 @@ const BentoCard = ({
     spanClass = "col-span-1 row-span-2 min-h-[460px]";
   } else if (layout === "wide" || (layout === "auto" && index % 5 === 3)) {
     spanClass = "col-span-1 sm:col-span-2 row-span-1 min-h-[280px]";
+  } else if (layout === "full") {
+    spanClass = "col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-4 row-span-1 min-h-[320px]";
   }
 
-  // Style
+  // Style & Background
   const styleType = entry.card_style || (index % 3 === 0 ? "glass" : index % 3 === 1 ? "dark" : "cherry");
-  const bg =
-    styleType === "cherry"
-      ? "linear-gradient(145deg, hsl(0 60% 8%), hsl(var(--background)))"
-      : styleType === "dark"
-        ? "linear-gradient(145deg, hsl(220 20% 8%), hsl(var(--background)))"
-        : "linear-gradient(145deg, hsl(var(--card) / 0.7), hsl(var(--background) / 0.95))";
+  let bg = "linear-gradient(145deg, hsl(var(--card) / 0.7), hsl(var(--background) / 0.95))";
+  if (entry.custom_bg) {
+    bg = entry.custom_bg;
+  } else if (styleType === "cherry") {
+    bg = "linear-gradient(145deg, hsl(0 60% 8%), hsl(var(--background)))";
+  } else if (styleType === "dark") {
+    bg = "linear-gradient(145deg, hsl(220 20% 8%), hsl(var(--background)))";
+  } else if (styleType === "minimal") {
+    bg = "linear-gradient(145deg, hsl(var(--background) / 0.9), hsl(var(--card) / 0.4))";
+  } else if (styleType === "monochrome") {
+    bg = "linear-gradient(145deg, hsl(0 0% 12%), hsl(0 0% 4%))";
+  } else if (styleType === "gold") {
+    bg = "linear-gradient(145deg, hsl(40 45% 10%), hsl(var(--background)))";
+  }
+
+  const badgeTag = entry.badge_tag || "EDITORIAL SILHOUETTE";
+  const stockText = entry.stock_status || (product ? "In Stock" : "Limited Edition");
 
   return (
     <motion.a
@@ -314,12 +331,12 @@ const BentoCard = ({
         <div className="relative z-10 p-4 sm:p-6 flex flex-col justify-between h-full w-full pointer-events-none">
           {/* Top Editorial Badge */}
           <div className="flex items-center justify-between w-full pointer-events-auto">
-            <span className="font-mono text-[9px] font-bold tracking-[0.25em] uppercase text-cherry bg-background/60 dark:bg-card/75 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full">
-              EDITORIAL SILHOUETTE
+            <span className="font-mono text-[9px] font-bold tracking-[0.25em] uppercase text-cherry dark:text-foreground/90 bg-background/60 dark:bg-card/75 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full">
+              {badgeTag}
             </span>
           </div>
 
-          {/* Static Subtitle (Fixed along side, never spring animates, truncated within card bounds) */}
+          {/* Static Subtitle */}
           {subtitle && (
             <div className="absolute right-9 sm:right-11 top-12 max-h-[calc(100%-140px)] overflow-hidden z-10 pointer-events-auto">
               <span className="font-mono text-[10px] sm:text-xs font-bold text-foreground/75 uppercase tracking-[0.2em] whitespace-nowrap [writing-mode:vertical-rl] rotate-180 truncate block max-h-full">
@@ -328,16 +345,16 @@ const BentoCard = ({
             </div>
           )}
 
-          {/* 90-Degree Rotated Vertical Title — ONLY TITLE spring animates on overflow */}
+          {/* 90-Degree Rotated Vertical Title */}
           <RotatedTitleMarquee title={title} />
 
-          {/* Bottom Block (Specs Panel + CTA Bar pushed to bottom) */}
+          {/* Bottom Block */}
           <div className="mt-auto flex flex-col w-full gap-2 pointer-events-auto">
-            {/* Specs Light Blurred Panel (Bottom Left — SINGLE COLUMN) */}
+            {/* Specs Panel */}
             {specs.length > 0 && (
               <div className="max-w-[180px] sm:max-w-[210px] p-2.5 sm:p-3 rounded-xl bg-background/30 dark:bg-card/40 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-sm flex flex-col gap-1 transition-colors group-hover:bg-background/40">
                 <div className="flex items-center gap-1.5 border-b border-foreground/10 pb-1 mb-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cherry shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-foreground/60 shrink-0" />
                   <span className="font-mono text-[9px] font-bold tracking-widest uppercase text-foreground/80">
                     Material Specs
                   </span>
@@ -362,7 +379,7 @@ const BentoCard = ({
             {/* Bottom CTA Bar */}
             <div className="flex items-center justify-between w-full pt-2 border-t border-foreground/10">
               <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground">
-                {product ? "In Stock" : "Limited Edition"}
+                {stockText}
               </span>
 
               <div className="inline-flex items-center gap-1 text-xs font-bold tracking-wider uppercase text-foreground group-hover:text-cherry transition-colors">
@@ -373,7 +390,7 @@ const BentoCard = ({
           </div>
         </div>
       ) : (
-        /* Bottom Aligned Layout: Title & Specs pushed all the way to card bottom */
+        /* Bottom Aligned Layout */
         <div className="relative z-10 p-4 sm:p-6 flex flex-col justify-between h-full w-full">
           {/* Top Subtitle Row */}
           <div className="flex items-start justify-between w-full">
@@ -382,15 +399,20 @@ const BentoCard = ({
                 {subtitle}
               </span>
             )}
+            {entry.badge_tag && (
+              <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-cherry dark:text-foreground/90 bg-background/60 dark:bg-card/75 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full">
+                {entry.badge_tag}
+              </span>
+            )}
           </div>
 
-          {/* Bottom Block (Specs Panel -> Title -> CTA Bar pushed to bottom) */}
+          {/* Bottom Block */}
           <div className="mt-auto flex flex-col w-full gap-2">
             {/* Specs Light Blurred Panel */}
             {specs.length > 0 && (
               <div className="w-full p-3 rounded-xl bg-background/30 dark:bg-card/40 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-sm flex flex-col gap-1.5 transition-colors group-hover:bg-background/40">
                 <div className="flex items-center gap-1.5 border-b border-foreground/10 pb-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cherry shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-foreground/60 shrink-0" />
                   <span className="font-mono text-[9px] font-bold tracking-widest uppercase text-foreground/80">
                     Material Specs
                   </span>
@@ -412,7 +434,7 @@ const BentoCard = ({
               </div>
             )}
 
-            {/* Title (AT THE BOTTOM OF CONTENT BLOCK) */}
+            {/* Title */}
             <h3 className="heading-editorial text-lg sm:text-2xl lg:text-3xl text-foreground font-bold tracking-tight group-hover:text-cherry transition-colors duration-300">
               {title}
             </h3>
@@ -424,13 +446,13 @@ const BentoCard = ({
                   <span className="font-mono text-xs sm:text-sm font-extrabold text-foreground">
                     {formatPrice(Number(product.price))}
                   </span>
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-cherry font-semibold">
-                    In Stock
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground dark:text-foreground/75 font-semibold">
+                    {stockText}
                   </span>
                 </div>
               ) : (
                 <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground">
-                  {product ? "In Stock" : "Limited Edition"}
+                  {stockText}
                 </span>
               )}
 
@@ -524,8 +546,34 @@ export default function CinematicProductShowcase() {
     }));
   }, [entries, showFeatured, fallbackProducts]);
 
+  // Resolve config inheritance if follow_card_id is set
+  const resolvedEntries: ShowcaseEntry[] = useMemo(() => {
+    return finalEntries.map((entry) => {
+      if (!entry.follow_card_id || entry.follow_card_id === "none") return entry;
+      const parent = finalEntries.find((p) => p.id === entry.follow_card_id);
+      if (!parent || parent.id === entry.id) return entry;
+      return {
+        ...parent,
+        id: entry.id,
+        title: entry.title || parent.title,
+        subtitle: entry.subtitle ?? parent.subtitle,
+        badge_tag: entry.badge_tag || parent.badge_tag,
+        image_url: entry.image_url ?? parent.image_url,
+        video_url: entry.video_url ?? parent.video_url,
+        product_id: entry.product_id ?? parent.product_id,
+        cta_text: entry.cta_text || parent.cta_text,
+        cta_link: entry.cta_link || parent.cta_link,
+        markdown_specs: entry.markdown_specs || parent.markdown_specs,
+        show_gallery: entry.show_gallery ?? parent.show_gallery,
+        sort_order: entry.sort_order,
+        is_active: entry.is_active,
+        follow_card_id: entry.follow_card_id,
+      };
+    });
+  }, [finalEntries]);
+
   // Fetch linked products (price, thumbnail, slug)
-  const productIds = finalEntries.map((e) => e.product_id).filter(Boolean) as string[];
+  const productIds = resolvedEntries.map((e) => e.product_id).filter(Boolean) as string[];
 
   const { data: linkedProducts = [] } = useQuery({
     queryKey: ["showcase-linked-products", productIds],
@@ -558,7 +606,7 @@ export default function CinematicProductShowcase() {
   }
 
   // Hide completely taking zero space if disabled or no entries and showFeatured is off
-  if (!isEnabled || finalEntries.length === 0) {
+  if (!isEnabled || resolvedEntries.length === 0) {
     return null;
   }
 
@@ -567,7 +615,7 @@ export default function CinematicProductShowcase() {
       {/* ── Bento Grid ── */}
       <div className="px-4 sm:px-6 lg:px-8 xl:px-10 pb-6 lg:pb-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-          {finalEntries.map((entry, idx) => {
+          {resolvedEntries.map((entry, idx) => {
             const product = linkedProducts.find((p: any) => p.id === entry.product_id);
             return (
               <BentoCard

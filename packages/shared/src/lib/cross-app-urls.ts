@@ -27,7 +27,7 @@
 
 export interface ExternalRedirects {
   storefront_url?: string;
-  company_url?: string;
+  brandhome_url?: string;
   masterpanel_url?: string;
   /** Order Ops — the mobile-first order management app (dashboard, scanner, online/offline orders). */
   orderops_url?: string;
@@ -74,25 +74,52 @@ export function setExternalRedirects(next: ExternalRedirects | null | undefined)
   cache = { ...cache, ...(next || {}) };
 }
 
+function isDev(): boolean {
+  return (
+    process.env.NODE_ENV === "development" ||
+    (typeof window !== "undefined" && window.location.hostname === "localhost")
+  );
+}
+
 /** Returns the storefront origin. */
 export function getStorefrontUrl(): string {
-  return runtime("storefront_url") || env("NEXT_PUBLIC_STOREFRONT_URL", "VITE_STOREFRONT_URL", "STOREFRONT_URL") || "https://shop.orizino.com";
+  const custom = runtime("storefront_url") || env("NEXT_PUBLIC_STOREFRONT_URL", "VITE_STOREFRONT_URL", "STOREFRONT_URL");
+  if (custom) return custom;
+  if (isDev()) return "http://localhost:3001";
+  return "https://shop.orizino.com";
 }
-/** Returns the company/landing page origin. */
-export function getCompanyUrl(): string {
-  return runtime("company_url") || env("NEXT_PUBLIC_COMPANY_URL", "VITE_COMPANY_URL", "COMPANY_URL") || "https://orizino.com";
+/** Returns the brandhome/landing page origin for local development. */
+export function getBrandHomeUrl(): string {
+  const custom = runtime("brandhome_url") || env("NEXT_PUBLIC_BRANDHOME_URL", "NEXT_PUBLIC_COMPANY_URL", "VITE_BRANDHOME_URL", "BRANDHOME_URL");
+  if (custom) return custom;
+  if (isDev()) return "http://localhost:3000";
+  return "https://orizino.com";
+}
+
+/** Returns the live production domain for the brandhome landing page. */
+export function getLiveBrandHomeUrl(path = "/"): string {
+  return joinPath("https://orizino.com", path);
 }
 /** Returns the master panel origin. */
 export function getMasterpanelUrl(): string {
-  return runtime("masterpanel_url") || env("NEXT_PUBLIC_MASTERPANEL_URL", "VITE_MASTERPANEL_URL", "MASTERPANEL_URL") || "https://mp.orizino.com";
+  const custom = runtime("masterpanel_url") || env("NEXT_PUBLIC_MASTERPANEL_URL", "VITE_MASTERPANEL_URL", "MASTERPANEL_URL");
+  if (custom) return custom;
+  if (isDev()) return "http://localhost:3002";
+  return "https://mp.orizino.com";
 }
 /** Returns the Order Ops (mobile order management) app origin. */
 export function getOrderOpsUrl(): string {
-  return runtime("orderops_url") || env("NEXT_PUBLIC_ORDEROPS_URL", "VITE_ORDEROPS_URL", "ORDEROPS_URL") || "https://om.orizino.com";
+  const custom = runtime("orderops_url") || env("NEXT_PUBLIC_ORDEROPS_URL", "VITE_ORDEROPS_URL", "ORDEROPS_URL");
+  if (custom) return custom;
+  if (isDev()) return "http://localhost:3003";
+  return "https://om.orizino.com";
 }
 /** Returns the Explore app origin. */
 export function getExploreUrl(): string {
-  return runtime("explore_url") || env("NEXT_PUBLIC_EXPLORE_URL", "VITE_EXPLORE_URL", "EXPLORE_URL") || "https://explore.orizino.com";
+  const custom = runtime("explore_url") || env("NEXT_PUBLIC_EXPLORE_URL", "VITE_EXPLORE_URL", "EXPLORE_URL");
+  if (custom) return custom;
+  if (isDev()) return "http://localhost:3004";
+  return "https://explore.orizino.com";
 }
 
 function joinPath(base: string, path: string): string {
@@ -104,9 +131,9 @@ function joinPath(base: string, path: string): string {
 export function storefrontHref(path = "/"): string {
   return joinPath(getStorefrontUrl(), path);
 }
-/** Navigate to the company/landing page from any app. */
-export function companyHref(path = "/"): string {
-  return joinPath(getCompanyUrl(), path);
+/** Navigate to the brandhome/landing page from any app. */
+export function brandHomeHref(path = "/"): string {
+  return joinPath(getBrandHomeUrl(), path);
 }
 /** Navigate to the Master Panel from any app. */
 export function masterpanelHref(path = "/"): string {

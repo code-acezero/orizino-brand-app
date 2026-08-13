@@ -19,7 +19,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   value,
   onUploaded,
   className = "",
-  accept = "image/*",
+  accept = "image/*,video/*,video/mp4,video/webm,video/quicktime",
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -100,11 +100,22 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     <div className={`relative ${className}`}>
       {value ? (
         <div className="relative group">
-          <img
-            src={value}
-            alt="Preview"
-            className="w-full h-32 object-cover rounded-xl border border-border"
-          />
+          {value.match(/\.(mp4|webm|mov|ogg)(\?.*)?$/i) || value.startsWith("data:video/") ? (
+            <video
+              src={value}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-32 object-cover rounded-xl border border-border bg-black"
+            />
+          ) : (
+            <img
+              src={value}
+              alt="Preview"
+              className="w-full h-32 object-cover rounded-xl border border-border"
+            />
+          )}
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-2">
             <button
               type="button"

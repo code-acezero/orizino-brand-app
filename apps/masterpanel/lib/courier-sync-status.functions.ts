@@ -1,3 +1,5 @@
+"use server";
+
 import { createServerFn } from "@orizino/shared/lib/server-fn-compat";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 

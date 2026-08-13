@@ -25,7 +25,7 @@ export const Link: any = React.forwardRef<HTMLAnchorElement, any>(
 );
 Link.displayName = "Link";
 
-export function Navigate({ to, replace }: { to: string; replace?: boolean }) {
+export function Navigate({ to, replace, state }: { to: string; replace?: boolean; state?: any }) {
   const router = useNextRouter();
   React.useEffect(() => {
     if (replace) router.replace(to);

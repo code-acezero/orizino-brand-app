@@ -44,6 +44,167 @@ const BubbleParticle = ({ delay, size, x, y, duration }: { delay: number; size: 
   />
 );
 
+/* ── Water Eyes Component (Two cute water eyes with bold red pupils following cursor/touch & idle look-around & natural blinking) ── */
+const WaterEyes = ({ renderSize }: { renderSize: number }) => {
+  const [pupilPos, setPupilPos] = useState({ x: 0, y: 0 });
+  const [isBlinking, setIsBlinking] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastActiveRef = useRef<number>(Date.now());
+
+  // Natural blinking effect
+  useEffect(() => {
+    let blinkTimer: ReturnType<typeof setTimeout>;
+
+    const scheduleBlink = () => {
+      const delay = 2500 + Math.random() * 3200;
+      blinkTimer = setTimeout(() => {
+        setIsBlinking(true);
+        setTimeout(() => {
+          setIsBlinking(false);
+          // 18% chance of a double-blink for extra cuteness
+          if (Math.random() < 0.18) {
+            setTimeout(() => {
+              setIsBlinking(true);
+              setTimeout(() => {
+                setIsBlinking(false);
+                scheduleBlink();
+              }, 110);
+            }, 90);
+          } else {
+            scheduleBlink();
+          }
+        }, 130);
+      }, delay);
+    };
+
+    scheduleBlink();
+    return () => clearTimeout(blinkTimer);
+  }, []);
+
+  useEffect(() => {
+    let animationFrameId: number;
+    const maxOffset = Math.max(3, Math.round(renderSize * 0.08));
+
+    const updatePosition = (clientX: number, clientY: number) => {
+      if (!containerRef.current) return;
+      lastActiveRef.current = Date.now();
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      const dx = clientX - centerX;
+      const dy = clientY - centerY;
+      const angle = Math.atan2(dy, dx);
+      const distance = Math.hypot(dx, dy);
+
+      const clampedDist = Math.min(maxOffset, distance / 20);
+
+      const px = Math.cos(angle) * clampedDist;
+      const py = Math.sin(angle) * clampedDist;
+
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = requestAnimationFrame(() => {
+        setPupilPos({ x: px, y: py });
+      });
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      updatePosition(e.clientX, e.clientY);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches && e.touches[0]) {
+        updatePosition(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+
+    // Random gaze wander when idle (no mouse or touch activity for > 2 seconds)
+    const idleGazeInterval = setInterval(() => {
+      if (Date.now() - lastActiveRef.current > 2000) {
+        const randAngle = Math.random() * Math.PI * 2;
+        const randDist = (0.3 + Math.random() * 0.7) * maxOffset;
+        const rx = Math.cos(randAngle) * randDist;
+        const ry = Math.sin(randAngle) * randDist;
+        setPupilPos({ x: rx, y: ry });
+      }
+    }, 2200);
+
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    window.addEventListener("touchstart", handleTouchMove, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("touchstart", handleTouchMove);
+      window.removeEventListener("touchmove", handleTouchMove);
+      clearInterval(idleGazeInterval);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [renderSize]);
+
+  // Scaled dimensions for a bold, cute, expressive look
+  const eyeSize = Math.max(18, Math.round(renderSize * 0.36));
+  const pupilSize = Math.max(11, Math.round(eyeSize * 0.65));
+
+  return (
+    <div ref={containerRef} className="flex items-center justify-center gap-2 pointer-events-none select-none">
+      {[0, 1].map((i) => (
+        <motion.div
+          key={i}
+          className="relative rounded-full flex items-center justify-center overflow-hidden shadow-lg origin-center"
+          animate={{
+            scaleY: isBlinking ? 0.08 : 1,
+            scaleX: isBlinking ? 1.08 : 1,
+          }}
+          transition={{
+            duration: isBlinking ? 0.08 : 0.14,
+            ease: "easeInOut",
+          }}
+          style={{
+            width: eyeSize,
+            height: eyeSize,
+            background: "radial-gradient(circle at 30% 30%, #ffffff 0%, #f0f7ff 45%, #d2e4ff 75%, #9ec3f0 100%)",
+            boxShadow: "inset 0 2px 4px rgba(255, 255, 255, 0.95), inset 0 -3px 6px rgba(10, 40, 80, 0.25), 0 4px 10px rgba(0, 0, 0, 0.35)",
+            border: "1.5px solid rgba(255, 255, 255, 0.85)",
+          }}
+        >
+          {/* Glossy top specular reflection sheen */}
+          <span className="absolute top-0.5 left-1 w-1.5 h-1 rounded-full bg-white/75 blur-[0.2px] pointer-events-none z-10" />
+
+          {/* Bold Red Pupil following cursor */}
+          <motion.div
+            className="relative rounded-full flex items-center justify-center overflow-hidden"
+            style={{
+              width: pupilSize,
+              height: pupilSize,
+              background: "radial-gradient(circle at 35% 35%, #ff3b5c 0%, #e60026 50%, #800014 85%, #4a000b 100%)",
+              boxShadow: "0 0 8px rgba(255, 45, 85, 0.85), inset 0 1px 1.5px rgba(255, 255, 255, 0.5)",
+              border: "1px solid rgba(120, 0, 20, 0.6)",
+            }}
+            animate={{
+              x: pupilPos.x,
+              y: pupilPos.y,
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 260,
+              damping: 22,
+              mass: 0.45,
+            }}
+          >
+            {/* Delicate primary catchlight sparkle */}
+            <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-white/95 shadow-sm pointer-events-none" />
+            
+            {/* Delicate secondary catchlight accent dot */}
+            <span className="absolute bottom-0.5 left-0.5 w-0.5 h-0.5 rounded-full bg-white/60 pointer-events-none" />
+          </motion.div>
+        </motion.div>
+      ))}
+    </div>
+  );
+};
+
 /** Hook: manage FAB visibility based on fast scroll on mobile & nav overlay open */
 function useFabVisibility() {
   const [visible, setVisible] = useState(true);
@@ -507,16 +668,39 @@ const AIChatWidget: React.FC = () => {
   const fabAnimationIntensity = Math.max(1, Math.min(10, widgetSettings?.fab_animation_intensity ?? 5));
   const fabShowAvatarInline = widgetSettings?.fab_show_avatar_inline ?? true;
 
-  // Rotate underwater label
+  // FAB display mode: alternates between eyes mode (cursor-tracking water eyes) for 25s and text mode for 2s
+  const [fabDisplayMode, setFabDisplayMode] = useState<"eyes" | "text">("eyes");
   const [underwaterIdx, setUnderwaterIdx] = useState(0);
-  // Sometimes (every ~3rd cycle) we show the avatar inline instead of a text.
-  const showAvatarInlineNow =
-    fabShowAvatarInline && underwaterIdx % 3 === 2 && avatarType === "image" && !!avatarUrl;
+
   useEffect(() => {
-    if (!fabUnderwaterTexts.length) return;
-    const id = setInterval(() => setUnderwaterIdx((i) => (i + 1) % fabUnderwaterTexts.length), 2600);
-    return () => clearInterval(id);
-  }, [fabUnderwaterTexts.length]);
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+
+    function switchToText() {
+      if (!active) return;
+      setFabDisplayMode("text");
+      timer = setTimeout(() => {
+        if (!active) return;
+        setUnderwaterIdx((i) => (i + 1) % 4);
+        switchToEyes();
+      }, 2000); // Brief 2-second text popup
+    }
+
+    function switchToEyes() {
+      if (!active) return;
+      setFabDisplayMode("eyes");
+      timer = setTimeout(() => {
+        switchToText();
+      }, 50000); // 2x staying time: 50.0 seconds
+    }
+
+    switchToEyes();
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, []);
 
   const AgentAvatar = React.memo(({ size = "w-8 h-8", iconSize = "w-4 h-4" }: { size?: string; iconSize?: string }) =>
     avatarType === "image" && avatarUrl ? (
@@ -1293,33 +1477,31 @@ const AIChatWidget: React.FC = () => {
                       />
                     )}
 
-                    {/* Underwater rotating text labels (idle only) */}
-                    {!incomingCall && !callActive && !greetingShowing && fabUnderwaterTexts.length > 0 && (
+                    {/* Water Eyes <-> Rotating Text cycle */}
+                    {!incomingCall && !callActive && !greetingShowing && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <AnimatePresence mode="wait">
-                          {showAvatarInlineNow ? (
-                            <motion.img
-                              key={`avatar-${underwaterIdx}`}
-                              src={avatarUrl}
-                              alt={agentName || "Mr. Slime"}
-                              initial={{ opacity: 0, y: 8, scale: 0.7 }}
-                              animate={{ opacity: 0.95, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: -8, scale: 0.7 }}
-                              transition={{ duration: 0.7 }}
-                              style={{ width: Math.round(renderSize * 0.6), height: Math.round(renderSize * 0.6) }}
-                              className="object-contain drop-shadow"
-                            />
+                          {fabDisplayMode === "eyes" ? (
+                            <motion.div
+                              key="water-eyes"
+                              initial={{ opacity: 0, scale: 0.7, filter: "blur(3px)" }}
+                              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                              exit={{ opacity: 0, scale: 0.7, filter: "blur(3px)" }}
+                              transition={{ duration: 0.55, ease: "easeInOut" }}
+                            >
+                              <WaterEyes renderSize={renderSize} />
+                            </motion.div>
                           ) : (
                             <motion.span
-                              key={underwaterIdx}
-                              initial={{ opacity: 0, y: 8, filter: "blur(3px)" }}
+                              key={`text-${underwaterIdx}`}
+                              initial={{ opacity: 0, y: 6, filter: "blur(3px)" }}
                               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                              exit={{ opacity: 0, y: -8, filter: "blur(3px)" }}
-                              transition={{ duration: 0.7 }}
-                              className="text-white font-bold tracking-wide text-center px-1 [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]"
-                              style={{ fontSize: Math.max(8.5, Math.round(renderSize / 8)) }}
+                              exit={{ opacity: 0, y: -6, filter: "blur(3px)" }}
+                              transition={{ duration: 0.55, ease: "easeInOut" }}
+                              className="text-white font-bold tracking-wide text-center px-2 [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]"
+                              style={{ fontSize: Math.max(8.5, Math.round(renderSize / 7.5)) }}
                             >
-                              {fabUnderwaterTexts[underwaterIdx % fabUnderwaterTexts.length]}
+                              {fabUnderwaterTexts[underwaterIdx % (fabUnderwaterTexts.length || 1)]}
                             </motion.span>
                           )}
                         </AnimatePresence>

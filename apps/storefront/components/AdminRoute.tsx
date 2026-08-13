@@ -85,21 +85,40 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { data: role, isLoading: roleLoading } = useQuery({
     queryKey: ["user-admin-role", user?.id],
     queryFn: async (): Promise<AdminRole> => {
-      const { data: isAdmin } = await supabase.rpc("has_role", {
-        _user_id: user!.id,
-        _role: "admin",
-      });
-      if (isAdmin) return "admin";
+      if (!user?.id) return null;
+      try {
+        const { data: isAdmin } = await supabase.rpc("has_role", {
+          _user_id: user.id,
+          _role: "admin",
+        });
+        if (isAdmin) return "admin";
 
-      const { data: isMod } = await supabase.rpc("has_role", {
-        _user_id: user!.id,
-        _role: "moderator",
-      });
-      if (isMod) return "moderator";
+        const { data: isMod } = await supabase.rpc("has_role", {
+          _user_id: user.id,
+          _role: "moderator",
+        });
+        if (isMod) return "moderator";
 
-      return null;
+        const { data: userRoles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id);
+
+        if (userRoles && userRoles.length > 0) {
+          const roles = userRoles.map((r: any) => r.role);
+          if (roles.includes("admin") || roles.includes("master_admin")) return "admin";
+          if (roles.includes("moderator")) return "moderator";
+        }
+
+        return null;
+      } catch (err) {
+        console.error("[AdminRoute] Storefront role check exception:", err);
+        return null;
+      }
     },
-    enabled: !!user,
+    enabled: !!user && !!user.id,
+    staleTime: 60 * 1000,
+    retry: 2,
   });
 
   const { data: staff, isLoading: staffLoading } = useStaffSections();

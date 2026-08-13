@@ -55,8 +55,8 @@ function CursorTrackingEyes() {
 
   return (
     <div ref={containerRef} className="relative flex items-center justify-center my-3">
-      {/* Dark arched doorway */}
-      <div className="relative w-32 h-36 sm:w-40 sm:h-44 bg-zinc-950 rounded-t-full border border-border/30 shadow-2xl flex items-center justify-center overflow-hidden">
+      {/* Dark round container */}
+      <div className="relative w-36 h-36 sm:w-44 sm:h-44 bg-zinc-900 dark:bg-zinc-950 rounded-full border border-border/40 shadow-2xl flex items-center justify-center overflow-hidden">
         
         {/* Eye pair */}
         <div className="flex gap-4 sm:gap-5 z-10 pt-2">

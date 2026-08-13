@@ -3,8 +3,8 @@ import path from "path";
 
 const root = "d:/ACE ZERO/My web Project Data/Ace Web Project/orizino-brand";
 
-// 1. Company App Router
-const companyApp = path.join(root, "apps/company/src/app");
+// 1. BrandHome App Router
+const companyApp = path.join(root, "apps/brandhome/src/app");
 fs.mkdirSync(companyApp, { recursive: true });
 
 const companyLayout = `import type { Metadata } from "next";

@@ -44,7 +44,14 @@ const EditorialProductGrid: React.FC<EditorialProductGridProps> = ({
   if (!isLoading && displayed.length === 0) return null;
 
   return (
-    <section ref={ref} className="w-full">
+    <section ref={ref} className="w-full relative pt-2">
+      {/* Top ambient shadow blend for smooth section transition */}
+      <div
+        className="absolute -top-6 left-0 right-0 h-16 pointer-events-none z-0"
+        style={{
+          background: "linear-gradient(to bottom, hsl(var(--background) / 0.9), transparent)",
+        }}
+      />
       {/* Luxury Section Header */}
       <motion.div
         className="flex flex-col items-center text-center justify-center mb-8 gap-2"

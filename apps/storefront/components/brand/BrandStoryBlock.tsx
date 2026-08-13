@@ -23,7 +23,7 @@ const BrandStoryBlock: React.FC<BrandStoryBlockProps> = ({
       const { data } = await supabase
         .from("site_settings")
         .select("key, value")
-        .in("key", ["site_name", "brand_establishment_year", "brand_origin"]);
+        .in("key", ["site_name", "brand_establishment_year", "brand_origin", "brand_story_image_url", "hero_bg_url", "title_font"]);
       
       const map: Record<string, string> = {};
       data?.forEach((s) => {
@@ -38,6 +38,7 @@ const BrandStoryBlock: React.FC<BrandStoryBlockProps> = ({
   const siteName = brandMeta?.site_name || "Orizino";
   const estYear = brandMeta?.brand_establishment_year || "2026";
   const origin = brandMeta?.brand_origin || "Kushtia";
+  const titleFont = brandMeta?.title_font || "";
 
   const fallbackBg =
     "linear-gradient(135deg, hsl(var(--charcoal)) 0%, hsl(0 3% 14%) 100%)";
@@ -122,11 +123,14 @@ const BrandStoryBlock: React.FC<BrandStoryBlockProps> = ({
           </div>
           {/* Watermark */}
           <div
-            className="absolute inset-0 flex items-center justify-center pointer-events-none"
-            style={{ opacity: 0.04 }}
+            className="absolute inset-0 flex items-center justify-center pointer-events-none px-2 overflow-hidden"
           >
             <span
-              className="font-editorial text-foreground text-[12vw] font-bold tracking-tighter whitespace-nowrap uppercase"
+              className="text-foreground text-[clamp(2.5rem,10vw,8.5rem)] font-extrabold tracking-normal text-center max-w-full leading-none uppercase select-none truncate"
+              style={{
+                opacity: 0.05,
+                fontFamily: "'Playfair Display', 'Cormorant Garamond', 'Agraham', Georgia, serif"
+              }}
             >
               {siteName}
             </span>

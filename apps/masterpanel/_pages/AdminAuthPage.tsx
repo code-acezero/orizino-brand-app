@@ -16,7 +16,7 @@ const fontMono = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospa
 
 // Themed hairline input — theme-aware monochrome, no colored accents.
 const inputBase =
-  "w-full bg-transparent border-b border-foreground/15 py-2.5 text-[11px] tracking-[0.18em] uppercase focus:outline-none focus:border-foreground/70 transition-colors placeholder:text-foreground/20";
+  "w-full bg-transparent border-b border-foreground/15 py-2.5 text-[11px] tracking-[0.18em] focus:outline-none focus:border-foreground/70 transition-colors placeholder:text-foreground/20";
 
 // Deterministic starfield — avoids SSR/CSR mismatch and re-renders.
 function useStarfield(count: number, seed: number) {
@@ -330,7 +330,7 @@ export default function AdminAuthPage() {
                         autoComplete="current-password"
                         aria-invalid={!!error}
                         aria-describedby={error ? errorId : undefined}
-                        className={`${inputBase} normal-case`}
+                        className={inputBase}
                         style={{ fontFamily: fontMono }}
                       />
                     </div>

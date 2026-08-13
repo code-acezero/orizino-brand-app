@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -23,8 +23,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Pencil, Trash2, Settings2, Layers, GripVertical, Copy, Link2, Palette, Wand2, Eye, Monitor, Smartphone, ChevronLeft, ChevronRight, Play, Pause, Image, FileText, Sparkles, LayoutGrid, Type, ArrowUp, ArrowDown, RotateCcw } from "lucide-react";
 import ColorPicker from "@/components/ui/color-picker";
 import { useDragReorder } from "@/hooks/use-drag-reorder";
-import { useServerFn } from "@/lib/server-fn-compat";
-import { upsertSiteSettings } from "@/lib/admin-data.functions";
 
 const FONT_FAMILY_MAP: Record<string, string> = {
   "Playfair Display": "'Playfair Display', serif",
@@ -292,7 +290,6 @@ const SlidePreview = ({ slides, config }: { slides: any[]; config: ShowcaseConfi
 
 const AdminShowcase = () => {
   const qc = useQueryClient();
-  const saveSiteSettings = useServerFn(upsertSiteSettings);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [config, setConfig] = useState<ShowcaseConfig>({ ...defaultConfig });
@@ -366,14 +363,20 @@ const AdminShowcase = () => {
 
   const saveConfig = useMutation({
     mutationFn: async () => {
-      await saveSiteSettings({ data: { entries: [{ key: "showcase_config", value: { value: config } }] } });
+      const { error } = await supabase
+        .from("site_settings")
+        .upsert(
+          { key: "showcase_config", value: { value: config } as any, updated_at: new Date().toISOString() },
+          { onConflict: "key" }
+        );
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-showcase-config"] });
       qc.invalidateQueries({ queryKey: ["showcase-config"] });
       toast.success("Showcase settings saved");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Failed to save showcase settings"),
   });
 
   const openEdit = (slide?: any) => {
@@ -415,7 +418,7 @@ const AdminShowcase = () => {
             <Layers className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-display font-bold">Showcase Slider</h1>
+            <h1 className="text-2xl font-display font-bold">Hero Slider & Showcase Config</h1>
             <p className="text-xs text-muted-foreground">{slides.length} slide{slides.length !== 1 ? "s" : ""} · {activeSlides.length} active</p>
           </div>
         </div>
@@ -429,12 +432,12 @@ const AdminShowcase = () => {
         </CardContent>
       </Card>
 
-      <TabsWithParam defaultTab="slides" basePath="/sales/showcase">
-        <TabsList>
-          <TabsTrigger value="slides" className="flex items-center gap-1"><Layers className="w-4 h-4" /> Slides</TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-1"><Settings2 className="w-4 h-4" /> Settings</TabsTrigger>
-          <TabsTrigger value="effects" className="flex items-center gap-1"><Wand2 className="w-4 h-4" /> Effects</TabsTrigger>
-          <TabsTrigger value="product-showcase" className="flex items-center gap-1"><Sparkles className="w-4 h-4" /> Product Showcase</TabsTrigger>
+      <TabsWithParam defaultTab="slides" basePath="/brand/showcase">
+        <TabsList className="flex flex-wrap gap-1">
+          <TabsTrigger value="slides" className="flex items-center gap-1"><Layers className="w-4 h-4" /> Hero Slides</TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center gap-1"><Settings2 className="w-4 h-4" /> Slider Settings</TabsTrigger>
+          <TabsTrigger value="effects" className="flex items-center gap-1"><Wand2 className="w-4 h-4" /> Motion Effects</TabsTrigger>
+          <TabsTrigger value="product-showcase" className="flex items-center gap-1"><Sparkles className="w-4 h-4" /> Cinematic Product Showcase</TabsTrigger>
           <TabsTrigger value="collections-strip" className="flex items-center gap-1"><LayoutGrid className="w-4 h-4" /> Collections Strip</TabsTrigger>
           <TabsTrigger value="marquee-strip" className="flex items-center gap-1"><Type className="w-4 h-4" /> Marquee Strip</TabsTrigger>
         </TabsList>
@@ -1058,16 +1061,23 @@ const AdminShowcase = () => {
 interface ShowcaseEntry {
   id: string;
   title: string;
-  subtitle: string;
-  image_url: string;
-  video_url: string;
-  markdown_specs: string;
-  product_id: string | null;
-  cta_text: string;
-  cta_link: string;
-  layout_type?: "auto" | "featured" | "tall" | "wide" | "square";
-  card_style?: "glass" | "dark" | "cherry" | "minimal";
+  subtitle?: string;
+  badge_tag?: string;
+  image_url?: string;
+  video_url?: string;
+  markdown_specs?: string;
+  product_id?: string | null;
+  cta_text?: string;
+  cta_link?: string;
+  layout_type?: "auto" | "featured" | "tall" | "wide" | "square" | "full";
+  card_style?: "glass" | "dark" | "cherry" | "minimal" | "monochrome" | "gold" | "custom";
+  custom_bg?: string;
+  content_position?: "bottom-left" | "bottom-center" | "bottom-right" | "top-left" | "top-center" | "center" | "side";
+  show_price?: boolean;
+  price_position?: "top" | "bottom" | "none";
+  stock_status?: string;
   show_gallery?: boolean;
+  follow_card_id?: string | null;
   is_active: boolean;
   sort_order: number;
 }
@@ -1076,6 +1086,7 @@ const emptyEntry: ShowcaseEntry = {
   id: "",
   title: "",
   subtitle: "",
+  badge_tag: "EDITORIAL SILHOUETTE",
   image_url: "",
   video_url: "",
   markdown_specs: "Fabric: 100% Premium Cotton\nWeight: 240+ GSM Heavyweight\nFit: Oversized Drop Shoulder",
@@ -1084,14 +1095,18 @@ const emptyEntry: ShowcaseEntry = {
   cta_link: "/inventory",
   layout_type: "auto",
   card_style: "glass",
+  content_position: "bottom-left",
+  show_price: true,
+  price_position: "top",
+  stock_status: "In Stock",
   show_gallery: false,
+  follow_card_id: null,
   is_active: true,
   sort_order: 0,
 };
 
 export function ProductShowcaseTab() {
   const qc = useQueryClient();
-  const saveSiteSettings = useServerFn(upsertSiteSettings);
   const [entries, setEntries] = useState<ShowcaseEntry[]>([]);
   const [editing, setEditing] = useState<ShowcaseEntry | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -1105,35 +1120,166 @@ export function ProductShowcaseTab() {
         .select("value")
         .eq("key", "product_showcase_config")
         .maybeSingle();
-      if (!data?.value) return [];
+      if (!data?.value) return null;
       const val = data.value as any;
-      const parsed = val?.value ?? val;
-      return Array.isArray(parsed) ? parsed : [];
+      return val?.value ?? val;
     },
   });
-
-  useEffect(() => {
-    if (savedConfig) setEntries(savedConfig as ShowcaseEntry[]);
-  }, [savedConfig]);
 
   // Products list for linking
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products-list"],
     queryFn: async () => {
-      const { data } = await supabase.from("products").select("id, name, thumbnail, slug").eq("is_active", true).order("name").limit(200);
+      const { data } = await supabase
+        .from("products")
+        .select("id, name, thumbnail, slug, price, is_featured")
+        .eq("is_active", true)
+        .order("is_featured", { ascending: false })
+        .order("name")
+        .limit(200);
       return data || [];
     },
   });
 
+  const [isEnabled, setIsEnabled] = useState(true);
+  const [showFeatured, setShowFeatured] = useState(false);
+
+  const hasInitialized = useRef(false);
+
+  useEffect(() => {
+    if (savedConfig) {
+      if (Array.isArray(savedConfig)) {
+        setEntries(savedConfig as ShowcaseEntry[]);
+        setIsEnabled(true);
+        setShowFeatured(false);
+      } else if (typeof savedConfig === "object") {
+        const feat = Boolean(savedConfig.show_featured || savedConfig.show_featured_fallback || savedConfig.show_featured_products);
+        setIsEnabled(savedConfig.is_enabled !== false);
+        setShowFeatured(feat);
+        
+        const existingEntries = Array.isArray(savedConfig.entries) ? (savedConfig.entries as ShowcaseEntry[]) : [];
+        if (existingEntries.length > 0) {
+          setEntries(existingEntries);
+        } else if (feat && products.length > 0 && !hasInitialized.current) {
+          hasInitialized.current = true;
+          // Auto-populate featured cards into entries so the admin can edit/remove them immediately!
+          const featuredProds = products.filter((p: any) => p.is_featured);
+          const targetProds = featuredProds.length > 0 ? featuredProds : products.slice(0, 4);
+          if (targetProds.length > 0) {
+            const autoCards: ShowcaseEntry[] = targetProds.map((prod: any, idx: number) => {
+              const layoutType: "featured" | "tall" | "wide" | "square" =
+                idx === 0 ? "featured" : idx === 1 ? "tall" : idx === 2 ? "wide" : "square";
+              const cardStyle: "glass" | "dark" | "cherry" =
+                idx % 3 === 0 ? "glass" : idx % 3 === 1 ? "dark" : "cherry";
+
+              return {
+                id: crypto.randomUUID(),
+                title: prod.name,
+                subtitle: "Heavyweight Collection",
+                badge_tag: idx === 1 ? "EDITORIAL SILHOUETTE" : "LIMITED DROP",
+                image_url: prod.thumbnail || "",
+                video_url: "",
+                markdown_specs: "Fabric: 100% Heavyweight Cotton\nWeight: 240+ GSM European Fit\nFit: Oversized Drop Shoulder\nStatus: Available Now",
+                product_id: prod.id,
+                cta_text: "Shop Piece",
+                cta_link: `/product/${prod.slug}`,
+                layout_type: layoutType,
+                card_style: cardStyle,
+                content_position: idx === 1 ? "side" : "bottom-left",
+                show_price: true,
+                price_position: "top",
+                stock_status: "In Stock",
+                show_gallery: false,
+                follow_card_id: null,
+                is_active: true,
+                sort_order: idx,
+              };
+            });
+            setEntries(autoCards);
+            saveConfig(autoCards, savedConfig.is_enabled !== false, feat);
+          }
+        }
+      }
+    }
+  }, [savedConfig, products]);
+
+  const saveConfig = async (updatedEntries: ShowcaseEntry[], updatedIsEnabled: boolean, updatedShowFeatured: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("site_settings")
+        .upsert(
+          {
+            key: "product_showcase_config",
+            value: {
+              is_enabled: updatedIsEnabled,
+              show_featured: updatedShowFeatured,
+              entries: updatedEntries,
+            } as any,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "key" }
+        );
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["product-showcase-config"] });
+      qc.invalidateQueries({ queryKey: ["product-showcase-config-admin"] });
+      toast.success("Product showcase saved");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to save product showcase");
+    }
+  };
+
+  const handleToggleSettings = (key: 'isEnabled' | 'showFeatured', val: boolean) => {
+    const nextEnabled = key === 'isEnabled' ? val : isEnabled;
+    const nextFeatured = key === 'showFeatured' ? val : showFeatured;
+    if (key === 'isEnabled') setIsEnabled(val);
+    if (key === 'showFeatured') {
+      setShowFeatured(val);
+      if (val && entries.length === 0) {
+        const featuredProds = products.filter((p: any) => p.is_featured);
+        const targetProds = featuredProds.length > 0 ? featuredProds : products.slice(0, 4);
+        if (targetProds.length > 0) {
+          const autoCards: ShowcaseEntry[] = targetProds.map((prod: any, idx: number) => {
+            const layoutType: "featured" | "tall" | "wide" | "square" =
+              idx === 0 ? "featured" : idx === 1 ? "tall" : idx === 2 ? "wide" : "square";
+            const cardStyle: "glass" | "dark" | "cherry" =
+              idx % 3 === 0 ? "glass" : idx % 3 === 1 ? "dark" : "cherry";
+
+            return {
+              id: crypto.randomUUID(),
+              title: prod.name,
+              subtitle: "Heavyweight Collection",
+              badge_tag: idx === 1 ? "EDITORIAL SILHOUETTE" : "LIMITED DROP",
+              image_url: prod.thumbnail || "",
+              video_url: "",
+              markdown_specs: "Fabric: 100% Heavyweight Cotton\nWeight: 240+ GSM European Fit\nFit: Oversized Drop Shoulder\nStatus: Available Now",
+              product_id: prod.id,
+              cta_text: "Shop Piece",
+              cta_link: `/product/${prod.slug}`,
+              layout_type: layoutType,
+              card_style: cardStyle,
+              content_position: idx === 1 ? "side" : "bottom-left",
+              show_price: true,
+              price_position: "top",
+              stock_status: "In Stock",
+              show_gallery: false,
+              follow_card_id: null,
+              is_active: true,
+              sort_order: idx,
+            };
+          });
+          setEntries(autoCards);
+          saveConfig(autoCards, nextEnabled, true);
+          toast.success(`Generated ${autoCards.length} featured product cards ready for individual customization!`);
+          return;
+        }
+      }
+    }
+    saveConfig(entries, nextEnabled, nextFeatured);
+  };
+
   const saveEntries = async (updated: ShowcaseEntry[]) => {
     setEntries(updated);
-    try {
-      await saveSiteSettings({ data: { key: "product_showcase_config", value: updated } });
-      qc.invalidateQueries({ queryKey: ["product-showcase-config"] });
-      toast.success("Product showcase saved");
-    } catch {
-      toast.error("Failed to save");
-    }
+    saveConfig(updated, isEnabled, showFeatured);
   };
 
   const openEdit = (entry?: ShowcaseEntry) => {
@@ -1153,7 +1299,11 @@ export function ProductShowcaseTab() {
   };
 
   const handleDelete = (id: string) => {
-    saveEntries(entries.filter((e) => e.id !== id));
+    // If other cards follow this deleted card, unlink them gracefully
+    const updated = entries
+      .filter((e) => e.id !== id)
+      .map((e) => (e.follow_card_id === id ? { ...e, follow_card_id: null } : e));
+    saveEntries(updated);
   };
 
   const handleToggle = (id: string) => {
@@ -1169,35 +1319,196 @@ export function ProductShowcaseTab() {
     saveEntries(arr);
   };
 
+  const handleImportFeaturedProducts = () => {
+    const featuredProds = products.filter((p: any) => p.is_featured);
+    const targetProds = featuredProds.length > 0 ? featuredProds : products.slice(0, 4);
+    if (targetProds.length === 0) {
+      toast.error("No active products found to import.");
+      return;
+    }
+
+    const newCards: ShowcaseEntry[] = targetProds.map((prod: any, idx: number) => {
+      const existing = entries.find((e) => e.product_id === prod.id);
+      if (existing) return existing;
+
+      const layoutType: "featured" | "tall" | "wide" | "square" =
+        idx === 0 ? "featured" : idx === 1 ? "tall" : idx === 2 ? "wide" : "square";
+      const cardStyle: "glass" | "dark" | "cherry" =
+        idx % 3 === 0 ? "glass" : idx % 3 === 1 ? "dark" : "cherry";
+
+      return {
+        id: crypto.randomUUID(),
+        title: prod.name,
+        subtitle: "Heavyweight Collection",
+        badge_tag: idx === 1 ? "EDITORIAL SILHOUETTE" : "LIMITED DROP",
+        image_url: prod.thumbnail || "",
+        video_url: "",
+        markdown_specs: "Fabric: 100% Heavyweight Cotton\nWeight: 240+ GSM European Fit\nFit: Oversized Drop Shoulder\nStatus: Available Now",
+        product_id: prod.id,
+        cta_text: "Shop Piece",
+        cta_link: `/product/${prod.slug}`,
+        layout_type: layoutType,
+        card_style: cardStyle,
+        content_position: idx === 1 ? "side" : "bottom-left",
+        show_price: true,
+        price_position: "top",
+        stock_status: "In Stock",
+        show_gallery: false,
+        follow_card_id: null,
+        is_active: true,
+        sort_order: entries.length + idx,
+      };
+    });
+
+    const merged = [
+      ...entries,
+      ...newCards.filter((nc) => !entries.some((e) => e.product_id === nc.product_id || e.id === nc.id)),
+    ];
+    merged.forEach((e, i) => (e.sort_order = i));
+    saveEntries(merged);
+    toast.success(`Imported ${newCards.length} featured product cards. You can now customize each card individually!`);
+  };
+
+  const handleAutofillFromProduct = (productId: string) => {
+    if (!editing) return;
+    const prod = products.find((p: any) => p.id === productId);
+    if (!prod) return;
+
+    setEditing({
+      ...editing,
+      product_id: prod.id,
+      title: prod.name,
+      image_url: prod.thumbnail || editing.image_url,
+      cta_link: `/product/${prod.slug}`,
+      subtitle: editing.subtitle || "Heavyweight Collection",
+      show_price: true,
+      price_position: editing.price_position || "top",
+      markdown_specs: editing.markdown_specs || "Fabric: 100% Heavyweight Cotton\nWeight: 240+ GSM\nFit: Oversized Drop Shoulder\nStatus: In Stock",
+    });
+    toast.info(`Pre-filled card details from "${prod.name}"`);
+  };
+
+  const applyStyleToAllCards = (sourceCard: ShowcaseEntry) => {
+    const updated = entries.map((e) =>
+      e.id === sourceCard.id
+        ? sourceCard
+        : {
+            ...e,
+            layout_type: sourceCard.layout_type,
+            card_style: sourceCard.card_style,
+            custom_bg: sourceCard.custom_bg,
+            content_position: sourceCard.content_position,
+            show_price: sourceCard.show_price,
+            price_position: sourceCard.price_position,
+            badge_tag: sourceCard.badge_tag,
+            stock_status: sourceCard.stock_status,
+          }
+    );
+    saveEntries(updated);
+    toast.success("Applied this card's styling and layout to all other cards!");
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-semibold text-lg">Bento Style Product Showcase</h3>
-          <p className="text-xs text-muted-foreground">Dynamic Bento grid sections with media uploads (images or video), spec tags, product linking, and custom card spans.</p>
-        </div>
-        <Button onClick={() => openEdit()} className="gap-2" size="sm">
-          <Plus className="h-4 w-4" /> Add Bento Card
-        </Button>
-      </div>
+    <div className="space-y-6">
+      <Card className="border-border/50 overflow-hidden">
+        <CardHeader className="border-b border-border/50 bg-secondary/20 pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-medium flex items-center gap-2">
+                <Settings2 className="w-5 h-5 text-primary" />
+                Configuration & Settings
+              </CardTitle>
+              <CardDescription>
+                General settings for the Cinematic Product Showcase (Bento Grid)
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid sm:grid-cols-2 gap-6">
+            <div className="flex flex-col gap-1.5 p-4 rounded-xl border border-border/50 bg-secondary/10">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Enable Showcase Section</Label>
+                <Switch 
+                  checked={isEnabled} 
+                  onCheckedChange={(val) => handleToggleSettings('isEnabled', val)} 
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Toggle the visibility of the entire bento grid on the storefront.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-1.5 p-4 rounded-xl border border-border/50 bg-secondary/10">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Show Featured Fallback</Label>
+                <Switch 
+                  checked={showFeatured} 
+                  onCheckedChange={(val) => handleToggleSettings('showFeatured', val)} 
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                If no entries are configured below, show top featured products automatically.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/50 overflow-hidden">
+        <CardHeader className="border-b border-border/50 bg-secondary/20 pb-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <CardTitle className="text-lg font-medium flex items-center gap-2">
+                <LayoutGrid className="w-5 h-5 text-primary" />
+                Bento Style Product Showcase ({entries.length} Cards)
+              </CardTitle>
+              <CardDescription>
+                Each card has individual styling, media, layout, and specs. You can also configure cards to follow a master card.
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button onClick={handleImportFeaturedProducts} variant="outline" size="sm" className="gap-1.5 text-xs font-semibold">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                Import Featured Products
+              </Button>
+              <Button onClick={() => openEdit()} className="gap-1.5" size="sm">
+                <Plus className="h-4 w-4" /> Add Bento Card
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0 pt-4">
 
       {entries.length === 0 && !isLoading && (
-        <Card className="glass">
+        <Card className="glass m-4">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <Sparkles className="w-10 h-10 text-muted-foreground mb-3" />
-            <h3 className="font-semibold mb-1">No Bento Cards yet</h3>
-            <p className="text-xs text-muted-foreground mb-4">Create dynamic bento showcase cards with custom images/videos and product specs.</p>
-            <Button onClick={() => openEdit()} size="sm">Create First Bento Card</Button>
+            <h3 className="font-semibold mb-1">No Bento Cards configured yet</h3>
+            <p className="text-xs text-muted-foreground mb-5 max-w-md">
+              You can import all your featured products into customizable Bento cards with 1-click, or create custom editorial cards from scratch.
+            </p>
+            <div className="flex items-center gap-3">
+              <Button onClick={handleImportFeaturedProducts} className="gap-2">
+                <Sparkles className="h-4 w-4" />
+                Import Featured Products as Cards
+              </Button>
+              <Button onClick={() => openEdit()} variant="outline">
+                <Plus className="h-4 w-4 mr-1" />
+                Create Blank Card
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
 
       {/* Entries List */}
-      <div className="space-y-3">
+      <div className="space-y-3 p-4">
         {entries
           .sort((a, b) => a.sort_order - b.sort_order)
           .map((entry, idx) => {
             const product = products.find((p: any) => p.id === entry.product_id);
+            const parentCard = entry.follow_card_id ? entries.find((p) => p.id === entry.follow_card_id) : null;
             return (
               <Card key={entry.id} className={`glass ${!entry.is_active ? "opacity-50" : ""}`}>
                 <CardContent className="p-4 flex items-center gap-4">
@@ -1205,6 +1516,8 @@ export function ProductShowcaseTab() {
                   <div className="w-20 h-14 rounded-lg overflow-hidden bg-secondary/30 shrink-0 border border-border/50">
                     {entry.image_url ? (
                       <img src={entry.image_url} alt="" className="w-full h-full object-cover" />
+                    ) : product?.thumbnail ? (
+                      <img src={product.thumbnail} alt="" className="w-full h-full object-cover" />
                     ) : entry.video_url ? (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                         <Play className="w-5 h-5 text-primary" />
@@ -1218,17 +1531,45 @@ export function ProductShowcaseTab() {
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">{entry.title || "Untitled Bento Card"}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold truncate">{entry.title || product?.name || "Untitled Bento Card"}</p>
+                      {product?.price && (
+                        <span className="font-mono text-xs font-bold text-primary">
+                          ৳{Number(product.price).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[10px] text-muted-foreground truncate">
                       {product ? `Linked: ${product.name}` : entry.subtitle || "No product linked"}
                     </p>
-                    <div className="flex gap-1.5 mt-1">
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {parentCard ? (
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-primary/50 text-primary bg-primary/10">
+                          🔗 Follows: {parentCard.title || "Card"}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-border/70">
+                          ⚙️ Individual Config
+                        </Badge>
+                      )}
                       <Badge variant="outline" className="text-[9px] px-1.5 py-0 uppercase">
                         {entry.layout_type || "auto"}
                       </Badge>
-                      {entry.image_url && <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Image</Badge>}
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 capitalize">
+                        {entry.card_style || "glass"} style
+                      </Badge>
+                      {entry.badge_tag && (
+                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 text-cherry dark:text-foreground/90 font-medium">
+                          {entry.badge_tag}
+                        </Badge>
+                      )}
+                      {entry.show_price !== false && (
+                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 text-emerald-600 dark:text-emerald-400">
+                          Price {entry.price_position || "top"}
+                        </Badge>
+                      )}
+                      {entry.image_url && <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Custom Image</Badge>}
                       {entry.video_url && <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Video</Badge>}
-                      {entry.markdown_specs && <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Specs</Badge>}
                     </div>
                   </div>
 
@@ -1241,7 +1582,7 @@ export function ProductShowcaseTab() {
                       <ChevronRight className="w-4 h-4" />
                     </Button>
                     <Switch checked={entry.is_active} onCheckedChange={() => handleToggle(entry.id)} />
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(entry)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(entry)} title="Customize Card">
                       <Pencil className="w-4 h-4" />
                     </Button>
                     <AlertDialog>
@@ -1267,31 +1608,187 @@ export function ProductShowcaseTab() {
             );
           })}
       </div>
+      </CardContent>
+      </Card>
 
       {/* Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing?.id && entries.find((e) => e.id === editing.id) ? "Edit" : "Add"} Bento Card</DialogTitle>
+            <DialogTitle className="flex items-center justify-between pr-6">
+              <span>{editing?.id && entries.find((e) => e.id === editing.id) ? "Customize Bento Card" : "Add Bento Card"}</span>
+              {editing?.product_id && editing.product_id !== "none" && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleAutofillFromProduct(editing.product_id!)}
+                  className="text-xs h-7 gap-1"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-primary" /> Auto-fill from Product
+                </Button>
+              )}
+            </DialogTitle>
           </DialogHeader>
           {editing && (
-            <div className="space-y-5">
+            <div className="space-y-5 pt-2">
+              {/* Configuration Mode & Inheritance */}
+              <div className="p-4 rounded-xl border border-border/60 bg-secondary/15 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-primary" /> Styling & Layout Configuration Mode
+                  </Label>
+                  {editing.follow_card_id && editing.follow_card_id !== "none" && (
+                    <Badge variant="outline" className="text-[10px] text-primary border-primary/40 bg-primary/10">
+                      Following Card
+                    </Badge>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Configuration Source</Label>
+                    <Select
+                      value={editing.follow_card_id || "none"}
+                      onValueChange={(v) => {
+                        if (v === "none") {
+                          setEditing({ ...editing, follow_card_id: null });
+                        } else {
+                          const target = entries.find((e) => e.id === v);
+                          if (target) {
+                            setEditing({
+                              ...editing,
+                              follow_card_id: v,
+                              layout_type: target.layout_type,
+                              card_style: target.card_style,
+                              custom_bg: target.custom_bg,
+                              content_position: target.content_position,
+                              show_price: target.show_price,
+                              price_position: target.price_position,
+                              badge_tag: target.badge_tag,
+                              stock_status: target.stock_status,
+                            });
+                            toast.info(`Config set to follow "${target.title || 'Selected Card'}"`);
+                          }
+                        }
+                      }}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Individual (Custom Config)" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">⚙️ Individual Custom Config (Independent)</SelectItem>
+                        {entries
+                          .filter((e) => e.id !== editing.id)
+                          .map((e, i) => (
+                            <SelectItem key={e.id} value={e.id}>
+                              🔗 Follow #{i + 1}: {e.title || "Untitled Card"} ({e.card_style || "glass"}, {e.layout_type || "auto"})
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => applyStyleToAllCards(editing)}
+                      className="w-full h-9 text-xs font-semibold gap-1.5"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-primary" /> Apply This Style to All Cards
+                    </Button>
+                  </div>
+                </div>
+                {editing.follow_card_id && editing.follow_card_id !== "none" && (
+                  <p className="text-[11px] text-primary/80 bg-primary/5 p-2 rounded-lg border border-primary/20">
+                    ℹ️ This card will dynamically inherit layout span, aesthetic theme, alignment, and badge styling from the selected parent card. You can still set its unique product, title, image/video, and specs below.
+                  </p>
+                )}
+              </div>
+
+              {/* Link Product */}
+              <div className="p-4 rounded-xl border border-border/60 bg-secondary/15 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Link2 className="w-4 h-4 text-primary" /> Link Product (Featured or Catalog)
+                  </Label>
+                  {editing.product_id && editing.product_id !== "none" && (
+                    <span className="text-[11px] text-primary font-mono font-bold">Product Linked</span>
+                  )}
+                </div>
+                <Select
+                  value={editing.product_id || "none"}
+                  onValueChange={(v) => {
+                    if (v === "none") {
+                      setEditing({ ...editing, product_id: null });
+                    } else {
+                      const prod = products.find((p: any) => p.id === v);
+                      setEditing({
+                        ...editing,
+                        product_id: v,
+                        title: editing.title ? editing.title : (prod?.name || ""),
+                        image_url: editing.image_url ? editing.image_url : (prod?.thumbnail || ""),
+                        cta_link: prod ? `/product/${prod.slug}` : editing.cta_link,
+                        subtitle: editing.subtitle ? editing.subtitle : "Heavyweight Collection",
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select a product to link..." /></SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    <SelectItem value="none">Custom / Unlinked Card (No product)</SelectItem>
+                    {products.map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.is_featured ? "★ " : ""}{p.name} {p.price ? `(৳${Number(p.price).toLocaleString()})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Title & Subtitle */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Title</Label>
-                  <Input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} placeholder="Inspired Ken Kaneki Oversized" />
+                  <Label>Card Headline / Title</Label>
+                  <Input 
+                    value={editing.title} 
+                    onChange={(e) => setEditing({ ...editing, title: e.target.value })} 
+                    placeholder="e.g. Heavyweight Kuro Hoodie" 
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label>Subtitle</Label>
-                  <Input value={editing.subtitle} onChange={(e) => setEditing({ ...editing, subtitle: e.target.value })} placeholder="200+ GSM European Fit Bone White" />
+                  <Label>Card Subtitle / Tagline</Label>
+                  <Input 
+                    value={editing.subtitle || ""} 
+                    onChange={(e) => setEditing({ ...editing, subtitle: e.target.value })} 
+                    placeholder="e.g. 240+ GSM European Fit" 
+                  />
                 </div>
               </div>
 
-              {/* Layout & Style Selectors */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Badge Tag & Stock Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Bento Card Grid Span</Label>
+                  <Label>Top Pill Badge Tag</Label>
+                  <Input 
+                    value={editing.badge_tag || ""} 
+                    onChange={(e) => setEditing({ ...editing, badge_tag: e.target.value })} 
+                    placeholder="e.g. EDITORIAL SILHOUETTE, LIMITED DROP" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Stock / Availability Label</Label>
+                  <Input 
+                    value={editing.stock_status || ""} 
+                    onChange={(e) => setEditing({ ...editing, stock_status: e.target.value })} 
+                    placeholder="e.g. In Stock, Limited Edition" 
+                  />
+                </div>
+              </div>
+
+              {/* Layout, Style, & Alignment Selectors */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Grid Span / Ratio</Label>
                   <Select value={editing.layout_type || "auto"} onValueChange={(v: any) => setEditing({ ...editing, layout_type: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -1300,66 +1797,90 @@ export function ProductShowcaseTab() {
                       <SelectItem value="tall">Tall Portrait (1x2 Span)</SelectItem>
                       <SelectItem value="wide">Wide Landscape (2x1 Span)</SelectItem>
                       <SelectItem value="square">Square Standard (1x1 Span)</SelectItem>
+                      <SelectItem value="full">Full Width Banner (4x1 Span)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Card Aesthetic Style</Label>
+                  <Label>Aesthetic Card Theme</Label>
                   <Select value={editing.card_style || "glass"} onValueChange={(v: any) => setEditing({ ...editing, card_style: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="glass">Default Glass Overlay</SelectItem>
-                      <SelectItem value="dark">Dark Obsidian</SelectItem>
-                      <SelectItem value="cherry">Cherry Accent</SelectItem>
+                      <SelectItem value="glass">Glassmorphism Overlay</SelectItem>
+                      <SelectItem value="dark">Obsidian Dark</SelectItem>
+                      <SelectItem value="cherry">Cherry Crimson Accent</SelectItem>
+                      <SelectItem value="minimal">Minimal Luxe</SelectItem>
+                      <SelectItem value="monochrome">Monochrome Slate</SelectItem>
+                      <SelectItem value="gold">Gold Heritage</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Content Layout & Align</Label>
+                  <Select 
+                    value={editing.content_position || "bottom-left"} 
+                    onValueChange={(v: any) => setEditing({ ...editing, content_position: v })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bottom-left">Bottom Left (Standard)</SelectItem>
+                      <SelectItem value="bottom-center">Bottom Center</SelectItem>
+                      <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                      <SelectItem value="top-left">Top Left</SelectItem>
+                      <SelectItem value="center">Center Focused</SelectItem>
+                      <SelectItem value="side">Side Vertical 90° (Editorial)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
+              {/* Price Badge Display Settings */}
+              <div className="p-4 rounded-xl border border-border/50 bg-secondary/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={editing.show_price !== false}
+                    onCheckedChange={(val) => setEditing({ ...editing, show_price: val })}
+                  />
+                  <div>
+                    <Label className="text-sm font-medium">Show Price Badge</Label>
+                    <p className="text-xs text-muted-foreground">Display formatted price on the card from the linked product.</p>
+                  </div>
+                </div>
+                {editing.show_price !== false && (
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-muted-foreground shrink-0">Badge Position:</Label>
+                    <Select
+                      value={editing.price_position || "top"}
+                      onValueChange={(v: any) => setEditing({ ...editing, price_position: v })}
+                    >
+                      <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="top">Top Right Pill</SelectItem>
+                        <SelectItem value="bottom">Bottom CTA Bar</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
               {/* Hero Image */}
               <div className="space-y-2">
-                <Label>Bento Card Image (Separate upload)</Label>
-                <ImageUpload value={editing.image_url} onUploaded={(url) => setEditing({ ...editing, image_url: url || "" })} bucket="showcase" />
+                <Label>Card Image (Upload custom image or defaults to product thumbnail)</Label>
+                <ImageUpload value={editing.image_url} onUploaded={(url) => setEditing({ ...editing, image_url: url || "" })} bucket="banners" folder="showcase" />
               </div>
 
               {/* Hero Video */}
               <div className="space-y-2">
-                <Label>Bento Card Video (Separate upload, overrides image)</Label>
-                <VideoUpload value={editing.video_url} onUploaded={(url) => setEditing({ ...editing, video_url: url || "" })} bucket="showcase" />
+                <Label>Card Video (Optional, loops in background)</Label>
+                <VideoUpload value={editing.video_url} onUploaded={(url) => setEditing({ ...editing, video_url: url || "" })} bucket="banners" folder="showcase-video" />
               </div>
 
-              {/* Link Product */}
-              <div className="space-y-2">
-                <Label>Link to Product (Select Product for auto CTA / Price)</Label>
-                <Select
-                  value={editing.product_id || "none"}
-                  onValueChange={(v) => {
-                    const prod = products.find((p: any) => p.id === v);
-                    setEditing({
-                      ...editing,
-                      product_id: v === "none" ? null : v,
-                      cta_link: prod ? `/product/${prod.slug}` : editing.cta_link,
-                    });
-                  }}
-                >
-                  <SelectTrigger><SelectValue placeholder="Select a product..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No product linked (Custom link)</SelectItem>
-                    {products.map((p: any) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Gallery Carousel Toggle — only visible when a product is linked */}
+              {/* Gallery Carousel Toggle */}
               {editing.product_id && editing.product_id !== "none" && (
-                <div className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-secondary/20">
+                <div className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-secondary/20">
                   <div>
                     <p className="text-sm font-medium">Show Product Gallery Carousel</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Uses the linked product's uploaded gallery images as an interactive carousel in the card. Overrides custom image/video.</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Uses the linked product's uploaded gallery images as an interactive carousel in the card.</p>
                   </div>
                   <Switch
                     checked={!!editing.show_gallery}
@@ -1369,7 +1890,7 @@ export function ProductShowcaseTab() {
               )}
 
               {/* CTA */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>CTA Button Text</Label>
                   <Input value={editing.cta_text} onChange={(e) => setEditing({ ...editing, cta_text: e.target.value })} placeholder="Explore Piece" />
@@ -1382,34 +1903,39 @@ export function ProductShowcaseTab() {
 
               {/* Markdown Specs */}
               <div className="space-y-2">
-                <Label className="flex items-center gap-2"><FileText className="w-4 h-4" /> Product Specifications (Markdown)</Label>
-                <p className="text-[10px] text-muted-foreground">Use "Key: Value" pairs, "- bullet points", or "## Headings". This renders as an editorial spec sheet overlaid on the showcase.</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2"><FileText className="w-4 h-4" /> Product Material Specifications (Markdown)</Label>
+                  <div className="flex gap-1.5">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-[10px] px-2"
+                      onClick={() => setEditing({ ...editing, markdown_specs: "Fabric: 100% Heavyweight Cotton\nWeight: 240+ GSM\nFit: Oversized Silhouette\nStatus: In Stock" })}
+                    >
+                      Preset Specs
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Use "Key: Value" pairs (e.g. Fabric: 100% Cotton). Renders in a sleek frosted panel inside the card.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Textarea
                     value={editing.markdown_specs}
                     onChange={(e) => setEditing({ ...editing, markdown_specs: e.target.value })}
-                    className="min-h-[200px] font-mono text-xs"
-                    placeholder={"Fabric: 100% Premium Cotton\nWeight: 220+ GSM Heavyweight\nFit: Oversized Drop Shoulder\n\n## Construction\n- Reinforced double-needle stitching\n- Pre-shrunk garment"}
+                    className="min-h-[160px] font-mono text-xs"
+                    placeholder={"Fabric: 100% Premium Cotton\nWeight: 240+ GSM Heavyweight\nFit: Oversized Drop Shoulder"}
                   />
-                  <div className="border rounded-lg p-4 bg-secondary/20 min-h-[200px] overflow-y-auto">
-                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-2">Preview</p>
+                  <div className="border rounded-lg p-3 bg-secondary/20 min-h-[160px] max-h-[220px] overflow-y-auto">
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-2 font-bold">Specs Live Preview</p>
                     {editing.markdown_specs?.split("\n").map((line, i) => {
                       const t = line.trim();
                       if (!t) return null;
-                      if (t.startsWith("### ")) return <h4 key={i} className="text-[10px] uppercase tracking-wider text-muted-foreground mt-2 mb-1">{t.slice(4)}</h4>;
-                      if (t.startsWith("## ")) return <h3 key={i} className="text-xs font-semibold mt-3 mb-1">{t.slice(3)}</h3>;
-                      if (t.startsWith("- ") || t.startsWith("* ")) return (
-                        <div key={i} className="flex items-center gap-2 py-0.5">
-                          <span className="w-3 h-px bg-primary shrink-0" />
-                          <span className="text-[10px]">{t.slice(2)}</span>
-                        </div>
-                      );
                       if (t.includes(":") && !t.startsWith("http")) {
                         const [key, ...v] = t.split(":");
                         return (
                           <div key={i} className="flex justify-between py-0.5 border-b border-border/30 last:border-0">
-                            <span className="text-[9px] text-muted-foreground uppercase">{key.trim()}</span>
-                            <span className="text-[10px] font-medium">{v.join(":").trim()}</span>
+                            <span className="text-[9px] text-muted-foreground uppercase font-mono">{key.trim()}</span>
+                            <span className="text-[10px] font-semibold">{v.join(":").trim()}</span>
                           </div>
                         );
                       }
@@ -1419,9 +1945,9 @@ export function ProductShowcaseTab() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-3 border-t">
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleSave}>Save Entry</Button>
+                <Button onClick={handleSave}>Save Bento Card</Button>
               </div>
             </div>
           )}
@@ -1461,7 +1987,6 @@ const emptyCollectionSlide: CollectionSlide = {
 
 export function CollectionShowcaseTab() {
   const qc = useQueryClient();
-  const saveSiteSettings = useServerFn(upsertSiteSettings);
   const [slides, setSlides] = useState<CollectionSlide[]>([]);
   const [editing, setEditing] = useState<CollectionSlide | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -1510,12 +2035,22 @@ export function CollectionShowcaseTab() {
   const saveAll = async (updated: CollectionSlide[]) => {
     setSaving(true);
     try {
-      await saveSiteSettings({ key: "collection_showcase_config", value: updated });
+      const { error } = await supabase
+        .from("site_settings")
+        .upsert(
+          {
+            key: "collection_showcase_config",
+            value: updated as any,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "key" }
+        );
+      if (error) throw error;
       qc.invalidateQueries({ queryKey: ["collection-showcase-config"] });
       qc.invalidateQueries({ queryKey: ["collection-showcase-config-admin"] });
       toast.success("Collections strip saved");
-    } catch {
-      toast.error("Failed to save");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to save collections strip");
     } finally {
       setSaving(false);
     }
@@ -1681,7 +2216,8 @@ export function CollectionShowcaseTab() {
                 <ImageUpload
                   value={editing.image_url}
                   onUploaded={(url) => setEditing({ ...editing, image_url: url || "" })}
-                  bucket="showcase"
+                  bucket="banners"
+                  folder="showcase-collections"
                 />
               </div>
 
@@ -1773,7 +2309,6 @@ const DEFAULT_MARQUEE_WORDS = [
 
 export function MarqueeStripTab() {
   const qc = useQueryClient();
-  const saveSiteSettings = useServerFn(upsertSiteSettings);
   const [words, setWords] = useState<string[]>(DEFAULT_MARQUEE_WORDS);
   const [separator, setSeparator] = useState("✦");
   const [newWord, setNewWord] = useState("");
@@ -1837,20 +2372,25 @@ export function MarqueeStripTab() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await saveSiteSettings({
-        data: {
-          key: "marquee_config",
-          value: {
-            words: words.filter((w) => w.trim().length > 0),
-            separator: separator.trim() || "✦",
+      const { error } = await supabase
+        .from("site_settings")
+        .upsert(
+          {
+            key: "marquee_config",
+            value: { 
+              words: words.filter((w) => w.trim().length > 0),
+              separator: separator.trim() || "✦"
+            },
+            updated_at: new Date().toISOString(),
           },
-        },
-      });
+          { onConflict: "key" }
+        );
+      if (error) throw error;
       qc.invalidateQueries({ queryKey: ["marquee-config"] });
       qc.invalidateQueries({ queryKey: ["marquee-config-admin"] });
       toast.success("Marquee words saved successfully");
     } catch (e: any) {
-      toast.error(e.message || "Failed to save marquee settings");
+      toast.error(e?.message || "Failed to save marquee settings");
     } finally {
       setSaving(false);
     }

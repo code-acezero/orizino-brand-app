@@ -1,3 +1,5 @@
+"use server";
+
 // Customer Analytics — cohorts, churn risk, top products/categories, activity heatmap.
 import { createServerFn } from "@/lib/server-fn-compat";
 import { z } from "zod";

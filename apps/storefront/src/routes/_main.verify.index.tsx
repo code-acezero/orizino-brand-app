@@ -3,7 +3,7 @@ import { createFileRoute } from "@orizino/shared/lib/router-compat";
 import { useServerFn } from "@orizino/shared/lib/server-fn-compat";
 import { VerifyScannerPage } from "@orizino/shared";
 import { useAuth } from "@orizino/shared";
-import { getCompanyUrl } from "@/lib/cross-app-urls";
+import { getBrandHomeUrl } from "@/lib/cross-app-urls";
 import { useScannerConfig } from "@/hooks/use-scanner-config";
 import { verifyPublicSerial, verifyOwnedSerial } from "@/lib/verify.functions";
 
@@ -50,7 +50,7 @@ function VerifyEntry() {
       onLookup={lookup}
       isSignedIn={!!user}
       homePath="/"
-      learnMoreHref={`${getCompanyUrl()}/scanner-info`}
+      learnMoreHref={`${getBrandHomeUrl()}/scanner-info`}
       content={cfg}
     />
   );

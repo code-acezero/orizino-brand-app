@@ -1,13 +1,10 @@
 [build]
-  command = "cd ../.. && export NODE_OPTIONS=--max-old-space-size=7168 && npm install --legacy-peer-deps --os=linux --libc=glibc && npm run build:storefront"
-  publish = "dist/client"
+  command = "npm run build"
 
 [build.environment]
-  NODE_VERSION = "22"
+  NODE_VERSION = "20"
   NPM_FLAGS    = "--legacy-peer-deps"
   SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_PROJECT_ID,VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
 
-[[headers]]
-  for = "/_build/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/lib/app-toast";
 import { Search, Globe, FileText, AlertCircle, Check, Eye, FileSearch, Map, ExternalLink, ShieldCheck, X, Loader2, RefreshCw, PlayCircle } from "lucide-react";
 import SeoAuditTool from "./SeoAuditTool";
-import { getStorefrontUrl, getCompanyUrl, getMasterpanelUrl } from "@/lib/cross-app-urls";
+import { getStorefrontUrl, getBrandHomeUrl, getMasterpanelUrl } from "@/lib/cross-app-urls";
 
 type CheckStatus = "pending" | "pass" | "fail";
 type RobotsCheck = { label: string; status: CheckStatus; detail?: string; hint?: string };
@@ -370,7 +370,7 @@ const AdminSeoSettings = () => {
 
   const APPS = [
     { label: "Storefront", base: getStorefrontUrl() },
-    { label: "Company", base: getCompanyUrl() },
+    { label: "Company", base: getBrandHomeUrl() },
     { label: "Masterpanel", base: getMasterpanelUrl() },
   ] as const;
 

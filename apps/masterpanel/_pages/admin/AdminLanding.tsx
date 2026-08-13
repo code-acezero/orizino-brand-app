@@ -5,6 +5,8 @@ import { useStaffSections } from "@/hooks/use-staff-sections";
 import MasterPanel from "./MasterPanel";
 import ControlPanel from "./ControlPanel";
 
+import SectionLoader from "@/components/loaders/SectionLoader";
+
 /**
  * AdminLanding — decides which panel to render for the signed-in user.
  *
@@ -15,12 +17,19 @@ export default function AdminLanding() {
   const role = useAdminRole();
   const { data: staff, isLoading } = useStaffSections();
 
-  const isMasterAdmin = role === "admin" || !!staff?.isAdmin;
-
-  if (isLoading && !staff) {
-    return <div className="min-h-[40vh]" />;
+  // Master admins immediately get the MasterPanel home without waiting for staff query
+  if (role === "admin" || staff?.isAdmin) {
+    return <MasterPanel />;
   }
 
-  return isMasterAdmin ? <MasterPanel /> : <ControlPanel />;
+  if (isLoading && !staff) {
+    return (
+      <div className="min-h-[40vh] flex items-center justify-center">
+        <SectionLoader tone="platinum" size={48} />
+      </div>
+    );
+  }
+
+  return <ControlPanel />;
 }
 // code:4ce0

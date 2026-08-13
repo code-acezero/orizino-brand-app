@@ -7,6 +7,7 @@ import { Mail, MapPin, Phone, CreditCard, Truck, Shield, RefreshCcw, ChevronDown
 import CurrencyMenu from "@/components/footer/CurrencyMenu";
 import LanguageMenu from "@/components/footer/LanguageMenu";
 import BrandLogo from "@/components/BrandLogo";
+import { brandHomeHref } from "@/lib/cross-app-urls";
 
 
 
@@ -27,7 +28,7 @@ const Footer: React.FC = () => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const { data: siteSettings } = useQuery({
+  const { data: siteSettings, isLoading: isLoadingSettings } = useQuery({
     queryKey: ["site-settings-footer"],
     queryFn: async () => {
       const { data } = await supabase
@@ -92,6 +93,19 @@ const Footer: React.FC = () => {
       { label: "Cookie Policy", href: "/cookies" },
     ];
 
+  // Strictly pull CTA buttons from database (no hardcoded defaults)
+  const CTA_LINKS: Array<{ id: string; label: string; href: string; variant?: string; is_active?: boolean }> =
+    Array.isArray(dynamicNavs?.ctaLinks)
+      ? dynamicNavs.ctaLinks.filter((c: any) => c.is_active !== false)
+      : [];
+
+  const resolveCtaHref = (href: string) => {
+    if (href.startsWith("/track") || href.startsWith("/scanner") || href.startsWith("/news") || href.startsWith("/docs")) {
+      return brandHomeHref(href);
+    }
+    return href;
+  };
+
   const { data: categories = [] } = useQuery({
     queryKey: ["footer-categories"],
     queryFn: async () => {
@@ -106,12 +120,45 @@ const Footer: React.FC = () => {
     staleTime: 10 * 60 * 1000,
   });
 
+  if (isLoadingSettings) {
+    return (
+      <footer className="w-full border-t border-border/40 py-12 px-6 space-y-6 bg-background/50 animate-pulse">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="space-y-3">
+            <div className="h-6 w-36 bg-muted/60 rounded-md" />
+            <div className="h-3.5 w-48 bg-muted/40 rounded-md" />
+            <div className="h-3.5 w-40 bg-muted/40 rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <div className="h-4 w-24 bg-muted/60 rounded-md" />
+            <div className="h-3 w-32 bg-muted/40 rounded-md" />
+            <div className="h-3 w-28 bg-muted/40 rounded-md" />
+            <div className="h-3 w-36 bg-muted/40 rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <div className="h-4 w-24 bg-muted/60 rounded-md" />
+            <div className="h-3 w-32 bg-muted/40 rounded-md" />
+            <div className="h-3 w-28 bg-muted/40 rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <div className="h-4 w-24 bg-muted/60 rounded-md" />
+            <div className="h-3 w-36 bg-muted/40 rounded-md" />
+            <div className="h-3 w-32 bg-muted/40 rounded-md" />
+          </div>
+        </div>
+        <div className="max-w-6xl mx-auto h-10 bg-muted/30 rounded-xl" />
+      </footer>
+    );
+  }
+
+
+
   const SHOP_LINKS = [
-    { label: "All Products", href: "/inventory" },
-    { label: "New Arrivals", href: "/inventory?sort=newest" },
-    { label: "Featured", href: "/inventory?featured=true" },
+    { label: "All Products", href: "/shop" },
+    { label: "New Arrivals", href: "/shop?sort=new" },
+    { label: "Featured", href: "/shop?featured=true" },
     ...categories.map((c: any) => ({ label: c.name, href: `/categories/${c.slug}` })),
-    { label: "Sale", href: "/inventory?sale=true" },
+    { label: "Sale", href: "/shop?sale=true" },
   ];
 
   const extraNavSections = Array.isArray(dynamicNavs?.extraSections) ? dynamicNavs.extraSections : [];
@@ -450,6 +497,46 @@ const Footer: React.FC = () => {
             );
           })}
         </div>
+
+        {/* ── FEATURED CTA ACTION BUTTONS STRIP ── */}
+        {CTA_LINKS.length > 0 && (
+          <div className="w-full py-3.5 border-b border-border/15 flex items-center justify-center flex-wrap gap-2.5 sm:gap-3">
+            {CTA_LINKS.map((cta) => {
+              const targetUrl = resolveCtaHref(cta.href);
+              const isExternal = targetUrl.startsWith("http");
+              const variantClasses =
+                cta.variant === "primary"
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                  : cta.variant === "secondary"
+                  ? "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border/40"
+                  : cta.variant === "ghost"
+                  ? "text-foreground hover:bg-accent/40"
+                  : "border border-border/80 text-foreground hover:border-primary hover:text-primary bg-background/50";
+
+              if (isExternal) {
+                return (
+                  <a
+                    key={cta.id}
+                    href={targetUrl}
+                    className={`px-4 py-1.5 rounded-full font-sans-brand text-xs font-semibold tracking-wider transition-all duration-200 inline-flex items-center gap-1.5 active:scale-95 ${variantClasses}`}
+                  >
+                    {cta.label}
+                  </a>
+                );
+              }
+
+              return (
+                <Link
+                  key={cta.id}
+                  href={targetUrl}
+                  className={`px-4 py-1.5 rounded-full font-sans-brand text-xs font-semibold tracking-wider transition-all duration-200 inline-flex items-center gap-1.5 active:scale-95 ${variantClasses}`}
+                >
+                  {cta.label}
+                </Link>
+              );
+            })}
+          </div>
+        )}
 
         {/* ── DESKTOP BOTTOM BAR (lg+) ── */}
         <div className="hidden lg:flex items-center justify-between py-4 lg:py-5 w-full font-sans-brand text-xs">

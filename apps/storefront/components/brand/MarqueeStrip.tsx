@@ -99,9 +99,19 @@ const MarqueeStrip: React.FC<{ className?: string; dark?: boolean }> = ({
 
   return (
     <div
-      className={`relative overflow-hidden py-3 select-none ${bg} ${className}`}
+      className={`relative overflow-hidden py-3 select-none ${bg} ${className} shadow-2xl shadow-black/40`}
       aria-hidden="true"
     >
+      {/* Top shadow blend */}
+      <div
+        className="absolute top-0 left-0 right-0 h-3 z-10 pointer-events-none"
+        style={{ background: "linear-gradient(to bottom, hsl(var(--background) / 0.4), transparent)" }}
+      />
+      {/* Bottom shadow blend */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-3 z-10 pointer-events-none"
+        style={{ background: "linear-gradient(to top, hsl(var(--background) / 0.4), transparent)" }}
+      />
       {/* Left fade */}
       <div
         className="absolute left-0 top-0 bottom-0 w-16 z-10 pointer-events-none"
