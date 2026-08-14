@@ -854,23 +854,22 @@ const AdminStudioHorizonCarouselPreview = ({
           transform: "scale(1.1)",
         }}
       />
-      {/* 1. Overhead Luminaire Source & Beam Origin */}
-      <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-64 h-24 rounded-full bg-primary/30 blur-2xl pointer-events-none" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-white/80 dark:via-white/90 to-transparent blur-[0.5px] pointer-events-none z-20" />
+      {/* 1. Seamless Diffused Overhead Light Pool */}
+      <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[28rem] h-48 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.32),transparent_70%)] blur-3xl pointer-events-none" />
 
-      {/* 2. Volumetric Conical Light Shaft */}
+      {/* 2. Soft Conical Downward Light Shaft */}
       <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[140%] max-w-[650px] h-[440px] pointer-events-none blur-xl opacity-90"
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[130%] max-w-[650px] h-[400px] pointer-events-none blur-3xl opacity-60"
         style={{
           background:
-            "conic-gradient(from 65deg at 50% 0%, transparent 0deg, hsl(var(--primary)/0.25) 20deg, hsl(var(--primary)/0.38) 25deg, hsl(var(--primary)/0.25) 30deg, transparent 50%)",
+            "conic-gradient(from 70deg at 50% 0%, transparent 0deg, hsl(var(--primary)/0.18) 18deg, hsl(var(--primary)/0.28) 25deg, hsl(var(--primary)/0.18) 32deg, transparent 50%)",
         }}
       />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-[360px] bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.35),transparent_70%)] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-[320px] bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,hsl(var(--primary)/0.25),transparent_75%)] pointer-events-none" />
 
       {/* 3. Studio Pedestal Stage Floor Reflection */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-[22rem] h-20 rounded-[100%] bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.3),transparent_70%)] blur-xl pointer-events-none" />
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-44 h-6 rounded-[100%] bg-primary/25 blur-md pointer-events-none" />
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[22rem] h-20 rounded-[100%] bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.25),transparent_70%)] blur-2xl pointer-events-none" />
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-44 h-6 rounded-[100%] bg-primary/20 blur-md pointer-events-none" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.45)_100%)] pointer-events-none z-10" />
 
       <div className="w-full flex items-center justify-between z-20">
