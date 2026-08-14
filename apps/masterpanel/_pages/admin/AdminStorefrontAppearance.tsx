@@ -708,20 +708,31 @@ const AdminStorefrontAppearance: React.FC = () => {
         </div>
       </div>
 
-      {/* ── STRUCTURAL & CALIBRATION OPTIONS (COMPACT) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-        {/* Layout Variants */}
-        <div className="lg:col-span-7 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-              <LayoutGrid className="w-3 h-3 text-primary" /> Storefront Layout Variant
+      {/* ── STRUCTURAL & CALIBRATION OPTIONS (REDESIGNED LUXURY SUITE) ── */}
+      <div className="space-y-4 pt-2">
+        {/* SECTION 1: Storefront Layout Architecture */}
+        <div className="space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
+                <LayoutGrid className="w-3 h-3" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-foreground">Storefront Layout Architecture</h3>
+                <p className="text-[10px] text-muted-foreground">Select the structural rhythm, hero banner ratio, and product grid flow.</p>
+              </div>
             </div>
-            <span className="text-[9.5px] font-mono text-muted-foreground">
-              {STOREFRONT_LAYOUT_VARIANTS.length} Presets
-            </span>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[9.5px] font-mono border-primary/30 text-primary bg-primary/5">
+                Active: {STOREFRONT_LAYOUT_VARIANTS.find((v) => v.id === cfg.layout_variant)?.label ?? "Hero Grid"}
+              </Badge>
+              <Badge variant="secondary" className="text-[9.5px] font-mono text-muted-foreground">
+                10 Presets
+              </Badge>
+            </div>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
             {STOREFRONT_LAYOUT_VARIANTS.map((l) => {
               const active = l.id === cfg.layout_variant;
               return (
@@ -729,19 +740,25 @@ const AdminStorefrontAppearance: React.FC = () => {
                   key={l.id}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setCfg((c) => ({ ...c, layout_variant: l.id }))}
-                  className={`relative text-left rounded-lg border p-2 transition-all cursor-pointer flex flex-col justify-between ${
+                  className={`group relative text-left rounded-xl border p-2.5 transition-all cursor-pointer flex flex-col justify-between overflow-hidden ${
                     active
-                      ? "border-primary bg-primary/10 shadow-2xs ring-1 ring-primary/30"
-                      : "border-border/50 hover:border-primary/40 bg-card/60 hover:bg-card"
+                      ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/40"
+                      : "border-border/60 hover:border-primary/40 bg-card/70 hover:bg-card shadow-2xs"
                   }`}
                 >
-                  <LayoutPreview id={l.id} />
-                  <div className="mt-1.5">
+                  <LayoutPreview id={l.id} active={active} />
+                  <div className="mt-2 space-y-0.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-foreground truncate">{l.label}</span>
-                      {active && <Check className="w-2.5 h-2.5 text-primary shrink-0" />}
+                      <span className={`text-[10.5px] font-bold truncate ${active ? "text-primary" : "text-foreground"}`}>
+                        {l.label}
+                      </span>
+                      {active ? (
+                        <Check className="w-3 h-3 text-primary shrink-0" />
+                      ) : (
+                        <div className="w-1.5 h-1.5 rounded-full bg-border group-hover:bg-primary/40 transition-colors" />
+                      )}
                     </div>
-                    <p className="text-[8.5px] text-muted-foreground mt-0.5 line-clamp-1 leading-tight">
+                    <p className="text-[9px] text-muted-foreground line-clamp-1 leading-tight">
                       {l.description}
                     </p>
                   </div>
@@ -751,217 +768,305 @@ const AdminStorefrontAppearance: React.FC = () => {
           </div>
         </div>
 
-        {/* Surface Controls */}
-        <div className="lg:col-span-5 space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-            <Sliders className="w-3 h-3 text-primary" /> Surface Calibration
+        {/* SECTION 2: Surface Calibration & Ergonomics */}
+        <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-md shadow-sm overflow-hidden p-4 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
+                <Sliders className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-foreground">Surface Calibration &amp; Ergonomics</h3>
+                <p className="text-[10px] text-muted-foreground">Customize your brand accent glow, corner curvature, viewport density, and mobile navigation.</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[9px] font-mono text-muted-foreground border-border/60">
+                Radius: {cfg.rounded ?? "2xl"} • Density: {cfg.density ?? "comfortable"} • Nav: {cfg.mobile_nav ?? "tabs"}
+              </Badge>
+            </div>
           </div>
 
-          <Card className="border-border/50 bg-card/60 p-3 rounded-xl space-y-2.5">
-            {/* Accent Color */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[10.5px] font-semibold">
-                <span className="flex items-center gap-1">
-                  <Palette className="w-2.5 h-2.5 text-primary" /> Accent Palette
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5">
+            {/* 1. Accent Palette */}
+            <div className="rounded-xl border border-border/50 bg-secondary/15 p-3 space-y-2 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-foreground">
+                  <Palette className="w-3 h-3 text-primary" />
+                  <span>Accent Glow</span>
+                </div>
+                <span className="text-[9px] font-mono text-primary font-bold">
+                  {STOREFRONT_ACCENT_PRESETS.find((a) => (cfg.accent_hsl ?? "") === a.hsl)?.label ?? "Brand Default"}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-1">
+
+              <div className="grid grid-cols-2 gap-1.5">
                 {STOREFRONT_ACCENT_PRESETS.map((a) => {
                   const active = (cfg.accent_hsl ?? "") === a.hsl;
                   return (
                     <button
                       key={a.id}
                       onClick={() => setCfg((c) => ({ ...c, accent_hsl: a.hsl || null }))}
-                      className={`flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] font-medium transition-all cursor-pointer ${
+                      className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[9.5px] font-medium transition-all cursor-pointer ${
                         active
-                          ? "border-primary bg-primary/10 ring-1 ring-primary/30 text-foreground font-bold"
-                          : "border-border/50 text-muted-foreground bg-secondary/20 hover:border-border"
+                          ? "border-primary bg-primary/15 ring-1 ring-primary/40 text-foreground font-bold shadow-2xs"
+                          : "border-border/50 text-muted-foreground bg-background/50 hover:bg-background hover:text-foreground"
                       }`}
                     >
                       <span
-                        className="w-2 h-2 rounded-full border border-white/20 shrink-0"
+                        className={`w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs border ${active ? "ring-1 ring-white/50 border-white/80" : "border-white/20"}`}
                         style={{
                           background: a.hsl
                             ? `hsl(${a.hsl})`
                             : "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))",
                         }}
                       />
-                      {a.label}
+                      <span className="truncate">{a.label}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Corner Radius */}
-            <div className="space-y-1 pt-1.5 border-t border-border/40">
-              <div className="flex items-center justify-between text-[10.5px] font-semibold">
-                <span className="flex items-center gap-1">
-                  <Square className="w-2.5 h-2.5 text-primary" /> Corner Radius
-                </span>
+            {/* 2. Corner Radius */}
+            <div className="rounded-xl border border-border/50 bg-secondary/15 p-3 space-y-2 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-foreground">
+                  <Square className="w-3 h-3 text-primary" />
+                  <span>Corner Curvature</span>
+                </div>
                 <span className="text-[9px] font-mono uppercase text-primary font-bold">{cfg.rounded ?? "2xl"}</span>
               </div>
-              <div className="grid grid-cols-5 gap-1">
-                {(["sm", "md", "lg", "xl", "2xl"] as const).map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => setCfg((c) => ({ ...c, rounded: r }))}
-                    className={`py-0.5 rounded border text-[9px] font-mono uppercase transition-all cursor-pointer ${
-                      (cfg.rounded ?? "2xl") === r
-                        ? "border-primary bg-primary/10 ring-1 ring-primary/30 text-primary font-bold"
-                        : "border-border/50 text-muted-foreground hover:text-foreground bg-secondary/15"
-                    }`}
-                  >
-                    {r}
-                  </button>
-                ))}
+
+              <div className="grid grid-cols-5 gap-1 pt-1">
+                {(
+                  [
+                    { id: "sm", label: "SM", radius: "rounded-xs", desc: "4px" },
+                    { id: "md", label: "MD", radius: "rounded-sm", desc: "8px" },
+                    { id: "lg", label: "LG", radius: "rounded-md", desc: "12px" },
+                    { id: "xl", label: "XL", radius: "rounded-lg", desc: "16px" },
+                    { id: "2xl", label: "2XL", radius: "rounded-2xl", desc: "Pill" },
+                  ] as const
+                ).map((r) => {
+                  const active = (cfg.rounded ?? "2xl") === r.id;
+                  return (
+                    <button
+                      key={r.id}
+                      onClick={() => setCfg((c) => ({ ...c, rounded: r.id }))}
+                      className={`flex flex-col items-center justify-center p-1.5 border transition-all cursor-pointer ${r.radius} ${
+                        active
+                          ? "border-primary bg-primary/20 ring-1 ring-primary/40 text-primary font-bold shadow-2xs"
+                          : "border-border/60 text-muted-foreground hover:text-foreground bg-background/50 hover:bg-background"
+                      }`}
+                    >
+                      <span className="text-[10px] font-mono uppercase font-bold">{r.label}</span>
+                      <span className="text-[7.5px] opacity-70 font-mono">{r.desc}</span>
+                    </button>
+                  );
+                })}
               </div>
+              <p className="text-[9px] text-muted-foreground leading-tight">
+                Controls buttons, product tiles, badges, and modal curvatures.
+              </p>
             </div>
 
-            {/* Density */}
-            <div className="space-y-1 pt-1.5 border-t border-border/40">
-              <div className="flex items-center justify-between text-[10.5px] font-semibold">
-                <span className="flex items-center gap-1">
-                  <Maximize2 className="w-2.5 h-2.5 text-primary" /> Density
-                </span>
+            {/* 3. Viewport Density */}
+            <div className="rounded-xl border border-border/50 bg-secondary/15 p-3 space-y-2 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-foreground">
+                  <Maximize2 className="w-3 h-3 text-primary" />
+                  <span>Viewport Density</span>
+                </div>
                 <span className="text-[9px] font-mono capitalize text-primary font-bold">
                   {cfg.density ?? "comfortable"}
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-1">
-                {(["compact", "comfortable", "spacious"] as const).map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => setCfg((c) => ({ ...c, density: d }))}
-                    className={`py-0.5 rounded border text-[9px] capitalize transition-all cursor-pointer ${
-                      (cfg.density ?? "comfortable") === d
-                        ? "border-primary bg-primary/10 ring-1 ring-primary/30 text-primary font-bold"
-                        : "border-border/50 text-muted-foreground hover:text-foreground bg-secondary/15"
-                    }`}
-                  >
-                    {d}
-                  </button>
-                ))}
+
+              <div className="grid grid-cols-3 gap-1.5 pt-1">
+                {(
+                  [
+                    { id: "compact", label: "Compact", sub: "Tight 4-Col" },
+                    { id: "comfortable", label: "Comfort", sub: "Balanced" },
+                    { id: "spacious", label: "Spacious", sub: "Editorial" },
+                  ] as const
+                ).map((d) => {
+                  const active = (cfg.density ?? "comfortable") === d.id;
+                  return (
+                    <button
+                      key={d.id}
+                      onClick={() => setCfg((c) => ({ ...c, density: d.id }))}
+                      className={`flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all cursor-pointer ${
+                        active
+                          ? "border-primary bg-primary/20 ring-1 ring-primary/40 text-primary font-bold shadow-2xs"
+                          : "border-border/60 text-muted-foreground hover:text-foreground bg-background/50 hover:bg-background"
+                      }`}
+                    >
+                      <span className="text-[10px] font-semibold">{d.label}</span>
+                      <span className="text-[7.5px] opacity-70 font-mono">{d.sub}</span>
+                    </button>
+                  );
+                })}
               </div>
+              <p className="text-[9px] text-muted-foreground leading-tight">
+                Adjusts vertical padding, gutters, and product card aspect ratios.
+              </p>
             </div>
 
-            {/* Mobile Nav */}
-            <div className="space-y-1 pt-1.5 border-t border-border/40">
-              <div className="flex items-center justify-between text-[10.5px] font-semibold">
-                <span className="flex items-center gap-1">
-                  <Smartphone className="w-2.5 h-2.5 text-primary" /> Mobile Nav
-                </span>
+            {/* 4. Mobile Navigation Architecture */}
+            <div className="rounded-xl border border-border/50 bg-secondary/15 p-3 space-y-2 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-foreground">
+                  <Smartphone className="w-3 h-3 text-primary" />
+                  <span>Mobile Navigation</span>
+                </div>
                 <span className="text-[9px] font-mono capitalize text-primary font-bold">
                   {cfg.mobile_nav ?? "tabs"}
                 </span>
               </div>
-              <div className="grid grid-cols-4 gap-1">
-                {(["tabs", "segmented", "pill", "sheet"] as const).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setCfg((c) => ({ ...c, mobile_nav: m }))}
-                    className={`py-0.5 rounded border text-[9px] capitalize transition-all cursor-pointer ${
-                      (cfg.mobile_nav ?? "tabs") === m
-                        ? "border-primary bg-primary/10 ring-1 ring-primary/30 text-primary font-bold"
-                        : "border-border/50 text-muted-foreground hover:text-foreground bg-secondary/15"
-                    }`}
-                  >
-                    {m}
-                  </button>
-                ))}
+
+              <div className="grid grid-cols-2 gap-1.5 pt-1">
+                {(
+                  [
+                    { id: "tabs", label: "Bottom Dock", sub: "Classic 5-tab bar" },
+                    { id: "segmented", label: "Glass Capsule", sub: "Floating dock" },
+                    { id: "pill", label: "Center Pill", sub: "Minimalist action" },
+                    { id: "sheet", label: "Action Sheet", sub: "Swipe menu" },
+                  ] as const
+                ).map((m) => {
+                  const active = (cfg.mobile_nav ?? "tabs") === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => setCfg((c) => ({ ...c, mobile_nav: m.id }))}
+                      className={`flex flex-col items-start p-1.5 rounded-lg border transition-all cursor-pointer ${
+                        active
+                          ? "border-primary bg-primary/20 ring-1 ring-primary/40 text-primary font-bold shadow-2xs"
+                          : "border-border/60 text-muted-foreground hover:text-foreground bg-background/50 hover:bg-background"
+                      }`}
+                    >
+                      <span className="text-[10px] font-semibold truncate w-full text-left">{m.label}</span>
+                      <span className="text-[7.5px] opacity-70 font-mono truncate w-full text-left">{m.sub}</span>
+                    </button>
+                  );
+                })}
               </div>
+              <p className="text-[9px] text-muted-foreground leading-tight">
+                Phone viewport floating navigation dock style and ergonomics.
+              </p>
             </div>
-          </Card>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-const LayoutPreview: React.FC<{ id: string }> = ({ id }) => {
-  const common = "w-full h-11 rounded-md bg-secondary/40 border border-border/40 p-1 flex gap-1";
-  const block = "rounded-xs bg-foreground/20";
+const LayoutPreview: React.FC<{ id: string; active?: boolean }> = ({ id, active }) => {
+  const container = `w-full h-12 rounded-lg p-1.5 flex gap-1 transition-all ${
+    active ? "bg-primary/15 border border-primary/40" : "bg-secondary/40 border border-border/50"
+  }`;
+  const heroBlock = active ? "rounded-xs bg-primary/70" : "rounded-xs bg-foreground/35";
+  const itemBlock = active ? "rounded-xs bg-primary/30" : "rounded-xs bg-foreground/20";
+  const lineBlock = active ? "rounded-xs bg-primary/50" : "rounded-xs bg-foreground/25";
+
   switch (id) {
     case "magazine":
       return (
-        <div className={common + " flex-col"}>
-          <div className={block + " h-1.5 w-3/5 mx-auto"} />
-          <div className={block + " flex-1"} />
+        <div className={container + " flex-col justify-between"}>
+          <div className={`${lineBlock} h-1.5 w-3/5 mx-auto`} />
+          <div className={`${heroBlock} flex-1`} />
+          <div className="flex gap-1 h-1.5">
+            <div className={`${itemBlock} flex-1`} />
+            <div className={`${itemBlock} flex-1`} />
+          </div>
         </div>
       );
     case "bento":
       return (
-        <div className={common}>
-          <div className={block + " flex-1"} />
-          <div className="flex flex-col gap-0.5 flex-1">
-            <div className={block + " flex-1"} />
-            <div className={block + " h-1.5"} />
+        <div className={container}>
+          <div className={`${heroBlock} flex-1`} />
+          <div className="flex flex-col gap-1 flex-1">
+            <div className={`${itemBlock} flex-1`} />
+            <div className={`${lineBlock} h-2.5`} />
           </div>
         </div>
       );
     case "split-screen":
       return (
-        <div className={common}>
-          <div className={block + " flex-1"} />
-          <div className={block + " flex-1"} />
+        <div className={container}>
+          <div className={`${heroBlock} flex-1`} />
+          <div className="flex flex-col gap-1 flex-1 justify-center">
+            <div className={`${lineBlock} h-2 w-4/5`} />
+            <div className={`${itemBlock} h-1.5 w-full`} />
+            <div className={`${itemBlock} h-1.5 w-2/3`} />
+          </div>
         </div>
       );
     case "full-bleed":
       return (
-        <div className={common + " p-0"}>
-          <div className={block + " flex-1 m-0 rounded-none"} />
+        <div className={container + " p-0"}>
+          <div className={`${heroBlock} flex-1 m-0 rounded-md`} />
         </div>
       );
     case "minimal":
       return (
-        <div className={common + " bg-transparent"}>
-          <div className="flex-1 border border-dashed border-border rounded-xs" />
+        <div className={container + " bg-transparent flex-col justify-between p-1.5"}>
+          <div className={`${lineBlock} h-1 w-1/2 mx-auto`} />
+          <div className="flex-1 border border-dashed border-border/80 rounded-xs my-0.5 flex items-center justify-center">
+            <div className={`${heroBlock} w-3 h-3 rounded-full opacity-40`} />
+          </div>
+          <div className={`${itemBlock} h-1 w-2/3 mx-auto`} />
         </div>
       );
     case "editorial":
       return (
-        <div className={common + " flex-col"}>
-          <div className={block + " h-1.5 w-4/5"} />
-          <div className={block + " h-1 w-2/3"} />
-          <div className={block + " flex-1"} />
+        <div className={container + " flex-col justify-between"}>
+          <div className={`${lineBlock} h-1.5 w-4/5`} />
+          <div className={`${itemBlock} h-1 w-1/2`} />
+          <div className="flex gap-1 flex-1">
+            <div className={`${heroBlock} flex-1`} />
+            <div className={`${itemBlock} flex-1`} />
+          </div>
         </div>
       );
     case "compact-grid":
       return (
-        <div className={common + " grid grid-cols-4 gap-0.5"}>
-          <div className={block} />
-          <div className={block} />
-          <div className={block} />
-          <div className={block} />
+        <div className={container + " grid grid-cols-4 gap-1 items-stretch"}>
+          <div className={itemBlock} />
+          <div className={itemBlock} />
+          <div className={itemBlock} />
+          <div className={itemBlock} />
         </div>
       );
     case "boutique":
       return (
-        <div className={common + " flex-col items-center"}>
-          <div className={block + " w-1/2 h-1"} />
-          <div className={block + " w-2/3 flex-1"} />
+        <div className={container + " flex-col items-center justify-between"}>
+          <div className={`${lineBlock} w-1/2 h-1`} />
+          <div className={`${heroBlock} w-4/5 flex-1 my-0.5`} />
+          <div className={`${itemBlock} w-3/5 h-1`} />
         </div>
       );
     case "showcase":
       return (
-        <div className={common + " flex-col"}>
-          <div className={block + " flex-1"} />
-          <div className="flex gap-0.5 h-2">
-            <div className={block + " flex-1"} />
-            <div className={block + " flex-1"} />
-            <div className={block + " flex-1"} />
+        <div className={container + " flex-col justify-between"}>
+          <div className={`${heroBlock} flex-1`} />
+          <div className="flex gap-1 h-2">
+            <div className={`${itemBlock} flex-1`} />
+            <div className={`${itemBlock} flex-1`} />
+            <div className={`${itemBlock} flex-1`} />
           </div>
         </div>
       );
     case "hero-grid":
     default:
       return (
-        <div className={common + " flex-col"}>
-          <div className={block + " h-2"} />
-          <div className="flex gap-0.5 flex-1">
-            <div className={block + " flex-1"} />
-            <div className={block + " flex-1"} />
-            <div className={block + " flex-1"} />
+        <div className={container + " flex-col justify-between"}>
+          <div className={`${heroBlock} h-3.5`} />
+          <div className="flex gap-1 flex-1">
+            <div className={`${itemBlock} flex-1`} />
+            <div className={`${itemBlock} flex-1`} />
+            <div className={`${itemBlock} flex-1`} />
           </div>
         </div>
       );
