@@ -276,54 +276,39 @@ const AdminStudioInfinityPreview = ({
     return list;
   }, [images, numSlots]);
 
-  const [currentSlot, setCurrentSlot] = React.useState(activeIdx);
+  const stepDeg = 360 / numSlots;
+  const [rotationDeg, setRotationDeg] = React.useState(activeIdx * stepDeg);
 
   React.useEffect(() => {
-    setCurrentSlot(activeIdx);
-  }, [activeIdx]);
+    setRotationDeg(activeIdx * stepDeg);
+  }, [activeIdx, stepDeg]);
 
   React.useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlot((prev) => (prev + 1) % numSlots);
+      setRotationDeg((prev) => prev + stepDeg);
     }, 4000);
     return () => clearInterval(timer);
-  }, [numSlots]);
+  }, [stepDeg]);
 
-  const activeOriginalIndex = slots[currentSlot]?.originalIndex ?? 0;
+  const activeSlotIndex = React.useMemo(() => {
+    const rawStep = Math.round(rotationDeg / stepDeg);
+    return ((rawStep % numSlots) + numSlots) % numSlots;
+  }, [rotationDeg, stepDeg, numSlots]);
 
-  const getSlotTransform = (slotIdx: number) => {
-    const stepAngle = (2 * Math.PI) / numSlots;
-    let diff = (slotIdx - currentSlot) % numSlots;
-    if (diff > numSlots / 2) diff -= numSlots;
-    if (diff < -numSlots / 2) diff += numSlots;
-
-    const angle = diff * stepAngle;
-    const radius = 135;
-    const x = Math.sin(angle) * radius;
-    const z = Math.cos(angle) * radius - radius;
-    const rotateY = -angle * (180 / Math.PI);
-    const cosVal = Math.cos(angle);
-    const scale = 0.74 + 0.26 * Math.max(0, (1 + cosVal) / 2);
-    const opacity = cosVal > -0.15 ? Math.min(1, Math.max(0.25, (1 + cosVal) / 1.5)) : 0;
-    const zIndex = Math.round((1 + cosVal) * 50);
-
-    return { x, z, rotateY, scale, opacity, zIndex };
-  };
+  const activeOriginalIndex = slots[activeSlotIndex]?.originalIndex ?? 0;
+  const radius = 145;
 
   return (
     <div className="relative aspect-square rounded-2xl overflow-hidden bg-black flex flex-col justify-between p-3 select-none group border border-border/70">
       {/* Ambient background blur */}
-      <AnimatePresence mode="popLayout">
-        <motion.div
-          key={activeOriginalIndex}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.38 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.6 }}
-          className="absolute -inset-8 bg-cover bg-center blur-2xl pointer-events-none"
-          style={{ backgroundImage: `url(${images[activeOriginalIndex]})` }}
-        />
-      </AnimatePresence>
+      <div
+        className="absolute -inset-8 bg-cover bg-center transition-all duration-700 pointer-events-none"
+        style={{
+          backgroundImage: `url(${images[activeOriginalIndex]})`,
+          filter: "blur(36px) brightness(0.35) saturate(1.2)",
+          transform: "scale(1.1)",
+        }}
+      />
       <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/90 pointer-events-none" />
 
       {/* Header Badges */}
@@ -340,53 +325,64 @@ const AdminStudioInfinityPreview = ({
 
       {/* 3D Cylindrical Arc Stage */}
       <div className="relative flex items-center justify-center my-auto w-full h-52 pointer-events-auto" style={{ perspective: "850px", transformStyle: "preserve-3d" }}>
-        {slots.map((slot, i) => {
-          const geo = getSlotTransform(i);
-          const isCenter = i === currentSlot;
+        <motion.div
+          className="relative flex items-center justify-center w-full h-full"
+          style={{
+            transformStyle: "preserve-3d",
+            willChange: "transform",
+          }}
+          animate={{ rotateY: -rotationDeg }}
+          transition={{
+            type: "spring",
+            stiffness: 95,
+            damping: 19,
+            mass: 0.7,
+          }}
+        >
+          {slots.map((slot, i) => {
+            const cardAngle = i * stepDeg;
+            const isFront = i === activeSlotIndex;
 
-          return (
-            <motion.div
-              key={i}
-              animate={{
-                x: geo.x,
-                z: geo.z,
-                rotateY: geo.rotateY,
-                scale: geo.scale,
-                opacity: geo.opacity,
-              }}
-              transition={{
-                duration: 0.65,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-              style={{
-                position: "absolute",
-                width: "9rem",
-                height: "12.5rem",
-                transformStyle: "preserve-3d",
-                zIndex: geo.zIndex,
-              }}
-              onClick={() => {
-                setCurrentSlot(i);
-                onNavigate(slot.originalIndex);
-              }}
-              className="cursor-pointer rounded-xl overflow-hidden shadow-none border-none outline-none"
-            >
-              <img src={slot.src} alt="" className="w-full h-full object-cover select-none pointer-events-none" />
+            return (
               <div
-                className={`absolute inset-0 transition-opacity duration-300 pointer-events-none ${
-                  isCenter ? "bg-gradient-to-t from-black/35 via-transparent to-transparent" : "bg-black/35 hover:bg-black/15"
-                }`}
-              />
-            </motion.div>
-          );
-        })}
+                key={i}
+                style={{
+                  position: "absolute",
+                  width: "9.5rem",
+                  height: "13rem",
+                  transform: `rotateY(${cardAngle}deg) translateZ(${radius}px)`,
+                  transformStyle: "preserve-3d",
+                  backfaceVisibility: "hidden",
+                  WebkitBackfaceVisibility: "hidden",
+                }}
+                onClick={() => {
+                  const diff = i - activeSlotIndex;
+                  let delta = diff;
+                  if (delta > numSlots / 2) delta -= numSlots;
+                  if (delta < -numSlots / 2) delta += numSlots;
+                  setRotationDeg((prev) => prev + delta * stepDeg);
+                  onNavigate(slot.originalIndex);
+                }}
+                className="cursor-pointer rounded-xl overflow-hidden shadow-none border-none outline-none"
+              >
+                <img src={slot.src} alt="" className="w-full h-full object-cover select-none pointer-events-none rounded-xl" />
+                <div
+                  className={`absolute inset-0 transition-opacity duration-300 pointer-events-none rounded-xl ${
+                    isFront ? "bg-gradient-to-t from-black/35 via-transparent to-transparent" : "bg-black/30 hover:bg-black/10"
+                  }`}
+                />
+              </div>
+            );
+          })}
+        </motion.div>
 
         {/* Navigation Arrows */}
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
-            const nextSlot = (currentSlot - 1 + numSlots) % numSlots;
-            setCurrentSlot(nextSlot);
+            setRotationDeg((prev) => prev - stepDeg);
+            const nextSlot = (activeSlotIndex - 1 + numSlots) % numSlots;
             onNavigate(slots[nextSlot].originalIndex);
           }}
           className="absolute left-1 top-1/2 -translate-y-1/2 z-30 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
@@ -394,10 +390,11 @@ const AdminStudioInfinityPreview = ({
           <ChevronLeft className="w-4 h-4" />
         </button>
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
-            const nextSlot = (currentSlot + 1) % numSlots;
-            setCurrentSlot(nextSlot);
+            setRotationDeg((prev) => prev + stepDeg);
+            const nextSlot = (activeSlotIndex + 1) % numSlots;
             onNavigate(slots[nextSlot].originalIndex);
           }}
           className="absolute right-1 top-1/2 -translate-y-1/2 z-30 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
