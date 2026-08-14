@@ -413,8 +413,8 @@ const AuthPage: React.FC = () => {
               </div>
             )}
 
-            {/* RIGHT: Modern Form Panel */}
-            <div className={`p-6 sm:p-7 flex flex-col justify-center ${appearance.show_brand_panel ? "md:col-span-7" : ""}`}>
+            {/* RIGHT: Modern Form Panel (Top-aligned so switcher position remains fixed) */}
+            <div className={`p-6 sm:p-7 flex flex-col justify-start ${appearance.show_brand_panel ? "md:col-span-7" : ""}`}>
               {/* Segmented Switcher with Smooth Slide Transition */}
               {mode !== "forgot" && (
                 <div className="relative grid grid-cols-2 p-1 rounded-2xl bg-secondary/40 border border-border/40 mb-5">
