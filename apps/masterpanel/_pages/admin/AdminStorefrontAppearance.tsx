@@ -13,12 +13,22 @@ import {
   Sliders,
   Search,
   RefreshCw,
+  Filter,
+  ChevronDown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/lib/app-toast";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { useSeoMeta } from "@/hooks/use-seo-meta";
 import {
   STOREFRONT_TYPOGRAPHY_PAIRS,
@@ -192,37 +202,58 @@ const AdminStorefrontAppearance: React.FC = () => {
           </div>
         </div>
 
-        {/* Search */}
-        <div className="relative w-full sm:w-60 shrink-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Filter typography..."
-            className="pl-8 h-8 text-xs rounded-xl bg-secondary/20 border-border/50"
-          />
-        </div>
-      </div>
+        {/* Filter Dropdown + Search */}
+        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-2 h-8 px-3 rounded-xl bg-secondary/30 hover:bg-secondary/60 border border-border/50 text-xs font-semibold text-foreground transition-all cursor-pointer shadow-2xs hover:border-primary/40 shrink-0"
+              >
+                <Filter className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span className="truncate max-w-[140px]">
+                  {CATEGORIES.find((c) => c.id === selectedCategory)?.icon}{" "}
+                  {CATEGORIES.find((c) => c.id === selectedCategory)?.label || "All Fonts"}
+                </span>
+                <ChevronDown className="w-3 h-3 text-muted-foreground ml-0.5 shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 p-1.5 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-md shadow-lg">
+              <DropdownMenuLabel className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-2 py-1">
+                Filter by Category
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="my-1 border-border/40" />
+              {CATEGORIES.map((cat) => {
+                const active = selectedCategory === cat.id;
+                return (
+                  <DropdownMenuItem
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+                      active ? "bg-primary/10 text-primary font-bold" : "text-foreground hover:bg-secondary/60"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{cat.icon}</span>
+                      <span>{cat.label}</span>
+                    </div>
+                    {active && <Check className="w-3.5 h-3.5 text-primary stroke-[2.5]" />}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-      {/* ── CATEGORY PILLS ── */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-        {CATEGORIES.map((cat) => {
-          const active = selectedCategory === cat.id;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                active
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "bg-secondary/30 text-muted-foreground hover:text-foreground hover:bg-secondary/60 border border-border/40"
-              }`}
-            >
-              <span>{cat.icon}</span>
-              <span>{cat.label}</span>
-            </button>
-          );
-        })}
+          <div className="relative flex-1 sm:w-52">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filter typography..."
+              className="pl-8 h-8 text-xs rounded-xl bg-secondary/20 border-border/50"
+            />
+          </div>
+        </div>
       </div>
 
       {/* ── FONT CARDS GRID ── */}
