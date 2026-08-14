@@ -26,6 +26,7 @@ import { useQuery } from "@tanstack/react-query";
 import NotRobotCheck from "@/components/auth/NotRobotCheck";
 import MfaChallengeDialog from "@/components/auth/MfaChallengeDialog";
 import { useAuthAppearance } from "@/hooks/use-auth-appearance";
+import { BrandImage, type LogoFilter } from "@/lib/brand-image";
 
 const REMEMBER_KEY = "auth_remember_email";
 
@@ -55,7 +56,7 @@ const AuthPage: React.FC = () => {
 
   const TESTIMONIALS = appearance.testimonials.length
     ? appearance.testimonials
-    : [{ quote: "Elevating contemporary luxury streetwear with bespoke craftsmanship.", author: "ORIZINO STUDIO" }];
+    : [{ quote: "Elevating contemporary luxury streetwear with bespoke craftsmanship.", author: "ORIZINO ATELIER" }];
 
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
@@ -83,14 +84,22 @@ const AuthPage: React.FC = () => {
     } catch {}
   }, []);
 
-  // Brand Info
+  // Brand Info & Logo Styling
   const { data: siteSettings } = useQuery({
     queryKey: ["site-settings-auth"],
     queryFn: async () => {
       const { data } = await supabase
         .from("site_settings")
         .select("key, value")
-        .in("key", ["site_name", "logo_url", "site_icon_url", "site_description", "title_font"]);
+        .in("key", [
+          "site_name",
+          "logo_url",
+          "site_icon_url",
+          "site_description",
+          "title_font",
+          "logo_color_filter",
+          "logo_tint_color",
+        ]);
       const map: Record<string, any> = {};
       data?.forEach((s) => {
         const val = s.value;
@@ -104,6 +113,8 @@ const AuthPage: React.FC = () => {
   const siteName = (siteSettings?.site_name as string) || "ORIZINO";
   const logoUrl = (siteSettings?.logo_url as string) || (siteSettings?.site_icon_url as string) || "";
   const titleFont = (siteSettings?.title_font as string) || "Instrument Serif";
+  const logoFilter = (siteSettings?.logo_color_filter as LogoFilter) || "none";
+  const logoTint = (siteSettings?.logo_tint_color as string) || "#ffffff";
 
   // Rotate testimonials
   useEffect(() => {
@@ -302,52 +313,40 @@ const AuthPage: React.FC = () => {
         <div aria-hidden className="absolute top-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
         <div aria-hidden className="absolute bottom-0 left-1/4 w-96 h-96 bg-secondary/30 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Top Minimal Nav */}
+        {/* Top Minimal Nav (No centered brand name/logo as requested) */}
         <header className="relative z-20 w-full px-6 py-4 flex items-center justify-between">
           <button
             type="button"
             onClick={goBack}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-secondary/50 hover:bg-secondary border border-border/50 text-xs font-medium text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-secondary/40 hover:bg-secondary/70 border border-border/50 text-xs font-medium text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-xs"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back
           </button>
 
-          <Link to="/" className="inline-flex items-center gap-2 group">
-            {logoUrl ? (
-              <img src={logoUrl} alt={siteName} className="w-7 h-7 rounded-lg object-contain" />
-            ) : (
-              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
-                {siteName.charAt(0)}
-              </div>
-            )}
-            <span className="font-bold text-sm tracking-tight text-foreground group-hover:text-primary transition-colors">
-              {siteName}
-            </span>
-          </Link>
-
           <button
             type="button"
             onClick={() => navigate(fromPath || "/")}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-transparent hover:bg-secondary/40 text-xs font-medium text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-secondary/20 hover:bg-secondary/50 border border-border/40 text-xs font-medium text-muted-foreground hover:text-foreground transition-all cursor-pointer"
           >
             <ShoppingBag className="w-3.5 h-3.5 text-primary" /> Guest Shop
           </button>
         </header>
 
         {/* Center Container */}
-        <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-8">
+        <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-6">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
             className={`w-full ${
               appearance.show_brand_panel ? "max-w-4xl grid grid-cols-1 md:grid-cols-12" : "max-w-md"
-            } bg-card/90 border border-border/60 rounded-3xl overflow-hidden shadow-xl`}
+            } bg-card/90 border border-border/60 rounded-3xl overflow-hidden shadow-2xl`}
           >
-            {/* LEFT: Brand Story & Editorial Quotes (Desktop only) */}
+            {/* LEFT: Brand Story, Large Center Logo Showcase & Quotes (Desktop only) */}
             {appearance.show_brand_panel && (
-              <div className="hidden md:flex md:col-span-5 relative flex-col justify-between p-8 bg-gradient-to-br from-secondary/40 via-card to-secondary/20 border-r border-border/40">
-                <div className="space-y-4">
+              <div className="hidden md:flex md:col-span-5 relative flex-col justify-between p-8 bg-gradient-to-br from-secondary/40 via-card to-secondary/20 border-r border-border/40 min-h-[580px]">
+                {/* Top Section: Kicker & Headline */}
+                <div className="space-y-3">
                   <span className="inline-flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-widest text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
                     <Sparkles className="w-2.5 h-2.5" />
                     Member Privileges
@@ -360,16 +359,47 @@ const AuthPage: React.FC = () => {
                       ? appearance.headline_signup || "Join the Collective"
                       : mode === "forgot"
                       ? appearance.headline_forgot || "Reset Password"
-                      : appearance.headline_signin || "Signature Luxury Access"}
+                      : appearance.headline_signin || "Step Inside The Drop Awaits"}
                   </h2>
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     {appearance.subheadline ||
-                      "Enjoy private seasonal allocations, VIP order concierge, and fast-track shipping."}
+                      "Continue to your account."}
                   </p>
                 </div>
 
-                {/* Rotating Testimonials */}
-                <div className="space-y-4 pt-6">
+                {/* ── CENTER: LARGE BRAND LOGO SHOWCASE (Fills the middle space) ── */}
+                <div className="my-auto py-8 flex flex-col items-center justify-center text-center">
+                  <div className="relative group">
+                    <div className="absolute -inset-4 rounded-3xl bg-primary/15 blur-2xl opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                    <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-secondary/30 border border-border/60 backdrop-blur-md flex items-center justify-center p-4 shadow-xl overflow-hidden">
+                      {logoUrl ? (
+                        <BrandImage
+                          src={logoUrl}
+                          alt={siteName}
+                          filter={logoFilter}
+                          customColor={logoTint}
+                          className="w-full h-full object-contain drop-shadow-md"
+                        />
+                      ) : (
+                        <span
+                          className="text-5xl font-black text-primary select-none"
+                          style={{ fontFamily: `'${titleFont}', sans-serif` }}
+                        >
+                          {siteName.charAt(0)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <h3
+                    className="text-base font-bold tracking-[0.15em] text-foreground mt-3 uppercase"
+                    style={{ fontFamily: `'${titleFont}', sans-serif` }}
+                  >
+                    {siteName}
+                  </h3>
+                </div>
+
+                {/* Bottom Section: Rotating Testimonials & Secured badge */}
+                <div className="space-y-4 pt-2">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={testimonialIdx}
@@ -377,20 +407,20 @@ const AuthPage: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -4 }}
                       transition={{ duration: 0.3 }}
-                      className="rounded-2xl bg-card/70 border border-border/40 p-4 space-y-1.5"
+                      className="rounded-2xl bg-card/70 border border-border/40 p-3.5 space-y-1"
                     >
                       <p className="text-xs italic text-foreground/90 leading-relaxed">
                         "{TESTIMONIALS[testimonialIdx].quote}"
                       </p>
                       <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-primary">
-                        {TESTIMONIALS[testimonialIdx].author || "Verified Buyer"}
+                        {TESTIMONIALS[testimonialIdx].author || "THE ATELIER"}
                       </p>
                     </motion.div>
                   </AnimatePresence>
 
                   <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    {appearance.secured_label || "256-BIT ENCRYPTED GATEWAY"}
+                    {appearance.secured_label || "SECURED BY ENCRYPTED AUTHENTICATION"}
                   </div>
                 </div>
               </div>
@@ -440,7 +470,7 @@ const AuthPage: React.FC = () => {
                   >
                     <div>
                       <h1
-                        className="text-xl font-bold tracking-tight text-foreground"
+                        className="text-xl font-bold tracking-tight text-foreground uppercase"
                         style={{ fontFamily: `'${titleFont}', sans-serif` }}
                       >
                         Welcome Back
@@ -553,7 +583,7 @@ const AuthPage: React.FC = () => {
                   >
                     <div>
                       <h1
-                        className="text-xl font-bold tracking-tight text-foreground"
+                        className="text-xl font-bold tracking-tight text-foreground uppercase"
                         style={{ fontFamily: `'${titleFont}', sans-serif` }}
                       >
                         Create Account
@@ -700,7 +730,7 @@ const AuthPage: React.FC = () => {
                   >
                     <div>
                       <h1
-                        className="text-xl font-bold tracking-tight text-foreground"
+                        className="text-xl font-bold tracking-tight text-foreground uppercase"
                         style={{ fontFamily: `'${titleFont}', sans-serif` }}
                       >
                         Reset Password
