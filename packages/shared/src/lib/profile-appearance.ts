@@ -1,20 +1,133 @@
-// Catalog of 10 typography pairs and 10 layout variants for Profile + Settings.
+// Catalog of typography pairs and layout variants for Storefront and Profile.
 
-export type TypographyCategory = "all" | "editorial" | "classic" | "creative" | "minimal" | "geometric";
+export type TypographyCategory = "all" | "custom" | "editorial" | "classic" | "creative" | "minimal" | "geometric";
 
 export type ProfileTypographyPair = {
   id: string;
   label: string;
-  category: "editorial" | "classic" | "creative" | "minimal" | "geometric";
+  category: "custom" | "editorial" | "classic" | "creative" | "minimal" | "geometric";
   tag: string;
   heading: string;
   body: string;
-  // Google Fonts CSS2 URL fragment
+  /** Google Fonts CSS2 URL fragment; empty string for bundled custom fonts */
   gfUrl: string;
   description?: string;
 };
 
 export const PROFILE_TYPOGRAPHY_PAIRS: ProfileTypographyPair[] = [
+  // ── CUSTOM BRAND LOCAL FONTS ──
+  {
+    id: "orangeavenue-inter",
+    label: "OrangeAvenue + Inter",
+    category: "custom",
+    tag: "Brand Core",
+    heading: '"OrangeAvenue", sans-serif',
+    body: '"Inter", ui-sans-serif, system-ui, sans-serif',
+    gfUrl: "Inter:wght@300;400;500;600;700",
+    description: "Signature ORIZINO custom display font with razor-sharp neutral body",
+  },
+  {
+    id: "nevera-outfit",
+    label: "Nevera + Outfit",
+    category: "custom",
+    tag: "Brand Custom",
+    heading: '"Nevera", sans-serif',
+    body: '"Outfit", ui-sans-serif, system-ui, sans-serif',
+    gfUrl: "Outfit:wght@300;400;500;600;700",
+    description: "Futuristic luxury geometric display font with smooth rounded body",
+  },
+  {
+    id: "bilderberg-dmsans",
+    label: "Bilderberg + DM Sans",
+    category: "custom",
+    tag: "Brand Custom",
+    heading: '"Bilderberg", sans-serif',
+    body: '"DM Sans", ui-sans-serif, system-ui, sans-serif',
+    gfUrl: "DM+Sans:wght@400;500;600;700",
+    description: "High-contrast architectural serif display font with humanist sans",
+  },
+  {
+    id: "agraham-worksans",
+    label: "Agraham + Work Sans",
+    category: "custom",
+    tag: "Brand Custom",
+    heading: '"Agraham", sans-serif',
+    body: '"Work Sans", ui-sans-serif, system-ui, sans-serif',
+    gfUrl: "Work+Sans:wght@400;500;600;700",
+    description: "Artistic luxury headline font with clean modernist body typography",
+  },
+  {
+    id: "primor-plusjakarta",
+    label: "PrimorStylish + Plus Jakarta",
+    category: "custom",
+    tag: "Brand Custom",
+    heading: '"PrimorStylish", sans-serif',
+    body: '"Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif',
+    gfUrl: "Plus+Jakarta+Sans:wght@400;500;600;700",
+    description: "Haute couture display serif with tech-forward digital sans",
+  },
+  {
+    id: "prodes-spacegrotesk",
+    label: "ProdesStencil + Space Grotesk",
+    category: "custom",
+    tag: "Brand Custom",
+    heading: '"ProdesStencil", sans-serif',
+    body: '"Space Grotesk", ui-sans-serif, system-ui, sans-serif',
+    gfUrl: "Space+Grotesk:wght@400;500;600;700",
+    description: "Architectural modern stencil with engineered geometric proportions",
+  },
+  {
+    id: "rostex-sora",
+    label: "Rostex + Sora",
+    category: "custom",
+    tag: "Brand Custom",
+    heading: '"Rostex", sans-serif',
+    body: '"Sora", ui-sans-serif, system-ui, sans-serif',
+    gfUrl: "Sora:wght@400;500;600;700",
+    description: "Bold futuristic street-luxury letterforms with crisp display sans",
+  },
+  {
+    id: "transcity-manrope",
+    label: "Transcity + Manrope",
+    category: "custom",
+    tag: "Brand Custom",
+    heading: '"Transcity", sans-serif',
+    body: '"Manrope", ui-sans-serif, system-ui, sans-serif',
+    gfUrl: "Manrope:wght@400;500;600;700",
+    description: "Metropolitan condensed display paired with semi-geometric body",
+  },
+  {
+    id: "zaslia-karla",
+    label: "Zaslia + Karla",
+    category: "custom",
+    tag: "Brand Custom",
+    heading: '"Zaslia", sans-serif',
+    body: '"Karla", ui-sans-serif, system-ui, sans-serif',
+    gfUrl: "Karla:wght@400;500;600;700",
+    description: "Avant-garde stylized headline font with warm humanist body",
+  },
+  {
+    id: "goca-urbanist",
+    label: "Goca + Urbanist",
+    category: "custom",
+    tag: "Brand Custom",
+    heading: '"Goca", sans-serif',
+    body: '"Urbanist", ui-sans-serif, system-ui, sans-serif',
+    gfUrl: "Urbanist:wght@400;500;600;700",
+    description: "Heavy block modernist display font with Scandinavian clean sans",
+  },
+  {
+    id: "logofontik-figtree",
+    label: "Logofontik + Figtree",
+    category: "custom",
+    tag: "Brand Custom",
+    heading: '"Logofontik", sans-serif',
+    body: '"Figtree", ui-sans-serif, system-ui, sans-serif',
+    gfUrl: "Figtree:wght@400;500;600;700",
+    description: "High-fashion emblem font paired with friendly contemporary sans",
+  },
+
+  // ── GOOGLE FONTS LUXURY CATALOG ──
   {
     id: "instrument-serif-work-sans",
     label: "Instrument Serif + Work Sans",
@@ -178,43 +291,46 @@ export const PROFILE_LAYOUT_VARIANTS: ProfileLayoutVariant[] = [
   { id: "magazine", label: "Magazine", description: "Oversized serif header, narrow column" },
   { id: "bento-grid", label: "Bento", description: "Asymmetric rounded tiles" },
   { id: "asymmetric", label: "Asymmetric", description: "60/40 split, sticky side panel" },
-  { id: "sidebar", label: "Sidebar", description: "Persistent left navigation" },
-  { id: "split-screen", label: "Split Screen", description: "50/50 hero with vivid cover" },
-  { id: "single-column", label: "Single Column", description: "Narrow centered stack" },
-  { id: "minimal", label: "Minimal", description: "Flat, no glass, generous whitespace" },
-  { id: "card-grid", label: "Card Grid", description: "Uniform tile grid" },
-  { id: "editorial", label: "Editorial", description: "Display-scale headings, refined spacing" },
+  { id: "minimal-cards", label: "Minimal Cards", description: "Clean borderless grid" },
+  { id: "split-screen", label: "Split Screen", description: "Avatar & summary left, forms right" },
+  { id: "full-bleed", label: "Full Bleed", description: "Edge-to-edge layout, dark accent hero" },
+  { id: "compact", label: "Compact List", description: "Dense row-based summary" },
+  { id: "sidebar-nav", label: "Sidebar Nav", description: "Permanent vertical sub-navigation" },
+  { id: "classic-tabs", label: "Classic Tabs", description: "Traditional horizontal tab bar" },
 ];
 
-export type ProfileDensity = "compact" | "comfortable" | "spacious";
-export type ProfileMobileNav = "tabs" | "segmented" | "sheet" | "pill";
+export type ProfileAccentPreset = {
+  id: string;
+  label: string;
+  hsl: string;
+};
+
+export const ACCENT_PRESETS: ProfileAccentPreset[] = [
+  { id: "brand", label: "Brand Default", hsl: "" },
+  { id: "gold", label: "Gold", hsl: "43 85% 58%" },
+  { id: "crimson", label: "Crimson", hsl: "0 84% 60%" },
+  { id: "emerald", label: "Emerald", hsl: "152 69% 45%" },
+  { id: "sapphire", label: "Sapphire", hsl: "217 91% 60%" },
+  { id: "violet", label: "Violet", hsl: "263 70% 65%" },
+  { id: "amber", label: "Amber", hsl: "38 92% 50%" },
+  { id: "rose", label: "Rose", hsl: "343 87% 65%" },
+  { id: "silver", label: "Silver", hsl: "220 14% 65%" },
+  { id: "neon", label: "Neon Lime", hsl: "84 81% 44%" },
+];
 
 export interface ProfileAppearanceConfig {
   typography_pair: string;
   layout_variant: string;
-  accent_hsl?: string | null; // e.g. "262 83% 58%"
-  density?: ProfileDensity;
-  mobile_nav?: ProfileMobileNav;
+  accent_hsl?: string | null;
+  density?: "compact" | "comfortable" | "spacious";
   rounded?: "sm" | "md" | "lg" | "xl" | "2xl";
 }
 
-export const ACCENT_PRESETS: { id: string; label: string; hsl: string }[] = [
-  { id: "default", label: "Brand default", hsl: "" },
-  { id: "indigo", label: "Indigo", hsl: "243 75% 59%" },
-  { id: "violet", label: "Violet", hsl: "262 83% 58%" },
-  { id: "rose", label: "Rose", hsl: "346 77% 60%" },
-  { id: "emerald", label: "Emerald", hsl: "160 64% 43%" },
-  { id: "amber", label: "Amber", hsl: "38 92% 50%" },
-  { id: "sky", label: "Sky", hsl: "199 89% 52%" },
-  { id: "slate", label: "Slate", hsl: "215 25% 35%" },
-];
-
 export const defaultProfileAppearance: ProfileAppearanceConfig = {
-  typography_pair: "instrument-serif-work-sans",
+  typography_pair: "orangeavenue-inter",
   layout_variant: "hero-grid",
   accent_hsl: null,
   density: "comfortable",
-  mobile_nav: "tabs",
   rounded: "2xl",
 };
 
@@ -222,7 +338,6 @@ export function getTypographyPair(id: string | undefined): ProfileTypographyPair
   return PROFILE_TYPOGRAPHY_PAIRS.find((p) => p.id === id) ?? PROFILE_TYPOGRAPHY_PAIRS[0];
 }
 
-export function getLayoutVariant(id: string | undefined): ProfileLayoutVariant {
+export function getProfileLayoutVariant(id: string | undefined): ProfileLayoutVariant {
   return PROFILE_LAYOUT_VARIANTS.find((l) => l.id === id) ?? PROFILE_LAYOUT_VARIANTS[0];
 }
-// code:4ce0

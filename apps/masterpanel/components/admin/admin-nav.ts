@@ -548,7 +548,6 @@ export const adminNav: AdminNavSection[] = [
         keywords: "appearance typography layout fonts storefront profile auth signin",
         children: [
           { title: "Storefront",           url: "/brand/appearance?tab=storefront" },
-          { title: "Shop Layout",          url: "/brand/appearance?tab=layout" },
           { title: "Product details",      url: "/brand/appearance?tab=product" },
           { title: "Profile & Settings",   url: "/brand/appearance?tab=profile" },
           { title: "Sign-in / Sign-up",    url: "/brand/appearance?tab=auth" },

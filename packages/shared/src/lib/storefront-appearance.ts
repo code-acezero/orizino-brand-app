@@ -1,5 +1,5 @@
-// Storefront appearance: 15+ typography pairs + 10 layout variants, admin-switchable.
-// Re-uses the same Google Fonts catalog as profile-appearance for consistency.
+// Storefront appearance: 20+ typography pairs (including custom brand fonts) + 10 layout variants, admin-switchable.
+// Re-uses the same catalog as profile-appearance for consistency.
 
 import {
   PROFILE_TYPOGRAPHY_PAIRS,
@@ -45,7 +45,7 @@ export interface StorefrontAppearanceConfig {
 }
 
 export const defaultStorefrontAppearance: StorefrontAppearanceConfig = {
-  typography_pair: "instrument-serif-work-sans",
+  typography_pair: "orangeavenue-inter",
   layout_variant: "hero-grid",
   accent_hsl: null,
   density: "comfortable",
