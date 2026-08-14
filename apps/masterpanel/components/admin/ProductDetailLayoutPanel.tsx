@@ -176,7 +176,7 @@ const LAYOUT_STYLES: {
     tag: "Obsidian",
     desc: "Deep obsidian backdrop with gold accents, ambient reflections & frosted cards",
     icon: Crown,
-    previewBg: "bg-gradient-to-br from-black via-zinc-900 to-black",
+    previewBg: "bg-gradient-to-r from-amber-400/50 via-zinc-800 to-amber-500/30",
     accentText: "text-amber-400",
   },
   {
@@ -185,7 +185,7 @@ const LAYOUT_STYLES: {
     tag: "Translucent",
     desc: "Frosted glass cards with smooth backdrop blur and signature brand borders",
     icon: Box,
-    previewBg: "bg-gradient-to-br from-primary/25 via-background to-primary/10",
+    previewBg: "bg-gradient-to-r from-primary/60 via-primary/20 to-primary/50",
     accentText: "text-primary",
   },
   {
@@ -194,7 +194,7 @@ const LAYOUT_STYLES: {
     tag: "Electrified",
     desc: "High-contrast dark styling with glowing borders and electric price highlighting",
     icon: Zap,
-    previewBg: "bg-gradient-to-br from-background via-primary/20 to-background",
+    previewBg: "bg-gradient-to-r from-cyan-500/50 via-primary to-emerald-400/50",
     accentText: "text-primary font-black",
   },
   {
@@ -203,7 +203,7 @@ const LAYOUT_STYLES: {
     tag: "Monochrome",
     desc: "Pure whitespace, clean precision typography, and zero visual clutter",
     icon: Square,
-    previewBg: "bg-gradient-to-br from-zinc-100 via-white to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950",
+    previewBg: "bg-gradient-to-r from-zinc-300 via-zinc-400 to-zinc-500 dark:from-zinc-700 dark:via-zinc-500 dark:to-zinc-600",
     accentText: "text-foreground",
   },
   {
@@ -212,7 +212,7 @@ const LAYOUT_STYLES: {
     tag: "Serif & Story",
     desc: "Asymmetric lookbook layout with italic display serif typography and narrative blocks",
     icon: BookOpen,
-    previewBg: "bg-gradient-to-br from-amber-500/10 via-background to-orange-500/10",
+    previewBg: "bg-gradient-to-r from-amber-600/50 via-orange-500/30 to-amber-700/50",
     accentText: "font-serif italic text-foreground",
   },
   {
@@ -221,7 +221,7 @@ const LAYOUT_STYLES: {
     tag: "Neutral",
     desc: "Ultra-clean neutral glass with subtle outlines and crisp balanced contrast",
     icon: Sparkles,
-    previewBg: "bg-gradient-to-br from-secondary/40 via-card to-secondary/20",
+    previewBg: "bg-gradient-to-r from-zinc-400/40 via-secondary to-zinc-500/40",
     accentText: "text-foreground",
   },
 ];
@@ -1842,52 +1842,60 @@ export default function ProductDetailLayoutPanel() {
       <div className="space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
-              <Sparkles className="w-3 h-3" />
+            <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <Sparkles className="w-3.5 h-3.5" />
             </div>
             <div>
               <h3 className="text-xs font-bold text-foreground">Curated Studio Combinations</h3>
-              <p className="text-[10px] text-muted-foreground">1-click designer pairings of surface aesthetics and 3D gallery engines.</p>
+              <p className="text-[10.5px] text-muted-foreground">1-click designer pairings of surface aesthetics and 3D gallery engines.</p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {STUDIO_PRESETS.map((rec) => {
             const active = cfg.layout === rec.layout && cfg.gallery === rec.gallery;
             const IconComp = rec.icon;
             return (
-              <button
+              <motion.button
                 key={rec.label}
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setCfg((c) => ({ ...c, layout: rec.layout, gallery: rec.gallery }))}
-                className={`text-left p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between group ${
+                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group relative overflow-hidden ${
                   active
-                    ? "border-primary bg-primary/15 ring-1 ring-primary/40"
-                    : "border-border/60 hover:border-primary/40 bg-card/70 hover:bg-card"
+                    ? "border-primary bg-gradient-to-b from-primary/10 via-card/90 to-card ring-1 ring-primary/40 shadow-sm"
+                    : "border-border/60 hover:border-primary/40 bg-card/60 hover:bg-card/90"
                 }`}
               >
-                <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2.5">
-                    <div className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
-                      active
-                        ? "bg-primary/20 border-primary text-primary"
-                        : "bg-foreground/5 border-foreground/10 text-foreground group-hover:border-foreground/20"
-                    }`}>
+                    <div
+                      className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-colors shrink-0 ${
+                        active
+                          ? "bg-primary/20 border-primary/50 text-primary"
+                          : "bg-secondary/40 dark:bg-white/5 border-border/60 text-muted-foreground group-hover:text-foreground group-hover:border-border"
+                      }`}
+                    >
                       <IconComp className="w-4 h-4" />
                     </div>
                     <div>
                       <p className="font-bold text-foreground text-xs leading-tight">{rec.label}</p>
-                      <span className="text-[8px] font-mono text-muted-foreground uppercase font-semibold">{rec.tag}</span>
+                      <span className="text-[8.5px] font-mono text-muted-foreground uppercase font-semibold">{rec.tag}</span>
                     </div>
                   </div>
                   {active ? (
-                    <Check className="w-3.5 h-3.5 text-primary" />
+                    <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-xs">
+                      <Check className="w-3 h-3 stroke-[2.5]" />
+                    </span>
                   ) : (
-                    <ArrowRight className="w-3 h-3 text-muted-foreground/50" />
+                    <span className="w-5 h-5 rounded-full border border-border/50 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-60 transition-opacity">
+                      <ArrowRight className="w-2.5 h-2.5 text-muted-foreground" />
+                    </span>
                   )}
                 </div>
-                <p className="text-muted-foreground text-[10px] leading-snug">{rec.desc}</p>
-              </button>
+                <p className="text-muted-foreground text-[10.5px] leading-relaxed">{rec.desc}</p>
+              </motion.button>
             );
           })}
         </div>
@@ -1897,50 +1905,70 @@ export default function ProductDetailLayoutPanel() {
       <div className="space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
-              <Layout className="w-3 h-3" />
+            <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <Layout className="w-3.5 h-3.5" />
             </div>
             <div>
               <h3 className="text-xs font-bold text-foreground">Visual Surface Theme (6 Layouts)</h3>
-              <p className="text-[10px] text-muted-foreground">Select overall backdrop atmosphere, typography treatment, and card blur.</p>
+              <p className="text-[10.5px] text-muted-foreground">Select overall backdrop atmosphere, typography treatment, and card blur.</p>
             </div>
           </div>
-          <Badge variant="outline" className="text-[9.5px] font-mono text-primary border-primary/30">
-            Active: {activeLayoutObj.label}
-          </Badge>
+          <span className="text-[9.5px] font-mono text-muted-foreground bg-secondary/30 px-2.5 py-1 rounded-full border border-border/60">
+            Active: <strong className="text-foreground">{activeLayoutObj.label}</strong>
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {LAYOUT_STYLES.map((opt) => {
             const active = cfg.layout === opt.id;
             const IconComp = opt.icon;
             return (
               <motion.div
                 key={opt.id}
+                whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setCfg((c) => ({ ...c, layout: opt.id }))}
-                className={`text-left rounded-xl border transition-all cursor-pointer overflow-hidden group ${
+                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group relative overflow-hidden ${
                   active
-                    ? "border-primary bg-primary/10 ring-1 ring-primary/40"
-                    : "border-border/60 bg-card/70 hover:border-primary/40 hover:bg-card"
+                    ? "border-primary bg-gradient-to-b from-primary/10 via-card/90 to-card ring-1 ring-primary/40 shadow-sm"
+                    : "border-border/60 bg-card/60 hover:border-primary/40 hover:bg-card/90"
                 }`}
               >
-                <div className={`h-12 ${opt.previewBg} relative flex items-center justify-between px-3 border-b border-border/30`}>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-md bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white shrink-0">
-                      <IconComp className="w-3.5 h-3.5" />
+                <div>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-colors shrink-0 ${
+                          active
+                            ? "bg-primary/20 border-primary/50 text-primary"
+                            : "bg-secondary/40 dark:bg-white/5 border-border/60 text-muted-foreground group-hover:text-foreground group-hover:border-border"
+                        }`}
+                      >
+                        <IconComp className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-foreground text-xs leading-tight">{opt.label}</p>
+                        <span className="text-[8.5px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">
+                          {opt.tag}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-[10px] font-mono uppercase font-bold text-foreground/90">{opt.tag}</span>
+                    {active ? (
+                      <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-xs">
+                        <Check className="w-3 h-3 stroke-[2.5]" />
+                      </span>
+                    ) : (
+                      <span className="w-5 h-5 rounded-full border border-border/50 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-60 transition-opacity">
+                        <ArrowRight className="w-2.5 h-2.5 text-muted-foreground" />
+                      </span>
+                    )}
                   </div>
-                  {active && (
-                    <Badge variant="outline" className="text-[8.5px] font-mono border-primary/40 text-primary bg-background/90">
-                      Active
-                    </Badge>
-                  )}
+                  <p className="text-[10.5px] text-muted-foreground leading-relaxed line-clamp-2">{opt.desc}</p>
                 </div>
-                <div className="p-3 space-y-0.5">
-                  <p className="font-bold text-foreground text-xs">{opt.label}</p>
-                  <p className="text-[10px] text-muted-foreground leading-tight line-clamp-1">{opt.desc}</p>
+
+                {/* Subtle Theme Aesthetic Swatch Bar */}
+                <div className="pt-3 mt-1">
+                  <div className={`h-1.5 w-full rounded-full ${opt.previewBg} opacity-60 group-hover:opacity-100 transition-opacity border border-white/5`} />
                 </div>
               </motion.div>
             );
@@ -1952,53 +1980,64 @@ export default function ProductDetailLayoutPanel() {
       <div className="space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
-              <ImageIcon className="w-3 h-3" />
+            <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <ImageIcon className="w-3.5 h-3.5" />
             </div>
             <div>
               <h3 className="text-xs font-bold text-foreground">Image Gallery Engine ({GALLERY_ENGINES.length} Motion Engines)</h3>
-              <p className="text-[10px] text-muted-foreground">Select how product photography and lookbook angles are presented.</p>
+              <p className="text-[10.5px] text-muted-foreground">Select how product photography and lookbook angles are presented.</p>
             </div>
           </div>
-          <Badge variant="outline" className="text-[9.5px] font-mono text-primary border-primary/30">
-            Active: {activeGalleryObj.label}
-          </Badge>
+          <span className="text-[9.5px] font-mono text-muted-foreground bg-secondary/30 px-2.5 py-1 rounded-full border border-border/60">
+            Active: <strong className="text-foreground">{activeGalleryObj.label}</strong>
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {GALLERY_ENGINES.map((opt) => {
             const active = cfg.gallery === opt.id;
             const IconComp = opt.icon;
             return (
               <motion.div
                 key={opt.id}
+                whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setCfg((c) => ({ ...c, gallery: opt.id }))}
-                className={`text-left p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between group ${
+                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group ${
                   active
-                    ? "border-primary bg-primary/10 ring-1 ring-primary/40"
-                    : "border-border/60 bg-card/70 hover:border-primary/40 hover:bg-card"
+                    ? "border-primary bg-gradient-to-b from-primary/10 via-card/90 to-card ring-1 ring-primary/40 shadow-sm"
+                    : "border-border/60 bg-card/60 hover:border-primary/40 hover:bg-card/90"
                 }`}
               >
-                <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2.5">
-                    <div className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
-                      active
-                        ? "bg-primary/20 border-primary text-primary"
-                        : "bg-foreground/5 border-foreground/10 text-foreground group-hover:border-foreground/20"
-                    }`}>
+                    <div
+                      className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-colors shrink-0 ${
+                        active
+                          ? "bg-primary/20 border-primary/50 text-primary"
+                          : "bg-secondary/40 dark:bg-white/5 border-border/60 text-muted-foreground group-hover:text-foreground group-hover:border-border"
+                      }`}
+                    >
                       <IconComp className="w-4 h-4" />
                     </div>
                     <div>
                       <p className="font-bold text-foreground text-xs leading-tight">{opt.label}</p>
-                      <span className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">
+                      <span className="text-[8.5px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">
                         {opt.badge}
                       </span>
                     </div>
                   </div>
-                  {active && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
+                  {active ? (
+                    <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-xs">
+                      <Check className="w-3 h-3 stroke-[2.5]" />
+                    </span>
+                  ) : (
+                    <span className="w-5 h-5 rounded-full border border-border/50 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-60 transition-opacity">
+                      <ArrowRight className="w-2.5 h-2.5 text-muted-foreground" />
+                    </span>
+                  )}
                 </div>
-                <p className="text-[10px] text-muted-foreground leading-tight mt-1">{opt.desc}</p>
+                <p className="text-[10.5px] text-muted-foreground leading-relaxed mt-1">{opt.desc}</p>
               </motion.div>
             );
           })}
