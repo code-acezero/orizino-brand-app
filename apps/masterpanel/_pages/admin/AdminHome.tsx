@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useServerFn } from "@/lib/server-fn-compat";
 import { upsertSiteSettings } from "@/lib/admin-data.functions";
 
-import { Plus, Trash2, GripVertical, Tag, Clock, Image, Bell, Layout, Layers, ChevronDown, ChevronUp, Settings2, Palette, Sun, Moon, Star, Search, FolderOpen, LayoutGrid } from "lucide-react";
+import { Plus, Trash2, GripVertical, Tag, Clock, Image, Bell, Layout, Layers, ChevronDown, ChevronUp, Settings2, Palette, Sun, Moon, Monitor, Star, Search, FolderOpen, LayoutGrid } from "lucide-react";
 import { useDragReorder } from "@/hooks/use-drag-reorder";
 import { useTabParam } from "@/hooks/use-tab-param";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -287,7 +287,7 @@ const AdminHome = () => {
       themeSettings.forEach((s) => {
         const val = typeof s.value === "object" && s.value !== null ? (s.value as any).value ?? s.value : s.value;
         if (s.key === "site_theme") setSelectedTheme(String(val || "default"));
-        if (s.key === "site_mode") setSelectedMode(String(val || "dark"));
+        if (s.key === "site_mode") setSelectedMode(String(val || "auto"));
       });
     }
   }, [themeSettings]);
@@ -1672,9 +1672,18 @@ const AdminHome = () => {
                   <div className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-secondary/20">
                     <div>
                       <Label className="text-base font-semibold">Storefront Mode</Label>
-                      <p className="text-xs text-muted-foreground">Choose between luxury dark mode or crisp light mode.</p>
+                      <p className="text-xs text-muted-foreground">Choose between automatic device OS detection, dark mode, or crisp light mode.</p>
                     </div>
-                    <div className="flex items-center gap-2 bg-background/60 p-1 rounded-lg border border-border/60">
+                    <div className="flex items-center gap-1.5 bg-background/60 p-1 rounded-lg border border-border/60">
+                      <Button
+                        size="sm"
+                        type="button"
+                        variant={selectedMode === "auto" ? "default" : "ghost"}
+                        onClick={() => setSelectedMode("auto")}
+                        className="h-8 px-3 text-xs"
+                      >
+                        <Monitor className="w-3.5 h-3.5 mr-1" /> Auto
+                      </Button>
                       <Button
                         size="sm"
                         type="button"

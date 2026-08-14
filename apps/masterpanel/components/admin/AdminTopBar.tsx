@@ -2,7 +2,7 @@
 import React from "react";
 import { useNavigate } from "@/lib/router-compat";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { LogOut, Command, Activity, Keyboard, User, ChevronDown, Bell, IdCard, Sun, Moon } from "lucide-react";
+import { LogOut, Command, Activity, Keyboard, User, ChevronDown, Bell, IdCard, Sun, Moon, Monitor, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminRole } from "@/components/AdminRoute";
@@ -79,7 +79,7 @@ const AdminTopBar: React.FC<Props> = ({
   });
 
   const queryClient = useQueryClient();
-  const { data: modeSetting } = useQuery({
+  const { data: modeSetting = "auto" } = useQuery({
     queryKey: ["site-mode-admin-topbar"],
     queryFn: async () => {
       const { data } = await supabase
@@ -88,17 +88,21 @@ const AdminTopBar: React.FC<Props> = ({
         .eq("key", "site_mode")
         .maybeSingle();
       const val = data?.value;
-      return typeof val === "object" && val !== null ? (val as any).value ?? val : val || "dark";
+      return (typeof val === "object" && val !== null ? (val as any).value ?? val : val) || "auto";
     },
     staleTime: 30 * 1000,
   });
 
-  const isLight = modeSetting === "light" || (typeof document !== "undefined" && document.documentElement.classList.contains("light"));
+  const currentMode = String(modeSetting || "auto");
 
-  const toggleMode = async () => {
-    const nextMode = isLight ? "dark" : "light";
+  const setSiteMode = async (nextMode: "auto" | "light" | "dark") => {
     if (typeof document !== "undefined") {
-      document.documentElement.classList.toggle("light", nextMode === "light");
+      if (nextMode === "auto") {
+        const isDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? true;
+        document.documentElement.classList.toggle("light", !isDark);
+      } else {
+        document.documentElement.classList.toggle("light", nextMode === "light");
+      }
     }
     await supabase.from("site_settings").upsert(
       { key: "site_mode", value: { value: nextMode } },
@@ -192,15 +196,50 @@ const AdminTopBar: React.FC<Props> = ({
           </button>
         )}
 
-        <button
-          type="button"
-          onClick={toggleMode}
-          title={isLight ? "Switch to dark mode" : "Switch to light mode"}
-          aria-label="Toggle dark/light mode"
-          className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0 cursor-pointer"
-        >
-          {isLight ? <Moon className="w-4 h-4 text-amber-500" /> : <Sun className="w-4 h-4 text-amber-400" />}
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              title={`Theme: ${currentMode === "auto" ? "Auto (Device)" : currentMode === "light" ? "Light" : "Dark"}`}
+              aria-label="Select theme mode"
+              className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0 cursor-pointer"
+            >
+              {currentMode === "auto" ? (
+                <Monitor className="w-4 h-4 text-blue-400" />
+              ) : currentMode === "light" ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-indigo-400" />
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 bg-card/95 backdrop-blur-md border-border/60">
+            <DropdownMenuItem
+              onClick={() => setSiteMode("auto")}
+              className={`flex items-center gap-2 cursor-pointer ${currentMode === "auto" ? "font-semibold text-primary" : ""}`}
+            >
+              <Monitor className="w-4 h-4 text-blue-400" />
+              <span className="flex-1">Auto (Device)</span>
+              {currentMode === "auto" && <Check className="w-3.5 h-3.5 text-primary" />}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setSiteMode("light")}
+              className={`flex items-center gap-2 cursor-pointer ${currentMode === "light" ? "font-semibold text-primary" : ""}`}
+            >
+              <Sun className="w-4 h-4 text-amber-400" />
+              <span className="flex-1">Light Mode</span>
+              {currentMode === "light" && <Check className="w-3.5 h-3.5 text-primary" />}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setSiteMode("dark")}
+              className={`flex items-center gap-2 cursor-pointer ${currentMode === "dark" ? "font-semibold text-primary" : ""}`}
+            >
+              <Moon className="w-4 h-4 text-indigo-400" />
+              <span className="flex-1">Dark Mode</span>
+              {currentMode === "dark" && <Check className="w-3.5 h-3.5 text-primary" />}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <NotificationBell adminMode />
 

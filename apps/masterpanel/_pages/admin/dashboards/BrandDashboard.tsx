@@ -77,7 +77,7 @@ export default function BrandDashboard() {
   const logoTint = (brandSettings?.logo_tint_color as string) || "#ffffff";
   const titleFont = (brandSettings?.title_font as string) || "Inter";
   const siteTheme = (brandSettings?.site_theme as string) || "default";
-  const siteMode = (brandSettings?.site_mode as string) || "dark";
+  const siteMode = (brandSettings?.site_mode as string) || "auto";
   const siteDescription = (brandSettings?.site_description as string) || "Luxury Storefront & E-commerce Brand Experience";
 
   return (

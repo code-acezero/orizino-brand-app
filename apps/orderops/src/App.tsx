@@ -8,6 +8,7 @@ import { Dashboard } from "@/_pages/Dashboard";
 import { Orders } from "@/_pages/Orders";
 import { OfflineOrders } from "@/_pages/OfflineOrders";
 import { Scanner } from "@/_pages/Scanner";
+import { useOrderOpsTheme } from "@/lib/theme";
 
 // HashRouter, deliberately: it needs zero server-side rewrite rules to work,
 // which matters both for a plain static host and — especially — once this
@@ -44,6 +45,7 @@ function Gate({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  useOrderOpsTheme();
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

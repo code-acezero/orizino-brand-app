@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { LayoutGrid, PackageSearch, ScanLine, Store, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutGrid, end: true },
@@ -38,11 +39,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             </NavLink>
           ))}
         </nav>
-        <div className="p-3">
+        <div className="p-3 space-y-2">
+          <div className="px-1">
+            <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-1.5">Appearance</p>
+            <ThemeToggle />
+          </div>
           <button
             type="button"
             onClick={() => void signOut()}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-muted-foreground hover:bg-muted/60 transition-colors"
+            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-muted-foreground hover:bg-muted/60 transition-colors cursor-pointer"
           >
             <LogOut className="w-4 h-4" /> Sign out
           </button>
@@ -51,6 +56,15 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Main content */}
       <div className="flex-1 min-w-0 flex flex-col">
+        {/* Mobile top bar with theme toggle */}
+        <header className="md:hidden flex items-center justify-between px-4 py-2.5 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-30">
+          <div>
+            <p className="text-xs font-bold tracking-tight">Order Ops</p>
+            <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{user?.email}</p>
+          </div>
+          <ThemeToggle compact />
+        </header>
+
         <main className="flex-1 min-h-0 overflow-y-auto px-4 pt-4 pb-24 md:pb-8 md:px-8 md:pt-8">
           <div className="mx-auto w-full max-w-3xl">{children}</div>
         </main>

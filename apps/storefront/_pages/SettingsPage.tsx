@@ -116,7 +116,7 @@ const SettingsPage: React.FC = () => {
   const { language, setLanguage: setLang, t } = useLanguage();
   const { rootProps } = useProfileAppearance();
 
-  const [mode, setMode] = useState<"dark" | "light">(theme === "light" ? "light" : "dark");
+  const [mode, setMode] = useState<"system" | "dark" | "light">((theme as any) || "system");
   const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>(defaultNotifPrefs);
   const [displayPrefs, setDisplayPrefs] = useState<DisplayPrefs>(defaultDisplayPrefs);
   const [section, setSection] = useState<SectionId>("appearance");
@@ -167,7 +167,7 @@ const SettingsPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (theme === "dark" || theme === "light") {
+    if (theme === "dark" || theme === "light" || theme === "system") {
       setMode(theme);
     }
   }, [theme]);
@@ -181,7 +181,7 @@ const SettingsPage: React.FC = () => {
       const prefs = data.preferences as Record<string, any>;
       prefsRef.current = prefs;
 
-      if (prefs.mode && (prefs.mode === "dark" || prefs.mode === "light")) {
+      if (prefs.mode && (prefs.mode === "dark" || prefs.mode === "light" || prefs.mode === "system")) {
         setMode(prefs.mode);
       }
       if (prefs.notifPrefs) {
@@ -220,9 +220,7 @@ const SettingsPage: React.FC = () => {
     savePrefs({ displayPrefs: updated });
   };
 
-  const toggleMode = () => {
-    const currentIsDark = mode === "dark" || theme === "dark";
-    const newMode = currentIsDark ? "light" : "dark";
+  const selectMode = (newMode: "system" | "dark" | "light") => {
     setMode(newMode);
     setTheme(newMode);
     savePrefs({ mode: newMode });
@@ -421,15 +419,34 @@ const SettingsPage: React.FC = () => {
                         <Palette className="w-4 h-4 text-primary" />
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <button
                           type="button"
-                          onClick={() => mode !== "light" && toggleMode()}
-                          className={`p-3.5 rounded-md border text-left transition-all flex items-center gap-3 ${
-                            mode === "light" ? "border-primary bg-primary/10" : "border-border/40 hover:border-primary/30"
+                          onClick={() => selectMode("system")}
+                          className={`p-3.5 rounded-md border text-left transition-all flex items-center gap-3 cursor-pointer ${
+                            mode === "system" ? "border-primary bg-primary/10 ring-1 ring-primary/30" : "border-border/40 hover:border-primary/30"
                           }`}
                         >
-                          <div className="w-8 h-8 rounded-md bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-md bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+                            <Monitor className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-bold text-foreground">Auto (Device)</p>
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-semibold">Default</span>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground">Matches your device theme automatically</p>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => selectMode("light")}
+                          className={`p-3.5 rounded-md border text-left transition-all flex items-center gap-3 cursor-pointer ${
+                            mode === "light" ? "border-primary bg-primary/10 ring-1 ring-primary/30" : "border-border/40 hover:border-primary/30"
+                          }`}
+                        >
+                          <div className="w-8 h-8 rounded-md bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
                             <Sun className="w-4 h-4" />
                           </div>
                           <div>
@@ -440,12 +457,12 @@ const SettingsPage: React.FC = () => {
 
                         <button
                           type="button"
-                          onClick={() => mode !== "dark" && toggleMode()}
-                          className={`p-3.5 rounded-md border text-left transition-all flex items-center gap-3 ${
-                            mode === "dark" ? "border-primary bg-primary/10" : "border-border/40 hover:border-primary/30"
+                          onClick={() => selectMode("dark")}
+                          className={`p-3.5 rounded-md border text-left transition-all flex items-center gap-3 cursor-pointer ${
+                            mode === "dark" ? "border-primary bg-primary/10 ring-1 ring-primary/30" : "border-border/40 hover:border-primary/30"
                           }`}
                         >
-                          <div className="w-8 h-8 rounded-md bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-md bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0">
                             <Moon className="w-4 h-4" />
                           </div>
                           <div>

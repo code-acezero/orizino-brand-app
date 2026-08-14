@@ -64,7 +64,13 @@ const SiteThemeProvider = () => {
   useEffect(() => {
     if (!siteSettings) return;
     setExternalRedirects(siteSettings.external_redirects || null);
-    const mode = String(siteSettings.site_mode || "dark");
+    const rawMode = String(siteSettings.site_mode || "auto");
+    const isAuto = rawMode === "auto" || rawMode === "system";
+    const getSystemTheme = () => {
+      if (typeof window === "undefined" || !window.matchMedia) return "dark";
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    };
+    const mode = isAuto ? getSystemTheme() : rawMode;
     const rawThemeId = String(siteSettings.site_theme || "crimson_drive");
     const themeId = legacyMap[rawThemeId] || rawThemeId;
     const html = document.documentElement;
@@ -85,6 +91,26 @@ const SiteThemeProvider = () => {
       html.classList.add("light");
     } else {
       html.classList.remove("light");
+    }
+
+    // If auto, listen for device OS theme changes
+    let cleanupMedia: (() => void) | undefined;
+    if (isAuto && typeof window !== "undefined" && window.matchMedia) {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const handler = (e: MediaQueryListEvent) => {
+        const sysMode = e.matches ? "dark" : "light";
+        if (palette) {
+          const vars = sysMode === "light" ? palette.light : palette.dark;
+          Object.entries(vars).forEach(([k, v]) => html.style.setProperty(k, v));
+        }
+        if (sysMode === "light") {
+          html.classList.add("light");
+        } else {
+          html.classList.remove("light");
+        }
+      };
+      mediaQuery.addEventListener("change", handler);
+      cleanupMedia = () => mediaQuery.removeEventListener("change", handler);
     }
 
     // Customizer overrides
@@ -121,6 +147,10 @@ const SiteThemeProvider = () => {
     } else {
       html.style.removeProperty("--font-title");
     }
+
+    return () => {
+      cleanupMedia?.();
+    };
   }, [siteSettings]);
 
   /* Realtime sync */

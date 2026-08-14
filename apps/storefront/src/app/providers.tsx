@@ -126,7 +126,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           <LanguageProvider>
             <CurrencyProvider>
               <LayoutProvider>
-                <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+                <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
                   <ClientShell>{children}</ClientShell>
                 </ThemeProvider>
               </LayoutProvider>
