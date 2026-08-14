@@ -131,7 +131,7 @@ const AdminProfileAppearance: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* ── TOP CONTROL BAR ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-card border border-border/50 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-card border border-border/50">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <User className="w-4 h-4" />
@@ -171,7 +171,7 @@ const AdminProfileAppearance: React.FC = () => {
               onClick={() => setSelectedCategory(cat.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 active
-                  ? "bg-primary text-primary-foreground shadow-xs"
+                  ? "bg-primary text-primary-foreground"
                   : "bg-secondary/30 text-muted-foreground hover:text-foreground hover:bg-secondary/60 border border-border/40"
               }`}
             >
@@ -195,8 +195,8 @@ const AdminProfileAppearance: React.FC = () => {
               onClick={() => setCfg((c) => ({ ...c, typography_pair: p.id }))}
               className={`relative text-left rounded-2xl border p-4 transition-all cursor-pointer flex flex-col justify-between ${
                 active
-                  ? "border-primary bg-primary/5 shadow-sm ring-2 ring-primary/30"
-                  : "border-border/50 hover:border-primary/40 bg-card/60 hover:bg-card shadow-xs"
+                  ? "border-primary bg-primary/5 ring-2 ring-primary/30"
+                  : "border-border/50 hover:border-primary/40 bg-card/60 hover:bg-card"
               }`}
             >
               <div className="flex items-center justify-between gap-2 mb-2">
@@ -215,7 +215,7 @@ const AdminProfileAppearance: React.FC = () => {
 
                 <div
                   className={`w-4.5 h-4.5 rounded-full flex items-center justify-center transition-all ${
-                    active ? "bg-primary text-primary-foreground shadow-xs" : "border border-border/60 bg-secondary/30 opacity-40"
+                    active ? "bg-primary text-primary-foreground" : "border border-border/60 bg-secondary/30 opacity-40"
                   }`}
                 >
                   {active ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : null}
@@ -266,7 +266,7 @@ const AdminProfileAppearance: React.FC = () => {
                   onClick={() => setCfg((c) => ({ ...c, layout_variant: l.id }))}
                   className={`relative text-left rounded-xl border p-3 transition-all cursor-pointer flex flex-col justify-between ${
                     active
-                      ? "border-primary bg-primary/10 shadow-xs ring-1 ring-primary/30"
+                      ? "border-primary bg-primary/10 ring-1 ring-primary/30"
                       : "border-border/50 hover:border-primary/40 bg-card/60 hover:bg-card"
                   }`}
                 >

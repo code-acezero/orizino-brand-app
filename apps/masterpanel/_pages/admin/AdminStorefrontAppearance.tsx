@@ -199,7 +199,7 @@ const AdminStorefrontAppearance: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* ── TOP CONTROL BAR ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-card border border-border/50 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-card border border-border/50">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <Type className="w-4 h-4" />
@@ -223,7 +223,7 @@ const AdminStorefrontAppearance: React.FC = () => {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex items-center gap-2 h-8 px-3 rounded-xl bg-secondary/30 hover:bg-secondary/60 border border-border/50 text-xs font-semibold text-foreground transition-all cursor-pointer shadow-2xs hover:border-primary/40 shrink-0"
+                className="flex items-center gap-2 h-8 px-3 rounded-xl bg-secondary/30 hover:bg-secondary/60 border border-border/50 text-xs font-semibold text-foreground transition-all cursor-pointer hover:border-primary/40 shrink-0"
               >
                 <Filter className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span className="truncate max-w-[140px]">
@@ -233,7 +233,7 @@ const AdminStorefrontAppearance: React.FC = () => {
                 <ChevronDown className="w-3 h-3 text-muted-foreground ml-0.5 shrink-0" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 p-1.5 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-md shadow-lg">
+            <DropdownMenuContent align="end" className="w-56 p-1.5 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-md">
               <DropdownMenuLabel className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-2 py-1">
                 Filter by Category
               </DropdownMenuLabel>
@@ -288,8 +288,8 @@ const AdminStorefrontAppearance: React.FC = () => {
               onClick={() => setCfg((c) => ({ ...c, typography_pair: p.id }))}
               className={`relative text-left rounded-xl border p-2.5 sm:p-3 transition-all cursor-pointer flex flex-col justify-between ${
                 active
-                  ? "border-primary bg-primary/5 shadow-xs ring-1 ring-primary/40"
-                  : "border-border/50 hover:border-primary/40 bg-card/60 hover:bg-card shadow-2xs"
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/40"
+                  : "border-border/50 hover:border-primary/40 bg-card/60 hover:bg-card"
               }`}
             >
               {/* Header Badge + Active Indicator */}
@@ -312,7 +312,7 @@ const AdminStorefrontAppearance: React.FC = () => {
                 <div
                   className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition-all ${
                     active
-                      ? "bg-primary text-primary-foreground shadow-2xs"
+                      ? "bg-primary text-primary-foreground"
                       : "border border-border/60 bg-secondary/30 opacity-40"
                   }`}
                 >
@@ -362,7 +362,7 @@ const AdminStorefrontAppearance: React.FC = () => {
       </div>
 
       {/* ── LIVE TYPOGRAPHY STUDIO (LUXURY REDESIGN) ── */}
-      <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-md shadow-sm overflow-hidden space-y-0">
+      <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-md overflow-hidden space-y-0">
         {/* Header Bar */}
         <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 sm:px-4 border-b border-border/40 bg-secondary/20">
           <div className="flex items-center gap-2.5">
@@ -384,12 +384,12 @@ const AdminStorefrontAppearance: React.FC = () => {
           {/* Right Controls: Scene Selector & Theme Mode Switcher */}
           <div className="flex items-center gap-2">
             {/* Scene Selector */}
-            <div className="flex items-center p-0.5 rounded-lg bg-background/80 border border-border/50 shadow-2xs">
+            <div className="flex items-center p-0.5 rounded-lg bg-background/80 border border-border/50">
               <button
                 onClick={() => setPreviewScene("hero")}
                 className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
                   previewScene === "hero"
-                    ? "bg-primary text-primary-foreground shadow-2xs"
+                    ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -400,7 +400,7 @@ const AdminStorefrontAppearance: React.FC = () => {
                 onClick={() => setPreviewScene("product")}
                 className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
                   previewScene === "product"
-                    ? "bg-primary text-primary-foreground shadow-2xs"
+                    ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -411,7 +411,7 @@ const AdminStorefrontAppearance: React.FC = () => {
                 onClick={() => setPreviewScene("editorial")}
                 className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
                   previewScene === "editorial"
-                    ? "bg-primary text-primary-foreground shadow-2xs"
+                    ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -421,7 +421,7 @@ const AdminStorefrontAppearance: React.FC = () => {
             </div>
 
             {/* Theme Toggle (Split, Dark, Light) */}
-            <div className="hidden sm:flex items-center p-0.5 rounded-lg bg-background/80 border border-border/50 shadow-2xs">
+            <div className="hidden sm:flex items-center p-0.5 rounded-lg bg-background/80 border border-border/50">
               <button
                 onClick={() => setPreviewTheme("split")}
                 title="Split Dark & Light"
@@ -515,7 +515,7 @@ const AdminStorefrontAppearance: React.FC = () => {
             <div className={`grid gap-3 ${previewTheme === "split" ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}>
               {/* Dark Hero */}
               {(previewTheme === "split" || previewTheme === "dark") && (
-                <div className="relative rounded-xl border border-white/10 bg-[#161616] p-4 sm:p-5 text-white overflow-hidden flex flex-col justify-between min-h-[170px] shadow-md">
+                <div className="relative rounded-xl border border-white/10 bg-[#161616] p-4 sm:p-5 text-white overflow-hidden flex flex-col justify-between min-h-[170px]">
                   <div className="absolute inset-0 bg-radial-gradient from-primary/15 via-transparent to-transparent opacity-60 pointer-events-none" />
                   <div className="relative z-10 space-y-2">
                     <div className="flex items-center justify-between">
@@ -546,7 +546,7 @@ const AdminStorefrontAppearance: React.FC = () => {
                   <div className="relative z-10 mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span
-                        className="px-3 py-1 rounded-md text-[10px] font-bold bg-primary text-white flex items-center gap-1 shadow-xs"
+                        className="px-3 py-1 rounded-md text-[10px] font-bold bg-primary text-white flex items-center gap-1"
                         style={{ fontFamily: activePair.heading }}
                       >
                         EXPLORE DROP <ArrowRight className="w-2.5 h-2.5" />
@@ -565,7 +565,7 @@ const AdminStorefrontAppearance: React.FC = () => {
 
               {/* Light Hero */}
               {(previewTheme === "split" || previewTheme === "light") && (
-                <div className="relative rounded-xl border border-border/80 bg-[#FAF8F5] p-4 sm:p-5 text-zinc-900 overflow-hidden flex flex-col justify-between min-h-[170px] shadow-sm">
+                <div className="relative rounded-xl border border-border/80 bg-[#FAF8F5] p-4 sm:p-5 text-zinc-900 overflow-hidden flex flex-col justify-between min-h-[170px]">
                   <div className="relative z-10 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[8.5px] font-mono tracking-widest text-zinc-500 uppercase">
@@ -595,7 +595,7 @@ const AdminStorefrontAppearance: React.FC = () => {
                   <div className="relative z-10 mt-3 pt-2.5 border-t border-zinc-200 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span
-                        className="px-3 py-1 rounded-md text-[10px] font-bold bg-zinc-900 text-white flex items-center gap-1 shadow-xs"
+                        className="px-3 py-1 rounded-md text-[10px] font-bold bg-zinc-900 text-white flex items-center gap-1"
                         style={{ fontFamily: activePair.heading }}
                       >
                         DISCOVER <ArrowRight className="w-2.5 h-2.5" />
@@ -617,7 +617,7 @@ const AdminStorefrontAppearance: React.FC = () => {
           {previewScene === "product" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Product Card Dark */}
-              <div className="rounded-xl border border-white/10 bg-[#161616] p-3 text-white flex gap-3 shadow-md items-center">
+              <div className="rounded-xl border border-white/10 bg-[#161616] p-3 text-white flex gap-3 items-center">
                 <div className="w-20 h-24 rounded-lg bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex flex-col items-center justify-center shrink-0 text-center p-1">
                   <span className="text-[8px] font-mono text-zinc-400">380 GSM</span>
                   <span className="text-xs font-bold text-white mt-1" style={{ fontFamily: activePair.heading }}>
@@ -640,7 +640,7 @@ const AdminStorefrontAppearance: React.FC = () => {
               </div>
 
               {/* Product Card Light */}
-              <div className="rounded-xl border border-border/80 bg-[#FAF8F5] p-3 text-zinc-900 flex gap-3 shadow-sm items-center">
+              <div className="rounded-xl border border-border/80 bg-[#FAF8F5] p-3 text-zinc-900 flex gap-3 items-center">
                 <div className="w-20 h-24 rounded-lg bg-gradient-to-br from-zinc-100 to-zinc-200 border border-zinc-300 flex flex-col items-center justify-center shrink-0 text-center p-1">
                   <span className="text-[8px] font-mono text-zinc-500">420 GSM</span>
                   <span className="text-xs font-bold text-zinc-900 mt-1" style={{ fontFamily: activePair.heading }}>
@@ -665,7 +665,7 @@ const AdminStorefrontAppearance: React.FC = () => {
           )}
 
           {previewScene === "editorial" && (
-            <div className="rounded-xl border border-border/70 bg-card p-4 sm:p-5 space-y-3 shadow-sm">
+            <div className="rounded-xl border border-border/70 bg-card p-4 sm:p-5 space-y-3">
               <div className="flex items-center justify-between border-b border-border/40 pb-2">
                 <span className="text-[9px] font-mono uppercase tracking-widest text-primary font-bold">
                   ORIZINO EDITORIAL STATEMENT
@@ -742,8 +742,8 @@ const AdminStorefrontAppearance: React.FC = () => {
                   onClick={() => setCfg((c) => ({ ...c, layout_variant: l.id }))}
                   className={`group relative text-left rounded-xl border p-2.5 transition-all cursor-pointer flex flex-col justify-between overflow-hidden ${
                     active
-                      ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/40"
-                      : "border-border/60 hover:border-primary/40 bg-card/70 hover:bg-card shadow-2xs"
+                      ? "border-primary bg-primary/10 ring-1 ring-primary/40"
+                      : "border-border/60 hover:border-primary/40 bg-card/70 hover:bg-card"
                   }`}
                 >
                   <LayoutPreview id={l.id} active={active} />
@@ -769,7 +769,7 @@ const AdminStorefrontAppearance: React.FC = () => {
         </div>
 
         {/* SECTION 2: Surface Calibration & Ergonomics */}
-        <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-md shadow-sm overflow-hidden p-4 space-y-4">
+        <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-md overflow-hidden p-4 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 pb-3">
             <div className="flex items-center gap-2.5">
               <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
@@ -810,12 +810,12 @@ const AdminStorefrontAppearance: React.FC = () => {
                       onClick={() => setCfg((c) => ({ ...c, accent_hsl: a.hsl || null }))}
                       className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[9.5px] font-medium transition-all cursor-pointer ${
                         active
-                          ? "border-primary bg-primary/15 ring-1 ring-primary/40 text-foreground font-bold shadow-2xs"
+                          ? "border-primary bg-primary/15 ring-1 ring-primary/40 text-foreground font-bold"
                           : "border-border/50 text-muted-foreground bg-background/50 hover:bg-background hover:text-foreground"
                       }`}
                     >
                       <span
-                        className={`w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs border ${active ? "ring-1 ring-white/50 border-white/80" : "border-white/20"}`}
+                        className={`w-2.5 h-2.5 rounded-full shrink-0 border ${active ? "ring-1 ring-white/50 border-white/80" : "border-white/20"}`}
                         style={{
                           background: a.hsl
                             ? `hsl(${a.hsl})`
@@ -856,7 +856,7 @@ const AdminStorefrontAppearance: React.FC = () => {
                       onClick={() => setCfg((c) => ({ ...c, rounded: r.id }))}
                       className={`flex flex-col items-center justify-center p-1.5 border transition-all cursor-pointer ${r.radius} ${
                         active
-                          ? "border-primary bg-primary/20 ring-1 ring-primary/40 text-primary font-bold shadow-2xs"
+                          ? "border-primary bg-primary/20 ring-1 ring-primary/40 text-primary font-bold"
                           : "border-border/60 text-muted-foreground hover:text-foreground bg-background/50 hover:bg-background"
                       }`}
                     >
@@ -898,7 +898,7 @@ const AdminStorefrontAppearance: React.FC = () => {
                       onClick={() => setCfg((c) => ({ ...c, density: d.id }))}
                       className={`flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all cursor-pointer ${
                         active
-                          ? "border-primary bg-primary/20 ring-1 ring-primary/40 text-primary font-bold shadow-2xs"
+                          ? "border-primary bg-primary/20 ring-1 ring-primary/40 text-primary font-bold"
                           : "border-border/60 text-muted-foreground hover:text-foreground bg-background/50 hover:bg-background"
                       }`}
                     >
@@ -941,7 +941,7 @@ const AdminStorefrontAppearance: React.FC = () => {
                       onClick={() => setCfg((c) => ({ ...c, mobile_nav: m.id }))}
                       className={`flex flex-col items-start p-1.5 rounded-lg border transition-all cursor-pointer ${
                         active
-                          ? "border-primary bg-primary/20 ring-1 ring-primary/40 text-primary font-bold shadow-2xs"
+                          ? "border-primary bg-primary/20 ring-1 ring-primary/40 text-primary font-bold"
                           : "border-border/60 text-muted-foreground hover:text-foreground bg-background/50 hover:bg-background"
                       }`}
                     >

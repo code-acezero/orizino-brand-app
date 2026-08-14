@@ -77,7 +77,7 @@ const STUDIO_PRESETS = [
     gallery: "parallax-stack" as GalleryStyle,
     label: "High-Voltage Drop",
     tag: "Cyber Street",
-    desc: "Cyberpunk edge glow, electrified price drop-shadow & 3D cursor parallax card stack.",
+    desc: "Cyberpunk edge glow, electrified price accent & 3D cursor parallax card stack.",
     emoji: "⚡",
   },
   {
@@ -137,10 +137,10 @@ const LAYOUT_STYLES: {
     id: "neon",
     label: "Neon Cyber",
     tag: "Electrified",
-    desc: "High-contrast dark styling with glowing borders and electric price drop shadow",
+    desc: "High-contrast dark styling with glowing borders and electric price highlighting",
     emoji: "⚡",
     previewBg: "bg-gradient-to-br from-background via-primary/20 to-background",
-    accentText: "text-primary drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]",
+    accentText: "text-primary font-black",
   },
   {
     id: "minimal",
@@ -164,7 +164,7 @@ const LAYOUT_STYLES: {
     id: "glass-minimal",
     label: "Glass Minimal",
     tag: "Neutral",
-    desc: "Ultra-clean neutral glass with subtle outlines, soft shadows, and balanced contrast",
+    desc: "Ultra-clean neutral glass with subtle outlines and crisp balanced contrast",
     emoji: "✨",
     previewBg: "bg-gradient-to-br from-secondary/40 via-card to-secondary/20",
     accentText: "text-foreground",
@@ -310,9 +310,9 @@ export default function ProductDetailLayoutPanel() {
   return (
     <div className="space-y-5">
       {/* ── TOP CONTROL BAR ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-card/80 backdrop-blur-md border border-border/60 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-card/80 backdrop-blur-md border border-border/60">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary border border-primary/25 flex items-center justify-center shrink-0 shadow-2xs">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary border border-primary/25 flex items-center justify-center shrink-0">
             <Layers className="w-4 h-4" />
           </div>
           <div>
@@ -331,12 +331,12 @@ export default function ProductDetailLayoutPanel() {
         </div>
 
         {/* Viewport Switcher */}
-        <div className="flex items-center p-0.5 rounded-lg bg-background/80 border border-border/50 shadow-2xs">
+        <div className="flex items-center p-0.5 rounded-lg bg-background/80 border border-border/50">
           <button
             onClick={() => setPreviewMode("desktop")}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10.5px] font-semibold transition-all cursor-pointer ${
               previewMode === "desktop"
-                ? "bg-primary text-primary-foreground shadow-2xs"
+                ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -347,7 +347,7 @@ export default function ProductDetailLayoutPanel() {
             onClick={() => setPreviewMode("mobile")}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10.5px] font-semibold transition-all cursor-pointer ${
               previewMode === "mobile"
-                ? "bg-primary text-primary-foreground shadow-2xs"
+                ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -358,7 +358,7 @@ export default function ProductDetailLayoutPanel() {
             onClick={() => setPreviewMode("split")}
             className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-md text-[10.5px] font-semibold transition-all cursor-pointer ${
               previewMode === "split"
-                ? "bg-primary text-primary-foreground shadow-2xs"
+                ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -369,7 +369,7 @@ export default function ProductDetailLayoutPanel() {
       </div>
 
       {/* ── LIVE INTERACTIVE PRODUCT PREVIEW STAGE ── */}
-      <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-md shadow-sm overflow-hidden space-y-0">
+      <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-md overflow-hidden space-y-0">
         {/* Stage Subheader */}
         <div className="flex items-center justify-between p-3 px-4 border-b border-border/40 bg-secondary/20">
           <div className="flex items-center gap-2">
@@ -398,11 +398,11 @@ export default function ProductDetailLayoutPanel() {
               <div className={`${previewMode === "mobile" ? "col-span-1" : "md:col-span-6"} space-y-2.5`}>
                 {/* Main Image Frame with chosen Gallery Engine styling */}
                 <div
-                  className={`relative aspect-square rounded-2xl overflow-hidden border flex flex-col items-center justify-between p-4 shadow-md transition-all ${
+                  className={`relative aspect-square rounded-2xl overflow-hidden border flex flex-col items-center justify-between p-4 transition-all ${
                     cfg.layout === "dark-luxury"
                       ? "bg-zinc-950 border-white/10"
                       : cfg.layout === "neon"
-                      ? "bg-zinc-900 border-primary/40 shadow-[0_0_25px_hsl(var(--primary)/0.2)]"
+                      ? "bg-zinc-900 border-primary/40"
                       : "bg-secondary/40 border-border/70"
                   }`}
                 >
@@ -488,7 +488,7 @@ export default function ProductDetailLayoutPanel() {
                       <button
                         key={c.id}
                         onClick={() => setPreviewSelectedColor(c.id)}
-                        className={`w-6 h-6 rounded-full border transition-all cursor-pointer shadow-2xs ${
+                        className={`w-6 h-6 rounded-full border transition-all cursor-pointer ${
                           previewSelectedColor === c.id
                             ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-105"
                             : "border-white/20 opacity-80 hover:opacity-100"
@@ -517,7 +517,7 @@ export default function ProductDetailLayoutPanel() {
                         onClick={() => setPreviewSelectedSize(s)}
                         className={`py-1.5 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
                           previewSelectedSize === s
-                            ? "border-primary bg-primary text-primary-foreground shadow-2xs"
+                            ? "border-primary bg-primary text-primary-foreground"
                             : "border-border/60 bg-secondary/30 hover:bg-secondary text-foreground"
                         }`}
                       >
@@ -530,11 +530,11 @@ export default function ProductDetailLayoutPanel() {
                 {/* Primary Action Buttons */}
                 <div className="space-y-2 pt-1">
                   <div className="grid grid-cols-2 gap-2">
-                    <button className="py-2.5 px-3 rounded-xl bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm hover:brightness-110 transition-all cursor-pointer">
+                    <button className="py-2.5 px-3 rounded-xl bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center gap-1.5 hover:brightness-110 transition-all cursor-pointer">
                       <ShoppingBag className="w-3.5 h-3.5" />
                       <span>ADD TO CART</span>
                     </button>
-                    <button className="py-2.5 px-3 rounded-xl bg-foreground text-background font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm hover:opacity-90 transition-all cursor-pointer">
+                    <button className="py-2.5 px-3 rounded-xl bg-foreground text-background font-bold text-xs flex items-center justify-center gap-1.5 hover:opacity-90 transition-all cursor-pointer">
                       <Zap className="w-3.5 h-3.5" />
                       <span>BUY NOW</span>
                     </button>
@@ -750,8 +750,8 @@ export default function ProductDetailLayoutPanel() {
                 onClick={() => setCfg((c) => ({ ...c, layout: rec.layout, gallery: rec.gallery }))}
                 className={`text-left p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
                   active
-                    ? "border-primary bg-primary/15 ring-1 ring-primary/40 shadow-sm"
-                    : "border-border/60 hover:border-primary/40 bg-card/70 hover:bg-card shadow-2xs"
+                    ? "border-primary bg-primary/15 ring-1 ring-primary/40"
+                    : "border-border/60 hover:border-primary/40 bg-card/70 hover:bg-card"
                 }`}
               >
                 <div className="flex items-center justify-between mb-1.5">
@@ -802,8 +802,8 @@ export default function ProductDetailLayoutPanel() {
                 onClick={() => setCfg((c) => ({ ...c, layout: opt.id }))}
                 className={`text-left rounded-xl border transition-all cursor-pointer overflow-hidden ${
                   active
-                    ? "border-primary bg-primary/10 ring-1 ring-primary/40 shadow-sm"
-                    : "border-border/60 bg-card/70 hover:border-primary/40 hover:bg-card shadow-2xs"
+                    ? "border-primary bg-primary/10 ring-1 ring-primary/40"
+                    : "border-border/60 bg-card/70 hover:border-primary/40 hover:bg-card"
                 }`}
               >
                 <div className={`h-12 ${opt.previewBg} relative flex items-center justify-between px-3 border-b border-border/30`}>
@@ -854,8 +854,8 @@ export default function ProductDetailLayoutPanel() {
                 onClick={() => setCfg((c) => ({ ...c, gallery: opt.id }))}
                 className={`text-left p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
                   active
-                    ? "border-primary bg-primary/10 ring-1 ring-primary/40 shadow-sm"
-                    : "border-border/60 bg-card/70 hover:border-primary/40 hover:bg-card shadow-2xs"
+                    ? "border-primary bg-primary/10 ring-1 ring-primary/40"
+                    : "border-border/60 bg-card/70 hover:border-primary/40 hover:bg-card"
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -876,7 +876,7 @@ export default function ProductDetailLayoutPanel() {
       </div>
 
       {/* ── SECTION 4: CONVERSION & TRUST ARCHITECTURE ── */}
-      <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-md shadow-sm overflow-hidden p-4 space-y-3">
+      <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-md overflow-hidden p-4 space-y-3">
         <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">

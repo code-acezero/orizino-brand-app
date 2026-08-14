@@ -70,7 +70,7 @@ const AdminAuthAppearance: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* ── TOP CONTROL BAR ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-card border border-border/50 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-card border border-border/50">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <Lock className="w-4 h-4" />
@@ -91,7 +91,7 @@ const AdminAuthAppearance: React.FC = () => {
 
       <div className="grid gap-5 lg:grid-cols-2">
         {/* Layout & Background */}
-        <Card className="border-border/50 bg-card/60 rounded-2xl shadow-xs space-y-3.5 p-4">
+        <Card className="border-border/50 bg-card/60 rounded-2xl space-y-3.5 p-4">
           <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Layout &amp; Elements</h3>
 
           <div className="space-y-1.5">
@@ -149,7 +149,7 @@ const AdminAuthAppearance: React.FC = () => {
         </Card>
 
         {/* Copy & Messaging */}
-        <Card className="border-border/50 bg-card/60 rounded-2xl shadow-xs space-y-2.5 p-4">
+        <Card className="border-border/50 bg-card/60 rounded-2xl space-y-2.5 p-4">
           <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Brand Copy</h3>
           {[
             ["welcome_kicker", "Welcome Kicker"],
@@ -171,7 +171,7 @@ const AdminAuthAppearance: React.FC = () => {
         </Card>
 
         {/* Testimonials */}
-        <Card className="border-border/50 bg-card/60 rounded-2xl shadow-xs space-y-3 p-4 lg:col-span-2">
+        <Card className="border-border/50 bg-card/60 rounded-2xl space-y-3 p-4 lg:col-span-2">
           <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
             <div>
               <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Rotating Customer Quotes</h3>
