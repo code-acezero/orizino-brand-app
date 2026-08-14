@@ -92,54 +92,84 @@ export type GalleryStyle =
   | "studio-turntable"
   | "immersive-zoom";
 
-const LAYOUT_CONFIGS: Record<LayoutStyle, { containerClass: string; textClass: string; priceClass: string; mobilePriceClass: string; cardClass: string; accentBorder: string }> = {
+export interface LayoutConfigTokens {
+  containerClass: string;
+  textClass: string;
+  priceClass: string;
+  mobilePriceClass: string;
+  cardClass: string;
+  accentBorder: string;
+  buttonPrimary?: string;
+  buttonSecondary?: string;
+  badgeClass?: string;
+}
+
+const LAYOUT_CONFIGS: Record<LayoutStyle, LayoutConfigTokens> = {
   "dark-luxury": {
-    containerClass: "bg-black/40",
-    textClass: "text-white",
-    priceClass: "text-4xl md:text-5xl font-black tracking-tight text-white",
-    mobilePriceClass: "text-2xl font-black tracking-tight text-white",
-    cardClass: "bg-white/5 border border-white/10 backdrop-blur-lg rounded-3xl shadow-sm",
-    accentBorder: "border-amber-400/30",
+    containerClass: "bg-[#09090b] text-zinc-100 selection:bg-amber-500/30 selection:text-amber-200",
+    textClass: "text-zinc-100",
+    priceClass: "text-4xl md:text-5xl font-black tracking-tight text-amber-300 drop-shadow-[0_0_20px_rgba(251,191,36,0.25)]",
+    mobilePriceClass: "text-2xl sm:text-3xl font-black tracking-tight text-amber-300",
+    cardClass: "bg-zinc-900/70 border border-amber-500/20 backdrop-blur-xl rounded-3xl shadow-2xl shadow-black/60",
+    accentBorder: "border-amber-500/30",
+    buttonPrimary: "bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-black font-extrabold shadow-lg shadow-amber-500/20 hover:brightness-110",
+    buttonSecondary: "bg-zinc-900 text-amber-300 border border-amber-500/40 hover:bg-zinc-800 font-bold",
+    badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/30 font-mono",
   },
   glass: {
-    containerClass: "",
+    containerClass: "bg-background/80 text-foreground",
     textClass: "text-foreground",
-    priceClass: "text-4xl font-bold text-foreground",
-    mobilePriceClass: "text-2xl font-bold text-foreground",
-    cardClass: "bg-card/95 border border-primary/20 rounded-3xl shadow-sm",
+    priceClass: "text-4xl md:text-5xl font-extrabold tracking-tight text-foreground",
+    mobilePriceClass: "text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground",
+    cardClass: "bg-card/75 border border-border/80 backdrop-blur-xl rounded-3xl shadow-xl",
     accentBorder: "border-primary/30",
+    buttonPrimary: "bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:brightness-110",
+    buttonSecondary: "bg-secondary/70 text-foreground border border-border/80 hover:bg-secondary font-bold",
+    badgeClass: "bg-primary/10 text-primary border-primary/20",
   },
   neon: {
-    containerClass: "",
-    textClass: "text-foreground",
-    priceClass: "text-4xl font-black text-primary drop-shadow-[0_0_15px_hsl(var(--primary)/0.5)]",
-    mobilePriceClass: "text-2xl font-black text-primary drop-shadow-[0_0_15px_hsl(var(--primary)/0.5)]",
-    cardClass: "bg-background/80 border border-primary/20 shadow-[0_0_30px_hsl(var(--primary)/0.1)] rounded-3xl",
-    accentBorder: "border-primary/40",
+    containerClass: "bg-[#07070d] text-white selection:bg-primary/40 selection:text-white",
+    textClass: "text-white",
+    priceClass: "text-4xl md:text-5xl font-black text-primary drop-shadow-[0_0_20px_hsl(var(--primary)/0.7)] tracking-tight",
+    mobilePriceClass: "text-2xl sm:text-3xl font-black text-primary drop-shadow-[0_0_15px_hsl(var(--primary)/0.7)]",
+    cardClass: "bg-black/70 border border-primary/40 backdrop-blur-xl shadow-[0_0_35px_hsl(var(--primary)/0.18)] rounded-3xl",
+    accentBorder: "border-primary/50",
+    buttonPrimary: "bg-primary text-primary-foreground font-black shadow-[0_0_25px_hsl(var(--primary)/0.5)] border border-primary/50 hover:brightness-110",
+    buttonSecondary: "bg-black/80 text-primary border border-primary/60 hover:bg-primary/15 font-bold shadow-[0_0_15px_hsl(var(--primary)/0.25)]",
+    badgeClass: "bg-primary/20 text-primary border border-primary/50 font-mono shadow-[0_0_10px_hsl(var(--primary)/0.3)]",
   },
   minimal: {
-    containerClass: "",
+    containerClass: "bg-background text-foreground",
     textClass: "text-foreground",
-    priceClass: "text-3xl font-semibold text-foreground tracking-tight",
-    mobilePriceClass: "text-xl font-semibold text-foreground tracking-tight",
-    cardClass: "bg-card rounded-3xl shadow-sm",
-    accentBorder: "border-border",
+    priceClass: "text-3xl md:text-4xl font-medium text-foreground tracking-tight",
+    mobilePriceClass: "text-xl sm:text-2xl font-medium text-foreground tracking-tight",
+    cardClass: "bg-secondary/20 border border-border/40 rounded-2xl shadow-none",
+    accentBorder: "border-border/60",
+    buttonPrimary: "bg-foreground text-background font-semibold hover:opacity-90 rounded-full",
+    buttonSecondary: "bg-transparent text-foreground border border-foreground/20 hover:bg-secondary/40 font-semibold rounded-full",
+    badgeClass: "bg-secondary/40 text-muted-foreground border-border/40 font-mono",
   },
   magazine: {
-    containerClass: "",
-    textClass: "text-foreground",
-    priceClass: "text-4xl font-display font-bold text-foreground italic",
-    mobilePriceClass: "text-2xl font-display font-bold text-foreground italic",
-    cardClass: "glass rounded-3xl",
-    accentBorder: "border-primary/20",
+    containerClass: "bg-background/90 text-foreground",
+    textClass: "text-foreground font-serif",
+    priceClass: "text-4xl md:text-5xl font-serif italic font-bold text-foreground tracking-tight",
+    mobilePriceClass: "text-2xl sm:text-3xl font-serif italic font-bold text-foreground",
+    cardClass: "bg-card/60 border border-border/60 backdrop-blur-md rounded-2xl shadow-sm",
+    accentBorder: "border-border/80",
+    buttonPrimary: "bg-foreground text-background font-serif italic font-bold hover:opacity-90 tracking-wide",
+    buttonSecondary: "bg-secondary/50 text-foreground border border-border/80 hover:bg-secondary font-serif italic font-bold",
+    badgeClass: "bg-secondary/40 text-foreground border border-border/60 font-serif italic",
   },
   "glass-minimal": {
-    containerClass: "",
+    containerClass: "bg-background/80 text-foreground",
     textClass: "text-foreground",
-    priceClass: "text-4xl font-bold text-foreground",
-    mobilePriceClass: "text-2xl font-bold text-foreground",
-    cardClass: "bg-card/95 border border-border rounded-3xl shadow-sm",
-    accentBorder: "border-border",
+    priceClass: "text-4xl md:text-5xl font-bold tracking-tight text-foreground",
+    mobilePriceClass: "text-2xl sm:text-3xl font-bold text-foreground",
+    cardClass: "bg-card/50 border border-border/50 backdrop-blur-md rounded-3xl shadow-sm",
+    accentBorder: "border-border/60",
+    buttonPrimary: "bg-primary text-primary-foreground font-bold hover:brightness-110 shadow-md shadow-primary/15",
+    buttonSecondary: "bg-secondary/40 text-foreground border border-border/60 hover:bg-secondary/70 font-semibold",
+    badgeClass: "bg-secondary/40 text-muted-foreground border border-border/40 font-mono",
   },
 };
 
@@ -842,7 +872,7 @@ const ProductDetailPage: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen ${layout === "dark-luxury" ? "bg-black/20" : ""}`}>
+    <div className={`min-h-screen transition-colors duration-500 ${cfg.containerClass}`}>
       <ProductTrayEffect product={product} effectivePrice={effectivePrice} selectedVariant={selectedVariant} effectiveStock={effectiveStock} addToCart={addToCart} buyNow={buyNow} addingToCart={addingToCart} disabled={requiresSelection} disabledReason={disabledReason} />
       <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 md:py-8 max-w-[1520px] mx-auto">
         <Breadcrumbs

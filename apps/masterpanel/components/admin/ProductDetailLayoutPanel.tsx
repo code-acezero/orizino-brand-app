@@ -1335,507 +1335,430 @@ export default function ProductDetailLayoutPanel() {
         </div>
 
         {/* Stage Canvas */}
-        <div className={`p-4 sm:p-6 transition-all ${cfg.layout === "dark-luxury" ? "bg-black text-white" : cfg.layout === "minimal" ? "bg-[#FAF8F5] text-zinc-900" : "bg-background/70 text-foreground"}`}>
-          <div className={`mx-auto ${previewMode === "mobile" ? "max-w-xs" : "w-full max-w-[1360px]"}`}>
-            <div className={`grid gap-5 ${previewMode === "mobile" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-12"} items-start`}>
-              
-              {/* Product Gallery Live Engine Preview Column */}
-              <div className={`${previewMode === "mobile" ? "col-span-1" : "md:col-span-6"} space-y-2.5`}>
-                {(() => {
-                  const galleryImages = DEMO_GALLERY_IMAGES[previewSelectedColor] || DEMO_GALLERY_IMAGES.charcoal;
-                  const activeImg = galleryImages[previewGalleryActiveIdx % galleryImages.length];
+        {(() => {
+          const previewTokens = (() => {
+            switch (cfg.layout) {
+              case "dark-luxury":
+                return {
+                  canvas: "bg-[#09090b] text-zinc-100",
+                  title: "font-display text-white tracking-tight",
+                  price: "text-2xl sm:text-3xl font-black text-amber-300 drop-shadow-[0_0_15px_rgba(251,191,36,0.3)]",
+                  badge: "bg-amber-500/10 text-amber-300 border border-amber-500/30",
+                  card: "bg-zinc-900/70 border border-amber-500/20 backdrop-blur-md",
+                  btnPrimary: "bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-black font-extrabold shadow-lg shadow-amber-500/20 hover:brightness-110",
+                  btnSecondary: "bg-zinc-900 text-amber-300 border border-amber-500/40 font-bold hover:bg-zinc-800",
+                  specs: "bg-zinc-900/60 border border-amber-500/20",
+                };
+              case "neon":
+                return {
+                  canvas: "bg-[#07070d] text-white",
+                  title: "font-display font-black text-white tracking-tight",
+                  price: "text-2xl sm:text-3xl font-black text-primary drop-shadow-[0_0_15px_hsl(var(--primary)/0.7)]",
+                  badge: "bg-primary/20 text-primary border border-primary/50 shadow-[0_0_10px_hsl(var(--primary)/0.3)]",
+                  card: "bg-black/70 border border-primary/40 shadow-[0_0_25px_hsl(var(--primary)/0.15)]",
+                  btnPrimary: "bg-primary text-primary-foreground font-black shadow-[0_0_20px_hsl(var(--primary)/0.5)] border border-primary/50 hover:brightness-110",
+                  btnSecondary: "bg-black/80 text-primary border border-primary/60 font-bold shadow-[0_0_12px_hsl(var(--primary)/0.2)] hover:bg-primary/15",
+                  specs: "bg-black/60 border border-primary/30",
+                };
+              case "minimal":
+                return {
+                  canvas: "bg-background text-foreground",
+                  title: "font-sans font-medium text-foreground tracking-tight",
+                  price: "text-xl sm:text-2xl font-medium text-foreground tracking-tight",
+                  badge: "bg-secondary/40 text-muted-foreground border border-border/40 font-mono",
+                  card: "bg-secondary/20 border border-border/40",
+                  btnPrimary: "bg-foreground text-background font-semibold rounded-full hover:opacity-90",
+                  btnSecondary: "bg-transparent text-foreground border border-foreground/20 font-semibold rounded-full hover:bg-secondary/40",
+                  specs: "bg-secondary/20 border border-border/30",
+                };
+              case "magazine":
+                return {
+                  canvas: "bg-background/90 text-foreground",
+                  title: "font-serif italic font-normal text-foreground tracking-tight text-xl sm:text-2xl",
+                  price: "text-2xl sm:text-3xl font-serif italic font-bold text-foreground tracking-tight",
+                  badge: "bg-secondary/40 text-foreground border border-border/60 font-serif italic",
+                  card: "bg-card/60 border border-border/60",
+                  btnPrimary: "bg-foreground text-background font-serif italic font-bold hover:opacity-90 rounded-none",
+                  btnSecondary: "bg-secondary/50 text-foreground border border-border/80 font-serif italic font-bold rounded-none hover:bg-secondary",
+                  specs: "bg-card/40 border border-border/40",
+                };
+              case "glass-minimal":
+                return {
+                  canvas: "bg-background/80 text-foreground",
+                  title: "font-display font-semibold text-foreground tracking-tight",
+                  price: "text-2xl sm:text-3xl font-bold text-foreground",
+                  badge: "bg-secondary/40 text-muted-foreground border border-border/40 font-mono",
+                  card: "bg-card/50 border border-border/50 backdrop-blur-md",
+                  btnPrimary: "bg-primary text-primary-foreground font-bold hover:brightness-110 shadow-md shadow-primary/15",
+                  btnSecondary: "bg-secondary/40 text-foreground border border-border/60 hover:bg-secondary/70 font-semibold",
+                  specs: "bg-secondary/25 border border-border/30",
+                };
+              case "glass":
+              default:
+                return {
+                  canvas: "bg-background/80 text-foreground",
+                  title: "font-display font-bold text-foreground tracking-tight",
+                  price: "text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight",
+                  badge: "bg-primary/10 text-primary border border-primary/20",
+                  card: "bg-card/75 border border-border/80 backdrop-blur-xl shadow-md",
+                  btnPrimary: "bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:brightness-110",
+                  btnSecondary: "bg-secondary/70 text-foreground border border-border/80 hover:bg-secondary font-bold",
+                  specs: "bg-secondary/30 border border-border/40",
+                };
+            }
+          })();
 
-                  if (cfg.gallery === "infinity") {
-                    return (
-                      <AdminStudioInfinityPreview
-                        images={galleryImages}
-                        activeIdx={previewGalleryActiveIdx}
-                        onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
-                        showScarcity={cfg.show_scarcity_badge}
-                      />
-                    );
-                  }
+          return (
+            <div className={`p-4 sm:p-6 transition-all duration-500 ${previewTokens.canvas}`}>
+              <div className={`mx-auto ${previewMode === "mobile" ? "max-w-xs" : "w-full max-w-[1360px]"}`}>
+                <div className={`grid gap-5 ${previewMode === "mobile" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-12"} items-start`}>
+                  
+                  {/* Product Gallery Live Engine Preview Column */}
+                  <div className={`${previewMode === "mobile" ? "col-span-1" : "md:col-span-6"} space-y-2.5`}>
+                    {(() => {
+                      const galleryImages = DEMO_GALLERY_IMAGES[previewSelectedColor] || DEMO_GALLERY_IMAGES.charcoal;
+                      const activeImg = galleryImages[previewGalleryActiveIdx % galleryImages.length];
 
-                  if (cfg.gallery === "coverflow") {
-                    return (
-                      <AdminStudioCoverflowPreview
-                        images={galleryImages}
-                        activeIdx={previewGalleryActiveIdx}
-                        onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
-                        showScarcity={cfg.show_scarcity_badge}
-                      />
-                    );
-                  }
-
-                  if (cfg.gallery === "parallax-stack") {
-                    return (
-                      <AdminStudioParallaxStackPreview
-                        images={galleryImages}
-                        activeIdx={previewGalleryActiveIdx}
-                        onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
-                        showScarcity={cfg.show_scarcity_badge}
-                      />
-                    );
-                  }
-
-                  if (cfg.gallery === "editorial-split") {
-                    return (
-                      <AdminStudioEditorialSplitPreview
-                        images={galleryImages}
-                        activeIdx={previewGalleryActiveIdx}
-                        onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
-                        showScarcity={cfg.show_scarcity_badge}
-                      />
-                    );
-                  }
-
-                  if (cfg.gallery === "carousel-cards") {
-                    return (
-                      <AdminStudioHorizonCarouselPreview
-                        images={galleryImages}
-                        activeIdx={previewGalleryActiveIdx}
-                        onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
-                        showScarcity={cfg.show_scarcity_badge}
-                      />
-                    );
-                  }
-
-                  if (cfg.gallery === "studio-turntable" || (cfg.gallery as any) === "immersive-zoom") {
-                    return (
-                      <AdminStudioTurntablePreview
-                        images={galleryImages}
-                        activeIdx={previewGalleryActiveIdx}
-                        onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
-                        showScarcity={cfg.show_scarcity_badge}
-                      />
-                    );
-                  }
-
-                  if (cfg.gallery === "filmstrip") {
-                    return (
-                      <div className="h-[480px] flex flex-col justify-between rounded-2xl overflow-hidden border border-border/70 bg-black p-3 group select-none">
-                        <div className="w-full flex items-center justify-between z-10">
-                          <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
-                            Filmstrip Cinema
-                          </span>
-                          {cfg.show_scarcity_badge && (
-                            <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
-                              <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Main Film Frame */}
-                        <div className="relative h-[360px] w-full rounded-xl overflow-hidden bg-black flex items-center justify-center border border-white/10">
-                          {/* Left sprocket */}
-                          <div className="absolute top-0 bottom-0 left-0 w-4 z-10 flex flex-col justify-around items-center bg-black/90 border-r border-white/10">
-                            {[1, 2, 3, 4, 5, 6].map((i) => (
-                              <div key={i} className="w-1.5 h-1.5 rounded-[1px] bg-white/20" />
-                            ))}
-                          </div>
-                          {/* Right sprocket */}
-                          <div className="absolute top-0 bottom-0 right-0 w-4 z-10 flex flex-col justify-around items-center bg-black/90 border-l border-white/10">
-                            {[1, 2, 3, 4, 5, 6].map((i) => (
-                              <div key={i} className="w-1.5 h-1.5 rounded-[1px] bg-white/20" />
-                            ))}
-                          </div>
-
-                          <img
-                            src={activeImg}
-                            alt=""
-                            className="w-full h-full object-cover px-4 rounded-xl"
+                      if (cfg.gallery === "infinity") {
+                        return (
+                          <AdminStudioInfinityPreview
+                            images={galleryImages}
+                            activeIdx={previewGalleryActiveIdx}
+                            onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
+                            showScarcity={cfg.show_scarcity_badge}
                           />
+                        );
+                      }
 
-                          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md rounded-full px-3 py-0.5 text-[8.5px] font-mono text-white border border-white/15">
-                            FRAME 0{previewGalleryActiveIdx + 1} / 0{galleryImages.length}
+                      if (cfg.gallery === "coverflow") {
+                        return (
+                          <AdminStudioCoverflowPreview
+                            images={galleryImages}
+                            activeIdx={previewGalleryActiveIdx}
+                            onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
+                            showScarcity={cfg.show_scarcity_badge}
+                          />
+                        );
+                      }
+
+                      if (cfg.gallery === "parallax-stack") {
+                        return (
+                          <AdminStudioParallaxStackPreview
+                            images={galleryImages}
+                            activeIdx={previewGalleryActiveIdx}
+                            onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
+                            showScarcity={cfg.show_scarcity_badge}
+                          />
+                        );
+                      }
+
+                      if (cfg.gallery === "editorial-split") {
+                        return (
+                          <AdminStudioEditorialSplitPreview
+                            images={galleryImages}
+                            activeIdx={previewGalleryActiveIdx}
+                            onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
+                            showScarcity={cfg.show_scarcity_badge}
+                          />
+                        );
+                      }
+
+                      if (cfg.gallery === "carousel-cards") {
+                        return (
+                          <AdminStudioHorizonCarouselPreview
+                            images={galleryImages}
+                            activeIdx={previewGalleryActiveIdx}
+                            onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
+                            showScarcity={cfg.show_scarcity_badge}
+                          />
+                        );
+                      }
+
+                      if (cfg.gallery === "studio-turntable" || (cfg.gallery as any) === "immersive-zoom") {
+                        return (
+                          <AdminStudioTurntablePreview
+                            images={galleryImages}
+                            activeIdx={previewGalleryActiveIdx}
+                            onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
+                            showScarcity={cfg.show_scarcity_badge}
+                          />
+                        );
+                      }
+
+                      if (cfg.gallery === "filmstrip") {
+                        return (
+                          <div className="h-[480px] flex flex-col justify-between rounded-2xl overflow-hidden border border-border/70 bg-black p-3 group select-none">
+                            <div className="w-full flex items-center justify-between z-10">
+                              <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
+                                Filmstrip Cinema
+                              </span>
+                              {cfg.show_scarcity_badge && (
+                                <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+                                  <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Main Film Frame */}
+                            <div className="relative h-[360px] w-full rounded-xl overflow-hidden bg-black flex items-center justify-center border border-white/10">
+                              {/* Left sprocket */}
+                              <div className="absolute top-0 bottom-0 left-0 w-4 z-10 flex flex-col justify-around items-center bg-black/90 border-r border-white/10">
+                                {[1, 2, 3, 4, 5, 6].map((i) => (
+                                  <div key={i} className="w-1.5 h-1.5 rounded-[1px] bg-white/20" />
+                                ))}
+                              </div>
+                              {/* Right sprocket */}
+                              <div className="absolute top-0 bottom-0 right-0 w-4 z-10 flex flex-col justify-around items-center bg-black/90 border-l border-white/10">
+                                {[1, 2, 3, 4, 5, 6].map((i) => (
+                                  <div key={i} className="w-1.5 h-1.5 rounded-[1px] bg-white/20" />
+                                ))}
+                              </div>
+
+                              <img
+                                src={activeImg}
+                                alt=""
+                                className="w-full h-full object-cover px-4 rounded-xl"
+                              />
+
+                              <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md rounded-full px-3 py-0.5 text-[8.5px] font-mono text-white border border-white/15">
+                                FRAME 0{previewGalleryActiveIdx + 1} / 0{galleryImages.length}
+                              </div>
+                            </div>
+
+                            {/* Film Thumbnail Strip */}
+                            <div className="flex gap-2 overflow-x-auto pb-0.5">
+                              {galleryImages.map((img, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => setPreviewGalleryActiveIdx(idx)}
+                                  className={`w-14 h-11 rounded-lg overflow-hidden border cursor-pointer transition-all shrink-0 ${
+                                    previewGalleryActiveIdx === idx
+                                      ? "border-amber-400 ring-1 ring-amber-400/50 scale-105"
+                                      : "border-white/20 opacity-50 hover:opacity-90"
+                                  }`}
+                                >
+                                  <img src={img} alt="" className="w-full h-full object-cover" />
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        );
+                      }
 
-                        {/* Filmstrip thumbnails */}
-                        <div className="flex gap-2 overflow-x-auto pb-0.5">
-                          {galleryImages.map((img, i) => (
-                            <button
-                              key={i}
-                              onClick={() => setPreviewGalleryActiveIdx(i)}
-                              className={`w-16 h-12 rounded-lg overflow-hidden border cursor-pointer transition-all shrink-0 ${
-                                i === previewGalleryActiveIdx
-                                  ? "border-primary ring-1 ring-primary/40 opacity-100 scale-105"
-                                  : "border-white/15 opacity-40 hover:opacity-80 grayscale"
-                              }`}
-                            >
-                              <img src={img} alt="" className="w-full h-full object-cover" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }
+                      if (cfg.gallery === "mosaic") {
+                        return (
+                          <div className="h-[480px] flex flex-col justify-between rounded-2xl overflow-hidden border border-border/70 bg-card/60 p-3 group select-none">
+                            <div className="w-full flex items-center justify-between mb-2">
+                              <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-secondary text-foreground uppercase tracking-wider border border-border/40">
+                                Lookbook Mosaic
+                              </span>
+                              {cfg.show_scarcity_badge && (
+                                <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+                                  <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
+                                </span>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 h-[410px]">
+                              <div className="h-full rounded-xl overflow-hidden border border-border/40">
+                                <img src={galleryImages[0]} alt="" className="w-full h-full object-cover" />
+                              </div>
+                              <div className="grid grid-rows-2 gap-2 h-full">
+                                <div className="rounded-xl overflow-hidden border border-border/40">
+                                  <img src={galleryImages[1] || galleryImages[0]} alt="" className="w-full h-full object-cover" />
+                                </div>
+                                <div className="rounded-xl overflow-hidden border border-border/40">
+                                  <img src={galleryImages[2] || galleryImages[0]} alt="" className="w-full h-full object-cover" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
 
-                  if (cfg.gallery === "mosaic") {
-                    return (
-                      <div className="h-[480px] grid grid-cols-3 grid-rows-2 gap-2 rounded-2xl overflow-hidden border border-border/70 bg-card/60 p-2 select-none">
-                        <div className="col-span-2 row-span-2 relative rounded-xl overflow-hidden border border-border/40 group cursor-pointer">
-                          <img src={galleryImages[0]} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                            <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
-                              Mosaic Grid
-                            </span>
+                      // Default: Classic Lightbox Zoom
+                      return (
+                        <div className="h-[480px] flex flex-col justify-between rounded-2xl overflow-hidden border border-border/70 bg-card/60 p-3 select-none">
+                          <div className="relative h-[380px] w-full rounded-xl overflow-hidden border border-border/40 group">
+                            <img
+                              src={activeImg}
+                              alt="Preview Garment"
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                            {/* Loupe Simulation Badge */}
+                            <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md rounded-full px-2.5 py-0.5 text-[8.5px] font-mono text-white flex items-center gap-1 border border-white/20">
+                              <ZoomIn className="w-3 h-3 text-primary" /> Classic Loupe
+                            </div>
                             {cfg.show_scarcity_badge && (
-                              <span className="text-[8px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold">
-                                ONLY 4 LEFT
+                              <span className="absolute top-3 right-3 text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+                                <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
                               </span>
                             )}
+                            {/* Navigation Arrows */}
+                            <button
+                              onClick={() => setPreviewGalleryActiveIdx((p) => (p - 1 + galleryImages.length) % galleryImages.length)}
+                              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/65 text-white flex items-center justify-center hover:bg-black/90 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setPreviewGalleryActiveIdx((p) => (p + 1) % galleryImages.length)}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/65 text-white flex items-center justify-center hover:bg-black/90 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Thumbnail Strip */}
+                          <div className="flex gap-2 overflow-x-auto pb-0.5">
+                            {galleryImages.map((img, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => setPreviewGalleryActiveIdx(idx)}
+                                className={`w-16 h-12 rounded-xl overflow-hidden border cursor-pointer transition-all shrink-0 ${
+                                  previewGalleryActiveIdx === idx
+                                    ? "border-primary ring-1 ring-primary/40 opacity-100 scale-105"
+                                    : "border-border/60 opacity-60 hover:opacity-100"
+                                }`}
+                              >
+                                <img src={img} alt="" className="w-full h-full object-cover" />
+                              </button>
+                            ))}
                           </div>
                         </div>
-                        <div className="col-span-1 row-span-1 rounded-xl overflow-hidden border border-border/40 group cursor-pointer">
-                          <img src={galleryImages[1 % galleryImages.length]} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                        </div>
-                        <div className="col-span-1 row-span-1 rounded-xl overflow-hidden border border-border/40 group cursor-pointer relative">
-                          <img src={galleryImages[2 % galleryImages.length]} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <span className="text-white text-xs font-mono font-bold">+{galleryImages.length}</span>
-                          </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Product Info & Conversion Column */}
+                  <div className={`${previewMode === "mobile" ? "col-span-1" : "md:col-span-6"} space-y-3.5`}>
+                    {/* Brand Header */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-md ${previewTokens.badge}`}>
+                          ORIZINO STUDIO — A/W 2026
+                        </span>
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-amber-400">
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          <span>4.9</span>
+                          <span className="opacity-60 text-[9px] font-normal">(48 reviews)</span>
                         </div>
                       </div>
-                    );
-                  }
 
-                  // Default: Classic Lightbox Zoom
-                  return (
-                    <div className="h-[480px] flex flex-col justify-between rounded-2xl overflow-hidden border border-border/70 bg-card/60 p-3 select-none">
-                      <div className="relative h-[380px] w-full rounded-xl overflow-hidden border border-border/40 group">
-                        <img
-                          src={activeImg}
-                          alt="Preview Garment"
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                        {/* Loupe Simulation Badge */}
-                        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md rounded-full px-2.5 py-0.5 text-[8.5px] font-mono text-white flex items-center gap-1 border border-white/20">
-                          <ZoomIn className="w-3 h-3 text-primary" /> Classic Loupe
-                        </div>
-                        {cfg.show_scarcity_badge && (
-                          <span className="absolute top-3 right-3 text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
-                            <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
+                      <h3 className={`text-lg sm:text-xl font-extrabold ${previewTokens.title}`}>
+                        Heavyweight Boxy Drop Terry Hoodie
+                      </h3>
+
+                      <div className="flex items-baseline gap-2 pt-0.5">
+                        <span className={previewTokens.price}>
+                          $120.00 USD
+                        </span>
+                        <span className="text-xs opacity-50 line-through font-mono">$150.00</span>
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-bold border border-emerald-500/20">
+                          SAVE 20%
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Colorways */}
+                    <div className="space-y-1.5 pt-1 border-t border-border/30">
+                      <div className="flex items-center justify-between text-[10.5px]">
+                        <span className="font-semibold">Colorway:</span>
+                        <span className="font-mono uppercase opacity-70 text-[9.5px]">{previewSelectedColor}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {[
+                          { id: "charcoal", color: "#1E1E1E", label: "Charcoal" },
+                          { id: "vanilla", color: "#EFE6DD", label: "Vanilla Cream" },
+                          { id: "cherry", color: "#800000", label: "Deep Cherry" },
+                        ].map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => setPreviewSelectedColor(c.id)}
+                            className={`w-6 h-6 rounded-full border transition-all cursor-pointer ${
+                              previewSelectedColor === c.id
+                                ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-105"
+                                : "border-white/20 opacity-80 hover:opacity-100"
+                            }`}
+                            style={{ backgroundColor: c.color }}
+                            title={c.label}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Sizing & Measurement */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[10.5px]">
+                        <span className="font-semibold">Select Size:</span>
+                        {cfg.show_size_chart && (
+                          <span className="text-primary hover:underline cursor-pointer flex items-center gap-1 font-medium text-[9.5px]">
+                            <Ruler className="w-2.5 h-2.5" /> Size Chart &amp; Fit Guide
                           </span>
                         )}
-                        {/* Navigation Arrows */}
-                        <button
-                          onClick={() => setPreviewGalleryActiveIdx((p) => (p - 1 + galleryImages.length) % galleryImages.length)}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/65 text-white flex items-center justify-center hover:bg-black/90 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setPreviewGalleryActiveIdx((p) => (p + 1) % galleryImages.length)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/65 text-white flex items-center justify-center hover:bg-black/90 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
                       </div>
-
-                      {/* Thumbnail Strip */}
-                      <div className="flex gap-2 overflow-x-auto pb-0.5">
-                        {galleryImages.map((img, idx) => (
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {["S", "M", "L", "XL"].map((s) => (
                           <button
-                            key={idx}
-                            onClick={() => setPreviewGalleryActiveIdx(idx)}
-                            className={`w-16 h-12 rounded-xl overflow-hidden border cursor-pointer transition-all shrink-0 ${
-                              previewGalleryActiveIdx === idx
-                                ? "border-primary ring-1 ring-primary/40 opacity-100 scale-105"
-                                : "border-border/60 opacity-60 hover:opacity-100"
+                            key={s}
+                            onClick={() => setPreviewSelectedSize(s)}
+                            className={`py-1.5 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
+                              previewSelectedSize === s
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border/60 bg-secondary/30 hover:bg-secondary text-foreground"
                             }`}
                           >
-                            <img src={img} alt="" className="w-full h-full object-cover" />
+                            {s}
                           </button>
                         ))}
                       </div>
                     </div>
-                  );
-                })()}
-              </div>
 
-              {/* Product Info & Conversion Column */}
-              <div className={`${previewMode === "mobile" ? "col-span-1" : "md:col-span-6"} space-y-3.5`}>
-                {/* Brand Header */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-mono uppercase tracking-widest opacity-60">
-                      ORIZINO STUDIO — A/W 2026
-                    </span>
-                    <div className="flex items-center gap-1 text-[10px] font-bold text-amber-400">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                      <span>4.9</span>
-                      <span className="opacity-60 text-[9px] font-normal">(48 reviews)</span>
+                    {/* Primary Action Buttons */}
+                    <div className="space-y-2 pt-1">
+                      <div className="grid grid-cols-2 gap-2">
+                        <button className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${previewTokens.btnPrimary}`}>
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                          <span>ADD TO CART</span>
+                        </button>
+                        <button className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${previewTokens.btnSecondary}`}>
+                          <Zap className="w-3.5 h-3.5" />
+                          <span>BUY NOW</span>
+                        </button>
+                      </div>
+
+                      {cfg.show_sticky_tray && (
+                        <div className={`p-2 rounded-xl border flex items-center justify-between text-[10px] ${previewTokens.card}`}>
+                          <span className="flex items-center gap-1.5 font-medium">
+                            <Smartphone className="w-3 h-3 text-primary" /> Sticky Mobile Dock Active
+                          </span>
+                          <span className="font-mono text-primary font-bold">Auto-enabled</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
 
-                  <h3 className="text-lg sm:text-xl font-extrabold tracking-tight">
-                    Heavyweight Boxy Drop Terry Hoodie
-                  </h3>
-
-                  <div className="flex items-baseline gap-2 pt-0.5">
-                    <span className={`text-2xl font-black ${activeLayoutObj.accentText}`}>
-                      $120.00 USD
-                    </span>
-                    <span className="text-xs opacity-50 line-through font-mono">$150.00</span>
-                    <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 font-bold">
-                      SAVE 20%
-                    </span>
-                  </div>
-                </div>
-
-                {/* Colorways */}
-                <div className="space-y-1.5 pt-1 border-t border-border/30">
-                  <div className="flex items-center justify-between text-[10.5px]">
-                    <span className="font-semibold">Colorway:</span>
-                    <span className="font-mono uppercase opacity-70 text-[9.5px]">{previewSelectedColor}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {[
-                      { id: "charcoal", color: "#1E1E1E", label: "Charcoal" },
-                      { id: "vanilla", color: "#EFE6DD", label: "Vanilla Cream" },
-                      { id: "cherry", color: "#800000", label: "Deep Cherry" },
-                    ].map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => setPreviewSelectedColor(c.id)}
-                        className={`w-6 h-6 rounded-full border transition-all cursor-pointer ${
-                          previewSelectedColor === c.id
-                            ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-105"
-                            : "border-white/20 opacity-80 hover:opacity-100"
-                        }`}
-                        style={{ backgroundColor: c.color }}
-                        title={c.label}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Sizing & Measurement */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-[10.5px]">
-                    <span className="font-semibold">Select Size:</span>
-                    {cfg.show_size_chart && (
-                      <span className="text-primary hover:underline cursor-pointer flex items-center gap-1 font-medium text-[9.5px]">
-                        <Ruler className="w-2.5 h-2.5" /> Size Chart &amp; Fit Guide
-                      </span>
+                    {/* Trust Badges */}
+                    {cfg.show_trust_badges && (
+                      <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-border/30 text-[9px] text-center opacity-80 font-medium">
+                        <div className={`p-1.5 rounded-lg flex flex-col items-center gap-0.5 ${previewTokens.card}`}>
+                          <Truck className="w-3 h-3 text-primary" />
+                          <span>Express Air Shipping</span>
+                        </div>
+                        <div className={`p-1.5 rounded-lg flex flex-col items-center gap-0.5 ${previewTokens.card}`}>
+                          <ShieldCheck className="w-3 h-3 text-primary" />
+                          <span>100% Authentic</span>
+                        </div>
+                        <div className={`p-1.5 rounded-lg flex flex-col items-center gap-0.5 ${previewTokens.card}`}>
+                          <RotateCcw className="w-3 h-3 text-primary" />
+                          <span>30-Day Easy Exchange</span>
+                        </div>
+                      </div>
                     )}
                   </div>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {["S", "M", "L", "XL"].map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => setPreviewSelectedSize(s)}
-                        className={`py-1.5 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
-                          previewSelectedSize === s
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border/60 bg-secondary/30 hover:bg-secondary text-foreground"
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Primary Action Buttons */}
-                <div className="space-y-2 pt-1">
-                  <div className="grid grid-cols-2 gap-2">
-                    <button className="py-2.5 px-3 rounded-xl bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center gap-1.5 hover:brightness-110 transition-all cursor-pointer">
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                      <span>ADD TO CART</span>
-                    </button>
-                    <button className="py-2.5 px-3 rounded-xl bg-foreground text-background font-bold text-xs flex items-center justify-center gap-1.5 hover:opacity-90 transition-all cursor-pointer">
-                      <Zap className="w-3.5 h-3.5" />
-                      <span>BUY NOW</span>
-                    </button>
-                  </div>
-
-                  {cfg.show_sticky_tray && (
-                    <div className="p-2 rounded-xl bg-secondary/40 border border-border/50 flex items-center justify-between text-[10px]">
-                      <span className="flex items-center gap-1.5 font-medium">
-                        <Smartphone className="w-3 h-3 text-primary" /> Sticky Mobile Dock Active
-                      </span>
-                      <span className="font-mono text-primary font-bold">Auto-enabled</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Trust Badges */}
-                {cfg.show_trust_badges && (
-                  <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-border/30 text-[9px] text-center opacity-80 font-medium">
-                    <div className="p-1.5 rounded-lg bg-secondary/20 flex flex-col items-center gap-0.5">
-                      <Truck className="w-3 h-3 text-primary" />
-                      <span>Express Air Shipping</span>
-                    </div>
-                    <div className="p-1.5 rounded-lg bg-secondary/20 flex flex-col items-center gap-0.5">
-                      <ShieldCheck className="w-3 h-3 text-primary" />
-                      <span>100% Authentic</span>
-                    </div>
-                    <div className="p-1.5 rounded-lg bg-secondary/20 flex flex-col items-center gap-0.5">
-                      <RotateCcw className="w-3 h-3 text-primary" />
-                      <span>30-Day Easy Exchange</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* ── LUXURY PRODUCT INTELLIGENCE (ACCORDION DISCLOSURES — NO ROW MENUS) ── */}
-            <div className="mt-6 pt-4 border-t border-border/40 space-y-2">
-              <div className="flex items-center justify-between pb-1">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground font-bold">
-                  Product Architecture &amp; Intelligence
-                </span>
-                <span className="text-[9px] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                  Interactive Disclosures
-                </span>
-              </div>
-
-              <div className="space-y-1.5">
-                {/* 1. Garment Specs */}
-                <div className="rounded-xl border border-border/60 bg-card/60 overflow-hidden transition-all">
-                  <button
-                    onClick={() => setOpenAccordion(openAccordion === "specs" ? null : "specs")}
-                    className="w-full flex items-center justify-between p-3 text-left hover:bg-secondary/20 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                        <Sliders className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-foreground">Garment Specifications</h4>
-                        <span className="text-[9.5px] text-muted-foreground">380 GSM • Combed Cotton • Dhaka Atelier</span>
-                      </div>
-                    </div>
-                    <ChevronDown
-                      className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
-                        openAccordion === "specs" ? "rotate-180 text-primary" : ""
-                      }`}
-                    />
-                  </button>
-
-                  {openAccordion === "specs" && (
-                    <div className="p-3 pt-0 border-t border-border/30 mt-1">
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-[10.5px]">
-                        <div className="p-2 rounded-lg bg-secondary/30">
-                          <span className="opacity-50 block font-mono text-[8.5px] uppercase">Fabric Density</span>
-                          <strong className="text-foreground">380 GSM Heavy Terry</strong>
-                        </div>
-                        <div className="p-2 rounded-lg bg-secondary/30">
-                          <span className="opacity-50 block font-mono text-[8.5px] uppercase">Yarn Fiber</span>
-                          <strong className="text-foreground">100% Combed Cotton</strong>
-                        </div>
-                        <div className="p-2 rounded-lg bg-secondary/30">
-                          <span className="opacity-50 block font-mono text-[8.5px] uppercase">Atelier Origin</span>
-                          <strong className="text-foreground">Dhaka, Bangladesh</strong>
-                        </div>
-                        <div className="p-2 rounded-lg bg-secondary/30">
-                          <span className="opacity-50 block font-mono text-[8.5px] uppercase">Hardware</span>
-                          <strong className="text-foreground">Laser-Etched Aglets</strong>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* 2. Atelier Story */}
-                <div className="rounded-xl border border-border/60 bg-card/60 overflow-hidden transition-all">
-                  <button
-                    onClick={() => setOpenAccordion(openAccordion === "story" ? null : "story")}
-                    className="w-full flex items-center justify-between p-3 text-left hover:bg-secondary/20 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                        <Sparkles className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-foreground">Atelier Craft &amp; Story</h4>
-                        <span className="text-[9.5px] text-muted-foreground">Yarn-dyed organic ring-spun cotton</span>
-                      </div>
-                    </div>
-                    <ChevronDown
-                      className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
-                        openAccordion === "story" ? "rotate-180 text-primary" : ""
-                      }`}
-                    />
-                  </button>
-
-                  {openAccordion === "story" && (
-                    <div className="p-3 pt-0 border-t border-border/30 mt-1">
-                      <p className="text-xs text-muted-foreground leading-relaxed pt-2">
-                        Engineered from yarn-dyed organic ring-spun cotton. Each piece is garment-dyed in Dhaka and enzyme washed for a broken-in vintage patina with heavyweight boxy drape.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* 3. Fit & Measurements */}
-                <div className="rounded-xl border border-border/60 bg-card/60 overflow-hidden transition-all">
-                  <button
-                    onClick={() => setOpenAccordion(openAccordion === "fit" ? null : "fit")}
-                    className="w-full flex items-center justify-between p-3 text-left hover:bg-secondary/20 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                        <Ruler className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-foreground">Fit Guidance &amp; Sizing</h4>
-                        <span className="text-[9.5px] text-muted-foreground">Boxy oversized streetwear silhouette</span>
-                      </div>
-                    </div>
-                    <ChevronDown
-                      className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
-                        openAccordion === "fit" ? "rotate-180 text-primary" : ""
-                      }`}
-                    />
-                  </button>
-
-                  {openAccordion === "fit" && (
-                    <div className="p-3 pt-0 border-t border-border/30 mt-1">
-                      <p className="text-xs text-muted-foreground leading-relaxed pt-2">
-                        Boxy oversized silhouette with dropped shoulders. True to contemporary streetwear sizing. Take your normal size for relaxed drape, or size down for tailored fit.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* 4. Verified Reviews */}
-                <div className="rounded-xl border border-border/60 bg-card/60 overflow-hidden transition-all">
-                  <button
-                    onClick={() => setOpenAccordion(openAccordion === "reviews" ? null : "reviews")}
-                    className="w-full flex items-center justify-between p-3 text-left hover:bg-secondary/20 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                        <MessageSquare className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-foreground">Customer Reviews &amp; Ratings</h4>
-                        <span className="text-[9.5px] text-muted-foreground">⭐️⭐️⭐️⭐️⭐️ 4.9/5 (48 verified buyers)</span>
-                      </div>
-                    </div>
-                    <ChevronDown
-                      className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
-                        openAccordion === "reviews" ? "rotate-180 text-primary" : ""
-                      }`}
-                    />
-                  </button>
-
-                  {openAccordion === "reviews" && (
-                    <div className="p-3 pt-0 border-t border-border/30 mt-1">
-                      <div className="flex items-center justify-between text-xs pt-2">
-                        <span>⭐️⭐️⭐️⭐️⭐️ &ldquo;Insane 380 GSM fabric weight and perfect boxy silhouette.&rdquo;</span>
-                        <span className="font-mono opacity-60 text-[9px]">Verified Buyer — 2 days ago</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          );
+        })()}
       </div>
 
       {/* ── SECTION 1: CURATED STUDIO PRESETS ── */}
