@@ -32,6 +32,18 @@ import {
   ChevronLeft,
   ChevronRight,
   ZoomIn,
+  Infinity as InfinityIcon,
+  Disc,
+  Film,
+  LayoutGrid,
+  Copy,
+  Compass,
+  Maximize2,
+  SlidersHorizontal,
+  BookOpen,
+  Crown,
+  Box,
+  Square,
 } from "lucide-react";
 import { toast } from "@/lib/app-toast";
 import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
@@ -90,14 +102,21 @@ const DEFAULT_CONFIG: ProductPageConfig = {
   show_reviews: true,
 };
 
-const STUDIO_PRESETS = [
+const STUDIO_PRESETS: {
+  layout: LayoutStyle;
+  gallery: GalleryStyle;
+  label: string;
+  tag: string;
+  desc: string;
+  icon: React.ElementType;
+}[] = [
   {
     layout: "dark-luxury" as LayoutStyle,
     gallery: "infinity" as GalleryStyle,
     label: "Midnight Runway",
     tag: "High Fashion",
     desc: "Obsidian dark background, gold ambient glow & continuous 3D Infinity Loop gallery.",
-    emoji: "🖤",
+    icon: Crown,
   },
   {
     layout: "glass" as LayoutStyle,
@@ -105,7 +124,7 @@ const STUDIO_PRESETS = [
     label: "Modern Atrium",
     tag: "Signature",
     desc: "Translucent frosted glassmorphism cards & 3D Coverflow perspective rotation.",
-    emoji: "🔮",
+    icon: Box,
   },
   {
     layout: "neon" as LayoutStyle,
@@ -113,7 +132,7 @@ const STUDIO_PRESETS = [
     label: "High-Voltage Drop",
     tag: "Cyber Street",
     desc: "Cyberpunk edge glow, electrified price accent & 3D cursor parallax card stack.",
-    emoji: "⚡",
+    icon: Zap,
   },
   {
     layout: "minimal" as LayoutStyle,
@@ -121,7 +140,7 @@ const STUDIO_PRESETS = [
     label: "Pure Minimalist",
     tag: "Scandinavian",
     desc: "Pure whitespace, clean typography, hairline borders & Lightbox Zoom lens.",
-    emoji: "🤍",
+    icon: Square,
   },
   {
     layout: "magazine" as LayoutStyle,
@@ -129,7 +148,7 @@ const STUDIO_PRESETS = [
     label: "Editorial Lookbook",
     tag: "Curated",
     desc: "Italic serif typography, asymmetric magazine narrative flow & adaptive mosaic grid.",
-    emoji: "📰",
+    icon: BookOpen,
   },
   {
     layout: "glass-minimal" as LayoutStyle,
@@ -137,7 +156,7 @@ const STUDIO_PRESETS = [
     label: "Vintage Cinema",
     tag: "Atelier",
     desc: "Clean neutral glass borders with vintage 35mm filmstrip cinema sprocket frames.",
-    emoji: "🎬",
+    icon: Film,
   },
 ];
 
@@ -146,7 +165,7 @@ const LAYOUT_STYLES: {
   label: string;
   desc: string;
   tag: string;
-  emoji: string;
+  icon: React.ElementType;
   previewBg: string;
   accentText: string;
 }[] = [
@@ -155,7 +174,7 @@ const LAYOUT_STYLES: {
     label: "Dark Luxury",
     tag: "Obsidian",
     desc: "Deep obsidian backdrop with gold accents, ambient reflections & frosted cards",
-    emoji: "🖤",
+    icon: Crown,
     previewBg: "bg-gradient-to-br from-black via-zinc-900 to-black",
     accentText: "text-amber-400",
   },
@@ -164,7 +183,7 @@ const LAYOUT_STYLES: {
     label: "Glassmorphism",
     tag: "Translucent",
     desc: "Frosted glass cards with smooth backdrop blur and signature brand borders",
-    emoji: "🔮",
+    icon: Box,
     previewBg: "bg-gradient-to-br from-primary/25 via-background to-primary/10",
     accentText: "text-primary",
   },
@@ -173,7 +192,7 @@ const LAYOUT_STYLES: {
     label: "Neon Cyber",
     tag: "Electrified",
     desc: "High-contrast dark styling with glowing borders and electric price highlighting",
-    emoji: "⚡",
+    icon: Zap,
     previewBg: "bg-gradient-to-br from-background via-primary/20 to-background",
     accentText: "text-primary font-black",
   },
@@ -182,7 +201,7 @@ const LAYOUT_STYLES: {
     label: "Apple Minimal",
     tag: "Monochrome",
     desc: "Pure whitespace, clean precision typography, and zero visual clutter",
-    emoji: "🤍",
+    icon: Square,
     previewBg: "bg-gradient-to-br from-zinc-100 via-white to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950",
     accentText: "text-foreground",
   },
@@ -191,7 +210,7 @@ const LAYOUT_STYLES: {
     label: "Editorial Magazine",
     tag: "Serif & Story",
     desc: "Asymmetric lookbook layout with italic display serif typography and narrative blocks",
-    emoji: "📰",
+    icon: BookOpen,
     previewBg: "bg-gradient-to-br from-amber-500/10 via-background to-orange-500/10",
     accentText: "font-serif italic text-foreground",
   },
@@ -200,7 +219,7 @@ const LAYOUT_STYLES: {
     label: "Glass Minimal",
     tag: "Neutral",
     desc: "Ultra-clean neutral glass with subtle outlines and crisp balanced contrast",
-    emoji: "✨",
+    icon: Sparkles,
     previewBg: "bg-gradient-to-br from-secondary/40 via-card to-secondary/20",
     accentText: "text-foreground",
   },
@@ -211,7 +230,7 @@ const GALLERY_ENGINES: {
   label: string;
   tag: string;
   desc: string;
-  emoji: string;
+  icon: React.ElementType;
   badge: string;
 }[] = [
   {
@@ -219,7 +238,7 @@ const GALLERY_ENGINES: {
     label: "Classic Lightbox Zoom",
     tag: "Standard",
     desc: "Thumbnail rail with cursor zoom lens and immersive full-screen modal lightbox",
-    emoji: "🖼️",
+    icon: Maximize2,
     badge: "2D Rail",
   },
   {
@@ -227,7 +246,7 @@ const GALLERY_ENGINES: {
     label: "Infinity Loop 3D",
     tag: "3D Motion",
     desc: "Continuous 3D revolving carousel loop with smooth velocity transitions",
-    emoji: "♾️",
+    icon: InfinityIcon,
     badge: "3D Carousel",
   },
   {
@@ -235,7 +254,7 @@ const GALLERY_ENGINES: {
     label: "Coverflow 3D",
     tag: "Perspective",
     desc: "Perspective depth rotation with centered active card and angled side thumbnails",
-    emoji: "💿",
+    icon: Disc,
     badge: "3D Angle",
   },
   {
@@ -243,7 +262,7 @@ const GALLERY_ENGINES: {
     label: "Filmstrip Cinema",
     tag: "Vintage",
     desc: "Cinematic dark presentation with vintage 35mm film sprocket border frame",
-    emoji: "🎬",
+    icon: Film,
     badge: "Cinema Frame",
   },
   {
@@ -251,7 +270,7 @@ const GALLERY_ENGINES: {
     label: "Adaptive Grid Mosaic",
     tag: "Editorial",
     desc: "Pinterest-style adaptive masonry multi-image layout with cursor hover zoom",
-    emoji: "🧩",
+    icon: LayoutGrid,
     badge: "Masonry",
   },
   {
@@ -259,7 +278,7 @@ const GALLERY_ENGINES: {
     label: "Parallax Stack 3D",
     tag: "Interactive",
     desc: "Stacked image cards with 3D cursor tilt, depth layers, and gesture swipe",
-    emoji: "📚",
+    icon: Copy,
     badge: "3D Tilt",
   },
   {
@@ -267,7 +286,7 @@ const GALLERY_ENGINES: {
     label: "Editorial Split Runway",
     tag: "Dual-View",
     desc: "Dual high-fashion perspective showcasing front silhouette and fabric craft side-by-side",
-    emoji: "👗",
+    icon: Columns,
     badge: "Dual Runway",
   },
   {
@@ -275,7 +294,7 @@ const GALLERY_ENGINES: {
     label: "Horizon Luxury Track",
     tag: "Panorama",
     desc: "Apple-style panoramic horizontal card slider with smooth momentum and ambient lighting",
-    emoji: "🏎️",
+    icon: SlidersHorizontal,
     badge: "Horizon Snap",
   },
   {
@@ -283,7 +302,7 @@ const GALLERY_ENGINES: {
     label: "Orbit 360° Turntable",
     tag: "360° Spin",
     desc: "Interactive garment rotation turntable with precision angle dial, drag physics & studio lighting",
-    emoji: "🔄",
+    icon: RotateCw,
     badge: "360° Orbit",
   },
 ];
@@ -1748,22 +1767,29 @@ export default function ProductDetailLayoutPanel() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {STUDIO_PRESETS.map((rec) => {
             const active = cfg.layout === rec.layout && cfg.gallery === rec.gallery;
+            const IconComp = rec.icon;
             return (
               <button
                 key={rec.label}
                 onClick={() => setCfg((c) => ({ ...c, layout: rec.layout, gallery: rec.gallery }))}
-                className={`text-left p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                className={`text-left p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between group ${
                   active
                     ? "border-primary bg-primary/15 ring-1 ring-primary/40"
                     : "border-border/60 hover:border-primary/40 bg-card/70 hover:bg-card"
                 }`}
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{rec.emoji}</span>
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
+                      active
+                        ? "bg-primary/20 border-primary text-primary"
+                        : "bg-foreground/5 border-foreground/10 text-foreground group-hover:border-foreground/20"
+                    }`}>
+                      <IconComp className="w-4 h-4" />
+                    </div>
                     <div>
-                      <p className="font-bold text-foreground text-xs">{rec.label}</p>
-                      <span className="text-[8.5px] font-mono text-primary uppercase font-bold">{rec.tag}</span>
+                      <p className="font-bold text-foreground text-xs leading-tight">{rec.label}</p>
+                      <span className="text-[8px] font-mono text-muted-foreground uppercase font-semibold">{rec.tag}</span>
                     </div>
                   </div>
                   {active ? (
@@ -1799,21 +1825,24 @@ export default function ProductDetailLayoutPanel() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {LAYOUT_STYLES.map((opt) => {
             const active = cfg.layout === opt.id;
+            const IconComp = opt.icon;
             return (
               <motion.div
                 key={opt.id}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setCfg((c) => ({ ...c, layout: opt.id }))}
-                className={`text-left rounded-xl border transition-all cursor-pointer overflow-hidden ${
+                className={`text-left rounded-xl border transition-all cursor-pointer overflow-hidden group ${
                   active
                     ? "border-primary bg-primary/10 ring-1 ring-primary/40"
                     : "border-border/60 bg-card/70 hover:border-primary/40 hover:bg-card"
                 }`}
               >
                 <div className={`h-12 ${opt.previewBg} relative flex items-center justify-between px-3 border-b border-border/30`}>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xl">{opt.emoji}</span>
-                    <span className="text-[10px] font-mono uppercase font-bold text-foreground/80">{opt.tag}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-md bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white shrink-0">
+                      <IconComp className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-[10px] font-mono uppercase font-bold text-foreground/90">{opt.tag}</span>
                   </div>
                   {active && (
                     <Badge variant="outline" className="text-[8.5px] font-mono border-primary/40 text-primary bg-background/90">
@@ -1839,7 +1868,7 @@ export default function ProductDetailLayoutPanel() {
               <ImageIcon className="w-3 h-3" />
             </div>
             <div>
-              <h3 className="text-xs font-bold text-foreground">Image Gallery Engine (6 Motion Engines)</h3>
+              <h3 className="text-xs font-bold text-foreground">Image Gallery Engine ({GALLERY_ENGINES.length} Motion Engines)</h3>
               <p className="text-[10px] text-muted-foreground">Select how product photography and lookbook angles are presented.</p>
             </div>
           </div>
@@ -1851,26 +1880,35 @@ export default function ProductDetailLayoutPanel() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {GALLERY_ENGINES.map((opt) => {
             const active = cfg.gallery === opt.id;
+            const IconComp = opt.icon;
             return (
               <motion.div
                 key={opt.id}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setCfg((c) => ({ ...c, gallery: opt.id }))}
-                className={`text-left p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                className={`text-left p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between group ${
                   active
                     ? "border-primary bg-primary/10 ring-1 ring-primary/40"
                     : "border-border/60 bg-card/70 hover:border-primary/40 hover:bg-card"
                 }`}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{opt.emoji}</span>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
+                      active
+                        ? "bg-primary/20 border-primary text-primary"
+                        : "bg-foreground/5 border-foreground/10 text-foreground group-hover:border-foreground/20"
+                    }`}>
+                      <IconComp className="w-4 h-4" />
+                    </div>
                     <div>
-                      <p className="font-bold text-foreground text-xs">{opt.label}</p>
-                      <span className="text-[8.5px] font-mono text-primary uppercase font-bold">{opt.badge}</span>
+                      <p className="font-bold text-foreground text-xs leading-tight">{opt.label}</p>
+                      <span className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">
+                        {opt.badge}
+                      </span>
                     </div>
                   </div>
-                  {active && <Check className="w-3.5 h-3.5 text-primary" />}
+                  {active && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
                 </div>
                 <p className="text-[10px] text-muted-foreground leading-tight mt-1">{opt.desc}</p>
               </motion.div>

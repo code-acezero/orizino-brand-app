@@ -22,6 +22,11 @@ import {
   Moon,
   Columns,
   Eye,
+  Crown,
+  BookOpen,
+  Layers,
+  Zap,
+  Compass,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/lib/app-toast";
@@ -68,14 +73,14 @@ function ensureFont(gfUrl: string) {
   document.head.appendChild(link);
 }
 
-const CATEGORIES: { id: TypographyCategory; label: string; icon: string }[] = [
-  { id: "all", label: "All Fonts", icon: "✦" },
-  { id: "custom", label: "Custom Brand Fonts", icon: "💎" },
-  { id: "editorial", label: "Editorial & Luxury", icon: "✨" },
-  { id: "classic", label: "Classic & Haute Couture", icon: "🏛️" },
-  { id: "creative", label: "Creative & Avant-Garde", icon: "⚡" },
-  { id: "minimal", label: "Minimal & Clean", icon: "🤍" },
-  { id: "geometric", label: "Geometric Studio", icon: "📐" },
+const CATEGORIES: { id: TypographyCategory; label: string; icon: React.ElementType }[] = [
+  { id: "all", label: "All Fonts", icon: Sparkles },
+  { id: "custom", label: "Custom Brand Fonts", icon: Crown },
+  { id: "editorial", label: "Editorial & Luxury", icon: BookOpen },
+  { id: "classic", label: "Classic & Haute Couture", icon: Layers },
+  { id: "creative", label: "Creative & Avant-Garde", icon: Zap },
+  { id: "minimal", label: "Minimal & Clean", icon: Square },
+  { id: "geometric", label: "Geometric Studio", icon: Compass },
 ];
 
 function extractFontName(fontFamilyStr: string): string {
@@ -226,9 +231,12 @@ const AdminStorefrontAppearance: React.FC = () => {
                 className="flex items-center gap-2 h-8 px-3 rounded-xl bg-secondary/30 hover:bg-secondary/60 border border-border/50 text-xs font-semibold text-foreground transition-all cursor-pointer hover:border-primary/40 shrink-0"
               >
                 <Filter className="w-3.5 h-3.5 text-primary shrink-0" />
-                <span className="truncate max-w-[140px]">
-                  {CATEGORIES.find((c) => c.id === selectedCategory)?.icon}{" "}
-                  {CATEGORIES.find((c) => c.id === selectedCategory)?.label || "All Fonts"}
+                <span className="truncate max-w-[140px] flex items-center gap-1.5">
+                  {(() => {
+                    const SelectedIcon = CATEGORIES.find((c) => c.id === selectedCategory)?.icon || Sparkles;
+                    return <SelectedIcon className="w-3 h-3 text-muted-foreground" />;
+                  })()}
+                  <span>{CATEGORIES.find((c) => c.id === selectedCategory)?.label || "All Fonts"}</span>
                 </span>
                 <ChevronDown className="w-3 h-3 text-muted-foreground ml-0.5 shrink-0" />
               </button>
@@ -240,6 +248,7 @@ const AdminStorefrontAppearance: React.FC = () => {
               <DropdownMenuSeparator className="my-1 border-border/40" />
               {CATEGORIES.map((cat) => {
                 const active = selectedCategory === cat.id;
+                const IconComp = cat.icon;
                 return (
                   <DropdownMenuItem
                     key={cat.id}
@@ -249,7 +258,7 @@ const AdminStorefrontAppearance: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <span>{cat.icon}</span>
+                      <IconComp className="w-3.5 h-3.5 text-muted-foreground" />
                       <span>{cat.label}</span>
                     </div>
                     {active && <Check className="w-3.5 h-3.5 text-primary stroke-[2.5]" />}
