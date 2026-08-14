@@ -781,8 +781,6 @@ const CheckoutPage: React.FC = () => {
     );
   }
 
-  if (!user) { navigate("/auth"); return null; }
-
   if (orderSuccess) {
     return (
       <div className="min-h-screen flex items-center justify-center pb-20 lg:pb-0">
@@ -796,11 +794,19 @@ const CheckoutPage: React.FC = () => {
           </p>
           <div className="border border-border/50 rounded-xl p-4 text-xs text-muted-foreground space-y-2 text-left bg-card">
             <p className="font-semibold text-foreground">Next steps:</p>
-            <p>Our team will verify your payment details and reach out within 24 hours to confirm dispatch.</p>
+            <p>Our team will verify your order details and reach out to confirm delivery dispatch.</p>
           </div>
-          <Button onClick={() => navigate("/orders")} className="rounded-xl h-11 w-full font-semibold">
-            View My Orders <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
+          <div className="flex flex-col gap-2.5">
+            {user ? (
+              <Button onClick={() => navigate("/orders")} className="rounded-xl h-11 w-full font-semibold">
+                View My Orders <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            ) : (
+              <Button onClick={() => navigate("/")} className="rounded-xl h-11 w-full font-semibold">
+                Continue Shopping <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            )}
+          </div>
         </motion.div>
       </div>
     );
