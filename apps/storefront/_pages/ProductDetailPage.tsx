@@ -4,7 +4,7 @@ import { useLayout } from "@/contexts/LayoutContext";
 import { useParams, Link, useNavigate } from "@/lib/router-compat";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Shield, Truck, RotateCcw, Package, X, Zap, Tag, Flame, Sparkles } from "lucide-react";
+import { Star, Shield, Truck, RotateCcw, Package, X, Zap, Tag, Flame, TicketPercent, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/lib/app-toast";
@@ -680,39 +680,39 @@ const ProductDetailPage: React.FC = () => {
           ))}
         </div>
       )}
-      {/* Available offers & vouchers — refined UI */}
+      {/* Available offers & vouchers — refined luxury UI */}
       {((applicableCoupons && applicableCoupons.length > 0) || (deliveryOffers && deliveryOffers.length > 0)) && layout !== "minimal" && (
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/80 flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-primary" /> Available Offers & Vouchers
+              <TicketPercent className="w-4 h-4 text-primary" /> Available Offers & Vouchers
             </p>
-            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-foreground/5 text-muted-foreground border border-border/50">
               {(applicableCoupons?.length || 0) + (deliveryOffers?.length || 0)} available
             </span>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {applicableCoupons?.slice(0, 3).map(c => (
               <div
                 key={c.code}
-                className="flex items-center justify-between gap-3 p-3 rounded-2xl border border-primary/25 bg-primary/5 hover:border-primary/40 transition-all shadow-xs"
+                className="group relative flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-border/70 dark:border-white/10 bg-gradient-to-r from-card/80 via-card/50 to-background/50 backdrop-blur-md hover:border-primary/40 transition-all duration-300 shadow-xs"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                    <Tag className="w-4 h-4 text-primary" />
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 text-primary group-hover:scale-105 transition-transform">
+                    <Tag className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-xs font-bold tracking-wider text-primary border border-dashed border-primary/40 px-2 py-0.5 rounded-lg bg-background">
+                      <span className="font-mono text-xs font-bold tracking-wider text-primary border border-dashed border-primary/40 px-2.5 py-0.5 rounded-lg bg-background/80 shadow-2xs">
                         {c.code}
                       </span>
-                      <span className="text-xs font-extrabold text-primary bg-primary/15 px-2 py-0.5 rounded-md">
+                      <span className="text-[11px] font-bold text-foreground bg-primary/15 border border-primary/20 px-2 py-0.5 rounded-md">
                         {c.discount_type === "percentage" ? `${c.discount_value}% OFF` : `৳${Number(c.discount_value).toFixed(0)} OFF`}
                       </span>
                     </div>
                     {c.description && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{c.description}</p>
+                      <p className="text-[11.5px] text-muted-foreground mt-1 leading-relaxed truncate">{c.description}</p>
                     )}
                   </div>
                 </div>
@@ -725,9 +725,10 @@ const ProductDetailPage: React.FC = () => {
                       toast.success(`Coupon code ${c.code} copied!`);
                     } catch {}
                   }}
-                  className="shrink-0 text-xs font-semibold text-primary hover:text-primary-foreground hover:bg-primary border border-primary/30 px-2.5 py-1 rounded-xl transition-all"
+                  className="shrink-0 text-xs font-semibold text-primary hover:text-primary-foreground hover:bg-primary border border-primary/30 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
                   title="Copy coupon code"
                 >
+                  <Copy className="w-3 h-3" />
                   Copy
                 </button>
               </div>
@@ -736,20 +737,25 @@ const ProductDetailPage: React.FC = () => {
             {deliveryOffers?.slice(0, 2).map(offer => (
               <div
                 key={offer.id}
-                className="flex items-center gap-3 p-3 rounded-2xl border border-border/50 bg-card/60 shadow-xs"
+                className="group relative flex items-center gap-3.5 p-3.5 rounded-2xl border border-border/70 dark:border-white/10 bg-gradient-to-r from-card/80 via-card/50 to-background/50 backdrop-blur-md hover:border-primary/40 transition-all duration-300 shadow-xs"
               >
-                <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                  <Truck className="w-4 h-4 text-primary" />
+                <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 text-primary group-hover:scale-105 transition-transform">
+                  <Truck className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-primary/15 text-primary px-1.5 py-0.5 rounded">
-                      Shipping
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[9.5px] font-mono font-bold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25 px-2 py-0.5 rounded-md shrink-0">
+                        Shipping
+                      </span>
+                      <p className="text-xs font-semibold text-foreground tracking-tight truncate">{offer.title}</p>
+                    </div>
+                    <span className="hidden sm:inline-flex text-[9.5px] font-mono font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full shrink-0">
+                      Auto Applied
                     </span>
-                    <p className="text-xs font-semibold text-foreground truncate">{offer.title}</p>
                   </div>
                   {offer.description && (
-                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{offer.description}</p>
+                    <p className="text-[11.5px] text-muted-foreground mt-1 leading-relaxed truncate">{offer.description}</p>
                   )}
                 </div>
               </div>
