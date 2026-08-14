@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
   Layers,
-  Sparkles,
+  Palette,
   Image as ImageIcon,
   Check,
   Layout,
@@ -220,7 +220,7 @@ const LAYOUT_STYLES: {
     label: "Glass Minimal",
     tag: "Neutral",
     desc: "Ultra-clean neutral glass with subtle outlines and crisp balanced contrast",
-    icon: Sparkles,
+    icon: Layers,
     previewBg: "bg-gradient-to-r from-zinc-400/40 via-secondary to-zinc-500/40",
     accentText: "text-foreground",
   },
@@ -784,7 +784,7 @@ const AdminStudioEditorialSplitPreview = ({
             </span>
           </div>
           <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md rounded-full px-2.5 py-0.5 text-[8.5px] font-mono text-white/90 border border-white/15 flex items-center gap-1">
-            <Sparkles className="w-2.5 h-2.5 text-primary" /> Detail Craft
+            <Eye className="w-2.5 h-2.5 text-primary" /> Detail Craft
           </div>
         </div>
       </div>
@@ -1766,7 +1766,7 @@ export default function ProductDetailLayoutPanel() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-              <Sparkles className="w-3.5 h-3.5" />
+              <Palette className="w-3.5 h-3.5" />
             </div>
             <div>
               <h3 className="text-xs font-bold text-foreground">Curated Studio Combinations</h3>
