@@ -37,7 +37,7 @@ export const MASTER_SECTIONS: readonly MasterSection[] = [
   { key: "seo",       segment: "marketing",     label: "Marketing Management", path: "/marketing" },
   { key: "email",     segment: "email",       label: "Email Marketing",      path: "/email" },
   { key: "affiliate", segment: "affiliate",   label: "Affiliate Program",    path: "/affiliate" },
-  { key: "brand",     segment: "brand",       label: "Brand & Storefront",   path: "/brand" },
+  { key: "brand",     segment: "brand",       label: "Public Contents & UI", path: "/brand" },
   { key: "system",    segment: "system",      label: "Backend & System",     path: "/system" },
   { key: "settings",  segment: "settings-ai", label: "Settings & AI",        path: "/settings-ai" },
   { key: "team",      segment: "team",        label: "Team & Access",        path: "/team" },

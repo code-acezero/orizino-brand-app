@@ -123,7 +123,7 @@ export const adminNav: AdminNavSection[] = [
           { title: "Marketing",    url: "/marketing" },
           { title: "Email",        url: "/email" },
           { title: "Affiliate",    url: "/affiliate" },
-          { title: "Branding",     url: "/brand" },
+          { title: "Public Contents & UI", url: "/brand" },
           { title: "Backend",      url: "/system" },
           { title: "Settings",     url: "/settings-ai" },
           { title: "Corporate",    url: "/team" },
@@ -389,52 +389,8 @@ export const adminNav: AdminNavSection[] = [
   // BRANDCONFIG  /brandconfig — branding & UI
   // ─────────────────────────────────────────────────────────────────
   {
-    label: "Brand & Storefront",
+    label: "Public Contents & UI",
     items: [
-      // ─────────────────────────────────────────────────────────────
-      // SYSTEM / MASTER LEVEL UI SECTIONS (STAY ON ROOT)
-      // ─────────────────────────────────────────────────────────────
-      {
-        title: "Brand Dashboard",
-        url: "/brand",
-        icon: LayoutDashboard,
-        section: "storefront_ui",
-        description: "Identity, banners & content surfaces overview",
-      },
-      {
-        title: "Branding",
-        url: "/brand/branding",
-        icon: Palette,
-        adminOnly: true,
-        section: "storefront_ui",
-        description: "Theme & brand identity",
-        children: [
-          { title: "Overview",         url: "/brand/branding" },
-          { title: "Logo & icon",      url: "/brand/branding?tab=logo" },
-          { title: "Shape & effects",  url: "/brand/branding?tab=shape" },
-          { title: "Color filter",     url: "/brand/branding?tab=color" },
-          { title: "Typography",       url: "/brand/branding?tab=typography" },
-          { title: "Brand voice",      url: "/brand/branding?tab=voice" },
-          { title: "Site theme",       url: "/brand/branding?tab=theme" },
-        ],
-      },
-      {
-        title: "Appearance",
-        url: "/brand/appearance",
-        icon: Layout,
-        adminOnly: true,
-        section: "storefront_ui",
-        description: "Typography & layout for every surface",
-        keywords: "appearance typography layout fonts storefront profile auth signin",
-        children: [
-          { title: "Storefront",           url: "/brand/appearance?tab=storefront" },
-          { title: "Shop Layout",          url: "/brand/appearance?tab=layout" },
-          { title: "Product details",      url: "/brand/appearance?tab=product" },
-          { title: "Profile & Settings",   url: "/brand/appearance?tab=profile" },
-          { title: "Sign-in / Sign-up",    url: "/brand/appearance?tab=auth" },
-        ],
-      },
-
       // ─────────────────────────────────────────────────────────────
       // APP-WISE REORGANIZED UI SECTIONS
       // ─────────────────────────────────────────────────────────────
@@ -564,6 +520,46 @@ export const adminNav: AdminNavSection[] = [
         icon: LayoutDashboard,
         section: "settings",
         description: "AI, integrations & preferences overview",
+      },
+      {
+        title: "Brand Dashboard",
+        url: "/brand",
+        icon: LayoutDashboard,
+        section: "storefront_ui",
+        description: "Identity, banners & content surfaces overview",
+      },
+      {
+        title: "Branding",
+        url: "/brand/branding",
+        icon: Palette,
+        adminOnly: true,
+        section: "storefront_ui",
+        description: "Theme & brand identity",
+        children: [
+          { title: "Overview",         url: "/brand/branding" },
+          { title: "Logo & icon",      url: "/brand/branding?tab=logo" },
+          { title: "Shape & effects",  url: "/brand/branding?tab=shape" },
+          { title: "Color filter",     url: "/brand/branding?tab=color" },
+          { title: "Typography",       url: "/brand/branding?tab=typography" },
+          { title: "Brand voice",      url: "/brand/branding?tab=voice" },
+          { title: "Site theme",       url: "/brand/branding?tab=theme" },
+        ],
+      },
+      {
+        title: "Appearance",
+        url: "/brand/appearance",
+        icon: Layout,
+        adminOnly: true,
+        section: "storefront_ui",
+        description: "Typography & layout for every surface",
+        keywords: "appearance typography layout fonts storefront profile auth signin",
+        children: [
+          { title: "Storefront",           url: "/brand/appearance?tab=storefront" },
+          { title: "Shop Layout",          url: "/brand/appearance?tab=layout" },
+          { title: "Product details",      url: "/brand/appearance?tab=product" },
+          { title: "Profile & Settings",   url: "/brand/appearance?tab=profile" },
+          { title: "Sign-in / Sign-up",    url: "/brand/appearance?tab=auth" },
+        ],
       },
       {
         title: "General Settings",

@@ -44,7 +44,7 @@ const MASTER_CONTROL_ITEMS = [
   { title: "Marketing Management", url: "/marketing", icon: Search, color: "#f97316", section: "seo" },
   { title: "Email Marketing", url: "/email", icon: Send, color: "#06b6d4", section: "customers" },
   { title: "Affiliate Program", url: "/affiliate", icon: Tag, color: "#84cc16", section: "affiliate" },
-  { title: "Brand & Storefront", url: "/brand", icon: Palette, color: "#ec4899", section: "storefront_ui" },
+  { title: "Public Contents & UI", url: "/brand", icon: Palette, color: "#ec4899", section: "storefront_ui" },
   { title: "Backend & System", url: "/system", icon: Activity, color: "#38bdf8", section: "settings" },
   { title: "Settings & AI", url: "/settings-ai", icon: Settings, color: "#94a3b8", section: "settings" },
   { title: "Team & Access", url: "/team", icon: Users2, color: "#a855f7", section: "employees" },
@@ -90,8 +90,14 @@ export function AdminSidebar() {
   const { pinned, toggle: togglePin } = usePinned();
 
   const isMasterPanelHome = location.pathname === "/" || location.pathname === "/master";
-  const headerTitle = isMasterPanelHome ? "Master Panel" : "Control Panel";
+  const isSettingsSubroute = (() => {
+    const clean = location.pathname.replace(/\/+$/, "");
+    return clean === "/brand/branding" || clean.startsWith("/brand/branding") ||
+           clean === "/brand/appearance" || clean.startsWith("/brand/appearance");
+  })();
+
   const sectionLabel = (() => {
+    if (isSettingsSubroute) return "Settings & AI";
     const seg = location.pathname.replace(/\/+$/, "").split("/")[1] ?? "";
     return SECTION_LABELS[seg] ?? "Admin Management";
   })();
@@ -99,6 +105,7 @@ export function AdminSidebar() {
   // Only show nav sections relevant to the current route segment (unless actively searching)
   const visibleNavLabels = (() => {
     if (query.trim()) return null;
+    if (isSettingsSubroute) return ["Settings & AI"];
     const seg = location.pathname.replace(/\/+$/, "").split("/")[1] ?? "";
     return SEGMENT_TO_NAV_LABELS[seg] ?? ["Overview", "Sales & Operations"];
   })();
