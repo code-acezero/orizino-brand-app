@@ -415,30 +415,45 @@ const AuthPage: React.FC = () => {
 
             {/* RIGHT: Modern Form Panel */}
             <div className={`p-6 sm:p-7 flex flex-col justify-center ${appearance.show_brand_panel ? "md:col-span-7" : ""}`}>
-              {/* Segmented Switcher */}
+              {/* Segmented Switcher with Smooth Slide Transition */}
               {mode !== "forgot" && (
-                <div className="grid grid-cols-2 p-1 rounded-2xl bg-secondary/40 border border-border/40 mb-5">
+                <div className="relative grid grid-cols-2 p-1 rounded-2xl bg-secondary/40 border border-border/40 mb-5">
                   <button
                     type="button"
                     onClick={() => { setMode("signin"); setTermsAccepted(false); }}
-                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`relative z-10 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer text-center ${
                       mode === "signin"
-                        ? "bg-card text-foreground border border-border/60"
+                        ? "text-foreground"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    Sign In
+                    {mode === "signin" && (
+                      <motion.div
+                        layoutId="activeAuthTab"
+                        transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                        className="absolute inset-0 rounded-xl bg-card border border-border/60"
+                      />
+                    )}
+                    <span className="relative z-10">Sign In</span>
                   </button>
+
                   <button
                     type="button"
                     onClick={() => { setMode("signup"); setTermsAccepted(false); }}
-                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`relative z-10 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer text-center ${
                       mode === "signup"
-                        ? "bg-card text-foreground border border-border/60"
+                        ? "text-foreground"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    Create Account
+                    {mode === "signup" && (
+                      <motion.div
+                        layoutId="activeAuthTab"
+                        transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                        className="absolute inset-0 rounded-xl bg-card border border-border/60"
+                      />
+                    )}
+                    <span className="relative z-10">Create Account</span>
                   </button>
                 </div>
               )}
