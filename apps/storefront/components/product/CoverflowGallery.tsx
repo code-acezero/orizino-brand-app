@@ -54,10 +54,30 @@ const CoverflowGallery: React.FC<CoverflowGalleryProps> = ({
           if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
         }}
       >
-        {/* ── AMBIENT STUDIO LIGHTING & SPOTLIGHT PEDESTAL ── */}
-        <div className="absolute top-0 inset-x-0 h-48 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none" />
-        <div className="absolute bottom-10 inset-x-8 h-20 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.15),transparent_70%)] pointer-events-none blur-md" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.35)_100%)] pointer-events-none" />
+        {/* ── REALISTIC OVERHEAD STUDIO SPOTLIGHT CONE & PEDESTAL ── */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
+          {/* 1. Overhead Luminaire Source & Beam Origin */}
+          <div className="absolute -top-14 left-1/2 -translate-x-1/2 w-80 h-28 rounded-full bg-primary/30 blur-2xl pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-1 bg-gradient-to-r from-transparent via-white/80 dark:via-white/90 to-transparent blur-[0.5px] pointer-events-none z-20" />
+
+          {/* 2. Volumetric Conical Light Shaft Radiating from Ceiling */}
+          <div
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-[140%] max-w-[800px] h-[520px] pointer-events-none blur-xl opacity-90"
+            style={{
+              background:
+                "conic-gradient(from 65deg at 50% 0%, transparent 0deg, hsl(var(--primary)/0.25) 20deg, hsl(var(--primary)/0.38) 25deg, hsl(var(--primary)/0.25) 30deg, transparent 50%)",
+            }}
+          />
+          {/* Soft Radial Core Beam */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-xl h-[420px] bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.35),transparent_70%)] pointer-events-none" />
+
+          {/* 3. Studio Pedestal Stage Floor Reflection (Spotlight Catch) */}
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-[24rem] sm:w-[30rem] h-24 rounded-[100%] bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.3),transparent_70%)] blur-xl pointer-events-none" />
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-48 sm:w-64 h-8 rounded-[100%] bg-primary/25 blur-md pointer-events-none" />
+
+          {/* 4. Cinematic Vignette */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.45)_100%)] pointer-events-none" />
+        </div>
 
         {/* Preserved 3D Stage */}
         <div

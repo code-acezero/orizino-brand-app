@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Maximize2, Flame } from "lucide-react";
 import ProductLightboxModal from "@/components/product/ProductLightboxModal";
@@ -17,37 +17,138 @@ export default function HorizonCarouselGallery({
 }: HorizonCarouselGalleryProps) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const touchStartX = useRef<number | null>(null);
 
   if (!images || images.length === 0) return null;
   const total = images.length;
 
+  const navigate = useCallback(
+    (direction: number) => {
+      setActiveIdx((prev) => (prev + direction + total) % total);
+    },
+    [total]
+  );
+
+  const getCardTransform = (idx: number) => {
+    let diff = idx - activeIdx;
+    while (diff > total / 2) diff -= total;
+    while (diff < -total / 2) diff += total;
+
+    const isCenter = diff === 0;
+    const isImmediateLeft = diff === -1;
+    const isImmediateRight = diff === 1;
+
+    if (isCenter) {
+      return {
+        x: "0%",
+        scale: 1,
+        rotateY: 0,
+        rotateZ: 0,
+        z: 80,
+        opacity: 1,
+        zIndex: 30,
+        filter: "brightness(1)",
+        pointerEvents: "auto" as const,
+      };
+    }
+
+    if (isImmediateLeft) {
+      return {
+        x: "-52%",
+        scale: 0.86,
+        rotateY: 14,
+        rotateZ: -1,
+        z: 0,
+        opacity: 0.55,
+        zIndex: 20,
+        filter: "brightness(0.7) blur(0.4px)",
+        pointerEvents: "auto" as const,
+      };
+    }
+
+    if (isImmediateRight) {
+      return {
+        x: "52%",
+        scale: 0.86,
+        rotateY: -14,
+        rotateZ: 1,
+        z: 0,
+        opacity: 0.55,
+        zIndex: 20,
+        filter: "brightness(0.7) blur(0.4px)",
+        pointerEvents: "auto" as const,
+      };
+    }
+
+    return {
+      x: diff < 0 ? "-105%" : "105%",
+      scale: 0.65,
+      rotateY: diff < 0 ? 25 : -25,
+      rotateZ: 0,
+      z: -100,
+      opacity: 0,
+      zIndex: 10,
+      filter: "brightness(0.3) blur(4px)",
+      pointerEvents: "none" as const,
+    };
+  };
+
   return (
-    <div className="relative w-full rounded-3xl overflow-hidden bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] flex flex-col justify-between p-4 sm:p-6 select-none group border border-border/80 min-h-[520px] sm:min-h-[580px]">
-      {/* ── AMBIENT STUDIO LIGHTING & SPOTLIGHT PEDESTAL ── */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+    <div
+      className="relative w-full rounded-3xl overflow-hidden bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] flex flex-col justify-between p-4 sm:p-6 select-none group border border-border/80 min-h-[540px] sm:min-h-[600px]"
+      onTouchStart={(e) => {
+        touchStartX.current = e.touches[0].clientX;
+      }}
+      onTouchEnd={(e) => {
+        if (touchStartX.current === null) return;
+        const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+        if (deltaX > 40) navigate(-1);
+        else if (deltaX < -40) navigate(1);
+        touchStartX.current = null;
+      }}
+    >
+      {/* ── REALISTIC OVERHEAD STUDIO SPOTLIGHT CONE & PEDESTAL ── */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
+        {/* Ambient Blur Backdrop from active garment */}
         <AnimatePresence mode="popLayout">
           <motion.div
             key={activeIdx}
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.3 }}
+            animate={{ opacity: 0.28 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.7 }}
             className="absolute -inset-10 bg-cover bg-center"
             style={{
               backgroundImage: `url(${images[activeIdx]})`,
-              filter: "blur(54px) brightness(0.35) saturate(1.25)",
+              filter: "blur(60px) brightness(0.35) saturate(1.2)",
             }}
           />
         </AnimatePresence>
-        {/* Overhead Accent Studio Spotlight */}
-        <div className="absolute top-0 inset-x-0 h-48 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none" />
-        {/* Pedestal Stage Floor Reflection */}
-        <div className="absolute bottom-12 inset-x-8 h-20 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.15),transparent_70%)] pointer-events-none blur-md" />
-        {/* Soft Vignette */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.35)_100%)] pointer-events-none" />
+
+        {/* 1. Overhead Luminaire Source & Beam Origin */}
+        <div className="absolute -top-14 left-1/2 -translate-x-1/2 w-80 h-28 rounded-full bg-primary/30 blur-2xl pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-1 bg-gradient-to-r from-transparent via-white/80 dark:via-white/90 to-transparent blur-[0.5px] pointer-events-none z-20" />
+
+        {/* 2. Volumetric Conical Light Shaft Radiating from Ceiling */}
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[140%] max-w-[800px] h-[520px] pointer-events-none blur-xl opacity-90"
+          style={{
+            background:
+              "conic-gradient(from 65deg at 50% 0%, transparent 0deg, hsl(var(--primary)/0.25) 20deg, hsl(var(--primary)/0.38) 25deg, hsl(var(--primary)/0.25) 30deg, transparent 50%)",
+          }}
+        />
+        {/* Soft Radial Core Beam */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-xl h-[420px] bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.35),transparent_70%)] pointer-events-none" />
+
+        {/* 3. Studio Pedestal Stage Floor Reflection (Spotlight Catch) */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-[24rem] sm:w-[30rem] h-24 rounded-[100%] bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.3),transparent_70%)] blur-xl pointer-events-none" />
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-48 sm:w-64 h-8 rounded-[100%] bg-primary/25 blur-md pointer-events-none" />
+
+        {/* 4. Cinematic Vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.45)_100%)] pointer-events-none" />
       </div>
 
-      {/* ── TOP HUD (CLEAN & MINIMAL: NO STYLE NAME) ── */}
+      {/* ── TOP HUD (CLEAN & MINIMAL) ── */}
       <div className="w-full flex items-center justify-between z-20">
         <div>
           {discount > 0 && (
@@ -60,63 +161,53 @@ export default function HorizonCarouselGallery({
         <button
           type="button"
           onClick={() => setLightboxOpen(true)}
-          className="w-9 h-9 rounded-full bg-background/70 hover:bg-background border border-border/60 text-foreground flex items-center justify-center transition-all hover:scale-105 backdrop-blur-md cursor-pointer shadow-sm"
+          className="w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center transition-all hover:scale-105 backdrop-blur-md cursor-pointer shadow-sm"
           title="Inspect Fullscreen"
         >
           <Maximize2 className="w-4 h-4" />
         </button>
       </div>
 
-      {/* ── PANORAMIC PROPORTIONAL STUDIO VIEWPORT ── */}
-      <div className="relative my-auto w-full h-[390px] sm:h-[450px] md:h-[470px] flex items-center justify-center pointer-events-auto overflow-hidden">
-        <div className="relative w-full h-full flex items-center justify-center">
+      {/* ── 3D PERSPECTIVE CAROUSEL STAGE ── */}
+      <div
+        className="relative my-auto w-full h-[400px] sm:h-[460px] md:h-[480px] flex items-center justify-center pointer-events-auto overflow-hidden"
+        style={{ perspective: "1200px" }}
+      >
+        <div
+          className="relative w-full h-full flex items-center justify-center"
+          style={{ transformStyle: "preserve-3d" }}
+        >
           {images.map((img, i) => {
-            const half = total / 2;
-            let diff = i - activeIdx;
-            while (diff > half) diff -= total;
-            while (diff < -half) diff += total;
-
-            const isCenter = diff === 0;
-            const isLeft = diff === -1;
-            const isRight = diff === 1;
-
-            let x = "0%";
-            let scale = 1;
-            let opacity = 1;
-            let zIndex = 30;
-
-            if (isLeft) {
-              x = "-56%";
-              scale = 0.86;
-              opacity = 0.45;
-              zIndex = 20;
-            } else if (isRight) {
-              x = "56%";
-              scale = 0.86;
-              opacity = 0.45;
-              zIndex = 20;
-            } else if (!isCenter) {
-              x = diff > 0 ? "110%" : "-110%";
-              scale = 0.65;
-              opacity = 0;
-              zIndex = 10;
-            }
+            const transform = getCardTransform(i);
+            const isCenter = i === activeIdx;
 
             return (
               <motion.div
                 key={i}
-                animate={{ x, scale, opacity }}
+                animate={{
+                  x: transform.x,
+                  scale: transform.scale,
+                  rotateY: transform.rotateY,
+                  rotateZ: transform.rotateZ,
+                  z: transform.z,
+                  opacity: transform.opacity,
+                  filter: transform.filter,
+                }}
                 transition={{
-                  duration: 0.85,
-                  ease: [0.16, 1, 0.3, 1],
+                  type: "spring",
+                  stiffness: 240,
+                  damping: 26,
+                  mass: 0.9,
                 }}
                 style={{
                   position: "absolute",
-                  width: "19rem",
+                  width: "19.5rem",
                   maxWidth: "80vw",
-                  height: "26.5rem",
-                  maxHeight: "88%",
-                  zIndex,
+                  height: "27rem",
+                  maxHeight: "90%",
+                  zIndex: transform.zIndex,
+                  pointerEvents: transform.pointerEvents,
+                  transformStyle: "preserve-3d",
                 }}
                 onClick={() => {
                   if (isCenter) {
@@ -127,7 +218,7 @@ export default function HorizonCarouselGallery({
                 }}
                 className={`cursor-pointer rounded-2xl overflow-hidden shadow-2xl transition-all ${
                   isCenter
-                    ? "border border-border/80 ring-1 ring-primary/40"
+                    ? "border border-border/80 ring-1 ring-primary/40 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_30px_hsl(var(--primary)/0.2)] border-t-white/30"
                     : "border border-border/40 hover:border-border"
                 }`}
               >
@@ -140,7 +231,7 @@ export default function HorizonCarouselGallery({
                 <div
                   className={`absolute inset-0 transition-opacity duration-300 pointer-events-none rounded-2xl ${
                     isCenter
-                      ? "bg-gradient-to-t from-black/30 via-transparent to-transparent"
+                      ? "bg-gradient-to-t from-black/25 via-transparent to-transparent"
                       : "bg-black/40 hover:bg-black/20"
                   }`}
                 />
@@ -156,9 +247,9 @@ export default function HorizonCarouselGallery({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setActiveIdx((prev) => (prev - 1 + total) % total);
+                navigate(-1);
               }}
-              className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background border border-border/70 text-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 shadow-md backdrop-blur-md"
+              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background border border-border/70 text-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md backdrop-blur-md"
               aria-label="Previous image"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -167,9 +258,9 @@ export default function HorizonCarouselGallery({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setActiveIdx((prev) => (prev + 1) % total);
+                navigate(1);
               }}
-              className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background border border-border/70 text-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 shadow-md backdrop-blur-md"
+              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background border border-border/70 text-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md backdrop-blur-md"
               aria-label="Next image"
             >
               <ChevronRight className="w-5 h-5" />

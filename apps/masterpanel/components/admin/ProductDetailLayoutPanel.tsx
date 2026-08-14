@@ -854,10 +854,24 @@ const AdminStudioHorizonCarouselPreview = ({
           transform: "scale(1.1)",
         }}
       />
-      {/* Studio Accent Lighting */}
-      <div className="absolute top-0 inset-x-0 h-40 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none z-10" />
-      <div className="absolute bottom-8 inset-x-6 h-16 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.15),transparent_70%)] pointer-events-none blur-md z-10" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.35)_100%)] pointer-events-none z-10" />
+      {/* 1. Overhead Luminaire Source & Beam Origin */}
+      <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-64 h-24 rounded-full bg-primary/30 blur-2xl pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-white/80 dark:via-white/90 to-transparent blur-[0.5px] pointer-events-none z-20" />
+
+      {/* 2. Volumetric Conical Light Shaft */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[140%] max-w-[650px] h-[440px] pointer-events-none blur-xl opacity-90"
+        style={{
+          background:
+            "conic-gradient(from 65deg at 50% 0%, transparent 0deg, hsl(var(--primary)/0.25) 20deg, hsl(var(--primary)/0.38) 25deg, hsl(var(--primary)/0.25) 30deg, transparent 50%)",
+        }}
+      />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-[360px] bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.35),transparent_70%)] pointer-events-none" />
+
+      {/* 3. Studio Pedestal Stage Floor Reflection */}
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-[22rem] h-20 rounded-[100%] bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.3),transparent_70%)] blur-xl pointer-events-none" />
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-44 h-6 rounded-[100%] bg-primary/25 blur-md pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.45)_100%)] pointer-events-none z-10" />
 
       <div className="w-full flex items-center justify-between z-20">
         <div>
@@ -869,7 +883,10 @@ const AdminStudioHorizonCarouselPreview = ({
         </div>
       </div>
 
-      <div className="relative flex items-center justify-center my-auto w-full h-[380px] pointer-events-auto overflow-hidden">
+      <div
+        className="relative flex items-center justify-center my-auto w-full h-[380px] pointer-events-auto overflow-hidden"
+        style={{ perspective: "1200px" }}
+      >
         {images.map((img, i) => {
           const half = total / 2;
           let diff = i - currentIdx;
@@ -882,22 +899,30 @@ const AdminStudioHorizonCarouselPreview = ({
 
           let x = "0%";
           let scale = 1;
+          let rotateY = 0;
+          let z = 80;
           let opacity = 1;
           let zIndex = 30;
 
           if (isLeft) {
-            x = "-58%";
+            x = "-52%";
             scale = 0.86;
-            opacity = 0.45;
+            rotateY = 14;
+            z = 0;
+            opacity = 0.55;
             zIndex = 20;
           } else if (isRight) {
-            x = "58%";
+            x = "52%";
             scale = 0.86;
-            opacity = 0.45;
+            rotateY = -14;
+            z = 0;
+            opacity = 0.55;
             zIndex = 20;
           } else if (!isCenter) {
-            x = diff > 0 ? "110%" : "-110%";
+            x = diff > 0 ? "105%" : "-105%";
             scale = 0.65;
+            rotateY = diff > 0 ? -25 : 25;
+            z = -100;
             opacity = 0;
             zIndex = 10;
           }
@@ -905,13 +930,19 @@ const AdminStudioHorizonCarouselPreview = ({
           return (
             <motion.div
               key={i}
-              animate={{ x, scale, opacity }}
-              transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+              animate={{ x, scale, rotateY, z, opacity }}
+              transition={{
+                type: "spring",
+                stiffness: 240,
+                damping: 26,
+                mass: 0.9,
+              }}
               style={{
                 position: "absolute",
                 width: "16.5rem",
                 height: "23.5rem",
                 zIndex,
+                transformStyle: "preserve-3d",
               }}
               onClick={() => {
                 setCurrentIdx(i);
