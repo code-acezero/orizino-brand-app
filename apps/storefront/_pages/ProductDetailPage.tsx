@@ -162,10 +162,18 @@ const ProductDetailPage: React.FC = () => {
         .select("value")
         .eq("key", "product_page_layout")
         .maybeSingle();
-      const val = (data?.value as any) || {};
+      let val = data?.value;
+      if (typeof val === "string") {
+        try {
+          val = JSON.parse(val);
+        } catch {
+          val = { layout: val };
+        }
+      }
+      const obj: any = (val && typeof val === "object") ? val : {};
       return {
-        layout: (val.layout || "glass") as LayoutStyle,
-        gallery: (val.gallery || "default") as GalleryStyle,
+        layout: (obj.layout || "glass") as LayoutStyle,
+        gallery: (obj.gallery || "default") as GalleryStyle,
       };
     },
   });

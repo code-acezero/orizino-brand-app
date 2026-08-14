@@ -278,10 +278,15 @@ export default function ProductDetailLayoutPanel() {
 
   useEffect(() => {
     if (layoutSettingsRow?.value) {
-      const val = layoutSettingsRow.value as any;
+      let val = layoutSettingsRow.value as any;
       if (typeof val === "string") {
-        setCfg((c) => ({ ...c, layout: val as LayoutStyle }));
-      } else if (typeof val === "object" && val !== null) {
+        try {
+          val = JSON.parse(val);
+        } catch {
+          val = { layout: val };
+        }
+      }
+      if (typeof val === "object" && val !== null) {
         setCfg({
           layout: (val.layout || "glass") as LayoutStyle,
           gallery: (val.gallery || "default") as GalleryStyle,
