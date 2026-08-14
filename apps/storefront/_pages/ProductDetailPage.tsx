@@ -183,15 +183,43 @@ const ProductDetailPage: React.FC = () => {
           val = { layout: val };
         }
       }
+      if (val && typeof val === "object" && "value" in val && typeof (val as any).value === "object" && (val as any).value !== null) {
+        val = (val as any).value;
+      }
       const obj: any = (val && typeof val === "object") ? val : {};
       return {
         layout: (obj.layout || "glass") as LayoutStyle,
         gallery: (obj.gallery || "default") as GalleryStyle,
       };
     },
+    staleTime: 2000,
   });
-  const layout: LayoutStyle = pageSettings?.layout || "glass";
-  const galleryStyle: GalleryStyle = pageSettings?.gallery || "default";
+
+  // URL query param override for instant testing & live preview (?gallery=studio-turntable / ?layout=glass)
+  const [urlGalleryOverride, setUrlGalleryOverride] = useState<GalleryStyle | null>(null);
+  const [urlLayoutOverride, setUrlLayoutOverride] = useState<LayoutStyle | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const g = params.get("gallery");
+      const l = params.get("layout");
+      if (g) setUrlGalleryOverride(g as GalleryStyle);
+      if (l) setUrlLayoutOverride(l as LayoutStyle);
+
+      const handleMessage = (e: MessageEvent) => {
+        if (e.data?.type === "ORIZINO_PRODUCT_LAYOUT_UPDATE" && e.data.config) {
+          if (e.data.config.gallery) setUrlGalleryOverride(e.data.config.gallery);
+          if (e.data.config.layout) setUrlLayoutOverride(e.data.config.layout);
+        }
+      };
+      window.addEventListener("message", handleMessage);
+      return () => window.removeEventListener("message", handleMessage);
+    }
+  }, []);
+
+  const layout: LayoutStyle = urlLayoutOverride || pageSettings?.layout || "glass";
+  const galleryStyle: GalleryStyle = urlGalleryOverride || pageSettings?.gallery || "default";
   const cfg = LAYOUT_CONFIGS[layout] || LAYOUT_CONFIGS.glass;
 
   const { data: product, isLoading } = useQuery({
@@ -469,15 +497,25 @@ const ProductDetailPage: React.FC = () => {
   const renderGallery = () => {
     const galleryProps = { images, productName: product!.name, discount };
     switch (galleryStyle) {
-      case "infinity": return <InfinityGallery key={selectedColor || "default"} {...galleryProps} />;
-      case "coverflow": return <Suspense fallback={<GalleryLoader />}><CoverflowGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
-      case "filmstrip": return <Suspense fallback={<GalleryLoader />}><FilmstripGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
-      case "mosaic": return <Suspense fallback={<GalleryLoader />}><GridMosaicGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
-      case "parallax-stack": return <Suspense fallback={<GalleryLoader />}><ParallaxStackGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
-      case "editorial-split": return <Suspense fallback={<GalleryLoader />}><EditorialSplitGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
+      case "infinity":
+        return <InfinityGallery key={selectedColor || "default"} {...galleryProps} />;
+      case "coverflow":
+        return <Suspense fallback={<GalleryLoader />}><CoverflowGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
+      case "filmstrip":
+        return <Suspense fallback={<GalleryLoader />}><FilmstripGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
+      case "mosaic":
+        return <Suspense fallback={<GalleryLoader />}><GridMosaicGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
+      case "parallax-stack":
+        return <Suspense fallback={<GalleryLoader />}><ParallaxStackGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
+      case "editorial-split":
+        return <Suspense fallback={<GalleryLoader />}><EditorialSplitGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
+      case "carousel-cards":
+        return <Suspense fallback={<GalleryLoader />}><HorizonCarouselGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
       case "studio-turntable":
-      case "immersive-zoom": return <Suspense fallback={<GalleryLoader />}><StudioTurntableGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
-      default: return <ImageGallery key={selectedColor || "default"} {...galleryProps} layout="premium" />;
+      case "immersive-zoom":
+        return <Suspense fallback={<GalleryLoader />}><StudioTurntableGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
+      default:
+        return <ImageGallery key={selectedColor || "default"} {...galleryProps} layout="premium" />;
     }
   };
 

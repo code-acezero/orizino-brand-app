@@ -1130,10 +1130,17 @@ export default function ProductDetailLayoutPanel() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const jsonValue: any = { ...cfg };
-      if (layoutSettingsRow) {
-        await supabase.from("site_settings").update({ value: jsonValue }).eq("id", layoutSettingsRow.id);
+      if (layoutSettingsRow?.id) {
+        const { error } = await supabase
+          .from("site_settings")
+          .update({ value: jsonValue })
+          .eq("id", layoutSettingsRow.id);
+        if (error) throw error;
       } else {
-        await supabase.from("site_settings").insert({ key: "product_page_layout", value: jsonValue });
+        const { error } = await supabase
+          .from("site_settings")
+          .upsert({ key: "product_page_layout", value: jsonValue }, { onConflict: "key" });
+        if (error) throw error;
       }
     },
     onSuccess: () => {
