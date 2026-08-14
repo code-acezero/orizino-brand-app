@@ -14,6 +14,7 @@ import {
   getStorefrontTypographyPair,
   type StorefrontAppearanceConfig,
 } from "@/lib/storefront-appearance";
+import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
 const loadedFonts = new Set<string>();
 function ensureFont(gfUrl: string) {
@@ -61,20 +62,24 @@ const AdminStorefrontAppearance: React.FC = () => {
     toast({ title: "Saved", description: "Storefront appearance updated." });
   };
 
+  useRegisterUniversalSave(
+    {
+      label: "Save Storefront Appearance",
+      onSave: save,
+      isSaving: saving,
+    },
+    [cfg, saving]
+  );
+
   const activePair = getStorefrontTypographyPair(cfg.typography_pair);
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Storefront Appearance</h1>
-          <p className="text-sm text-muted-foreground">
-            Typography pair and structural layout used by every customer-facing storefront page (Home, Shop, Product, Cart, Checkout, Orders, etc.).
-          </p>
-        </div>
-        <Button onClick={save} disabled={saving} className="gap-2">
-          <Save className="w-4 h-4" /> {saving ? "Saving…" : "Save changes"}
-        </Button>
+      <header>
+        <h1 className="text-2xl font-bold">Storefront Appearance</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Typography pair and structural layout used by every customer-facing storefront page (Home, Shop, Product, Cart, Checkout, Orders, etc.).
+        </p>
       </header>
 
       <section className="space-y-3">

@@ -17,6 +17,7 @@ import { Globe, BarChart3, Search, Megaphone, Eye, Code, CheckCircle2, AlertCirc
 import { SearchConsoleLivePanel } from "@/components/admin/SearchConsoleLivePanel";
 import { FacebookGlyph, GoogleGlyph, GoogleSearchConsoleGlyph, MetaGlyph, TikTokGlyph } from "@/components/admin/BrandGlyph";
 import { upsertSiteSettings } from "@/lib/admin-data.functions";
+import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
 interface FacebookPixelConfig {
   enabled: boolean;
@@ -144,6 +145,15 @@ const AdminTracking: React.FC = () => {
     { key: "search_console_config", value: searchConsole },
     { key: "ad_setup_config", value: adSetup },
   ]);
+
+  useRegisterUniversalSave(
+    {
+      label: "Save Tracking Settings",
+      onSave: saveAll,
+      isSaving: saveMutation.isPending,
+    },
+    [fbPixel, googleAds, searchConsole, adSetup, saveMutation.isPending]
+  );
 
   const copySnippet = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -406,12 +416,6 @@ const AdminTracking: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-
-      <div className="flex justify-end">
-        <Button onClick={saveAll} disabled={saveMutation.isPending} className="min-w-[160px]">
-          {saveMutation.isPending ? "Saving..." : "Save All Settings"}
-        </Button>
-      </div>
     </div>
   );
 };

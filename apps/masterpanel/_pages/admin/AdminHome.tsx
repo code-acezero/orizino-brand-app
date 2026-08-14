@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import { Slider } from "@/components/ui/slider";
 import ImageUpload from "@/components/ImageUpload";
 import HomepageAnalytics from "@/components/admin/HomepageAnalytics";
 import { ProductShowcaseTab } from "./AdminShowcase";
+import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
 interface AppearanceConfig {
   hero_overlay_style: string;
@@ -716,6 +717,35 @@ const AdminHome = () => {
   const { dragIndex: featCatDragIdx, overIndex: featCatOverIdx, getDragProps: getFeatCatDragProps } = useDragReorder(localCategories, handleFeatCatReorder);
   const { dragIndex: featProdDragIdx, overIndex: featProdOverIdx, getDragProps: getFeatProdDragProps } = useDragReorder(localProducts, handleFeatProdReorder);
 
+  // Dynamic universal save action for the active tab in AdminHome
+  const activeSaveAction = useMemo(() => {
+    if (activeTab === "dashboard" || activeTab === "cinematic-showcase") return null;
+    if (activeTab === "campaigns") {
+      return {
+        label: "Save Campaigns & Layout",
+        onSave: async () => {
+          await saveSectionOrder.mutateAsync();
+          await saveSales.mutateAsync();
+        },
+        isSaving: saveSectionOrder.isPending || saveSales.isPending,
+      };
+    }
+    if (activeTab === "layout") {
+      return {
+        label: "Save Appearance Settings",
+        onSave: () => saveLayout.mutate(),
+        isSaving: saveLayout.isPending,
+      };
+    }
+    return {
+      label: "Save Home Configuration",
+      onSave: () => saveSectionOrder.mutate(),
+      isSaving: saveSectionOrder.isPending,
+    };
+  }, [activeTab, saveSectionOrder, saveSales, saveLayout]);
+
+  useRegisterUniversalSave(activeSaveAction, [activeSaveAction]);
+
   return (
     <div className="space-y-0">
 
@@ -1152,9 +1182,6 @@ const AdminHome = () => {
                     <Label className="text-xs font-medium text-muted-foreground">Section Title</Label>
                     <Input value={mosaicConfig.title} onChange={(e) => setMosaicConfig({ ...mosaicConfig, title: e.target.value })} placeholder="Shop by Category" className="h-9 text-sm" />
                   </div>
-                  <Button onClick={() => saveMosaic.mutate()} disabled={saveMosaic.isPending} className="w-full h-9 text-sm font-bold mt-auto">
-                    {saveMosaic.isPending ? "Saving…" : "Save Mosaic Config"}
-                  </Button>
                 </div>
               </div>
 
@@ -1332,9 +1359,6 @@ const AdminHome = () => {
                   </div>
                 </div>
               ))}
-              {sales.length > 0 && (
-                <Button className="w-full" onClick={() => saveSales.mutate()} disabled={saveSales.isPending}>{saveSales.isPending ? "Saving..." : "Save All Sales"}</Button>
-              )}
             </CardContent>
           </Card>
 
@@ -1351,7 +1375,6 @@ const AdminHome = () => {
               <div><Label>Title</Label><Input value={newArrivals.title} onChange={(e) => setNewArrivals({ ...newArrivals, title: e.target.value })} /></div>
               <div><Label>Subtitle</Label><Input value={newArrivals.subtitle} onChange={(e) => setNewArrivals({ ...newArrivals, subtitle: e.target.value })} /></div>
               <div><Label>Number of Products</Label><Input type="number" value={newArrivals.product_count} onChange={(e) => setNewArrivals({ ...newArrivals, product_count: Number(e.target.value) })} min={1} max={20} /></div>
-              <Button className="w-full" onClick={() => saveNewArrivals.mutate()} disabled={saveNewArrivals.isPending}>{saveNewArrivals.isPending ? "Saving..." : "Save New Arrivals"}</Button>
             </CardContent>
           </Card>
 
@@ -1415,10 +1438,6 @@ const AdminHome = () => {
                 <div><Label>CTA Button Text</Label><Input value={lookbookConfig.cta_text} onChange={(e) => setLookbookConfig({ ...lookbookConfig, cta_text: e.target.value })} /></div>
                 <div><Label>CTA Button Link</Label><Input value={lookbookConfig.cta_link} onChange={(e) => setLookbookConfig({ ...lookbookConfig, cta_link: e.target.value })} /></div>
               </div>
-
-              <Button className="w-full" onClick={() => saveLookbook.mutate()} disabled={saveLookbook.isPending}>
-                {saveLookbook.isPending ? "Saving..." : "Save Lookbook Spotlight"}
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1511,9 +1530,6 @@ const AdminHome = () => {
                   <Input value={pressQuoteConfig.publication} onChange={(e) => setPressQuoteConfig({ ...pressQuoteConfig, publication: e.target.value })} />
                 </div>
               </div>
-              <Button className="w-full" onClick={() => savePressQuote.mutate()} disabled={savePressQuote.isPending}>
-                {savePressQuote.isPending ? "Saving..." : "Save Press Quote"}
-              </Button>
             </CardContent>
           </Card>
 
@@ -1591,10 +1607,6 @@ const AdminHome = () => {
                   ))}
                 </div>
               </div>
-
-              <Button className="w-full" onClick={() => saveInstagram.mutate()} disabled={saveInstagram.isPending}>
-                {saveInstagram.isPending ? "Saving..." : "Save Community Feed"}
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1819,10 +1831,6 @@ const AdminHome = () => {
                       </div>
                     </div>
                   </div>
-
-                  <Button className="w-full font-bold shadow-lg" onClick={() => saveLayout.mutate()} disabled={saveLayout.isPending}>
-                    {saveLayout.isPending ? "Saving Settings..." : "Save Appearance Settings"}
-                  </Button>
                 </CardContent>
               </Card>
             </div>

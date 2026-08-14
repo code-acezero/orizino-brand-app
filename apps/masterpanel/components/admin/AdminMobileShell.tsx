@@ -31,6 +31,7 @@ import { adminNav, mobilePrimary, allAdminItems, type AdminNavItem } from "./adm
 import { AdminCommandPalette } from "./AdminCommandPalette";
 import { useStaffSections } from "@/hooks/use-staff-sections";
 import { LayoutGrid } from "lucide-react";
+import UniversalFloatingSaveButton from "./UniversalFloatingSaveButton";
 
 // Mirror desktop AdminSidebar: only show nav sections relevant to the current URL segment.
 import {
@@ -685,6 +686,7 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
         </div>
       </nav>
 
+      <UniversalFloatingSaveButton />
       <AdminCommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>
   );

@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import SectionLoader from "@/components/loaders/SectionLoader";
 import { useStaffSections } from "@/hooks/use-staff-sections";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { UniversalSaveProvider } from "@/contexts/UniversalSaveContext";
 
 // Master panel session cap: force re-login after 12h regardless of Supabase JWT.
 const MP_SESSION_MAX_MS = 12 * 60 * 60 * 1000;
@@ -275,7 +276,9 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <AdminRoleContext.Provider value={role ?? null}>
-      {children}
+      <UniversalSaveProvider>
+        {children}
+      </UniversalSaveProvider>
     </AdminRoleContext.Provider>
   );
 };

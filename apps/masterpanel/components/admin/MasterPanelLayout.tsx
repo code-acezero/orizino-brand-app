@@ -17,6 +17,7 @@ import AdminMobileShell from "./AdminMobileShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { cn } from "@/lib/utils";
+import UniversalFloatingSaveButton from "./UniversalFloatingSaveButton";
 
 /**
  * Master Panel layout — clean, sidebar-free shell.
@@ -119,6 +120,7 @@ const MasterPanelLayout: React.FC<{ children?: React.ReactNode }> = ({ children 
           <AdminFooter onOpenShortcuts={() => {}} />
         </div>
       </div>
+      <UniversalFloatingSaveButton />
       <AdminCommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </SidebarProvider>
   );

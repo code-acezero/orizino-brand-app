@@ -21,6 +21,7 @@ import VideoUpload from "@/components/VideoUpload";
 import { toast } from "@/lib/app-toast";
 import { Plus, Pencil, Trash2, Settings2, Layers, GripVertical, Copy, Link2, Palette, Wand2, Eye, Monitor, Smartphone, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Play, Pause, Image, FileText, LayoutGrid, Type, ArrowUp, ArrowDown, RotateCcw, Check } from "lucide-react";
 import { useDragReorder } from "@/hooks/use-drag-reorder";
+import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
 const FONT_FAMILY_MAP: Record<string, string> = {
   "Playfair Display": "'Playfair Display', serif",
@@ -406,6 +407,19 @@ const AdminShowcase = () => {
   };
 
   const activeSlides = slides.filter((s: any) => s.is_active);
+  const [currentShowcaseTab] = useTabParam("slides", "/brand/showcase");
+
+  // Universal save hook for slider settings and motion effects tabs
+  useRegisterUniversalSave(
+    currentShowcaseTab === "settings" || currentShowcaseTab === "effects"
+      ? {
+          label: currentShowcaseTab === "settings" ? "Save Slider Settings" : "Save Motion Effects",
+          onSave: () => saveConfig.mutate(),
+          isSaving: saveConfig.isPending,
+        }
+      : null,
+    [currentShowcaseTab, config, saveConfig.isPending]
+  );
 
   return (
     <div className="space-y-6">
@@ -764,9 +778,6 @@ const AdminShowcase = () => {
               </CardContent>
             </Card>
           </div>
-          <Button className="w-full mt-6" onClick={() => saveConfig.mutate()} disabled={saveConfig.isPending}>
-            {saveConfig.isPending ? "Saving..." : "Save Showcase Settings"}
-          </Button>
         </TabsContent>
 
         {/* Effects Tab */}
@@ -847,24 +858,9 @@ const AdminShowcase = () => {
                     </div>
                   </>
                 )}
-                <div>
-                  <Label>Slide Gap</Label>
-                  <Select value={config.slide_gap} onValueChange={(v) => setConfig({ ...config, slide_gap: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">No Gap</SelectItem>
-                      <SelectItem value="4">Small</SelectItem>
-                      <SelectItem value="8">Medium</SelectItem>
-                      <SelectItem value="16">Large</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </CardContent>
             </Card>
           </div>
-          <Button className="w-full mt-6" onClick={() => saveConfig.mutate()} disabled={saveConfig.isPending}>
-            {saveConfig.isPending ? "Saving..." : "Save Effects Settings"}
-          </Button>
         </TabsContent>
 
         {/* Product Showcase Tab */}
@@ -1231,6 +1227,16 @@ export function ProductShowcaseTab() {
     saveConfig(entries, isEnabled, showFeatured);
   };
 
+  // Register universal floating save button for Product Showcase
+  useRegisterUniversalSave(
+    {
+      label: "Save Bento Showcase",
+      onSave: handleManualSave,
+      isSaving,
+    },
+    [entries, isEnabled, showFeatured, isSaving]
+  );
+
   const updateCard = (id: string, patch: Partial<ShowcaseEntry>) => {
     setEntries((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   };
@@ -1451,17 +1457,6 @@ export function ProductShowcaseTab() {
           >
             <Plus className="w-3.5 h-3.5" />
             Add Bento Card
-          </Button>
-
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleManualSave}
-            disabled={isSaving}
-            className="h-9 px-5 text-xs font-bold shadow-sm gap-1.5"
-          >
-            <Check className="w-3.5 h-3.5" />
-            {isSaving ? "Saving…" : "Save Showcase"}
           </Button>
         </div>
       </div>
@@ -2527,7 +2522,15 @@ export function MarqueeStripTab() {
   });
 
   const wordsList = words.flatMap((w) => [w, "__LOGO__"]);
-  const previewRepeated = [...wordsList, ...wordsList];
+  // Register universal floating save button for Marquee Strip
+  useRegisterUniversalSave(
+    {
+      label: "Save Marquee Strip",
+      onSave: handleSave,
+      isSaving: saving,
+    },
+    [words, separator, saving]
+  );
 
   return (
     <div className="space-y-6">
@@ -2544,9 +2547,6 @@ export function MarqueeStripTab() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleResetDefaults} className="gap-1.5 text-xs">
             <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
-          </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5 text-xs">
-            {saving ? "Saving..." : "Save Marquee"}
           </Button>
         </div>
       </div>
