@@ -86,7 +86,7 @@ const ProductTabs: React.FC<ProductTabsProps> = ({ product, reviews, ownReviewId
       {/* Reviews */}
       <section>
         <SectionHead icon={MessageSquare} label="Reviews" meta={`${reviews.length} total`} id="reviews" />
-        <div className="grid md:grid-cols-2 gap-4 sm:gap-6 mb-6">
+        <div className="w-full mb-6">
           <ReviewForm productId={product.id} />
         </div>
         {reviews.length > 0 && (

@@ -38,6 +38,9 @@ const CoverflowGallery = lazy(() => import("@/components/product/CoverflowGaller
 const FilmstripGallery = lazy(() => import("@/components/product/FilmstripGallery"));
 const GridMosaicGallery = lazy(() => import("@/components/product/GridMosaicGallery"));
 const ParallaxStackGallery = lazy(() => import("@/components/product/ParallaxStackGallery"));
+const EditorialSplitGallery = lazy(() => import("@/components/product/EditorialSplitGallery"));
+const HorizonCarouselGallery = lazy(() => import("@/components/product/HorizonCarouselGallery"));
+const ImmersiveZoomGallery = lazy(() => import("@/components/product/ImmersiveZoomGallery"));
 
 // Helper component to set product tray in layout context
 const ProductTrayEffect: React.FC<{
@@ -77,7 +80,16 @@ const ProductTrayEffect: React.FC<{
 };
 
 export type LayoutStyle = "dark-luxury" | "glass" | "neon" | "minimal" | "magazine" | "glass-minimal";
-export type GalleryStyle = "default" | "infinity" | "coverflow" | "filmstrip" | "mosaic" | "parallax-stack";
+export type GalleryStyle =
+  | "default"
+  | "infinity"
+  | "coverflow"
+  | "filmstrip"
+  | "mosaic"
+  | "parallax-stack"
+  | "editorial-split"
+  | "carousel-cards"
+  | "immersive-zoom";
 
 const LAYOUT_CONFIGS: Record<LayoutStyle, { containerClass: string; textClass: string; priceClass: string; mobilePriceClass: string; cardClass: string; accentBorder: string }> = {
   "dark-luxury": {
@@ -461,6 +473,9 @@ const ProductDetailPage: React.FC = () => {
       case "filmstrip": return <Suspense fallback={<GalleryLoader />}><FilmstripGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
       case "mosaic": return <Suspense fallback={<GalleryLoader />}><GridMosaicGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
       case "parallax-stack": return <Suspense fallback={<GalleryLoader />}><ParallaxStackGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
+      case "editorial-split": return <Suspense fallback={<GalleryLoader />}><EditorialSplitGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
+      case "carousel-cards": return <Suspense fallback={<GalleryLoader />}><HorizonCarouselGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
+      case "immersive-zoom": return <Suspense fallback={<GalleryLoader />}><ImmersiveZoomGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
       default: return <ImageGallery key={selectedColor || "default"} {...galleryProps} layout="premium" />;
     }
   };
@@ -784,7 +799,7 @@ const ProductDetailPage: React.FC = () => {
   return (
     <div className={`min-h-screen ${layout === "dark-luxury" ? "bg-black/20" : ""}`}>
       <ProductTrayEffect product={product} effectivePrice={effectivePrice} selectedVariant={selectedVariant} effectiveStock={effectiveStock} addToCart={addToCart} buyNow={buyNow} addingToCart={addingToCart} disabled={requiresSelection} disabledReason={disabledReason} />
-      <main className={`w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-4 sm:py-6 md:py-8 ${isMagazine ? "max-w-6xl" : ""}`}>
+      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 md:py-8 max-w-[1520px] mx-auto">
         <Breadcrumbs
           items={[
             { label: "Home", href: "/" },

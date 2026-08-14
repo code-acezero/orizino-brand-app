@@ -36,7 +36,16 @@ import { toast } from "@/lib/app-toast";
 import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
 export type LayoutStyle = "dark-luxury" | "glass" | "neon" | "minimal" | "magazine" | "glass-minimal";
-export type GalleryStyle = "default" | "infinity" | "coverflow" | "filmstrip" | "mosaic" | "parallax-stack";
+export type GalleryStyle =
+  | "default"
+  | "infinity"
+  | "coverflow"
+  | "filmstrip"
+  | "mosaic"
+  | "parallax-stack"
+  | "editorial-split"
+  | "carousel-cards"
+  | "immersive-zoom";
 
 const DEMO_GALLERY_IMAGES: Record<string, string[]> = {
   charcoal: [
@@ -250,6 +259,30 @@ const GALLERY_ENGINES: {
     desc: "Stacked image cards with 3D cursor tilt, depth layers, and gesture swipe",
     emoji: "📚",
     badge: "3D Tilt",
+  },
+  {
+    id: "editorial-split",
+    label: "Editorial Split Runway",
+    tag: "Dual-View",
+    desc: "Dual high-fashion perspective showcasing front silhouette and fabric craft side-by-side",
+    emoji: "👗",
+    badge: "Dual Runway",
+  },
+  {
+    id: "carousel-cards",
+    label: "Horizon Luxury Track",
+    tag: "Panorama",
+    desc: "Apple-style panoramic horizontal card slider with smooth momentum and ambient lighting",
+    emoji: "🏎️",
+    badge: "Horizon Snap",
+  },
+  {
+    id: "immersive-zoom",
+    label: "Immersive Macro Lens",
+    tag: "Macro 2.5x",
+    desc: "Cinematic interactive cursor loupe that reveals micro-textures and fine garment stitching",
+    emoji: "🔬",
+    badge: "Macro Lens",
   },
 ];
 
@@ -678,6 +711,354 @@ const AdminStudioParallaxStackPreview = ({
   );
 };
 
+// ── 4. STUDIO EDITORIAL SPLIT RUNWAY PREVIEW ──
+const AdminStudioEditorialSplitPreview = ({
+  images,
+  activeIdx,
+  onNavigate,
+  showScarcity,
+}: {
+  images: string[];
+  activeIdx: number;
+  onNavigate: (idx: number) => void;
+  showScarcity: boolean;
+}) => {
+  const total = images.length;
+  const secondaryIdx = total > 1 ? (activeIdx + 1) % total : 0;
+
+  return (
+    <div className="h-[480px] w-full flex flex-col justify-between rounded-2xl overflow-hidden border border-border/70 bg-card/60 p-3 select-none">
+      <div className="grid grid-cols-2 gap-2.5 h-[390px] w-full">
+        {/* Main 01 */}
+        <div
+          className="relative h-full rounded-xl overflow-hidden border border-border/40 group cursor-pointer"
+          onClick={() => onNavigate((activeIdx + 1) % total)}
+        >
+          <img src={images[activeIdx]} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
+            <span className="text-[8px] font-mono px-2 py-0.5 rounded-full bg-black/75 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
+              Runway 01
+            </span>
+            {showScarcity && (
+              <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-bold">
+                ONLY 4 LEFT
+              </span>
+            )}
+          </div>
+          <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md rounded-full px-2.5 py-0.5 text-[8.5px] font-mono text-white/90 border border-white/15 flex items-center gap-1">
+            <Eye className="w-2.5 h-2.5 text-primary" /> Silhouette
+          </div>
+        </div>
+
+        {/* Detail 02 */}
+        <div
+          className="relative h-full rounded-xl overflow-hidden border border-border/40 group cursor-pointer"
+          onClick={() => onNavigate((activeIdx + 2) % total)}
+        >
+          <img src={images[secondaryIdx]} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <div className="absolute top-2.5 left-2.5 z-10">
+            <span className="text-[8px] font-mono px-2 py-0.5 rounded-full bg-black/75 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
+              Runway 02
+            </span>
+          </div>
+          <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md rounded-full px-2.5 py-0.5 text-[8.5px] font-mono text-white/90 border border-white/15 flex items-center gap-1">
+            <Sparkles className="w-2.5 h-2.5 text-primary" /> Detail Craft
+          </div>
+        </div>
+      </div>
+
+      {/* Thumbnails */}
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+          {images.map((img, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onNavigate(i)}
+              className={`w-14 h-12 rounded-lg overflow-hidden border cursor-pointer transition-all shrink-0 ${
+                i === activeIdx ? "border-primary ring-1 ring-primary/40 opacity-100 scale-105" : "border-border/50 opacity-50 hover:opacity-90"
+              }`}
+            >
+              <img src={img} alt="" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => onNavigate((activeIdx - 1 + total) % total)}
+            className="w-7 h-7 rounded-full bg-background border border-border/60 text-foreground flex items-center justify-center hover:bg-muted cursor-pointer"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigate((activeIdx + 1) % total)}
+            className="w-7 h-7 rounded-full bg-background border border-border/60 text-foreground flex items-center justify-center hover:bg-muted cursor-pointer"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── 5. STUDIO HORIZON CAROUSEL PREVIEW ──
+const AdminStudioHorizonCarouselPreview = ({
+  images,
+  activeIdx,
+  onNavigate,
+  showScarcity,
+}: {
+  images: string[];
+  activeIdx: number;
+  onNavigate: (idx: number) => void;
+  showScarcity: boolean;
+}) => {
+  const total = images.length;
+  const [currentIdx, setCurrentIdx] = React.useState(activeIdx);
+
+  React.useEffect(() => {
+    setCurrentIdx(activeIdx);
+  }, [activeIdx]);
+
+  return (
+    <div className="relative h-[480px] w-full rounded-2xl overflow-hidden bg-black flex flex-col justify-between p-4 select-none group border border-border/70">
+      <div
+        className="absolute -inset-8 bg-cover bg-center transition-all duration-700 pointer-events-none"
+        style={{
+          backgroundImage: `url(${images[currentIdx]})`,
+          filter: "blur(40px) brightness(0.35) saturate(1.2)",
+          transform: "scale(1.1)",
+        }}
+      />
+      <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/90 pointer-events-none" />
+
+      <div className="w-full flex items-center justify-between z-20">
+        <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
+          Horizon Track
+        </span>
+        {showScarcity && (
+          <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+            <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
+          </span>
+        )}
+      </div>
+
+      <div className="relative flex items-center justify-center my-auto w-full h-[360px] pointer-events-auto overflow-hidden">
+        {images.map((img, i) => {
+          const half = total / 2;
+          let diff = i - currentIdx;
+          while (diff > half) diff -= total;
+          while (diff < -half) diff += total;
+
+          const isCenter = diff === 0;
+          const isLeft = diff === -1;
+          const isRight = diff === 1;
+
+          let x = "0%";
+          let scale = 1;
+          let opacity = 1;
+          let zIndex = 30;
+
+          if (isLeft) {
+            x = "-65%";
+            scale = 0.85;
+            opacity = 0.45;
+            zIndex = 20;
+          } else if (isRight) {
+            x = "65%";
+            scale = 0.85;
+            opacity = 0.45;
+            zIndex = 20;
+          } else if (!isCenter) {
+            x = diff > 0 ? "120%" : "-120%";
+            scale = 0.65;
+            opacity = 0;
+            zIndex = 10;
+          }
+
+          return (
+            <motion.div
+              key={i}
+              animate={{ x, scale, opacity }}
+              transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                position: "absolute",
+                width: "14.5rem",
+                height: "20.5rem",
+                zIndex,
+              }}
+              onClick={() => {
+                setCurrentIdx(i);
+                onNavigate(i);
+              }}
+              className="cursor-pointer rounded-2xl overflow-hidden shadow-2xl border border-white/10"
+            >
+              <img src={img} alt="" className="w-full h-full object-cover select-none pointer-events-none rounded-2xl" />
+              <div
+                className={`absolute inset-0 transition-opacity duration-300 pointer-events-none rounded-2xl ${
+                  isCenter ? "bg-gradient-to-t from-black/25 via-transparent to-transparent" : "bg-black/40 hover:bg-black/20"
+                }`}
+              />
+            </motion.div>
+          );
+        })}
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            const next = (currentIdx - 1 + total) % total;
+            setCurrentIdx(next);
+            onNavigate(next);
+          }}
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/65 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer transition-all hover:scale-105"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            const next = (currentIdx + 1) % total;
+            setCurrentIdx(next);
+            onNavigate(next);
+          }}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/65 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer transition-all hover:scale-105"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="z-20 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                setCurrentIdx(i);
+                onNavigate(i);
+              }}
+              className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                i === currentIdx ? "w-5 bg-primary" : "w-1.5 bg-white/30 hover:bg-white/60"
+              }`}
+            />
+          ))}
+        </div>
+        <span className="text-[9.5px] font-mono text-white/80 bg-black/60 px-2.5 py-0.5 rounded-full border border-white/15">
+          {currentIdx + 1} / {total}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// ── 6. STUDIO IMMERSIVE MACRO LENS PREVIEW ──
+const AdminStudioImmersiveZoomPreview = ({
+  images,
+  activeIdx,
+  onNavigate,
+  showScarcity,
+}: {
+  images: string[];
+  activeIdx: number;
+  onNavigate: (idx: number) => void;
+  showScarcity: boolean;
+}) => {
+  const total = images.length;
+  const [isHovered, setIsHovered] = React.useState(false);
+  const [mousePos, setMousePos] = React.useState({ x: 50, y: 50 });
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setMousePos({
+      x: Math.max(0, Math.min(100, x)),
+      y: Math.max(0, Math.min(100, y)),
+    });
+  };
+
+  return (
+    <div className="h-[480px] w-full flex flex-col justify-between rounded-2xl overflow-hidden border border-border/70 bg-card/60 p-3 select-none">
+      <div
+        ref={containerRef}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onMouseMove={handleMouseMove}
+        className="relative h-[380px] w-full rounded-xl overflow-hidden bg-black border border-border/40 cursor-crosshair group"
+      >
+        <img
+          src={images[activeIdx]}
+          alt=""
+          className={`w-full h-full object-cover transition-opacity duration-300 ${
+            isHovered ? "opacity-30" : "opacity-100"
+          }`}
+        />
+
+        {isHovered && (
+          <div
+            className="absolute inset-0 pointer-events-none bg-no-repeat transition-all duration-75"
+            style={{
+              backgroundImage: `url(${images[activeIdx]})`,
+              backgroundPosition: `${mousePos.x}% ${mousePos.y}%`,
+              backgroundSize: "260%",
+            }}
+          />
+        )}
+
+        {isHovered && (
+          <div
+            className="absolute w-24 h-24 rounded-full border-2 border-primary shadow-2xl pointer-events-none -translate-x-1/2 -translate-y-1/2 overflow-hidden ring-1 ring-white/50"
+            style={{
+              left: `${mousePos.x}%`,
+              top: `${mousePos.y}%`,
+            }}
+          />
+        )}
+
+        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
+          <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15 flex items-center gap-1">
+            <Sparkles className="w-2.5 h-2.5 text-primary" /> Macro Lens 2.5x
+          </span>
+          {showScarcity && (
+            <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold">
+              ONLY 4 LEFT
+            </span>
+          )}
+        </div>
+
+        <div className="absolute bottom-2.5 left-2.5 bg-black/70 backdrop-blur-md rounded-full px-2.5 py-0.5 text-[8.5px] font-mono text-white/90 border border-white/15 flex items-center gap-1">
+          <ZoomIn className="w-2.5 h-2.5 text-primary" /> Hover to explore
+        </div>
+      </div>
+
+      {/* Thumbnails */}
+      <div className="flex gap-2 overflow-x-auto pb-0.5">
+        {images.map((img, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => onNavigate(idx)}
+            className={`w-16 h-12 rounded-xl overflow-hidden border cursor-pointer transition-all shrink-0 ${
+              activeIdx === idx
+                ? "border-primary ring-1 ring-primary/40 opacity-100 scale-105"
+                : "border-border/60 opacity-50 hover:opacity-100"
+            }`}
+          >
+            <img src={img} alt="" className="w-full h-full object-cover" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default function ProductDetailLayoutPanel() {
   const qc = useQueryClient();
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "split">("desktop");
@@ -846,7 +1227,7 @@ export default function ProductDetailLayoutPanel() {
 
         {/* Stage Canvas */}
         <div className={`p-4 sm:p-6 transition-all ${cfg.layout === "dark-luxury" ? "bg-black text-white" : cfg.layout === "minimal" ? "bg-[#FAF8F5] text-zinc-900" : "bg-background/70 text-foreground"}`}>
-          <div className={`mx-auto ${previewMode === "mobile" ? "max-w-xs" : previewMode === "split" ? "max-w-5xl" : "max-w-4xl"}`}>
+          <div className={`mx-auto ${previewMode === "mobile" ? "max-w-xs" : "w-full max-w-[1360px]"}`}>
             <div className={`grid gap-5 ${previewMode === "mobile" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-12"} items-start`}>
               
               {/* Product Gallery Live Engine Preview Column */}
@@ -880,6 +1261,39 @@ export default function ProductDetailLayoutPanel() {
                   if (cfg.gallery === "parallax-stack") {
                     return (
                       <AdminStudioParallaxStackPreview
+                        images={galleryImages}
+                        activeIdx={previewGalleryActiveIdx}
+                        onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
+                        showScarcity={cfg.show_scarcity_badge}
+                      />
+                    );
+                  }
+
+                  if (cfg.gallery === "editorial-split") {
+                    return (
+                      <AdminStudioEditorialSplitPreview
+                        images={galleryImages}
+                        activeIdx={previewGalleryActiveIdx}
+                        onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
+                        showScarcity={cfg.show_scarcity_badge}
+                      />
+                    );
+                  }
+
+                  if (cfg.gallery === "carousel-cards") {
+                    return (
+                      <AdminStudioHorizonCarouselPreview
+                        images={galleryImages}
+                        activeIdx={previewGalleryActiveIdx}
+                        onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
+                        showScarcity={cfg.show_scarcity_badge}
+                      />
+                    );
+                  }
+
+                  if (cfg.gallery === "immersive-zoom") {
+                    return (
+                      <AdminStudioImmersiveZoomPreview
                         images={galleryImages}
                         activeIdx={previewGalleryActiveIdx}
                         onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
