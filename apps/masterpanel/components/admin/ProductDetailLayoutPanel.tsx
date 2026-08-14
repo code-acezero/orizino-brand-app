@@ -253,6 +253,179 @@ const GALLERY_ENGINES: {
   },
 ];
 
+const AdminStudioInfinityPreview = ({
+  images,
+  activeIdx,
+  onNavigate,
+  showScarcity,
+}: {
+  images: string[];
+  activeIdx: number;
+  onNavigate: (idx: number) => void;
+  showScarcity: boolean;
+}) => {
+  const numSlots = Math.max(6, images.length);
+  const slots = React.useMemo(() => {
+    const list: { src: string; originalIndex: number }[] = [];
+    for (let i = 0; i < numSlots; i++) {
+      list.push({
+        src: images[i % images.length],
+        originalIndex: i % images.length,
+      });
+    }
+    return list;
+  }, [images, numSlots]);
+
+  const [currentSlot, setCurrentSlot] = React.useState(activeIdx);
+
+  React.useEffect(() => {
+    setCurrentSlot(activeIdx);
+  }, [activeIdx]);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlot((prev) => (prev + 1) % numSlots);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [numSlots]);
+
+  const activeOriginalIndex = slots[currentSlot]?.originalIndex ?? 0;
+
+  const getSlotTransform = (slotIdx: number) => {
+    const stepAngle = (2 * Math.PI) / numSlots;
+    let diff = (slotIdx - currentSlot) % numSlots;
+    if (diff > numSlots / 2) diff -= numSlots;
+    if (diff < -numSlots / 2) diff += numSlots;
+
+    const angle = diff * stepAngle;
+    const radius = 135;
+    const x = Math.sin(angle) * radius;
+    const z = Math.cos(angle) * radius - radius;
+    const rotateY = -angle * (180 / Math.PI);
+    const cosVal = Math.cos(angle);
+    const scale = 0.74 + 0.26 * Math.max(0, (1 + cosVal) / 2);
+    const opacity = cosVal > -0.15 ? Math.min(1, Math.max(0.25, (1 + cosVal) / 1.5)) : 0;
+    const zIndex = Math.round((1 + cosVal) * 50);
+
+    return { x, z, rotateY, scale, opacity, zIndex };
+  };
+
+  return (
+    <div className="relative aspect-square rounded-2xl overflow-hidden bg-black flex flex-col justify-between p-3 select-none group border border-border/70">
+      {/* Ambient background blur */}
+      <AnimatePresence mode="popLayout">
+        <motion.div
+          key={activeOriginalIndex}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.38 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.6 }}
+          className="absolute -inset-8 bg-cover bg-center blur-2xl pointer-events-none"
+          style={{ backgroundImage: `url(${images[activeOriginalIndex]})` }}
+        />
+      </AnimatePresence>
+      <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/90 pointer-events-none" />
+
+      {/* Header Badges */}
+      <div className="w-full flex items-center justify-between z-20">
+        <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
+          Infinity Loop 3D
+        </span>
+        {showScarcity && (
+          <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+            <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
+          </span>
+        )}
+      </div>
+
+      {/* 3D Cylindrical Arc Stage */}
+      <div className="relative flex items-center justify-center my-auto w-full h-52 pointer-events-auto" style={{ perspective: "850px", transformStyle: "preserve-3d" }}>
+        {slots.map((slot, i) => {
+          const geo = getSlotTransform(i);
+          const isCenter = i === currentSlot;
+
+          return (
+            <motion.div
+              key={i}
+              animate={{
+                x: geo.x,
+                z: geo.z,
+                rotateY: geo.rotateY,
+                scale: geo.scale,
+                opacity: geo.opacity,
+              }}
+              transition={{
+                duration: 0.65,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              style={{
+                position: "absolute",
+                width: "9rem",
+                height: "12.5rem",
+                transformStyle: "preserve-3d",
+                zIndex: geo.zIndex,
+              }}
+              onClick={() => {
+                setCurrentSlot(i);
+                onNavigate(slot.originalIndex);
+              }}
+              className="cursor-pointer rounded-xl overflow-hidden shadow-none border-none outline-none"
+            >
+              <img src={slot.src} alt="" className="w-full h-full object-cover select-none pointer-events-none" />
+              <div
+                className={`absolute inset-0 transition-opacity duration-300 pointer-events-none ${
+                  isCenter ? "bg-gradient-to-t from-black/35 via-transparent to-transparent" : "bg-black/35 hover:bg-black/15"
+                }`}
+              />
+            </motion.div>
+          );
+        })}
+
+        {/* Navigation Arrows */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const nextSlot = (currentSlot - 1 + numSlots) % numSlots;
+            setCurrentSlot(nextSlot);
+            onNavigate(slots[nextSlot].originalIndex);
+          }}
+          className="absolute left-1 top-1/2 -translate-y-1/2 z-30 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const nextSlot = (currentSlot + 1) % numSlots;
+            setCurrentSlot(nextSlot);
+            onNavigate(slots[nextSlot].originalIndex);
+          }}
+          className="absolute right-1 top-1/2 -translate-y-1/2 z-30 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Bottom Counter and Dot Indicator */}
+      <div className="z-20 flex items-center justify-center gap-2">
+        <div className="flex items-center gap-1">
+          {images.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1 rounded-full transition-all ${
+                i === activeOriginalIndex ? "w-3.5 bg-primary" : "w-1 bg-white/30"
+              }`}
+            />
+          ))}
+        </div>
+        <span className="text-[9px] font-mono text-white/80 bg-black/60 px-2 py-0.5 rounded-full border border-white/15">
+          {activeOriginalIndex + 1} / {images.length}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export default function ProductDetailLayoutPanel() {
   const qc = useQueryClient();
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "split">("desktop");
@@ -432,70 +605,12 @@ export default function ProductDetailLayoutPanel() {
 
                   if (cfg.gallery === "infinity") {
                     return (
-                      <div className="relative aspect-square rounded-2xl overflow-hidden border border-border/70 bg-black flex flex-col justify-between p-3 group">
-                        {/* Ambient background blur */}
-                        <div
-                          className="absolute inset-0 bg-cover bg-center blur-2xl opacity-40 pointer-events-none transition-all duration-700"
-                          style={{ backgroundImage: `url(${activeImg})` }}
-                        />
-                        {/* Engine badge & scarcity */}
-                        <div className="w-full flex items-center justify-between z-10">
-                          <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
-                            Infinity Loop 3D
-                          </span>
-                          {cfg.show_scarcity_badge && (
-                            <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
-                              <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
-                            </span>
-                          )}
-                        </div>
-
-                        {/* 3D revolving cylinder carousel preview cards */}
-                        <div className="relative flex items-center justify-center my-auto w-full h-48" style={{ perspective: "900px" }}>
-                          {/* Left background card */}
-                          <div
-                            className="absolute w-28 h-40 rounded-xl overflow-hidden opacity-45 transition-all duration-300 shadow-none"
-                            style={{ transform: "translateX(-75px) translateZ(-65px) rotateY(28deg)" }}
-                          >
-                            <img src={galleryImages[(previewGalleryActiveIdx + 1) % galleryImages.length]} alt="" className="w-full h-full object-cover" />
-                          </div>
-                          {/* Right background card */}
-                          <div
-                            className="absolute w-28 h-40 rounded-xl overflow-hidden opacity-45 transition-all duration-300 shadow-none"
-                            style={{ transform: "translateX(75px) translateZ(-65px) rotateY(-28deg)" }}
-                          >
-                            <img src={galleryImages[(previewGalleryActiveIdx + 2) % galleryImages.length]} alt="" className="w-full h-full object-cover" />
-                          </div>
-                          {/* Center active card */}
-                          <div
-                            className="relative w-36 h-48 rounded-2xl overflow-hidden z-10 transition-all duration-300 shadow-none"
-                            style={{ transform: "translateZ(0px)" }}
-                          >
-                            <img src={activeImg} alt="" className="w-full h-full object-cover" />
-                          </div>
-
-                          {/* Navigation Arrows */}
-                          <button
-                            onClick={() => setPreviewGalleryActiveIdx((p) => (p - 1 + galleryImages.length) % galleryImages.length)}
-                            className="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setPreviewGalleryActiveIdx((p) => (p + 1) % galleryImages.length)}
-                            className="absolute right-1 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
-
-                        {/* Frame Counter */}
-                        <div className="z-10 text-center">
-                          <span className="text-[9px] font-mono text-white/80 bg-black/60 px-2.5 py-0.5 rounded-full border border-white/15">
-                            {previewGalleryActiveIdx + 1} / {galleryImages.length}
-                          </span>
-                        </div>
-                      </div>
+                      <AdminStudioInfinityPreview
+                        images={galleryImages}
+                        activeIdx={previewGalleryActiveIdx}
+                        onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
+                        showScarcity={cfg.show_scarcity_badge}
+                      />
                     );
                   }
 
