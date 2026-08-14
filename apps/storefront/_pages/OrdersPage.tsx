@@ -117,9 +117,10 @@ const OrdersPage: React.FC = () => {
       const selectFields = "*, order_items(*)";
       let results: any[] = [];
 
+      const ordersTable = supabase.from("orders") as any;
+
       if (user?.id) {
-        const { data: userOrders } = await supabase
-          .from("orders")
+        const { data: userOrders } = await ordersTable
           .select(selectFields)
           .eq("user_id", user.id)
           .order("created_at", { ascending: false });
@@ -127,8 +128,7 @@ const OrdersPage: React.FC = () => {
       }
 
       if (localPlacedOrderNumbers.length > 0) {
-        const { data: guestOrders } = await supabase
-          .from("orders")
+        const { data: guestOrders } = await ordersTable
           .select(selectFields)
           .in("order_number", localPlacedOrderNumbers)
           .order("created_at", { ascending: false });
@@ -136,16 +136,14 @@ const OrdersPage: React.FC = () => {
       }
 
       if (urlTrackingToken) {
-        const { data: tokenOrders } = await supabase
-          .from("orders")
+        const { data: tokenOrders } = await ordersTable
           .select(selectFields)
-          .eq("tracking_token" as any, urlTrackingToken);
+          .eq("tracking_token", urlTrackingToken);
         if (tokenOrders) results.push(...tokenOrders);
       }
 
       if (urlOrderNum) {
-        const { data: numOrders } = await supabase
-          .from("orders")
+        const { data: numOrders } = await ordersTable
           .select(selectFields)
           .eq("order_number", urlOrderNum);
         if (numOrders) results.push(...numOrders);

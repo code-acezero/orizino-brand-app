@@ -1,7 +1,17 @@
 "use client";
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, X, ZoomIn, Minus, Plus } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  X,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Minus,
+  Plus,
+  Maximize2,
+} from "lucide-react";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -12,34 +22,34 @@ interface ImageGalleryProps {
   layout?: "minimal" | "premium" | "editorial";
 }
 
-const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productName, discount = 0, layout = "premium" }) => {
+const ImageGallery: React.FC<ImageGalleryProps> = ({
+  images,
+  productName,
+  discount = 0,
+  layout = "premium",
+}) => {
   const [selected, setSelected] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [pinchScale, setPinchScale] = useState(1);
-  const [pinchOrigin, setPinchOrigin] = useState({ x: 50, y: 50 });
-  const pinchStartDist = useRef(0);
-  const pinchStartScale = useRef(1);
-  const swipeStartX = useRef(0);
-  const swipeStartY = useRef(0);
-  const isSwiping = useRef(false);
-  const lightboxImgRef = useRef<HTMLDivElement>(null);
-  const imgRef = useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile();
+  const [lightboxZoom, setLightboxZoom] = useState(1);
+  const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
 
-  // Magnifier Controls
-  const [lensSize, setLensSize] = useState(300); // Default 300px, max 600px
-  const [zoomPower, setZoomPower] = useState(2.5); // Default 2.5x, max 5x
+  const isMobile = useIsMobile();
+  const imgRef = useRef<HTMLDivElement>(null);
   const lensRef = useRef<HTMLDivElement>(null);
   const hovering = useRef(false);
   const [lensVisible, setLensVisible] = useState(false);
 
-  // Store current refs for smooth hardware-accelerated movement
+  // Loupe Configuration
+  const [lensSize, setLensSize] = useState(300);
+  const [zoomPower, setZoomPower] = useState(2.5);
   const lensSizeRef = useRef(300);
   const zoomPowerRef = useRef(2.5);
   lensSizeRef.current = lensSize;
   zoomPowerRef.current = zoomPower;
 
-  // Ultra-fast GPU composite-only move (uses translate3d to avoid DOM reflow lag)
+  // GPU translate3d lens positioning
   const moveLens = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const el = lensRef.current;
     const img = imgRef.current;
@@ -53,7 +63,6 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productName, discou
     const zp = zoomPowerRef.current;
     const half = sz / 2;
 
-    // Use GPU hardware acceleration via translate3d (zero layout reflow)
     el.style.transform = `translate3d(${xPx - half}px, ${yPx - half}px, 0)`;
     el.style.width = `${sz}px`;
     el.style.height = `${sz}px`;
@@ -61,61 +70,68 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productName, discou
     el.style.backgroundPosition = `${xPct}% ${yPct}%`;
   }, []);
 
-  const navigate = (dir: 1 | -1) => {
+  const navigate = useCallback((dir: 1 | -1) => {
     setSelected((p) => (p + dir + images.length) % images.length);
-    setPinchScale(1);
+    setLightboxZoom(1);
+    setPanPosition({ x: 0, y: 0 });
+  }, [images.length]);
+
+  // Keyboard navigation for lightbox & gallery
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (lightboxOpen) {
+        if (e.key === "ArrowLeft") navigate(-1);
+        if (e.key === "ArrowRight") navigate(1);
+        if (e.key === "Escape") setLightboxOpen(false);
+        if (e.key === "+" || e.key === "=") setLightboxZoom((z) => Math.min(4, z + 0.5));
+        if (e.key === "-") setLightboxZoom((z) => Math.max(1, z - 0.5));
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [lightboxOpen, navigate]);
+
+  // Touch Swipe on Main Image
+  const touchStartX = useRef(0);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 40) {
+      navigate(dx < 0 ? 1 : -1);
+    }
   };
 
-  // Lightbox touch handlers
-  const getTouchDist = (touches: React.TouchList) => {
-    const dx = touches[0].clientX - touches[1].clientX;
-    const dy = touches[0].clientY - touches[1].clientY;
-    return Math.sqrt(dx * dx + dy * dy);
+  // Lightbox Pan & Zoom Handlers
+  const handleLightboxMouseDown = (e: React.MouseEvent) => {
+    if (lightboxZoom > 1) {
+      setIsDragging(true);
+      dragStart.current = { x: e.clientX - panPosition.x, y: e.clientY - panPosition.y };
+    }
   };
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      isSwiping.current = false;
-      pinchStartDist.current = getTouchDist(e.touches);
-      pinchStartScale.current = pinchScale;
-      const rect = lightboxImgRef.current?.getBoundingClientRect();
-      if (rect) {
-        const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        setPinchOrigin({
-          x: ((cx - rect.left) / rect.width) * 100,
-          y: ((cy - rect.top) / rect.height) * 100,
-        });
-      }
-    } else if (e.touches.length === 1 && pinchScale <= 1) {
-      swipeStartX.current = e.touches[0].clientX;
-      swipeStartY.current = e.touches[0].clientY;
-      isSwiping.current = true;
+  const handleLightboxMouseMove = (e: React.MouseEvent) => {
+    if (isDragging && lightboxZoom > 1) {
+      setPanPosition({
+        x: e.clientX - dragStart.current.x,
+        y: e.clientY - dragStart.current.y,
+      });
     }
-  }, [pinchScale]);
+  };
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      isSwiping.current = false;
-      const dist = getTouchDist(e.touches);
-      const newScale = Math.min(5, Math.max(1, pinchStartScale.current * (dist / pinchStartDist.current)));
-      setPinchScale(newScale);
-    }
-  }, []);
+  const handleLightboxMouseUp = () => {
+    setIsDragging(false);
+  };
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (pinchScale < 1.1) setPinchScale(1);
-    if (isSwiping.current && e.changedTouches.length === 1 && pinchScale <= 1) {
-      const dx = e.changedTouches[0].clientX - swipeStartX.current;
-      const dy = e.changedTouches[0].clientY - swipeStartY.current;
-      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-        navigate(dx < 0 ? 1 : -1);
-      }
+  const toggleZoom = () => {
+    if (lightboxZoom === 1) {
+      setLightboxZoom(2.2);
+    } else {
+      setLightboxZoom(1);
+      setPanPosition({ x: 0, y: 0 });
     }
-    isSwiping.current = false;
-  }, [pinchScale, images.length]);
+  };
 
   const isMinimal = layout === "minimal";
   const isEditorial = layout === "editorial";
@@ -123,33 +139,71 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productName, discou
   return (
     <>
       <div className={`space-y-3 ${isEditorial ? "md:col-span-3" : ""}`}>
-        {/* Main image with zoom */}
+        {/* Main Stage Frame */}
         <div
           ref={imgRef}
-          className={`relative overflow-hidden group ${
+          className={`relative overflow-hidden group select-none ${
             isMobile ? "cursor-default" : "cursor-crosshair"
-          } ${isMinimal ? "rounded-2xl" : isEditorial ? "rounded-none aspect-[4/3]" : "rounded-3xl aspect-square bg-card border border-border/50"}`}
-          {...(!isMobile ? {
-            onWheel: (e: React.WheelEvent) => {
-              if (!hovering.current) return;
-              e.preventDefault();
-              setLensSize((s) => Math.min(600, Math.max(300, s + (e.deltaY < 0 ? 30 : -30))));
-            },
-          } : {})}
+          } ${
+            isMinimal
+              ? "rounded-2xl bg-secondary/15 border border-border/40"
+              : isEditorial
+              ? "rounded-none aspect-[4/3] bg-card border border-border/40"
+              : "rounded-3xl aspect-square bg-card/80 border border-border/60"
+          }`}
+          {...(!isMobile
+            ? {
+                onWheel: (e: React.WheelEvent) => {
+                  if (!hovering.current) return;
+                  e.preventDefault();
+                  setLensSize((s) => Math.min(600, Math.max(260, s + (e.deltaY < 0 ? 30 : -30))));
+                },
+              }
+            : {})}
           onMouseMove={!isMobile ? moveLens : undefined}
-          onMouseEnter={!isMobile ? () => { hovering.current = true; setLensVisible(true); } : undefined}
-          onMouseLeave={!isMobile ? () => { hovering.current = false; setLensVisible(false); } : undefined}
-          onClick={() => setLightboxOpen(true)}
+          onMouseEnter={
+            !isMobile
+              ? () => {
+                  hovering.current = true;
+                  setLensVisible(true);
+                }
+              : undefined
+          }
+          onMouseLeave={
+            !isMobile
+              ? () => {
+                  hovering.current = false;
+                  setLensVisible(false);
+                }
+              : undefined
+          }
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onClick={() => {
+            setLightboxOpen(true);
+            setLightboxZoom(1);
+            setPanPosition({ x: 0, y: 0 });
+          }}
         >
-          <ImageWithFallback
-            key={selected}
-            src={images[selected]}
-            alt={productName}
-            className="w-full h-full object-cover absolute inset-0 select-none pointer-events-none"
-            draggable={false}
-          />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={selected}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full h-full absolute inset-0 flex items-center justify-center"
+            >
+              <ImageWithFallback
+                src={images[selected]}
+                alt={productName}
+                className="w-full h-full object-cover select-none pointer-events-none"
+                draggable={false}
+              />
+            </motion.div>
+          </AnimatePresence>
 
-          {/* Magnifying Glass Lens — Accent Color Frame + GPU Translate3d */}
+          {/* Desktop Hardware-Accelerated Loupe */}
           {!isMobile && (
             <div
               ref={lensRef}
@@ -166,143 +220,305 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productName, discou
                 width: lensSize,
                 height: lensSize,
                 opacity: lensVisible ? 1 : 0,
-                transition: "opacity 0.12s ease",
+                transition: "opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1)",
                 willChange: "transform, opacity",
-                // Theme accent color frame border + glow shadow
-                border: "3px solid hsl(var(--primary))",
-                outline: "1px solid rgba(0,0,0,0.4)",
-                boxShadow: "0 0 16px hsl(var(--primary) / 0.4), 0 8px 32px rgba(0,0,0,0.5)",
+                border: "2px solid hsl(var(--primary))",
+                outline: "1px solid rgba(255, 255, 255, 0.4)",
               }}
             />
           )}
 
-          {/* Lens controls overlay — Size & Zoom level changer */}
+          {/* Loupe Controls Pill */}
           {!isMobile && lensVisible && (
-            <div className="absolute top-3 right-3 z-30 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-              {/* Circle Size Control (- 300 +) */}
-              <div className="flex items-center gap-1.5 bg-background/90 backdrop-blur-md border border-primary/30 rounded-full px-3 py-1.5 shadow-lg">
+            <div
+              className="absolute top-3 right-3 z-30 flex items-center gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-1.5 bg-background/90 backdrop-blur-md border border-border/80 rounded-full px-2.5 py-1">
                 <button
                   type="button"
-                  onClick={() => setLensSize((s) => Math.max(300, s - 30))}
-                  disabled={lensSize <= 300}
-                  className="p-0.5 text-foreground/70 hover:text-primary disabled:opacity-30 transition-colors"
+                  onClick={() => setLensSize((s) => Math.max(260, s - 30))}
+                  disabled={lensSize <= 260}
+                  className="p-0.5 text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors cursor-pointer"
                   title="Decrease lens size"
                 >
-                  <Minus className="w-3.5 h-3.5" />
+                  <Minus className="w-3 h-3" />
                 </button>
-                <span className="text-xs font-semibold text-foreground min-w-[36px] text-center">
+                <span className="text-[11px] font-mono font-semibold text-foreground min-w-[34px] text-center">
                   {lensSize}px
                 </span>
                 <button
                   type="button"
                   onClick={() => setLensSize((s) => Math.min(600, s + 30))}
                   disabled={lensSize >= 600}
-                  className="p-0.5 text-foreground/70 hover:text-primary disabled:opacity-30 transition-colors"
+                  className="p-0.5 text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors cursor-pointer"
                   title="Increase lens size"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-3 h-3" />
                 </button>
               </div>
 
-              {/* Zoom Level Slider (1.5x -> 5.0x) */}
-              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-md border border-primary/30 rounded-full px-3 py-1.5 shadow-lg">
-                <ZoomIn className="w-3.5 h-3.5 text-primary shrink-0" />
+              <div className="flex items-center gap-1.5 bg-background/90 backdrop-blur-md border border-border/80 rounded-full px-2.5 py-1">
+                <ZoomIn className="w-3 h-3 text-primary shrink-0" />
                 <input
                   type="range"
                   min="1.5"
-                  max="5.0"
+                  max="4.5"
                   step="0.25"
                   value={zoomPower}
                   onChange={(e) => setZoomPower(parseFloat(e.target.value))}
-                  className="w-16 h-1.5 accent-primary bg-muted rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+                  className="w-14 h-1 accent-primary bg-secondary rounded-full appearance-none cursor-pointer"
                 />
-                <span className="text-xs font-bold text-primary min-w-[32px] text-center">
+                <span className="text-[11px] font-mono font-bold text-primary min-w-[28px] text-center">
                   {zoomPower}x
                 </span>
               </div>
             </div>
           )}
 
+          {/* Navigation Arrows */}
           {images.length > 1 && (
             <>
-              <button onClick={(e) => { e.stopPropagation(); navigate(-1); }} className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background rounded-full p-2 text-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                <ChevronLeft className="w-5 h-5" />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(-1);
+                }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground hover:text-primary flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="w-4 h-4" />
               </button>
-              <button onClick={(e) => { e.stopPropagation(); navigate(1); }} className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background rounded-full p-2 text-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                <ChevronRight className="w-5 h-5" />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(1);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground hover:text-primary flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                aria-label="Next image"
+              >
+                <ChevronRight className="w-4 h-4" />
               </button>
             </>
           )}
 
+          {/* Discount Badge */}
           {discount > 0 && (
-            <span className={`absolute top-4 left-4 text-sm font-semibold py-1 px-4 ${
-              isMinimal ? "bg-foreground text-background rounded-md" : "btn-pill bg-destructive text-destructive-foreground"
-            }`}>
+            <span className="absolute top-3.5 left-3.5 z-10 text-[11px] font-bold py-0.5 px-2.5 rounded-full bg-rose-500 text-white font-mono tracking-tight">
               -{discount}%
             </span>
           )}
 
-          {/* Image counter */}
-          {images.length > 1 && (
-            <span className="absolute bottom-4 left-4 bg-background/80 rounded-full px-3 py-1 text-xs text-foreground font-medium border border-border/40">
-              {selected + 1} / {images.length}
+          {/* Image Counter & Fullscreen Icon */}
+          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+            {images.length > 1 && (
+              <span className="bg-background/80 backdrop-blur-md rounded-full px-2.5 py-0.5 text-[10px] text-foreground font-mono font-semibold border border-border/50">
+                {selected + 1} / {images.length}
+              </span>
+            )}
+            <span className="ml-auto bg-background/80 backdrop-blur-md rounded-full p-1.5 text-foreground border border-border/50 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Maximize2 className="w-3.5 h-3.5" />
             </span>
-          )}
+          </div>
         </div>
 
         {/* Thumbnail Carousel */}
         {images.length > 1 && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {images.map((img, idx) => (
-              <button
-                key={idx}
-                onClick={() => { setSelected(idx); setPinchScale(1); }}
-                className={`relative shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all ${
-                  selected === idx ? "border-primary ring-2 ring-primary/30" : "border-border/60 opacity-70 hover:opacity-100"
-                }`}
-              >
-                <ImageWithFallback src={img} alt={`${productName} thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
-              </button>
-            ))}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-0.5">
+            {images.map((img, idx) => {
+              const active = selected === idx;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setSelected(idx);
+                    setLightboxZoom(1);
+                  }}
+                  className={`relative shrink-0 w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden border transition-all cursor-pointer ${
+                    active
+                      ? "border-primary ring-1 ring-primary/40 opacity-100 scale-102"
+                      : "border-border/60 opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  <ImageWithFallback
+                    src={img}
+                    alt={`${productName} thumbnail ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Lightbox Modal */}
+      {/* ── LUXURY HIGH-PRECISION FULLSCREEN LIGHTBOX ── */}
       <AnimatePresence>
         {lightboxOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
-            onClick={() => { setLightboxOpen(false); setPinchScale(1); }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 sm:p-6"
+            onClick={() => setLightboxOpen(false)}
           >
-            <button
-              onClick={() => { setLightboxOpen(false); setPinchScale(1); }}
-              className="absolute top-4 right-4 text-white hover:text-primary p-2 z-50 rounded-full bg-white/10"
-            >
-              <X className="w-6 h-6" />
-            </button>
-
+            {/* Top Toolbar */}
             <div
-              ref={lightboxImgRef}
-              className="relative max-w-5xl max-h-[85vh] w-full h-full flex items-center justify-center overflow-hidden touch-none"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
+              className="flex items-center justify-between w-full z-10 max-w-6xl mx-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <img
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-white tracking-wide truncate max-w-xs sm:max-w-md">
+                  {productName}
+                </span>
+                <span className="text-[10.5px] font-mono text-zinc-400">
+                  ({selected + 1} of {images.length})
+                </span>
+              </div>
+
+              {/* Zoom & Close Controls */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-xl p-1 border border-white/15">
+                  <button
+                    onClick={() => setLightboxZoom((z) => Math.max(1, z - 0.5))}
+                    disabled={lightboxZoom <= 1}
+                    className="p-1.5 text-white/80 hover:text-white disabled:opacity-30 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                    title="Zoom Out"
+                  >
+                    <ZoomOut className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={toggleZoom}
+                    className="px-2 py-1 text-[11px] font-mono font-bold text-white hover:text-primary rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                    title="Toggle Fit / Zoom"
+                  >
+                    {Math.round(lightboxZoom * 100)}%
+                  </button>
+
+                  <button
+                    onClick={() => setLightboxZoom((z) => Math.min(4, z + 0.5))}
+                    disabled={lightboxZoom >= 4}
+                    className="p-1.5 text-white/80 hover:text-white disabled:opacity-30 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                    title="Zoom In"
+                  >
+                    <ZoomIn className="w-4 h-4" />
+                  </button>
+
+                  {lightboxZoom > 1 && (
+                    <button
+                      onClick={() => {
+                        setLightboxZoom(1);
+                        setPanPosition({ x: 0, y: 0 });
+                      }}
+                      className="p-1.5 text-white/80 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                      title="Reset Zoom"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => setLightboxOpen(false)}
+                  className="p-2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl transition-all cursor-pointer"
+                  title="Close (Esc)"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Central High-Resolution Viewport */}
+            <div
+              className={`relative flex-1 flex items-center justify-center my-auto overflow-hidden ${
+                lightboxZoom > 1 ? (isDragging ? "cursor-grabbing" : "cursor-grab") : "cursor-zoom-in"
+              }`}
+              onMouseDown={handleLightboxMouseDown}
+              onMouseMove={handleLightboxMouseMove}
+              onMouseUp={handleLightboxMouseUp}
+              onDoubleClick={toggleZoom}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (lightboxZoom === 1) toggleZoom();
+              }}
+            >
+              <motion.img
+                key={selected}
                 src={images[selected]}
                 alt={productName}
-                className="max-w-full max-h-full object-contain transition-transform duration-100"
-                style={{
-                  transform: `scale(${pinchScale})`,
-                  transformOrigin: `${pinchOrigin.x}% ${pinchOrigin.y}%`,
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{
+                  opacity: 1,
+                  scale: lightboxZoom,
+                  x: panPosition.x,
+                  y: panPosition.y,
                 }}
+                exit={{ opacity: 0 }}
+                transition={{
+                  scale: { type: "spring", stiffness: 300, damping: 30 },
+                  opacity: { duration: 0.2 },
+                }}
+                className="max-h-[78vh] max-w-[90vw] object-contain select-none pointer-events-none"
+                draggable={false}
               />
+
+              {/* Next / Prev Navigation */}
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(-1);
+                    }}
+                    className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer"
+                    aria-label="Previous photo"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(1);
+                    }}
+                    className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer"
+                    aria-label="Next photo"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
             </div>
+
+            {/* Bottom Thumbnails Navigation Bar */}
+            {images.length > 1 && (
+              <div
+                className="flex items-center justify-center gap-2 overflow-x-auto py-2 z-10 max-w-2xl mx-auto scrollbar-none"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {images.map((img, idx) => {
+                  const active = selected === idx;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setSelected(idx);
+                        setLightboxZoom(1);
+                        setPanPosition({ x: 0, y: 0 });
+                      }}
+                      className={`relative w-12 h-12 rounded-lg overflow-hidden border transition-all cursor-pointer shrink-0 ${
+                        active
+                          ? "border-primary ring-1 ring-primary/50 scale-105 opacity-100"
+                          : "border-white/20 opacity-40 hover:opacity-80"
+                      }`}
+                    >
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -311,4 +527,3 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, productName, discou
 };
 
 export default ImageGallery;
-// code:4ce0
