@@ -127,8 +127,8 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
         scale: 0.82,
         rotateY: 28,
         z: -50,
-        opacity: 0.42,
-        filter: "brightness(0.65) blur(0.5px)",
+        opacity: 0.55,
+        dimOpacity: 0.45,
         zIndex: 20,
         pointerEvents: "auto" as const,
       };
@@ -141,8 +141,8 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
         scale: 0.82,
         rotateY: -28,
         z: -50,
-        opacity: 0.42,
-        filter: "brightness(0.65) blur(0.5px)",
+        opacity: 0.55,
+        dimOpacity: 0.45,
         zIndex: 20,
         pointerEvents: "auto" as const,
       };
@@ -156,7 +156,7 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
       rotateY: isRight ? -45 : 45,
       z: -150,
       opacity: 0,
-      filter: "brightness(0.4) blur(3px)",
+      dimOpacity: 0.7,
       zIndex: 10,
       pointerEvents: "none" as const,
     };
@@ -176,23 +176,8 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* ── 1. REALISTIC OVERHEAD STUDIO SPOTLIGHT CONE & PEDESTAL ── */}
+        {/* ── 1. REALISTIC OVERHEAD STUDIO SPOTLIGHT CONE & PEDESTAL (SEAMLESS BLENDED) ── */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
-          <AnimatePresence mode="popLayout">
-            <motion.div
-              key={activeIndex}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.28 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.7 }}
-              className="absolute -inset-10 bg-cover bg-center"
-              style={{
-                backgroundImage: `url(${images[activeIndex]})`,
-                filter: "blur(60px) brightness(0.35) saturate(1.2)",
-              }}
-            />
-          </AnimatePresence>
-
           {/* 1. Seamless Diffused Overhead Light Pool */}
           <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[32rem] sm:w-[40rem] h-56 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.32),transparent_70%)] blur-3xl pointer-events-none" />
 
@@ -233,11 +218,10 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
                   rotateY: style.rotateY,
                   z: style.z,
                   opacity: style.opacity,
-                  filter: style.filter,
                 }}
                 transition={{
-                  duration: 0.95,
-                  ease: [0.16, 1, 0.3, 1],
+                  duration: 0.62,
+                  ease: [0.22, 1, 0.36, 1],
                 }}
                 style={{
                   position: "absolute",
@@ -248,6 +232,8 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
                   transformStyle: "preserve-3d",
                   zIndex: style.zIndex,
                   pointerEvents: style.pointerEvents,
+                  willChange: "transform, opacity",
+                  backfaceVisibility: "hidden",
                 }}
                 onClick={() => {
                   pauseAutoPlay();
@@ -273,11 +259,8 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
 
                 {/* Soft ambient depth lighting */}
                 <div
-                  className={`absolute inset-0 transition-opacity duration-300 pointer-events-none rounded-2xl ${
-                    isCenter
-                      ? "bg-gradient-to-t from-black/30 via-transparent to-transparent"
-                      : "bg-black/40 hover:bg-black/20"
-                  }`}
+                  className="absolute inset-0 bg-black pointer-events-none rounded-2xl transition-opacity duration-500"
+                  style={{ opacity: isCenter ? 0 : (style as any).dimOpacity || 0.4 }}
                 />
               </motion.div>
             );

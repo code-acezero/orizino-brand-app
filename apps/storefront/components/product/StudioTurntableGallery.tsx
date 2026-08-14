@@ -76,22 +76,8 @@ export default function StudioTurntableGallery({
 
   return (
     <div className="relative w-full rounded-3xl overflow-hidden bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] flex flex-col justify-between p-4 sm:p-6 select-none group border border-border/80 min-h-[540px] sm:min-h-[600px]">
-      {/* ── REALISTIC OVERHEAD STUDIO SPOTLIGHT CONE & PEDESTAL ── */}
+      {/* ── REALISTIC OVERHEAD STUDIO SPOTLIGHT CONE & PEDESTAL (SEAMLESS BLENDED) ── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
-        <AnimatePresence mode="popLayout">
-          <motion.div
-            key={activeIdx}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.28 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="absolute -inset-10 bg-cover bg-center"
-            style={{
-              backgroundImage: `url(${images[activeIdx]})`,
-              filter: "blur(60px) brightness(0.35) saturate(1.2)",
-            }}
-          />
-        </AnimatePresence>
 
         {/* 1. Seamless Diffused Overhead Light Pool */}
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[32rem] sm:w-[40rem] h-56 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.32),transparent_70%)] blur-3xl pointer-events-none" />

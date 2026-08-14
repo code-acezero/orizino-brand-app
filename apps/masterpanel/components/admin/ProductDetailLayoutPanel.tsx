@@ -931,10 +931,8 @@ const AdminStudioHorizonCarouselPreview = ({
               key={i}
               animate={{ x, scale, rotateY, z, opacity }}
               transition={{
-                type: "spring",
-                stiffness: 240,
-                damping: 26,
-                mass: 0.9,
+                duration: 0.62,
+                ease: [0.22, 1, 0.36, 1],
               }}
               style={{
                 position: "absolute",
@@ -942,6 +940,8 @@ const AdminStudioHorizonCarouselPreview = ({
                 height: "23.5rem",
                 zIndex,
                 transformStyle: "preserve-3d",
+                willChange: "transform, opacity",
+                backfaceVisibility: "hidden",
               }}
               onClick={() => {
                 setCurrentIdx(i);

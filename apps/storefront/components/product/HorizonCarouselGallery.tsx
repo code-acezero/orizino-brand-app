@@ -43,11 +43,10 @@ export default function HorizonCarouselGallery({
         x: "0%",
         scale: 1,
         rotateY: 0,
-        rotateZ: 0,
         z: 80,
         opacity: 1,
         zIndex: 30,
-        filter: "brightness(1)",
+        dimOpacity: 0,
         pointerEvents: "auto" as const,
       };
     }
@@ -56,12 +55,11 @@ export default function HorizonCarouselGallery({
       return {
         x: "-52%",
         scale: 0.86,
-        rotateY: 14,
-        rotateZ: -1,
+        rotateY: 12,
         z: 0,
-        opacity: 0.55,
+        opacity: 0.65,
         zIndex: 20,
-        filter: "brightness(0.7) blur(0.4px)",
+        dimOpacity: 0.35,
         pointerEvents: "auto" as const,
       };
     }
@@ -70,12 +68,11 @@ export default function HorizonCarouselGallery({
       return {
         x: "52%",
         scale: 0.86,
-        rotateY: -14,
-        rotateZ: 1,
+        rotateY: -12,
         z: 0,
-        opacity: 0.55,
+        opacity: 0.65,
         zIndex: 20,
-        filter: "brightness(0.7) blur(0.4px)",
+        dimOpacity: 0.35,
         pointerEvents: "auto" as const,
       };
     }
@@ -83,12 +80,11 @@ export default function HorizonCarouselGallery({
     return {
       x: diff < 0 ? "-105%" : "105%",
       scale: 0.65,
-      rotateY: diff < 0 ? 25 : -25,
-      rotateZ: 0,
+      rotateY: diff < 0 ? 20 : -20,
       z: -100,
       opacity: 0,
       zIndex: 10,
-      filter: "brightness(0.3) blur(4px)",
+      dimOpacity: 0.6,
       pointerEvents: "none" as const,
     };
   };
@@ -109,22 +105,6 @@ export default function HorizonCarouselGallery({
     >
       {/* ── REALISTIC OVERHEAD STUDIO SPOTLIGHT CONE & PEDESTAL (SEAMLESS BLENDED) ── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
-        {/* Ambient Blur Backdrop from active garment */}
-        <AnimatePresence mode="popLayout">
-          <motion.div
-            key={activeIdx}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.22 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.7 }}
-            className="absolute -inset-10 bg-cover bg-center"
-            style={{
-              backgroundImage: `url(${images[activeIdx]})`,
-              filter: "blur(64px) brightness(0.32) saturate(1.2)",
-            }}
-          />
-        </AnimatePresence>
-
         {/* 1. Seamless Diffused Overhead Light Pool */}
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[32rem] sm:w-[40rem] h-56 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.32),transparent_70%)] blur-3xl pointer-events-none" />
 
@@ -187,16 +167,12 @@ export default function HorizonCarouselGallery({
                   x: transform.x,
                   scale: transform.scale,
                   rotateY: transform.rotateY,
-                  rotateZ: transform.rotateZ,
                   z: transform.z,
                   opacity: transform.opacity,
-                  filter: transform.filter,
                 }}
                 transition={{
-                  type: "spring",
-                  stiffness: 240,
-                  damping: 26,
-                  mass: 0.9,
+                  duration: 0.62,
+                  ease: [0.22, 1, 0.36, 1],
                 }}
                 style={{
                   position: "absolute",
@@ -207,6 +183,8 @@ export default function HorizonCarouselGallery({
                   zIndex: transform.zIndex,
                   pointerEvents: transform.pointerEvents,
                   transformStyle: "preserve-3d",
+                  willChange: "transform, opacity",
+                  backfaceVisibility: "hidden",
                 }}
                 onClick={() => {
                   if (isCenter) {
@@ -217,7 +195,7 @@ export default function HorizonCarouselGallery({
                 }}
                 className={`cursor-pointer rounded-2xl overflow-hidden shadow-2xl transition-all ${
                   isCenter
-                    ? "border border-border/80 ring-1 ring-primary/40 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_30px_hsl(var(--primary)/0.2)] border-t-white/30"
+                    ? "border border-border/80 ring-1 ring-primary/40 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_30px_hsl(var(--primary)/0.2)]"
                     : "border border-border/40 hover:border-border"
                 }`}
               >
@@ -227,12 +205,10 @@ export default function HorizonCarouselGallery({
                   className="w-full h-full object-cover select-none pointer-events-none rounded-2xl"
                   draggable={false}
                 />
+                {/* Dimming and Depth Shadow Layer */}
                 <div
-                  className={`absolute inset-0 transition-opacity duration-300 pointer-events-none rounded-2xl ${
-                    isCenter
-                      ? "bg-gradient-to-t from-black/25 via-transparent to-transparent"
-                      : "bg-black/40 hover:bg-black/20"
-                  }`}
+                  className="absolute inset-0 bg-black pointer-events-none rounded-2xl transition-opacity duration-500"
+                  style={{ opacity: transform.dimOpacity }}
                 />
               </motion.div>
             );

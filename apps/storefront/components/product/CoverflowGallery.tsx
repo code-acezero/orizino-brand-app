@@ -90,7 +90,7 @@ const CoverflowGallery: React.FC<CoverflowGalleryProps> = ({
               <motion.div
                 key={idx}
                 animate={style}
-                transition={{ type: "spring", stiffness: 240, damping: 26 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 className={`absolute cursor-pointer rounded-2xl overflow-hidden border shadow-2xl transition-colors ${
                   isCenter ? "border-primary ring-1 ring-primary/40" : "border-border/60"
                 }`}
@@ -99,6 +99,8 @@ const CoverflowGallery: React.FC<CoverflowGalleryProps> = ({
                   height: isMobile ? "46vh" : "460px",
                   maxHeight: "88%",
                   transformStyle: "preserve-3d",
+                  willChange: "transform, opacity",
+                  backfaceVisibility: "hidden",
                 }}
                 onClick={() => {
                   if (isCenter) setLightbox(true);
