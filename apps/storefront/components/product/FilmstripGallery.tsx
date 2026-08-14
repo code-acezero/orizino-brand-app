@@ -5,6 +5,8 @@ import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ProductLightboxModal from "./ProductLightboxModal";
 
+import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
+
 interface FilmstripGalleryProps {
   images: string[];
   productName: string;
@@ -20,6 +22,9 @@ const FilmstripGallery: React.FC<FilmstripGalleryProps> = ({
   const [lightbox, setLightbox] = useState(false);
   const stripRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+
+  const activeImage = images[active] || images[0] || "";
+  const dominantColor = useImageDominantColor(activeImage);
 
   const go = useCallback(
     (dir: 1 | -1) => setActive((i) => (i + dir + images.length) % images.length),
@@ -41,13 +46,26 @@ const FilmstripGallery: React.FC<FilmstripGalleryProps> = ({
       <div className="space-y-3">
         {/* Main 35mm Film Frame */}
         <div
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] border border-border/80 cursor-pointer group shadow-xl"
-          style={{ aspectRatio: isMobile ? "4/5" : "1/1" }}
+          className="relative overflow-hidden rounded-3xl border border-border/80 cursor-pointer group shadow-xl transition-all duration-700"
+          style={{
+            aspectRatio: isMobile ? "4/5" : "1/1",
+            background: `radial-gradient(ellipse 120% 85% at 50% 15%, ${dominantColor.rgba(0.22)} 0%, ${dominantColor.rgba(0.08)} 50%, var(--card) 100%)`,
+          }}
           onClick={() => setLightbox(true)}
         >
-          {/* Studio Accent Lighting */}
-          <div className="absolute top-0 inset-x-0 h-44 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none z-10" />
-          <div className="absolute bottom-6 inset-x-6 h-16 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.14),transparent_70%)] pointer-events-none blur-md z-10" />
+          {/* Studio Accent Lighting Following Image Hue */}
+          <div
+            className="absolute top-0 inset-x-0 h-44 pointer-events-none z-10 blur-xl transition-all duration-700"
+            style={{
+              background: `radial-gradient(ellipse at top, ${dominantColor.rgba(0.35)}, transparent 70%)`,
+            }}
+          />
+          <div
+            className="absolute bottom-6 inset-x-6 h-16 rounded-full pointer-events-none blur-xl z-10 transition-all duration-700"
+            style={{
+              background: `radial-gradient(ellipse at center, ${dominantColor.rgba(0.25)}, transparent 70%)`,
+            }}
+          />
 
           {/* Film Sprocket Holes (Left) */}
           <div className="absolute top-0 bottom-0 left-0 w-6 z-10 flex flex-col justify-around items-center bg-black/60 backdrop-blur-xs border-r border-white/10 pointer-events-none">

@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ProductLightboxModal from "./ProductLightboxModal";
 
+import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
+
 interface GridMosaicGalleryProps {
   images: string[];
   productName: string;
@@ -17,6 +19,9 @@ const GridMosaicGallery: React.FC<GridMosaicGalleryProps> = ({
 }) => {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const isMobile = useIsMobile();
+
+  const heroImage = images[0] || "";
+  const dominantColor = useImageDominantColor(heroImage);
 
   // Layout patterns based on total lookbook image count
   const getSpan = (idx: number, total: number) => {
@@ -45,7 +50,10 @@ const GridMosaicGallery: React.FC<GridMosaicGalleryProps> = ({
           isMobile
             ? "grid-rows-[repeat(3,minmax(130px,1fr))]"
             : "grid-rows-[repeat(3,minmax(160px,200px))]"
-        } rounded-3xl overflow-hidden border border-border/80 p-2 bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] shadow-lg`}
+        } rounded-3xl overflow-hidden border border-border/80 p-2.5 shadow-lg transition-all duration-700`}
+        style={{
+          background: `radial-gradient(ellipse 120% 85% at 50% 15%, ${dominantColor.rgba(0.22)} 0%, ${dominantColor.rgba(0.08)} 50%, var(--card) 100%)`,
+        }}
       >
         {displayed.map((img, idx) => (
           <motion.div

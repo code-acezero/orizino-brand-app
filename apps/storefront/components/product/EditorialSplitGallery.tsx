@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Maximize2, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import ProductLightboxModal from "@/components/product/ProductLightboxModal";
 
+import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
+
 interface EditorialSplitGalleryProps {
   images: string[];
   productName?: string;
@@ -23,6 +25,11 @@ export default function EditorialSplitGallery({
 
   const total = images.length;
   const secondaryIdx = total > 1 ? (primaryIdx + 1) % total : 0;
+  const primaryImg = images[primaryIdx] || images[0] || "";
+  const secondaryImg = images[secondaryIdx] || images[0] || "";
+
+  const primaryColor = useImageDominantColor(primaryImg);
+  const secondaryColor = useImageDominantColor(secondaryImg);
 
   const openLightbox = (idx: number) => {
     setLightboxIdx(idx);
@@ -35,12 +42,25 @@ export default function EditorialSplitGallery({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full">
         {/* Primary View */}
         <div
-          className="relative h-[420px] sm:h-[540px] md:h-[580px] rounded-3xl overflow-hidden bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] border border-border/80 group cursor-pointer shadow-lg"
+          className="relative h-[420px] sm:h-[540px] md:h-[580px] rounded-3xl overflow-hidden border border-border/80 group cursor-pointer shadow-lg transition-all duration-700"
+          style={{
+            background: `radial-gradient(ellipse 120% 85% at 50% 15%, ${primaryColor.rgba(0.22)} 0%, ${primaryColor.rgba(0.08)} 50%, var(--card) 100%)`,
+          }}
           onClick={() => openLightbox(primaryIdx)}
         >
-          {/* Studio Accent Lighting */}
-          <div className="absolute top-0 inset-x-0 h-40 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none z-10" />
-          <div className="absolute bottom-6 inset-x-6 h-16 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.14),transparent_70%)] pointer-events-none blur-md z-10" />
+          {/* Studio Accent Lighting following image hue */}
+          <div
+            className="absolute top-0 inset-x-0 h-44 pointer-events-none z-10 blur-xl transition-all duration-700"
+            style={{
+              background: `radial-gradient(ellipse at top, ${primaryColor.rgba(0.35)}, transparent 70%)`,
+            }}
+          />
+          <div
+            className="absolute bottom-6 inset-x-6 h-16 rounded-full pointer-events-none blur-xl z-10 transition-all duration-700"
+            style={{
+              background: `radial-gradient(ellipse at center, ${primaryColor.rgba(0.25)}, transparent 70%)`,
+            }}
+          />
 
           <AnimatePresence mode="wait">
             <motion.img
@@ -58,8 +78,8 @@ export default function EditorialSplitGallery({
           {/* Badges */}
           <div className="absolute top-3.5 left-3.5 flex items-center gap-2 z-20">
             {discount > 0 && (
-              <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-rose-500 text-white font-bold shadow-sm">
-                -{discount}% OFF
+              <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1 shadow-sm">
+                -{discount}%
               </span>
             )}
           </div>
@@ -79,12 +99,25 @@ export default function EditorialSplitGallery({
 
         {/* Secondary Detail View */}
         <div
-          className="relative h-[420px] sm:h-[540px] md:h-[580px] rounded-3xl overflow-hidden bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] border border-border/80 group cursor-pointer hidden sm:block shadow-lg"
+          className="relative h-[420px] sm:h-[540px] md:h-[580px] rounded-3xl overflow-hidden border border-border/80 group cursor-pointer hidden sm:block shadow-lg transition-all duration-700"
+          style={{
+            background: `radial-gradient(ellipse 120% 85% at 50% 15%, ${secondaryColor.rgba(0.22)} 0%, ${secondaryColor.rgba(0.08)} 50%, var(--card) 100%)`,
+          }}
           onClick={() => openLightbox(secondaryIdx)}
         >
-          {/* Studio Accent Lighting */}
-          <div className="absolute top-0 inset-x-0 h-40 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none z-10" />
-          <div className="absolute bottom-6 inset-x-6 h-16 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.14),transparent_70%)] pointer-events-none blur-md z-10" />
+          {/* Studio Accent Lighting following secondary image hue */}
+          <div
+            className="absolute top-0 inset-x-0 h-44 pointer-events-none z-10 blur-xl transition-all duration-700"
+            style={{
+              background: `radial-gradient(ellipse at top, ${secondaryColor.rgba(0.35)}, transparent 70%)`,
+            }}
+          />
+          <div
+            className="absolute bottom-6 inset-x-6 h-16 rounded-full pointer-events-none blur-xl z-10 transition-all duration-700"
+            style={{
+              background: `radial-gradient(ellipse at center, ${secondaryColor.rgba(0.25)}, transparent 70%)`,
+            }}
+          />
 
           <AnimatePresence mode="wait">
             <motion.img

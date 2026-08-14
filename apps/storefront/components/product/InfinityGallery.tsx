@@ -5,6 +5,8 @@ import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ProductLightboxModal from "./ProductLightboxModal";
 
+import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
+
 interface InfinityGalleryProps {
   images: string[];
   productName: string;
@@ -29,6 +31,8 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const total = images.length;
+  const activeImage = images[activeIndex] || images[0] || "";
+  const dominantColor = useImageDominantColor(activeImage);
 
   const navigate = useCallback(
     (direction: 1 | -1) => {
@@ -40,81 +44,47 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
   const pauseAutoPlay = useCallback(() => {
     setIsAutoPlay(false);
     if (idleTimer.current) clearTimeout(idleTimer.current);
-    idleTimer.current = setTimeout(() => setIsAutoPlay(true), RESUME_IDLE_DELAY);
+    idleTimer.current = setTimeout(() => {
+      setIsAutoPlay(true);
+    }, RESUME_IDLE_DELAY);
   }, []);
 
-  // Auto-play timer
   useEffect(() => {
-    if (!isAutoPlay || lightboxOpen || total <= 1) {
-      if (autoPlayTimer.current) clearInterval(autoPlayTimer.current);
-      autoPlayTimer.current = null;
-      return;
-    }
-
+    if (!isAutoPlay || total <= 1) return;
     autoPlayTimer.current = setInterval(() => {
       navigate(1);
     }, AUTO_ROTATE_DELAY);
-
     return () => {
       if (autoPlayTimer.current) clearInterval(autoPlayTimer.current);
     };
-  }, [isAutoPlay, lightboxOpen, total, navigate]);
+  }, [isAutoPlay, navigate, total]);
 
-  useEffect(() => {
-    return () => {
-      if (idleTimer.current) clearTimeout(idleTimer.current);
-      if (autoPlayTimer.current) clearInterval(autoPlayTimer.current);
-    };
-  }, []);
-
-  // Touch Swipe Gesture
   const touchStartX = useRef(0);
-  const touchStartY = useRef(0);
-
   const handleTouchStart = (e: React.TouchEvent) => {
-    pauseAutoPlay();
     touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
+    pauseAutoPlay();
   };
-
   const handleTouchEnd = (e: React.TouchEvent) => {
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    const dy = e.changedTouches[0].clientY - touchStartY.current;
-    if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-      navigate(dx < 0 ? 1 : -1);
+    const diff = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(diff) > 40) {
+      navigate(diff < 0 ? 1 : -1);
     }
   };
 
-  // Calculate 3D card layout position relative to active card
   const getCardStyle = (idx: number) => {
-    if (total <= 1) {
-      return {
-        x: "0%",
-        scale: 1,
-        rotateY: 0,
-        z: 0,
-        opacity: 1,
-        filter: "brightness(1) blur(0px)",
-        zIndex: 30,
-        pointerEvents: "auto" as const,
-      };
-    }
-
-    // Circular shortest distance: [-floor(total/2) ... +floor(total/2)]
-    const half = total / 2;
     let diff = idx - activeIndex;
-    while (diff > half) diff -= total;
-    while (diff < -half) diff += total;
+    if (diff > total / 2) diff -= total;
+    if (diff < -total / 2) diff += total;
 
-    // Center active focus card
+    // Center Hero Image
     if (diff === 0) {
       return {
         x: "0%",
         scale: 1,
         rotateY: 0,
-        z: 40,
+        z: 80,
         opacity: 1,
-        filter: "brightness(1) blur(0px)",
+        dimOpacity: 0,
         zIndex: 30,
         pointerEvents: "auto" as const,
       };
@@ -168,36 +138,66 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
     <>
       <div
         ref={containerRef}
-        className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] select-none group border border-border/80 min-h-[520px] sm:min-h-[580px]"
+        className="relative w-full overflow-hidden rounded-3xl select-none group border border-border/80 min-h-[520px] sm:min-h-[580px] transition-all duration-700"
         style={{
           height: isMobile ? "58vh" : "560px",
           perspective: "1200px",
+          background: `radial-gradient(ellipse 120% 85% at 50% 15%, ${dominantColor.rgba(0.22)} 0%, ${dominantColor.rgba(0.08)} 50%, var(--card) 100%)`,
         }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* ── 1. REALISTIC OVERHEAD STUDIO SPOTLIGHT CONE & PEDESTAL (SEAMLESS BLENDED) ── */}
+        {/* ── 1. REALISTIC OVERHEAD STUDIO SPOTLIGHT CONE & PEDESTAL (IMAGE CHROMATIC FOLLOWING) ── */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
-          {/* 1. Seamless Diffused Overhead Light Pool */}
-          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[32rem] sm:w-[40rem] h-56 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.32),transparent_70%)] blur-3xl pointer-events-none" />
-
-          {/* 2. Soft Conical Downward Light Shaft */}
+          {/* Ambient Image Glow Diffusion */}
           <div
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-[130%] max-w-[720px] h-[480px] pointer-events-none blur-3xl opacity-60"
+            className="absolute -inset-16 bg-cover bg-center transition-all duration-700 opacity-20 pointer-events-none"
             style={{
-              background:
-                "conic-gradient(from 70deg at 50% 0%, transparent 0deg, hsl(var(--primary)/0.18) 18deg, hsl(var(--primary)/0.28) 25deg, hsl(var(--primary)/0.18) 32deg, transparent 50%)",
+              backgroundImage: `url(${activeImage})`,
+              filter: "blur(60px) saturate(1.4)",
+              transform: "scale(1.1)",
+            }}
+          />
+
+          {/* 1. Seamless Diffused Overhead Light Pool Following Active Image Tone */}
+          <div
+            className="absolute -top-24 left-1/2 -translate-x-1/2 w-[32rem] sm:w-[40rem] h-56 rounded-full blur-3xl pointer-events-none transition-all duration-700"
+            style={{
+              background: `radial-gradient(ellipse at center, ${dominantColor.rgba(0.4)} 0%, transparent 70%)`,
+            }}
+          />
+
+          {/* 2. Soft Conical Downward Light Shaft Following Active Image Tone */}
+          <div
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-[130%] max-w-[720px] h-[480px] pointer-events-none blur-3xl opacity-70 transition-all duration-700"
+            style={{
+              background: `conic-gradient(from 70deg at 50% 0%, transparent 0deg, ${dominantColor.rgba(0.18)} 18deg, ${dominantColor.rgba(0.32)} 25deg, ${dominantColor.rgba(0.18)} 32deg, transparent 50%)`,
             }}
           />
           {/* Feathered Radial Core Beam */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-xl h-[380px] bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,hsl(var(--primary)/0.25),transparent_75%)] pointer-events-none" />
+          <div
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-xl h-[380px] pointer-events-none transition-all duration-700"
+            style={{
+              background: `radial-gradient(ellipse 80% 60% at 50% 0%, ${dominantColor.rgba(0.28)} 0%, transparent 75%)`,
+            }}
+          />
 
-          {/* 3. Studio Pedestal Stage Floor Reflection (Spotlight Catch) */}
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[24rem] sm:w-[32rem] h-24 rounded-[100%] bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.25),transparent_70%)] blur-2xl pointer-events-none" />
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-48 sm:w-64 h-8 rounded-[100%] bg-primary/20 blur-md pointer-events-none" />
+          {/* 3. Studio Pedestal Stage Floor Reflection Following Active Image Tone */}
+          <div
+            className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[24rem] sm:w-[32rem] h-24 rounded-[100%] blur-2xl pointer-events-none transition-all duration-700"
+            style={{
+              background: `radial-gradient(ellipse at center, ${dominantColor.rgba(0.32)} 0%, transparent 70%)`,
+            }}
+          />
+          <div
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 w-48 sm:w-64 h-8 rounded-[100%] blur-md pointer-events-none transition-all duration-700"
+            style={{
+              backgroundColor: dominantColor.rgba(0.25),
+            }}
+          />
 
           {/* 4. Cinematic Vignette */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.45)_100%)] pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.5)_100%)] pointer-events-none" />
         </div>
 
         {/* ── 2. 3D PERSPECTIVE CAROUSEL STAGE ── */}

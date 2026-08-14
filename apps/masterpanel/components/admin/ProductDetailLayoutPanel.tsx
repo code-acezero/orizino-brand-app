@@ -45,6 +45,7 @@ import {
   Box,
   Square,
 } from "lucide-react";
+import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
 import { toast } from "@/lib/app-toast";
 import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
@@ -844,33 +845,60 @@ const AdminStudioHorizonCarouselPreview = ({
     setCurrentIdx(activeIdx);
   }, [activeIdx]);
 
+  const activeImg = images[currentIdx] || images[0] || "";
+  const dominantColor = useImageDominantColor(activeImg);
+
   return (
-    <div className="relative h-[500px] w-full rounded-2xl overflow-hidden bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] flex flex-col justify-between p-4 select-none group border border-border/80">
+    <div
+      className="relative h-[500px] w-full rounded-2xl overflow-hidden flex flex-col justify-between p-4 select-none group border border-border/80 transition-all duration-700"
+      style={{
+        background: `radial-gradient(ellipse 120% 85% at 50% 15%, ${dominantColor.rgba(0.22)} 0%, ${dominantColor.rgba(0.08)} 50%, var(--card) 100%)`,
+      }}
+    >
       <div
-        className="absolute -inset-8 bg-cover bg-center transition-all duration-700 pointer-events-none"
+        className="absolute -inset-8 bg-cover bg-center transition-all duration-700 opacity-20 pointer-events-none"
         style={{
-          backgroundImage: `url(${images[currentIdx]})`,
+          backgroundImage: `url(${activeImg})`,
           filter: "blur(40px) brightness(0.35) saturate(1.2)",
           transform: "scale(1.1)",
         }}
       />
       {/* 1. Seamless Diffused Overhead Light Pool */}
-      <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[28rem] h-48 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.32),transparent_70%)] blur-3xl pointer-events-none" />
+      <div
+        className="absolute -top-20 left-1/2 -translate-x-1/2 w-[28rem] h-48 rounded-full blur-3xl pointer-events-none transition-all duration-700"
+        style={{
+          background: `radial-gradient(ellipse at center, ${dominantColor.rgba(0.4)} 0%, transparent 70%)`,
+        }}
+      />
 
       {/* 2. Soft Conical Downward Light Shaft */}
       <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[130%] max-w-[650px] h-[400px] pointer-events-none blur-3xl opacity-60"
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[130%] max-w-[650px] h-[400px] pointer-events-none blur-3xl opacity-70 transition-all duration-700"
         style={{
-          background:
-            "conic-gradient(from 70deg at 50% 0%, transparent 0deg, hsl(var(--primary)/0.18) 18deg, hsl(var(--primary)/0.28) 25deg, hsl(var(--primary)/0.18) 32deg, transparent 50%)",
+          background: `conic-gradient(from 70deg at 50% 0%, transparent 0deg, ${dominantColor.rgba(0.18)} 18deg, ${dominantColor.rgba(0.32)} 25deg, ${dominantColor.rgba(0.18)} 32deg, transparent 50%)`,
         }}
       />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-[320px] bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,hsl(var(--primary)/0.25),transparent_75%)] pointer-events-none" />
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-[320px] pointer-events-none transition-all duration-700"
+        style={{
+          background: `radial-gradient(ellipse 80% 60% at 50% 0%, ${dominantColor.rgba(0.28)} 0%, transparent 75%)`,
+        }}
+      />
 
       {/* 3. Studio Pedestal Stage Floor Reflection */}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[22rem] h-20 rounded-[100%] bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.25),transparent_70%)] blur-2xl pointer-events-none" />
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-44 h-6 rounded-[100%] bg-primary/20 blur-md pointer-events-none" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.45)_100%)] pointer-events-none z-10" />
+      <div
+        className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[22rem] h-20 rounded-[100%] blur-2xl pointer-events-none transition-all duration-700"
+        style={{
+          background: `radial-gradient(ellipse at center, ${dominantColor.rgba(0.32)} 0%, transparent 70%)`,
+        }}
+      />
+      <div
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 w-44 h-6 rounded-[100%] blur-md pointer-events-none transition-all duration-700"
+        style={{
+          backgroundColor: dominantColor.rgba(0.25),
+        }}
+      />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.5)_100%)] pointer-events-none z-10" />
 
       <div className="w-full flex items-center justify-between z-20">
         <div>
@@ -1011,7 +1039,6 @@ const AdminStudioHorizonCarouselPreview = ({
   );
 };
 
-// ── 6. STUDIO ORBIT 360 TURNTABLE PREVIEW ──
 const AdminStudioTurntablePreview = ({
   images,
   activeIdx,
@@ -1025,22 +1052,39 @@ const AdminStudioTurntablePreview = ({
 }) => {
   const total = images.length || 1;
   const currentAngleDeg = Math.round((activeIdx / total) * 360);
+  const activeImg = images[activeIdx] || images[0] || "";
+  const dominantColor = useImageDominantColor(activeImg);
 
   return (
-    <div className="relative h-[500px] w-full rounded-2xl overflow-hidden bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] flex flex-col justify-between p-4 select-none group border border-border/80">
+    <div
+      className="relative h-[500px] w-full rounded-2xl overflow-hidden flex flex-col justify-between p-4 select-none group border border-border/80 transition-all duration-700"
+      style={{
+        background: `radial-gradient(ellipse 120% 85% at 50% 15%, ${dominantColor.rgba(0.22)} 0%, ${dominantColor.rgba(0.08)} 50%, var(--card) 100%)`,
+      }}
+    >
       {/* Ambient studio backdrop */}
       <div
-        className="absolute -inset-8 bg-cover bg-center transition-all duration-500 pointer-events-none"
+        className="absolute -inset-8 bg-cover bg-center transition-all duration-500 opacity-20 pointer-events-none"
         style={{
-          backgroundImage: `url(${images[activeIdx]})`,
+          backgroundImage: `url(${activeImg})`,
           filter: "blur(40px) brightness(0.35) saturate(1.2)",
           transform: "scale(1.1)",
         }}
       />
       {/* Studio Spotlight Cone */}
-      <div className="absolute top-0 inset-x-0 h-40 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none z-10" />
-      <div className="absolute bottom-8 inset-x-6 h-16 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.15),transparent_70%)] pointer-events-none blur-md z-10" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.35)_100%)] pointer-events-none z-10" />
+      <div
+        className="absolute top-0 inset-x-0 h-44 pointer-events-none z-10 blur-xl transition-all duration-700"
+        style={{
+          background: `radial-gradient(ellipse at top, ${dominantColor.rgba(0.35)}, transparent 70%)`,
+        }}
+      />
+      <div
+        className="absolute bottom-8 inset-x-6 h-16 rounded-full pointer-events-none blur-md z-10 transition-all duration-700"
+        style={{
+          background: `radial-gradient(ellipse at center, ${dominantColor.rgba(0.25)}, transparent 70%)`,
+        }}
+      />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.5)_100%)] pointer-events-none z-10" />
 
       {/* Header */}
       <div className="w-full flex items-center justify-between z-20">

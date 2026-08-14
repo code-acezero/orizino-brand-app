@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
 
 interface ImageGalleryProps {
   images: string[];
@@ -34,6 +35,9 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
+
+  const activeImage = images[selected] || images[0] || "";
+  const dominantColor = useImageDominantColor(activeImage);
 
   const isMobile = useIsMobile();
   const imgRef = useRef<HTMLDivElement>(null);
@@ -59,22 +63,19 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
     const yPx = e.clientY - rect.top;
     const xPct = Math.max(0, Math.min(100, (xPx / rect.width) * 100));
     const yPct = Math.max(0, Math.min(100, (yPx / rect.height) * 100));
-    const sz = lensSizeRef.current;
-    const zp = zoomPowerRef.current;
-    const half = sz / 2;
 
-    el.style.transform = `translate3d(${xPx - half}px, ${yPx - half}px, 0)`;
-    el.style.width = `${sz}px`;
-    el.style.height = `${sz}px`;
-    el.style.backgroundSize = `${rect.width * zp}px ${rect.height * zp}px`;
+    el.style.transform = `translate3d(calc(${xPx}px - 50%), calc(${yPx}px - 50%), 0)`;
     el.style.backgroundPosition = `${xPct}% ${yPct}%`;
   }, []);
 
-  const navigate = useCallback((dir: 1 | -1) => {
-    setSelected((p) => (p + dir + images.length) % images.length);
-    setLightboxZoom(1);
-    setPanPosition({ x: 0, y: 0 });
-  }, [images.length]);
+  const navigate = useCallback(
+    (dir: 1 | -1) => {
+      setSelected((p) => (p + dir + images.length) % images.length);
+      setLightboxZoom(1);
+      setPanPosition({ x: 0, y: 0 });
+    },
+    [images.length]
+  );
 
   // Keyboard navigation for lightbox & gallery
   useEffect(() => {
@@ -91,15 +92,15 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [lightboxOpen, navigate]);
 
-  // Touch Swipe on Main Image
   const touchStartX = useRef(0);
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(dx) > 40) {
-      navigate(dx < 0 ? 1 : -1);
+    const diff = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(diff) > 40) {
+      if (diff < 0) setSelected((s) => (s + 1) % images.length);
+      else setSelected((s) => (s - 1 + images.length) % images.length);
     }
   };
 
@@ -136,21 +137,26 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   const isMinimal = layout === "minimal";
   const isEditorial = layout === "editorial";
 
+  if (!images || images.length === 0) return null;
+
   return (
     <>
       <div className={`space-y-3 ${isEditorial ? "md:col-span-3" : ""}`}>
         {/* Main Stage Frame */}
         <div
           ref={imgRef}
-          className={`relative overflow-hidden group select-none ${
+          className={`relative overflow-hidden group select-none transition-all duration-700 ${
             isMobile ? "cursor-default" : "cursor-crosshair"
           } ${
             isMinimal
               ? "rounded-2xl bg-secondary/15 border border-border/40"
               : isEditorial
               ? "rounded-none aspect-[4/3] bg-card border border-border/40"
-              : "rounded-3xl aspect-[1/1] sm:aspect-[4/5] bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] border border-border/80 shadow-xl"
+              : "rounded-3xl aspect-[1/1] sm:aspect-[4/5] border border-border/80 shadow-xl"
           }`}
+          style={{
+            background: `radial-gradient(ellipse 120% 85% at 50% 15%, ${dominantColor.rgba(0.22)} 0%, ${dominantColor.rgba(0.08)} 50%, var(--card) 100%)`,
+          }}
           {...(!isMobile
             ? {
                 onWheel: (e: React.WheelEvent) => {
@@ -185,9 +191,19 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
             setPanPosition({ x: 0, y: 0 });
           }}
         >
-          {/* Studio Accent Lighting */}
-          <div className="absolute top-0 inset-x-0 h-44 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none z-10" />
-          <div className="absolute bottom-6 inset-x-6 h-16 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.14),transparent_70%)] pointer-events-none blur-md z-10" />
+          {/* Studio Accent Lighting Following Image Hue */}
+          <div
+            className="absolute top-0 inset-x-0 h-44 pointer-events-none z-10 blur-xl transition-all duration-700"
+            style={{
+              background: `radial-gradient(ellipse at top, ${dominantColor.rgba(0.35)}, transparent 70%)`,
+            }}
+          />
+          <div
+            className="absolute bottom-6 inset-x-6 h-16 rounded-full pointer-events-none blur-xl z-10 transition-all duration-700"
+            style={{
+              background: `radial-gradient(ellipse at center, ${dominantColor.rgba(0.25)}, transparent 70%)`,
+            }}
+          />
 
           <AnimatePresence mode="wait">
             <motion.div
