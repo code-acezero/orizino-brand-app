@@ -58,4 +58,13 @@ export function getCookies(): Record<string, string> {
 }
 
 export function setCookie(_name: string, _value: string, _options?: any) {}
+
+export function getRequestHeader(_name: string): string | undefined {
+  return undefined;
+}
+
+export function getRequest(): Request | undefined {
+  return undefined;
+}
+
 // code:4ce0

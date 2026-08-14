@@ -195,7 +195,7 @@ export const createStripePaymentIntent = createServerFn({ method: "POST" })
     body.set("metadata[user_id]", userId);
     body.set("metadata[server_computed]", "1");
     if (data.metadata) {
-      for (const [k, v] of Object.entries(data.metadata)) body.set(`metadata[${k}]`, v);
+      for (const [k, v] of Object.entries(data.metadata)) body.set(`metadata[${k}]`, String(v));
     }
 
     const url = data.paymentIntentId

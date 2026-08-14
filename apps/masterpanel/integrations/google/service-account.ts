@@ -54,7 +54,7 @@ function base64url(input: Buffer | string): string {
     .replace(/=+$/, "");
 }
 
-async function requestAccessToken(scopes: string[]): Promise<TokenCacheEntry> {
+async function requestAccessToken(scopes: readonly string[] | string[]): Promise<TokenCacheEntry> {
   const { email, privateKey } = loadCredentials();
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT" };
@@ -87,7 +87,7 @@ async function requestAccessToken(scopes: string[]): Promise<TokenCacheEntry> {
 }
 
 /** Returns a cached or freshly-minted access token for the given scopes. */
-export async function googleAccessToken(scopes: string[]): Promise<string> {
+export async function googleAccessToken(scopes: readonly string[] | string[]): Promise<string> {
   const cacheKey = [...scopes].sort().join(" ");
   const cached = tokenCache.get(cacheKey);
   // Refresh a minute early so a slow request never races an expiring token.

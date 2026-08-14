@@ -139,7 +139,7 @@ const OrdersPage: React.FC = () => {
         const { data: tokenOrders } = await supabase
           .from("orders")
           .select(selectFields)
-          .eq("tracking_token", urlTrackingToken);
+          .eq("tracking_token" as any, urlTrackingToken);
         if (tokenOrders) results.push(...tokenOrders);
       }
 

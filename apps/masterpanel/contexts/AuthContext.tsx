@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let active = true;
-    let restoreTimer: ReturnType<typeof window.setTimeout> | undefined;
+    let restoreTimer: any = undefined;
 
     const finishInitialRestore = (nextSession: Session | null) => {
       if (!active) return;

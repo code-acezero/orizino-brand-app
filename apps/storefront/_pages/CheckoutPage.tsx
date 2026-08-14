@@ -283,9 +283,11 @@ const CheckoutPage: React.FC = () => {
         setAddress({
           full_name: def.name,
           phone: def.phone,
+          secondary_phone: (def as any).secondary_phone || "",
           street: def.street,
           city: def.city,
           state: def.state,
+          area: (def as any).area || def.state || "",
           zip: def.zip,
           country: def.country,
         });
@@ -313,7 +315,7 @@ const CheckoutPage: React.FC = () => {
         country: address.country || "Bangladesh",
         is_default: savedAddresses.length === 0,
       };
-      const saved = await saveAddressMutation.mutateAsync(payload as any);
+      const saved: any = await saveAddressMutation.mutateAsync(payload as any);
       toast({ title: "Address saved to your address book!" });
       if (saved?.id) {
         setSelectedSavedAddress(saved.id);
@@ -332,9 +334,11 @@ const CheckoutPage: React.FC = () => {
     setAddress({
       full_name: addr.name || "",
       phone: addr.phone || "",
+      secondary_phone: addr.secondary_phone || "",
       street: addr.street || "",
       city: addr.city || "",
       state: addr.state || "",
+      area: addr.area || addr.state || "",
       zip: addr.zip || "",
       country: addr.country || "Bangladesh",
     });

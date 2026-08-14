@@ -1,5 +1,5 @@
 import CategoryPage from "@/_pages/CategoryPage";
 
-export default function Page({ params }: { params: { slug: string } }) {
+export default function Page() {
   return <CategoryPage />;
 }

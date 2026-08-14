@@ -18,7 +18,6 @@ function toStripeAmount(amountMajor: number, currency: string): number {
   return Math.round(amountMajor * 100);
 }
 
-
 async function assertAdmin(supabase: any, userId: string) {
   const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" as any });
   if (!data) throw new Error("Forbidden: admins only");
@@ -127,7 +126,7 @@ export const createStripePaymentIntent = createServerFn({ method: "POST" })
     if (data.description) body.set("description", data.description);
     body.set("metadata[user_id]", userId);
     if (data.metadata) {
-      for (const [k, v] of Object.entries(data.metadata)) body.set(`metadata[${k}]`, v);
+      for (const [k, v] of Object.entries(data.metadata)) body.set(`metadata[${k}]`, String(v));
     }
 
     const url = data.paymentIntentId
@@ -156,4 +155,3 @@ export const createStripePaymentIntent = createServerFn({ method: "POST" })
       mode: secret.startsWith("sk_live_") ? "live" : "test",
     };
   });
-// code:4ce0

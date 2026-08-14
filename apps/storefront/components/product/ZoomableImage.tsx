@@ -5,6 +5,7 @@ interface ZoomableImageProps {
   src: string;
   alt: string;
   className?: string;
+  zoomScale?: number;
 }
 
 /**

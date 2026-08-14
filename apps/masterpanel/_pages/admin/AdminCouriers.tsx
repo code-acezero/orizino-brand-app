@@ -1,5 +1,5 @@
-"use client";
 import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,8 +79,8 @@ const AdminCouriers: React.FC = () => {
 
       if (orderData) {
         const { data: syncRes } = await supabase.functions.invoke("sync-shipments", { body: { orderId: orderData.id } }).catch(() => ({ data: null }));
-        const pathao = orderData.pathao_shipments?.[0];
-        const steadfast = orderData.steadfast_shipments?.[0];
+        const pathao: any = (orderData as any).pathao_shipments?.[0];
+        const steadfast: any = (orderData as any).steadfast_shipments?.[0];
         setTrackResult({
           type: "order",
           orderNumber: orderData.order_number,

@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,7 @@ import {
 /* Scan History                                                        */
 /* ------------------------------------------------------------------ */
 
-const MODE_ICON: Record<ScanMode, JSX.Element> = {
+const MODE_ICON: Record<ScanMode, React.ReactNode> = {
   camera: <Camera className="w-3 h-3" aria-hidden />,
   hid: <Keyboard className="w-3 h-3" aria-hidden />,
   manual: <PenLine className="w-3 h-3" aria-hidden />,

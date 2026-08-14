@@ -57,15 +57,15 @@ const LiveTrackingPage: React.FC = () => {
     }
   }, [id]);
 
-  const { data: order, isLoading, isFetching } = useQuery({
+  const { data: order, isLoading, isFetching } = useQuery<any>({
     queryKey: ["order_tracking", activeQuery],
-    queryFn: async () => {
+    queryFn: async (): Promise<any> => {
       if (!activeQuery) return null;
       const q = activeQuery.trim();
 
       // 1. Direct match by Order ID, Order Number, or Courier Tracking Code
       const { data: directMatch } = await supabase
-        .from("orders")
+        .from("orders" as any)
         .select("*, order_items(*), pathao_shipments(*), steadfast_shipments(*)")
         .or(`id.eq.${q},order_number.eq.${q},tracking_number.eq.${q},tracking_token.eq.${q}`)
         .maybeSingle();
@@ -74,9 +74,9 @@ const LiveTrackingPage: React.FC = () => {
 
       // 2. Match by Customer Phone Number
       const { data: phoneMatch } = await supabase
-        .from("orders")
+        .from("orders" as any)
         .select("*, order_items(*), pathao_shipments(*), steadfast_shipments(*)")
-        .eq("phone", q)
+        .eq("customer_phone", q)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -85,16 +85,16 @@ const LiveTrackingPage: React.FC = () => {
 
       // 3. Match by Steadfast or Pathao consignment code
       const { data: sfMatch } = await supabase
-        .from("steadfast_shipments")
+        .from("steadfast_shipments" as any)
         .select("order_id")
         .eq("tracking_code", q)
         .maybeSingle();
 
-      if (sfMatch?.order_id) {
+      if ((sfMatch as any)?.order_id) {
         const { data: sfOrder } = await supabase
-          .from("orders")
+          .from("orders" as any)
           .select("*, order_items(*), pathao_shipments(*), steadfast_shipments(*)")
-          .eq("id", sfMatch.order_id)
+          .eq("id", (sfMatch as any).order_id)
           .maybeSingle();
         if (sfOrder) return sfOrder;
       }
@@ -315,20 +315,20 @@ const LiveTrackingPage: React.FC = () => {
                   <div className="space-y-2.5 text-xs">
                     <div className="flex items-center gap-2 text-foreground font-semibold">
                       <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                      <span>{order.shipping_address?.full_name || order.customer_name || "Valued Customer"}</span>
+                      <span>{(order.shipping_address as any)?.full_name || (order as any).customer_name || "Valued Customer"}</span>
                     </div>
 
-                    {order.shipping_address?.phone && (
+                    {(order.shipping_address as any)?.phone && (
                       <div className="flex items-center gap-2 text-muted-foreground font-mono">
                         <Phone className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                        <span>{order.shipping_address.phone}</span>
+                        <span>{(order.shipping_address as any).phone}</span>
                       </div>
                     )}
 
                     <div className="text-muted-foreground pl-5 space-y-0.5">
-                      <p>{order.shipping_address?.street}</p>
-                      <p>{[order.shipping_address?.city, order.shipping_address?.state, order.shipping_address?.country].filter(Boolean).join(", ")}</p>
-                      {order.shipping_address?.zip && <p className="font-mono text-[11px]">Zip Code: {order.shipping_address.zip}</p>}
+                      <p>{(order.shipping_address as any)?.street}</p>
+                      <p>{[(order.shipping_address as any)?.city, (order.shipping_address as any)?.state, (order.shipping_address as any)?.country].filter(Boolean).join(", ")}</p>
+                      {(order.shipping_address as any)?.zip && <p className="font-mono text-[11px]">Zip Code: {(order.shipping_address as any).zip}</p>}
                     </div>
                   </div>
                 </div>
@@ -342,11 +342,11 @@ const LiveTrackingPage: React.FC = () => {
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between items-center text-muted-foreground">
                       <span>Method</span>
-                      <span className="font-bold text-foreground uppercase">{order.payment_method || "COD"}</span>
+                      <span className="font-bold text-foreground uppercase">{(order as any).payment_method || "COD"}</span>
                     </div>
                     <div className="flex justify-between items-center text-muted-foreground">
                       <span>Status</span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400 capitalize">{order.payment_status || "Unpaid"}</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 capitalize">{(order as any).payment_status || "Unpaid"}</span>
                     </div>
                   </div>
                 </div>

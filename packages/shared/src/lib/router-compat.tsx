@@ -137,6 +137,25 @@ export function useRouter() {
   return router;
 }
 
+export function useRouterState(options?: { select?: (s: any) => any }) {
+  const pathname = usePathname() || "";
+  const searchParams = useNextSearchParams();
+  const state = {
+    status: "idle",
+    isLoading: false,
+    isTransitioning: false,
+    location: {
+      pathname,
+      search: searchParams?.toString() ? `?${searchParams.toString()}` : "",
+      href: pathname,
+    },
+  };
+  if (options?.select) {
+    return options.select(state);
+  }
+  return state;
+}
+
 export function createFileRoute(_path: string) {
   return (config: any) => config;
 }

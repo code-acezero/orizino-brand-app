@@ -108,7 +108,7 @@ export async function elementToPdfBlob(el: HTMLElement, options?: { orientation?
   ]);
   const html2canvas = (html2canvasMod as any).default ?? html2canvasMod;
 
-  const canvas = await withUnclippedElement(el, (target) =>
+  const canvas: any = await withUnclippedElement(el, (target) =>
     html2canvas(target, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false })
   );
   const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: options?.orientation ?? "p" });
@@ -154,7 +154,7 @@ export function downloadBlob(blob: Blob, filename: string) {
 export async function elementToJpegBlob(el: HTMLElement, quality = 0.92): Promise<Blob> {
   const html2canvasMod = await import("html2canvas");
   const html2canvas = (html2canvasMod as any).default ?? html2canvasMod;
-  const canvas = await withUnclippedElement(el, (target) =>
+  const canvas: any = await withUnclippedElement(el, (target) =>
     html2canvas(target, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false })
   );
   return await new Promise<Blob>((resolve, reject) => {

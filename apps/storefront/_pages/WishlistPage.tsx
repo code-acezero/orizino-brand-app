@@ -179,11 +179,11 @@ const WishlistPage: React.FC = () => {
     if (!user || !importUrl.trim()) return;
     setSubmittingImport(true);
     try {
-      await supabase.from("product_import_requests").insert({
+      await supabase.from("product_import_requests" as any).insert({
         user_id: user.id,
         product_url: importUrl.trim(),
         notes: importNotes.trim() || null,
-        reference_images: importImages.length > 0 ? importImages : null,
+        reference_images: (importImages.length > 0 ? importImages : null) as any,
       });
       toast({ title: "Request submitted!", description: "We'll review it and notify you." });
       setImportUrl("");

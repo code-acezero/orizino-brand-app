@@ -13,7 +13,7 @@ import catAccessories from "@/assets/icons/cat-accessories.png";
 import catGroceries from "@/assets/icons/cat-groceries.png";
 import catSports from "@/assets/icons/cat-sports.png";
 
-const fallbackIcons: Record<string, string> = {
+const fallbackIcons: Record<string, any> = {
   electronics: catElectronics,
   fashion: catFashion,
   "home-living": catHome,

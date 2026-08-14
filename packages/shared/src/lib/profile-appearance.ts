@@ -324,6 +324,7 @@ export interface ProfileAppearanceConfig {
   accent_hsl?: string | null;
   density?: "compact" | "comfortable" | "spacious";
   rounded?: "sm" | "md" | "lg" | "xl" | "2xl";
+  mobile_nav?: string;
 }
 
 export const defaultProfileAppearance: ProfileAppearanceConfig = {
