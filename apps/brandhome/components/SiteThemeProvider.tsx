@@ -8,7 +8,7 @@ import { useTheme } from "next-themes";
 
 /* Map old theme IDs to new ones for backward compat */
 const legacyMap: Record<string, string> = {
-  default: "crimson_drive",
+  default: "cherry_vanilla",
   ocean: "tidal_flame",
   sunset: "ember_city",
   rose: "rose_petal",
@@ -68,7 +68,7 @@ const SiteThemeProvider = () => {
     if (!siteSettings) return;
     setExternalRedirects(siteSettings.external_redirects || null);
     const mode = resolvedTheme || "dark";
-    const rawThemeId = String(siteSettings.site_theme || "crimson_drive");
+    const rawThemeId = String(siteSettings.site_theme || "cherry_vanilla");
     const themeId = legacyMap[rawThemeId] || rawThemeId;
     const html = document.documentElement;
 
