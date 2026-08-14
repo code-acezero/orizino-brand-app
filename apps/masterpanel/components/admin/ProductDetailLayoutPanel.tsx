@@ -122,9 +122,9 @@ const STUDIO_PRESETS: {
   {
     layout: "glass" as LayoutStyle,
     gallery: "coverflow" as GalleryStyle,
-    label: "Modern Atrium",
+    label: "Orizino Atrium",
     tag: "Signature",
-    desc: "Translucent frosted glassmorphism cards & 3D Coverflow perspective rotation.",
+    desc: "Signature Orizino Elegant frosted glass cards & 3D Coverflow perspective rotation.",
     icon: Box,
   },
   {
@@ -181,9 +181,9 @@ const LAYOUT_STYLES: {
   },
   {
     id: "glass",
-    label: "Glassmorphism",
-    tag: "Translucent",
-    desc: "Frosted glass cards with smooth backdrop blur and signature brand borders",
+    label: "Orizino Elegant",
+    tag: "Signature",
+    desc: "Signature frosted glass cards with smooth backdrop blur and modern brand styling",
     icon: Box,
     previewBg: "bg-gradient-to-r from-primary/60 via-primary/20 to-primary/50",
     accentText: "text-primary",
