@@ -20,8 +20,40 @@ import ImageUpload from "@/components/ImageUpload";
 import VideoUpload from "@/components/VideoUpload";
 import { toast } from "@/lib/app-toast";
 import { Plus, Pencil, Trash2, Settings2, Layers, GripVertical, Copy, Link2, Palette, Wand2, Eye, Monitor, Smartphone, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Play, Pause, Image, FileText, LayoutGrid, Type, ArrowUp, ArrowDown, ArrowLeft, RotateCcw, Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useDragReorder } from "@/hooks/use-drag-reorder";
 import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
+
+function ColorPicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-semibold text-foreground/80">{label}</Label>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={value && value.startsWith("#") ? value : "#ffffff"}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-8 h-8 rounded-lg border border-border/60 bg-transparent cursor-pointer shrink-0"
+        />
+        <Input
+          type="text"
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="#ffffff or inherit"
+          className="h-8 text-xs font-mono bg-background/50 border-border/50 flex-1"
+        />
+      </div>
+    </div>
+  );
+}
 
 const FONT_FAMILY_MAP: Record<string, string> = {
   "Playfair Display": "'Playfair Display', serif",
@@ -2635,6 +2667,7 @@ export function MarqueeStripTab() {
   });
 
   const wordsList = words.flatMap((w) => [w, "__LOGO__"]);
+  const previewRepeated = wordsList.length > 0 ? [...wordsList, ...wordsList, ...wordsList, ...wordsList] : [];
   // Register universal floating save button for Marquee Strip
   useRegisterUniversalSave(
     {
