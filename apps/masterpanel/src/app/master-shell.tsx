@@ -138,7 +138,7 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/affiliate/overview": AffiliateHub,
 
   // Brand
-  "/brand": BrandDashboard,
+  "/brand": SettingsAiDashboard,
   "/brand/branding": AdminBranding,
   "/brand/appearance": AdminAppearance,
   "/brand/banners": AdminBanners,
@@ -159,7 +159,7 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/system/db-health": AdminDbHealth,
   "/system/debug": AdminDebug,
   "/settings-ai": SettingsAiDashboard,
-  "/settings-ai/brand": BrandDashboard,
+  "/settings-ai/brand": SettingsAiDashboard,
   "/settings-ai/branding": AdminBranding,
   "/settings-ai/appearance": AdminAppearance,
   "/settings-ai/general": AdminSettings,

@@ -515,18 +515,11 @@ export const adminNav: AdminNavSection[] = [
     label: "Settings & AI",
     items: [
       {
-        title: "Settings Dashboard",
+        title: "Dashboard",
         url: "/settings-ai",
         icon: LayoutDashboard,
         section: "settings",
-        description: "AI, integrations & preferences overview",
-      },
-      {
-        title: "Brand Dashboard",
-        url: "/brand",
-        icon: LayoutDashboard,
-        section: "storefront_ui",
-        description: "Identity, banners & content surfaces overview",
+        description: "Brand identity, appearance, AI & system overview",
       },
       {
         title: "Branding",

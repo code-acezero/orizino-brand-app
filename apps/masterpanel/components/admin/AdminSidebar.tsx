@@ -93,8 +93,11 @@ export function AdminSidebar() {
   const headerTitle = isMasterPanelHome ? "Master Panel" : "Control Panel";
   const isSettingsSubroute = (() => {
     const clean = location.pathname.replace(/\/+$/, "");
-    return clean === "/brand/branding" || clean.startsWith("/brand/branding") ||
-           clean === "/brand/appearance" || clean.startsWith("/brand/appearance");
+    return clean === "/brand" ||
+           clean === "/brand/branding" || clean.startsWith("/brand/branding") ||
+           clean === "/brand/appearance" || clean.startsWith("/brand/appearance") ||
+           clean === "/settings-ai" || clean.startsWith("/settings-ai") ||
+           clean === "/settings" || clean.startsWith("/settings");
   })();
 
   const sectionLabel = (() => {
