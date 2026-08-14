@@ -141,29 +141,25 @@ export function CompanyNav({ variant }: CompanyNavProps) {
 
         {/* Middle: Centered Logo & Brand Title (No Suffix) */}
         <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex items-center justify-center z-10">
-          {isLoading ? (
-            <div className="h-3.5 sm:h-4 w-14 sm:w-20 rounded bg-muted/50 animate-pulse" />
-          ) : (
-            <a href="/" className="flex items-center gap-2 group" aria-label={`${brand?.name || "Orizino"} Home`}>
-              {brand?.titleSource === "image" && brand?.titleImageUrl ? (
-                <img src={brand.titleImageUrl} alt={brand?.name} className="h-5 sm:h-6 w-auto object-contain shrink-0" />
-              ) : (
-                <h2
-                  className="font-bold tracking-[0.16em] leading-none text-foreground transition-opacity hover:opacity-80 text-sm sm:text-base uppercase flex items-center gap-1.5"
-                  style={{
-                    fontFamily: brand?.titleFont
-                      ? `'${brand.titleFont}', var(--font-title, var(--font-display))`
-                      : 'var(--font-title, var(--font-display))'
-                  }}
-                >
-                  {brand?.brandPrefix && (
-                    <span className="opacity-80 font-medium lowercase tracking-tight" style={{ fontFamily: brand?.titleFont ? `'${brand.titleFont}', var(--font-title, var(--font-display))` : 'var(--font-title, var(--font-display))' }}>{brand.brandPrefix}</span>
-                  )}
-                  {brand?.name}
-                </h2>
-              )}
-            </a>
-          )}
+          <a href="/" className="flex items-center gap-2 group" aria-label={`${brand?.name || "Orizino"} Home`}>
+            {brand?.titleSource === "image" && brand?.titleImageUrl ? (
+              <img src={brand.titleImageUrl} alt={brand?.name || "Orizino"} className="h-5 sm:h-6 w-auto object-contain shrink-0" />
+            ) : (
+              <h2
+                className="font-bold tracking-[0.16em] leading-none text-foreground transition-opacity hover:opacity-80 text-sm sm:text-base uppercase flex items-center gap-1.5"
+                style={{
+                  fontFamily: brand?.titleFont
+                    ? `'${brand.titleFont}', var(--font-title, var(--font-display))`
+                    : 'var(--font-title, var(--font-display))'
+                }}
+              >
+                {brand?.brandPrefix && (
+                  <span className="opacity-80 font-medium lowercase tracking-tight" style={{ fontFamily: brand?.titleFont ? `'${brand.titleFont}', var(--font-title, var(--font-display))` : 'var(--font-title, var(--font-display))' }}>{brand.brandPrefix}</span>
+                )}
+                {brand?.name || "Orizino"}
+              </h2>
+            )}
+          </a>
         </div>
 
         {/* Right Corner: External Shop Button & Sign In */}

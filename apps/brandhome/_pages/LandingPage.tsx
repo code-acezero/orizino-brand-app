@@ -68,7 +68,7 @@ const LandingPage: React.FC = () => {
   const titleFont = (siteSettings?.title_font as string) || "";
   const titleImageUrl = (siteSettings?.title_image_url as string) || "";
 
-  const showLogo = (displayStyle === "logo" || displayStyle === "both") && Boolean(logoUrl);
+  const showLogo = displayStyle === "logo" || displayStyle === "both";
   const showTitle = displayStyle === "title" || displayStyle === "both" || Boolean(siteName);
 
   const [liveDraft, setLiveDraft] = React.useState<Record<string, any> | null>(null);
@@ -113,7 +113,7 @@ const LandingPage: React.FC = () => {
 
       {/* ── Hero ── */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
-        {/* Background Video / Image / gradient */}
+        {/* Background Video / Image / luxury ambient lighting */}
         {heroVideoUrl ? (
           <>
             <div className="absolute inset-0 z-0">
@@ -132,133 +132,135 @@ const LandingPage: React.FC = () => {
           </>
         ) : (
           <>
-            <div className="absolute inset-0 z-0" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, hsl(0 100% 30% / 0.12), transparent)" }} />
-            <div className="absolute inset-0 z-0" style={{ background: "radial-gradient(ellipse 60% 40% at 80% 80%, hsl(30 33% 91% / 0.04), transparent)" }} />
+            {/* Rich luxury ambient cherry & charcoal glow */}
+            <div
+              className="absolute inset-0 z-0 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(ellipse 80% 50% at 50% 12%, hsl(359 100% 30% / 0.18), transparent 70%), radial-gradient(ellipse 60% 40% at 50% 75%, hsl(30 33% 90% / 0.04), transparent 75%)",
+              }}
+            />
+            {/* Fine luxury stage grid aura */}
+            <div
+              className="absolute inset-0 z-0 opacity-15 pointer-events-none"
+              style={{
+                backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--foreground) / 0.15) 1px, transparent 0)`,
+                backgroundSize: "32px 32px",
+              }}
+            />
           </>
         )}
 
         <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 xl:px-10 mx-auto text-center flex flex-col items-center">
-          {isLoadingSettings ? (
-            <div className="flex flex-col items-center w-full max-w-xl mx-auto">
-              <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl bg-card/60 border border-border/40 animate-pulse mb-8" />
-              <div className="h-16 sm:h-24 w-64 sm:w-96 rounded-2xl bg-card/60 border border-border/40 animate-pulse mb-6" />
-              <div className="h-4 w-64 sm:w-80 rounded-lg bg-card/60 border border-border/40 animate-pulse mb-10" />
-            </div>
-          ) : (
-            <>
-              {showLogo && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                  className="mb-8"
-                >
-                  <svg
-                    viewBox="0 0 539.27 565.14"
-                    className="w-36 h-36 sm:w-48 sm:h-48 lg:w-56 lg:h-56 mx-auto overflow-visible filter drop-shadow-[0_8px_25px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_8px_30px_rgba(255,255,255,0.06)]"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <defs>
-                      <linearGradient id="logoMetallicGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="var(--theme-shine)" stopOpacity="1" />
-                        <stop offset="25%" stopColor="hsl(var(--foreground))" stopOpacity="0.85" />
-                        <stop offset="75%" stopColor="hsl(var(--foreground))" stopOpacity="0.85" />
-                        <stop offset="100%" stopColor="var(--theme-shine)" stopOpacity="1" />
-                      </linearGradient>
-                    </defs>
-                    <g fill="url(#logoMetallicGrad)" strokeLinejoin="round" strokeLinecap="round">
-                      <path className="animate-logo-stroke-fill" d="M11.31,303.01l10.42,10.61,102.73,114.11c-16.27-34.27-34.28-66.2-53.79-98.11L0,219.52l41.25-42.82,104.13-107.09C169.3,45.99,192.23,22.22,218.19,0l-71.11,101.28L55.74,232.06c26,65.57,52.95,130.16,81.76,194.32l12.16,25.25,71.16,112.86L52.01,416.82l-40.7-113.8Z" />
-                      <path className="animate-logo-stroke-fill" style={{ animationDelay: "0.2s" }} d="M510.24,351.74l-23.18,64.87-169.05,148.54,27.52-44.45,45.28-70.91,30.12-65.82,16.7-38.98,46-113.02-81.21-116.77-25.93-36.85L321.38.16c14.41,11.93,26.61,24.47,40.1,37.05l86.76,87.48,77.26,80.22,13.77,14.47-52.64,81.42c-26.66,41.23-50.32,83.4-72.56,127.58l33.83-36.98,79.5-88.8-17.16,49.14Z" />
-                      <path className="animate-logo-stroke-fill" style={{ animationDelay: "0.4s" }} d="M356.28,185.04l26.95,46.73-36.12,40.33-32.01,35.6-5.9,33.94-22.1,115.86-19.75,106.98-25.06-136.06-23.26-120.77-10.57-11.82-57.13-64.08,17.38-30.41,40.24-67.6c-.28,10.99,4.75,22.09,2.63,32.95l-18.99,63.2,44.02,68.95,9.75,55.81,20.97,113.31,20.22-107.91,10.47-61.52,44.22-68.68-19.37-63.68,2.55-32.17,30.86,51.02Z" />
-                    </g>
-                  </svg>
-                </motion.div>
-              )}
-              
-              {showTitle && (
-                <motion.div
-                  className="mb-6 flex justify-center w-full"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  {titleSource === "image" && titleImageUrl ? (
-                    <img src={titleImageUrl} alt={siteName} className="h-10 sm:h-16 lg:h-20 w-auto object-contain animate-slow-draw-short-cooldown" />
-                  ) : (
-                    <svg viewBox="0 0 1000 130" className="w-full max-w-3xl h-auto mx-auto overflow-visible select-none my-2">
-                      <defs>
-                        <linearGradient id="monochromeStrokeShimmer" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.1" />
-                          <stop offset="35%" stopColor="hsl(var(--foreground))" stopOpacity="0.85" />
-                          <stop offset="50%" stopColor="var(--theme-shine)" stopOpacity="1" />
-                          <stop offset="65%" stopColor="hsl(var(--foreground))" stopOpacity="0.85" />
-                          <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.1" />
-                        </linearGradient>
-                      </defs>
-                      {/* Animated Stroke Layer */}
-                      <text
-                        x="50%"
-                        y="50%"
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                        className="font-editorial text-[64px] sm:text-[76px] lg:text-[84px] fill-none animate-slow-draw-short-cooldown"
-                        style={{
-                          stroke: "url(#monochromeStrokeShimmer)",
-                          strokeWidth: "2px",
-                          letterSpacing: "0.05em",
-                          fontFamily: titleFont ? `'${titleFont}', var(--font-title, var(--font-display))` : 'var(--font-title, var(--font-display))'
-                        }}
-                      >
-                        {siteName}
-                      </text>
-                    </svg>
-                  )}
-                </motion.div>
-              )}
-
-              <motion.p
-                className="font-sans-brand text-muted-foreground mb-10 max-w-xl mx-auto leading-relaxed"
-                style={{ fontSize: "clamp(0.9rem, 1.8vw, 1.1rem)" }}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.25 }}
-              >
-                {siteDesc}
-              </motion.p>
-            </>
-          )}
-          {isLoadingSettings ? (
-            <div className="flex items-center justify-center gap-3.5 flex-wrap pt-2">
-              <div className="h-12 w-48 rounded-full bg-muted/60 animate-pulse" />
-              <div className="h-12 w-40 rounded-full bg-muted/60 animate-pulse" />
-            </div>
-          ) : (
+          {showLogo && (
             <motion.div
-              className="flex items-center justify-center gap-3.5 flex-wrap pt-2"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.35 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="mb-8"
             >
-              <a
-                href={shopUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center gap-2.5 font-sans-brand text-[11px] sm:text-xs tracking-[0.18em] uppercase px-7 py-3.5 sm:px-8 sm:py-4 rounded-full font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] shadow-lg hover:shadow-xl bg-foreground text-background hover:bg-foreground/90"
-              >
-                <ShoppingBag className="w-4 h-4 shrink-0" strokeWidth={1.75} />
-                <span>Visit Our Shop</span>
-              </a>
-              <a
-                href="#story"
-                className="inline-flex items-center justify-center gap-2.5 font-sans-brand text-[11px] sm:text-xs tracking-[0.18em] uppercase px-7 py-3.5 sm:px-8 sm:py-4 rounded-full font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] border border-foreground/20 hover:border-foreground/40 bg-background/60 backdrop-blur-md text-foreground hover:bg-foreground/5 shadow-sm"
-              >
-                <Layers className="w-4 h-4 shrink-0" strokeWidth={1.75} />
-                <span>Our Story</span>
-              </a>
+              {logoUrl ? (
+                <img src={logoUrl} alt={siteName} className="w-28 h-28 sm:w-36 sm:h-36 mx-auto object-contain drop-shadow-xl" />
+              ) : (
+                <svg
+                  viewBox="0 0 539.27 565.14"
+                  className="w-36 h-36 sm:w-48 sm:h-48 lg:w-56 lg:h-56 mx-auto overflow-visible filter drop-shadow-[0_8px_25px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_8px_30px_rgba(255,255,255,0.06)]"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <defs>
+                    <linearGradient id="logoMetallicGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="var(--theme-shine)" stopOpacity="1" />
+                      <stop offset="25%" stopColor="hsl(var(--foreground))" stopOpacity="0.85" />
+                      <stop offset="75%" stopColor="hsl(var(--foreground))" stopOpacity="0.85" />
+                      <stop offset="100%" stopColor="var(--theme-shine)" stopOpacity="1" />
+                    </linearGradient>
+                  </defs>
+                  <g fill="url(#logoMetallicGrad)" strokeLinejoin="round" strokeLinecap="round">
+                    <path className="animate-logo-stroke-fill" d="M11.31,303.01l10.42,10.61,102.73,114.11c-16.27-34.27-34.28-66.2-53.79-98.11L0,219.52l41.25-42.82,104.13-107.09C169.3,45.99,192.23,22.22,218.19,0l-71.11,101.28L55.74,232.06c26,65.57,52.95,130.16,81.76,194.32l12.16,25.25,71.16,112.86L52.01,416.82l-40.7-113.8Z" />
+                    <path className="animate-logo-stroke-fill" style={{ animationDelay: "0.2s" }} d="M510.24,351.74l-23.18,64.87-169.05,148.54,27.52-44.45,45.28-70.91,30.12-65.82,16.7-38.98,46-113.02-81.21-116.77-25.93-36.85L321.38.16c14.41,11.93,26.61,24.47,40.1,37.05l86.76,87.48,77.26,80.22,13.77,14.47-52.64,81.42c-26.66,41.23-50.32,83.4-72.56,127.58l33.83-36.98,79.5-88.8-17.16,49.14Z" />
+                    <path className="animate-logo-stroke-fill" style={{ animationDelay: "0.4s" }} d="M356.28,185.04l26.95,46.73-36.12,40.33-32.01,35.6-5.9,33.94-22.1,115.86-19.75,106.98-25.06-136.06-23.26-120.77-10.57-11.82-57.13-64.08,17.38-30.41,40.24-67.6c-.28,10.99,4.75,22.09,2.63,32.95l-18.99,63.2,44.02,68.95,9.75,55.81,20.97,113.31,20.22-107.91,10.47-61.52,44.22-68.68-19.37-63.68,2.55-32.17,30.86,51.02Z" />
+                  </g>
+                </svg>
+              )}
             </motion.div>
           )}
+          
+          {showTitle && (
+            <motion.div
+              className="mb-6 flex justify-center w-full"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            >
+              {titleSource === "image" && titleImageUrl ? (
+                <img src={titleImageUrl} alt={siteName} className="h-10 sm:h-16 lg:h-20 w-auto object-contain animate-slow-draw-short-cooldown" />
+              ) : (
+                <svg viewBox="0 0 1000 130" className="w-full max-w-3xl h-auto mx-auto overflow-visible select-none my-2">
+                  <defs>
+                    <linearGradient id="monochromeStrokeShimmer" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.1" />
+                      <stop offset="35%" stopColor="hsl(var(--foreground))" stopOpacity="0.85" />
+                      <stop offset="50%" stopColor="var(--theme-shine)" stopOpacity="1" />
+                      <stop offset="65%" stopColor="hsl(var(--foreground))" stopOpacity="0.85" />
+                      <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.1" />
+                    </linearGradient>
+                  </defs>
+                  {/* Animated Stroke Layer */}
+                  <text
+                    x="50%"
+                    y="50%"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                    className="font-editorial text-[64px] sm:text-[76px] lg:text-[84px] fill-none animate-slow-draw-short-cooldown"
+                    style={{
+                      stroke: "url(#monochromeStrokeShimmer)",
+                      strokeWidth: "2px",
+                      letterSpacing: "0.05em",
+                      fontFamily: titleFont ? `'${titleFont}', var(--font-title, var(--font-display))` : 'var(--font-title, var(--font-display))'
+                    }}
+                  >
+                    {siteName}
+                  </text>
+                </svg>
+              )}
+            </motion.div>
+          )}
+
+          <motion.p
+            className="font-sans-brand text-muted-foreground mb-10 max-w-xl mx-auto leading-relaxed"
+            style={{ fontSize: "clamp(0.9rem, 1.8vw, 1.1rem)" }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.25 }}
+          >
+            {siteDesc}
+          </motion.p>
+
+          <motion.div
+            className="flex items-center justify-center gap-3.5 flex-wrap pt-2"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.35 }}
+          >
+            <a
+              href={shopUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2.5 font-sans-brand text-[11px] sm:text-xs tracking-[0.18em] uppercase px-7 py-3.5 sm:px-8 sm:py-4 rounded-full font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] shadow-lg hover:shadow-xl bg-foreground text-background hover:bg-foreground/90 cursor-pointer"
+            >
+              <ShoppingBag className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+              <span>Visit Our Shop</span>
+            </a>
+            <a
+              href="#story"
+              className="inline-flex items-center justify-center gap-2.5 font-sans-brand text-[11px] sm:text-xs tracking-[0.18em] uppercase px-7 py-3.5 sm:px-8 sm:py-4 rounded-full font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] border border-foreground/20 hover:border-foreground/40 bg-background/60 backdrop-blur-md text-foreground hover:bg-foreground/5 shadow-sm cursor-pointer"
+            >
+              <Layers className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+              <span>Our Story</span>
+            </a>
+          </motion.div>
 
           {/* Scroll hint */}
           <motion.div
@@ -302,7 +304,14 @@ const LandingPage: React.FC = () => {
           {isLoadingFeatured ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="aspect-[3/4] rounded-2xl bg-card/40 border border-border/40 animate-pulse" />
+                <div
+                  key={i}
+                  className="aspect-[3/4] rounded-2xl bg-card/40 border border-border/50 relative overflow-hidden flex flex-col justify-end p-5"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.03] via-transparent to-transparent animate-pulse" />
+                  <div className="w-10 h-3 rounded-full bg-white/10 mb-2 animate-pulse" />
+                  <div className="w-3/4 h-5 rounded-lg bg-white/10 animate-pulse" />
+                </div>
               ))}
             </div>
           ) : (

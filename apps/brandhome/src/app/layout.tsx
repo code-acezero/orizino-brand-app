@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html suppressHydrationWarning lang="en" className="dark" style={{ backgroundColor: "#2a2a2a", colorScheme: "dark" }}>
+    <html suppressHydrationWarning lang="en" className="dark" style={{ backgroundColor: "#141414", colorScheme: "dark" }}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
