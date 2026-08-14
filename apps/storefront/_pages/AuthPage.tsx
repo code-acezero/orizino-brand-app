@@ -23,7 +23,6 @@ import { toast } from "@/lib/app-toast";
 import { useSeoMeta } from "@/hooks/use-seo-meta";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useQuery } from "@tanstack/react-query";
-import NotRobotCheck from "@/components/auth/NotRobotCheck";
 import MfaChallengeDialog from "@/components/auth/MfaChallengeDialog";
 import { useAuthAppearance } from "@/hooks/use-auth-appearance";
 import { BrandImage, type LogoFilter } from "@/lib/brand-image";
@@ -68,7 +67,6 @@ const AuthPage: React.FC = () => {
   const [otpEmail, setOtpEmail] = useState("");
   const [testimonialIdx, setTestimonialIdx] = useState(0);
   const [rememberMe, setRememberMe] = useState(false);
-  const [humanVerified, setHumanVerified] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [subscribeEmails, setSubscribeEmails] = useState(true);
   const [mfaOpen, setMfaOpen] = useState(false);
@@ -126,9 +124,8 @@ const AuthPage: React.FC = () => {
   if (user) return <Navigate to="/" replace />;
 
   const pwStrength = getPasswordStrength(password);
-  const robotOk = appearance.show_robot_check ? humanVerified : true;
-  const isSignInValid = !!email.trim() && password.length >= 6 && robotOk;
-  const isSignUpValid = !!email.trim() && password.length >= 6 && !!fullName.trim() && robotOk && termsAccepted;
+  const isSignInValid = !!email.trim() && password.length >= 6;
+  const isSignUpValid = !!email.trim() && password.length >= 6 && !!fullName.trim() && termsAccepted;
   const isForgotValid = email.trim().length > 0;
 
   const persistRemember = () => {
@@ -308,13 +305,13 @@ const AuthPage: React.FC = () => {
   // ── Main Lightweight Plain Auth Screen ─────────────────────────
   return (
     <>
-      <div className="min-h-screen bg-background relative flex flex-col justify-between overflow-hidden">
+      <div className="min-h-screen bg-background relative flex flex-col justify-start overflow-hidden">
         {/* Subtle Ambient Background Light */}
         <div aria-hidden className="absolute top-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
         <div aria-hidden className="absolute bottom-0 left-1/4 w-96 h-96 bg-secondary/30 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Top Minimal Nav (Reduced vertical space) */}
-        <header className="relative z-20 w-full px-6 pt-3 pb-1 flex items-center justify-between">
+        {/* Top Minimal Nav (Tight vertical space) */}
+        <header className="relative z-20 w-full px-6 pt-2.5 pb-1 flex items-center justify-between">
           <button
             type="button"
             onClick={goBack}
@@ -332,21 +329,21 @@ const AuthPage: React.FC = () => {
           </button>
         </header>
 
-        {/* Main Content (Shifted upwards with minimal top padding) */}
-        <main className="relative z-10 flex-1 flex items-start justify-center px-4 pt-1 sm:pt-3 pb-8">
+        {/* Main Content (Shifted high upwards) */}
+        <main className="relative z-10 w-full flex items-start justify-center px-4 pt-1 sm:pt-2 pb-6">
           <motion.div
-            initial={{ opacity: 0, y: 6 }}
+            initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.2 }}
             className={`w-full ${
               appearance.show_brand_panel ? "max-w-4xl grid grid-cols-1 md:grid-cols-12" : "max-w-md"
             } bg-card/90 border border-border/60 rounded-3xl overflow-hidden`}
           >
             {/* LEFT: Brand Story, Plain Center Logo & Quotes (Desktop only) */}
             {appearance.show_brand_panel && (
-              <div className="hidden md:flex md:col-span-5 relative flex-col justify-between p-8 bg-gradient-to-br from-secondary/40 via-card to-secondary/20 border-r border-border/40 min-h-[540px]">
+              <div className="hidden md:flex md:col-span-5 relative flex-col justify-between p-7 bg-gradient-to-br from-secondary/40 via-card to-secondary/20 border-r border-border/40 min-h-[480px]">
                 {/* Top Section: Kicker & Headline */}
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   <span className="inline-flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-widest text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
                     <Sparkles className="w-2.5 h-2.5" />
                     Member Privileges
@@ -366,10 +363,10 @@ const AuthPage: React.FC = () => {
                   </p>
                 </div>
 
-                {/* ── CENTER: PLAIN LARGE BRAND LOGO (No square bg, no brand title text) ── */}
-                <div className="my-auto py-6 flex items-center justify-center">
+                {/* ── CENTER: PLAIN LARGE BRAND LOGO (Clean & Elevated) ── */}
+                <div className="my-auto py-4 flex items-center justify-center">
                   {logoUrl ? (
-                    <div className="w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center">
+                    <div className="w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center">
                       <BrandImage
                         src={logoUrl}
                         alt={siteName}
@@ -380,7 +377,7 @@ const AuthPage: React.FC = () => {
                     </div>
                   ) : (
                     <span
-                      className="text-6xl font-black text-primary select-none"
+                      className="text-5xl font-black text-primary select-none"
                       style={{ fontFamily: `'${titleFont}', sans-serif` }}
                     >
                       {siteName.charAt(0)}
@@ -389,7 +386,7 @@ const AuthPage: React.FC = () => {
                 </div>
 
                 {/* Bottom Section: Rotating Testimonials & Secured badge */}
-                <div className="space-y-3.5 pt-2">
+                <div className="space-y-3 pt-1">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={testimonialIdx}
@@ -397,7 +394,7 @@ const AuthPage: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -4 }}
                       transition={{ duration: 0.3 }}
-                      className="rounded-2xl bg-card/70 border border-border/40 p-3.5 space-y-1"
+                      className="rounded-2xl bg-card/70 border border-border/40 p-3 space-y-0.5"
                     >
                       <p className="text-xs italic text-foreground/90 leading-relaxed">
                         "{TESTIMONIALS[testimonialIdx].quote}"
@@ -417,10 +414,10 @@ const AuthPage: React.FC = () => {
             )}
 
             {/* RIGHT: Modern Form Panel */}
-            <div className={`p-6 sm:p-8 flex flex-col justify-center ${appearance.show_brand_panel ? "md:col-span-7" : ""}`}>
+            <div className={`p-6 sm:p-7 flex flex-col justify-center ${appearance.show_brand_panel ? "md:col-span-7" : ""}`}>
               {/* Segmented Switcher */}
               {mode !== "forgot" && (
-                <div className="grid grid-cols-2 p-1 rounded-2xl bg-secondary/40 border border-border/40 mb-6">
+                <div className="grid grid-cols-2 p-1 rounded-2xl bg-secondary/40 border border-border/40 mb-5">
                   <button
                     type="button"
                     onClick={() => { setMode("signin"); setTermsAccepted(false); }}
@@ -523,14 +520,10 @@ const AuthPage: React.FC = () => {
                       </button>
                     </div>
 
-                    {appearance.show_robot_check && (
-                      <NotRobotCheck verified={humanVerified} onVerifiedChange={setHumanVerified} resetKey="signin" />
-                    )}
-
                     <button
                       type="submit"
                       disabled={loading || !isSignInValid}
-                      className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold inline-flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                      className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold inline-flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer mt-1"
                     >
                       {loading ? (
                         <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
@@ -541,7 +534,7 @@ const AuthPage: React.FC = () => {
                       )}
                     </button>
 
-                    <div className="relative py-1">
+                    <div className="relative py-0.5">
                       <div className="absolute inset-0 flex items-center">
                         <div className="w-full border-t border-border/50" />
                       </div>
@@ -569,7 +562,7 @@ const AuthPage: React.FC = () => {
                     exit={{ opacity: 0, x: 6 }}
                     transition={{ duration: 0.2 }}
                     onSubmit={handleSignUp}
-                    className="space-y-3.5"
+                    className="space-y-3"
                   >
                     <div>
                       <h1
@@ -687,14 +680,10 @@ const AuthPage: React.FC = () => {
                       </label>
                     </div>
 
-                    {appearance.show_robot_check && (
-                      <NotRobotCheck verified={humanVerified} onVerifiedChange={setHumanVerified} resetKey="signup" />
-                    )}
-
                     <button
                       type="submit"
                       disabled={loading || !isSignUpValid}
-                      className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold inline-flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                      className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold inline-flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer mt-1"
                     >
                       {loading ? (
                         <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
@@ -771,7 +760,7 @@ const AuthPage: React.FC = () => {
         </main>
 
         {/* Minimal Footer */}
-        <footer className="relative z-20 w-full px-6 py-3 text-center text-[10px] text-muted-foreground/60 font-mono">
+        <footer className="relative z-20 w-full px-6 py-2 text-center text-[10px] text-muted-foreground/60 font-mono">
           &copy; {new Date().getFullYear()} {siteName}. Secure SSL 256-Bit Checkout.
         </footer>
       </div>
