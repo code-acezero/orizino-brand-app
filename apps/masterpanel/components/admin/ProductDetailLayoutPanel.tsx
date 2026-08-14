@@ -346,10 +346,8 @@ const AdminStudioInfinityPreview = ({
                 opacity: style.opacity,
               }}
               transition={{
-                type: "spring",
-                stiffness: 160,
-                damping: 24,
-                mass: 0.75,
+                duration: 0.95,
+                ease: [0.16, 1, 0.3, 1],
               }}
               style={{
                 position: "absolute",
