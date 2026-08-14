@@ -254,7 +254,7 @@ const AuthPage: React.FC = () => {
 
   const inputStyle =
     "w-full h-11 pl-10 pr-4 bg-secondary/30 border border-border/50 rounded-xl text-foreground text-xs " +
-    "placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all";
+    "placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all";
 
   // ── OTP Screen ──────────────────────────────────────────────
   if (mode === "otp") {
@@ -262,9 +262,9 @@ const AuthPage: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-background px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/[0.03] pointer-events-none" />
         <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
+          initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 w-full max-w-[420px] bg-card border border-border/60 rounded-3xl p-8 sm:p-10 flex flex-col items-center gap-5 shadow-2xl"
+          className="relative z-10 w-full max-w-[420px] bg-card border border-border/60 rounded-3xl p-8 sm:p-10 flex flex-col items-center gap-5"
         >
           <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
             <ShieldCheck className="w-6 h-6" />
@@ -289,7 +289,7 @@ const AuthPage: React.FC = () => {
           <button
             onClick={handleVerifyOtp}
             disabled={loading || otpValue.length !== 8}
-            className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-xs font-bold inline-flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md cursor-pointer"
+            className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-xs font-bold inline-flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
             {loading ? <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : "Verify & Continue"}
           </button>
@@ -305,7 +305,7 @@ const AuthPage: React.FC = () => {
     );
   }
 
-  // ── Main Lightweight Luxury Auth Screen ────────────────────────
+  // ── Main Lightweight Plain Auth Screen ─────────────────────────
   return (
     <>
       <div className="min-h-screen bg-background relative flex flex-col justify-between overflow-hidden">
@@ -313,12 +313,12 @@ const AuthPage: React.FC = () => {
         <div aria-hidden className="absolute top-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
         <div aria-hidden className="absolute bottom-0 left-1/4 w-96 h-96 bg-secondary/30 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Top Minimal Nav (No centered brand name/logo as requested) */}
-        <header className="relative z-20 w-full px-6 py-4 flex items-center justify-between">
+        {/* Top Minimal Nav (Reduced vertical space) */}
+        <header className="relative z-20 w-full px-6 pt-3 pb-1 flex items-center justify-between">
           <button
             type="button"
             onClick={goBack}
-            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-secondary/40 hover:bg-secondary/70 border border-border/50 text-xs font-medium text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-xs"
+            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-secondary/40 hover:bg-secondary/70 border border-border/50 text-xs font-medium text-muted-foreground hover:text-foreground transition-all cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back
           </button>
@@ -332,21 +332,21 @@ const AuthPage: React.FC = () => {
           </button>
         </header>
 
-        {/* Center Container */}
-        <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-6">
+        {/* Main Content (Shifted upwards with minimal top padding) */}
+        <main className="relative z-10 flex-1 flex items-start justify-center px-4 pt-1 sm:pt-3 pb-8">
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
             className={`w-full ${
               appearance.show_brand_panel ? "max-w-4xl grid grid-cols-1 md:grid-cols-12" : "max-w-md"
-            } bg-card/90 border border-border/60 rounded-3xl overflow-hidden shadow-2xl`}
+            } bg-card/90 border border-border/60 rounded-3xl overflow-hidden`}
           >
-            {/* LEFT: Brand Story, Large Center Logo Showcase & Quotes (Desktop only) */}
+            {/* LEFT: Brand Story, Plain Center Logo & Quotes (Desktop only) */}
             {appearance.show_brand_panel && (
-              <div className="hidden md:flex md:col-span-5 relative flex-col justify-between p-8 bg-gradient-to-br from-secondary/40 via-card to-secondary/20 border-r border-border/40 min-h-[580px]">
+              <div className="hidden md:flex md:col-span-5 relative flex-col justify-between p-8 bg-gradient-to-br from-secondary/40 via-card to-secondary/20 border-r border-border/40 min-h-[540px]">
                 {/* Top Section: Kicker & Headline */}
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <span className="inline-flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-widest text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
                     <Sparkles className="w-2.5 h-2.5" />
                     Member Privileges
@@ -362,44 +362,34 @@ const AuthPage: React.FC = () => {
                       : appearance.headline_signin || "Step Inside The Drop Awaits"}
                   </h2>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    {appearance.subheadline ||
-                      "Continue to your account."}
+                    {appearance.subheadline || "Continue to your account."}
                   </p>
                 </div>
 
-                {/* ── CENTER: LARGE BRAND LOGO SHOWCASE (Fills the middle space) ── */}
-                <div className="my-auto py-8 flex flex-col items-center justify-center text-center">
-                  <div className="relative group">
-                    <div className="absolute -inset-4 rounded-3xl bg-primary/15 blur-2xl opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                    <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-secondary/30 border border-border/60 backdrop-blur-md flex items-center justify-center p-4 shadow-xl overflow-hidden">
-                      {logoUrl ? (
-                        <BrandImage
-                          src={logoUrl}
-                          alt={siteName}
-                          filter={logoFilter}
-                          customColor={logoTint}
-                          className="w-full h-full object-contain drop-shadow-md"
-                        />
-                      ) : (
-                        <span
-                          className="text-5xl font-black text-primary select-none"
-                          style={{ fontFamily: `'${titleFont}', sans-serif` }}
-                        >
-                          {siteName.charAt(0)}
-                        </span>
-                      )}
+                {/* ── CENTER: PLAIN LARGE BRAND LOGO (No square bg, no brand title text) ── */}
+                <div className="my-auto py-6 flex items-center justify-center">
+                  {logoUrl ? (
+                    <div className="w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center">
+                      <BrandImage
+                        src={logoUrl}
+                        alt={siteName}
+                        filter={logoFilter}
+                        customColor={logoTint}
+                        className="w-full h-full object-contain"
+                      />
                     </div>
-                  </div>
-                  <h3
-                    className="text-base font-bold tracking-[0.15em] text-foreground mt-3 uppercase"
-                    style={{ fontFamily: `'${titleFont}', sans-serif` }}
-                  >
-                    {siteName}
-                  </h3>
+                  ) : (
+                    <span
+                      className="text-6xl font-black text-primary select-none"
+                      style={{ fontFamily: `'${titleFont}', sans-serif` }}
+                    >
+                      {siteName.charAt(0)}
+                    </span>
+                  )}
                 </div>
 
                 {/* Bottom Section: Rotating Testimonials & Secured badge */}
-                <div className="space-y-4 pt-2">
+                <div className="space-y-3.5 pt-2">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={testimonialIdx}
@@ -436,7 +426,7 @@ const AuthPage: React.FC = () => {
                     onClick={() => { setMode("signin"); setTermsAccepted(false); }}
                     className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       mode === "signin"
-                        ? "bg-card text-foreground shadow-xs border border-border/60"
+                        ? "bg-card text-foreground border border-border/60"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
@@ -447,7 +437,7 @@ const AuthPage: React.FC = () => {
                     onClick={() => { setMode("signup"); setTermsAccepted(false); }}
                     className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       mode === "signup"
-                        ? "bg-card text-foreground shadow-xs border border-border/60"
+                        ? "bg-card text-foreground border border-border/60"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
@@ -540,7 +530,7 @@ const AuthPage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={loading || !isSignInValid}
-                      className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold inline-flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md cursor-pointer"
+                      className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold inline-flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                     >
                       {loading ? (
                         <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
@@ -704,7 +694,7 @@ const AuthPage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={loading || !isSignUpValid}
-                      className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold inline-flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md cursor-pointer"
+                      className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold inline-flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                     >
                       {loading ? (
                         <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
@@ -755,7 +745,7 @@ const AuthPage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={loading || !isForgotValid}
-                      className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold inline-flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md cursor-pointer"
+                      className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold inline-flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                     >
                       {loading ? (
                         <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
@@ -781,7 +771,7 @@ const AuthPage: React.FC = () => {
         </main>
 
         {/* Minimal Footer */}
-        <footer className="relative z-20 w-full px-6 py-4 text-center text-[10px] text-muted-foreground/60 font-mono">
+        <footer className="relative z-20 w-full px-6 py-3 text-center text-[10px] text-muted-foreground/60 font-mono">
           &copy; {new Date().getFullYear()} {siteName}. Secure SSL 256-Bit Checkout.
         </footer>
       </div>
