@@ -159,6 +159,22 @@ const STUDIO_PRESETS: {
     desc: "Clean neutral glass borders with vintage 35mm filmstrip cinema sprocket frames.",
     icon: Film,
   },
+  {
+    layout: "glass" as LayoutStyle,
+    gallery: "editorial-split" as GalleryStyle,
+    label: "Orizino Runway",
+    tag: "Haute Couture",
+    desc: "Dual high-fashion runway perspective showcasing full look and fabric texture simultaneously.",
+    icon: Columns,
+  },
+  {
+    layout: "dark-luxury" as LayoutStyle,
+    gallery: "coverflow" as GalleryStyle,
+    label: "Coverflow Showcase",
+    tag: "3D Perspective",
+    desc: "Centerstage 3D perspective rotation with dynamic mirror stage reflections and spotlight pools.",
+    icon: Disc,
+  },
 ];
 
 const LAYOUT_STYLES: {
