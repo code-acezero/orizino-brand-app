@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Truck,
   RotateCcw,
+  RotateCw,
   Star,
   ShoppingBag,
   Sliders,
@@ -45,6 +46,7 @@ export type GalleryStyle =
   | "parallax-stack"
   | "editorial-split"
   | "carousel-cards"
+  | "studio-turntable"
   | "immersive-zoom";
 
 const DEMO_GALLERY_IMAGES: Record<string, string[]> = {
@@ -277,12 +279,12 @@ const GALLERY_ENGINES: {
     badge: "Horizon Snap",
   },
   {
-    id: "immersive-zoom",
-    label: "Immersive Macro Lens",
-    tag: "Macro 2.5x",
-    desc: "Cinematic interactive cursor loupe that reveals micro-textures and fine garment stitching",
-    emoji: "🔬",
-    badge: "Macro Lens",
+    id: "studio-turntable",
+    label: "Orbit 360° Turntable",
+    tag: "360° Spin",
+    desc: "Interactive garment rotation turntable with precision angle dial, drag physics & studio lighting",
+    emoji: "🔄",
+    badge: "360° Orbit",
   },
 ];
 
@@ -956,8 +958,8 @@ const AdminStudioHorizonCarouselPreview = ({
   );
 };
 
-// ── 6. STUDIO IMMERSIVE MACRO LENS PREVIEW ──
-const AdminStudioImmersiveZoomPreview = ({
+// ── 6. STUDIO ORBIT 360 TURNTABLE PREVIEW ──
+const AdminStudioTurntablePreview = ({
   images,
   activeIdx,
   onNavigate,
@@ -968,92 +970,92 @@ const AdminStudioImmersiveZoomPreview = ({
   onNavigate: (idx: number) => void;
   showScarcity: boolean;
 }) => {
-  const total = images.length;
-  const [isHovered, setIsHovered] = React.useState(false);
-  const [mousePos, setMousePos] = React.useState({ x: 50, y: 50 });
-  const containerRef = React.useRef<HTMLDivElement>(null);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setMousePos({
-      x: Math.max(0, Math.min(100, x)),
-      y: Math.max(0, Math.min(100, y)),
-    });
-  };
+  const total = images.length || 1;
+  const currentAngleDeg = Math.round((activeIdx / total) * 360);
 
   return (
-    <div className="h-[480px] w-full flex flex-col justify-between rounded-2xl overflow-hidden border border-border/70 bg-card/60 p-3 select-none">
+    <div className="relative h-[480px] w-full rounded-2xl overflow-hidden bg-black flex flex-col justify-between p-4 select-none group border border-border/70">
+      {/* Ambient studio backdrop */}
       <div
-        ref={containerRef}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onMouseMove={handleMouseMove}
-        className="relative h-[380px] w-full rounded-xl overflow-hidden bg-black border border-border/40 cursor-crosshair group"
-      >
-        <img
-          src={images[activeIdx]}
-          alt=""
-          className={`w-full h-full object-cover transition-opacity duration-300 ${
-            isHovered ? "opacity-30" : "opacity-100"
-          }`}
-        />
+        className="absolute -inset-8 bg-cover bg-center transition-all duration-500 pointer-events-none"
+        style={{
+          backgroundImage: `url(${images[activeIdx]})`,
+          filter: "blur(40px) brightness(0.35) saturate(1.2)",
+          transform: "scale(1.1)",
+        }}
+      />
+      <div className="absolute inset-0 bg-radial from-white/10 via-transparent to-black/90 pointer-events-none" />
 
-        {isHovered && (
-          <div
-            className="absolute inset-0 pointer-events-none bg-no-repeat transition-all duration-75"
-            style={{
-              backgroundImage: `url(${images[activeIdx]})`,
-              backgroundPosition: `${mousePos.x}% ${mousePos.y}%`,
-              backgroundSize: "260%",
-            }}
-          />
-        )}
-
-        {isHovered && (
-          <div
-            className="absolute w-24 h-24 rounded-full border-2 border-primary shadow-2xl pointer-events-none -translate-x-1/2 -translate-y-1/2 overflow-hidden ring-1 ring-white/50"
-            style={{
-              left: `${mousePos.x}%`,
-              top: `${mousePos.y}%`,
-            }}
-          />
-        )}
-
-        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
-          <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15 flex items-center gap-1">
-            <Sparkles className="w-2.5 h-2.5 text-primary" /> Macro Lens 2.5x
+      {/* Header */}
+      <div className="w-full flex items-center justify-between z-20">
+        <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-black/75 text-white backdrop-blur-md uppercase tracking-wider border border-white/15 flex items-center gap-1">
+          <RotateCw className="w-2.5 h-2.5 text-primary" /> {currentAngleDeg}° STUDIO ORBIT
+        </span>
+        {showScarcity && (
+          <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+            <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
           </span>
-          {showScarcity && (
-            <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold">
-              ONLY 4 LEFT
-            </span>
-          )}
-        </div>
-
-        <div className="absolute bottom-2.5 left-2.5 bg-black/70 backdrop-blur-md rounded-full px-2.5 py-0.5 text-[8.5px] font-mono text-white/90 border border-white/15 flex items-center gap-1">
-          <ZoomIn className="w-2.5 h-2.5 text-primary" /> Hover to explore
-        </div>
+        )}
       </div>
 
-      {/* Thumbnails */}
-      <div className="flex gap-2 overflow-x-auto pb-0.5">
-        {images.map((img, idx) => (
-          <button
-            key={idx}
-            type="button"
-            onClick={() => onNavigate(idx)}
-            className={`w-16 h-12 rounded-xl overflow-hidden border cursor-pointer transition-all shrink-0 ${
-              activeIdx === idx
-                ? "border-primary ring-1 ring-primary/40 opacity-100 scale-105"
-                : "border-border/60 opacity-50 hover:opacity-100"
-            }`}
-          >
-            <img src={img} alt="" className="w-full h-full object-cover" />
-          </button>
-        ))}
+      {/* Turntable Stage */}
+      <div className="relative flex items-center justify-center my-auto w-full h-[340px] pointer-events-auto">
+        <div className="absolute bottom-1 w-64 h-8 rounded-[100%] bg-radial from-primary/30 via-black/80 to-transparent blur-md pointer-events-none" />
+
+        <div className="relative w-[14.5rem] h-[20.5rem] rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+          <img src={images[activeIdx]} alt="" className="w-full h-full object-cover rounded-2xl select-none pointer-events-none" />
+          <div className="absolute inset-0 bg-radial from-transparent via-black/20 to-black/50 pointer-events-none rounded-2xl" />
+        </div>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigate((activeIdx - 1 + total) % total);
+          }}
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/65 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer transition-all hover:scale-105"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigate((activeIdx + 1) % total);
+          }}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/65 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer transition-all hover:scale-105"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Rotary ticks */}
+      <div className="z-20 flex flex-col gap-2">
+        <div className="w-full h-1 rounded-full bg-white/15 overflow-hidden">
+          <div className="h-full bg-primary rounded-full transition-all duration-200" style={{ width: `${((activeIdx + 1) / total) * 100}%` }} />
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+            {images.map((img, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => onNavigate(i)}
+                className={`relative w-12 h-10 rounded-lg overflow-hidden border cursor-pointer transition-all shrink-0 ${
+                  i === activeIdx ? "border-primary ring-1 ring-primary/40 opacity-100 scale-105" : "border-white/15 opacity-40 hover:opacity-80"
+                }`}
+              >
+                <img src={img} alt="" className="w-full h-full object-cover" />
+                <span className="absolute bottom-0 inset-x-0 text-center text-[7px] font-mono font-bold bg-black/80 text-white">
+                  {Math.round((i / total) * 360)}°
+                </span>
+              </button>
+            ))}
+          </div>
+          <span className="text-[9.5px] font-mono text-white/80 bg-black/60 px-2.5 py-0.5 rounded-full border border-white/15 shrink-0">
+            {activeIdx + 1} / {total}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -1291,9 +1293,9 @@ export default function ProductDetailLayoutPanel() {
                     );
                   }
 
-                  if (cfg.gallery === "immersive-zoom") {
+                  if (cfg.gallery === "studio-turntable" || (cfg.gallery as any) === "immersive-zoom") {
                     return (
-                      <AdminStudioImmersiveZoomPreview
+                      <AdminStudioTurntablePreview
                         images={galleryImages}
                         activeIdx={previewGalleryActiveIdx}
                         onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}

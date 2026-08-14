@@ -40,7 +40,7 @@ const GridMosaicGallery = lazy(() => import("@/components/product/GridMosaicGall
 const ParallaxStackGallery = lazy(() => import("@/components/product/ParallaxStackGallery"));
 const EditorialSplitGallery = lazy(() => import("@/components/product/EditorialSplitGallery"));
 const HorizonCarouselGallery = lazy(() => import("@/components/product/HorizonCarouselGallery"));
-const ImmersiveZoomGallery = lazy(() => import("@/components/product/ImmersiveZoomGallery"));
+const StudioTurntableGallery = lazy(() => import("@/components/product/StudioTurntableGallery"));
 
 // Helper component to set product tray in layout context
 const ProductTrayEffect: React.FC<{
@@ -89,6 +89,7 @@ export type GalleryStyle =
   | "parallax-stack"
   | "editorial-split"
   | "carousel-cards"
+  | "studio-turntable"
   | "immersive-zoom";
 
 const LAYOUT_CONFIGS: Record<LayoutStyle, { containerClass: string; textClass: string; priceClass: string; mobilePriceClass: string; cardClass: string; accentBorder: string }> = {
@@ -474,8 +475,8 @@ const ProductDetailPage: React.FC = () => {
       case "mosaic": return <Suspense fallback={<GalleryLoader />}><GridMosaicGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
       case "parallax-stack": return <Suspense fallback={<GalleryLoader />}><ParallaxStackGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
       case "editorial-split": return <Suspense fallback={<GalleryLoader />}><EditorialSplitGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
-      case "carousel-cards": return <Suspense fallback={<GalleryLoader />}><HorizonCarouselGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
-      case "immersive-zoom": return <Suspense fallback={<GalleryLoader />}><ImmersiveZoomGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
+      case "studio-turntable":
+      case "immersive-zoom": return <Suspense fallback={<GalleryLoader />}><StudioTurntableGallery key={selectedColor || "default"} {...galleryProps} /></Suspense>;
       default: return <ImageGallery key={selectedColor || "default"} {...galleryProps} layout="premium" />;
     }
   };
