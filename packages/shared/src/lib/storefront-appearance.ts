@@ -1,11 +1,14 @@
-// Storefront appearance: 10 typography pairs + 10 layout variants, admin-switchable.
+// Storefront appearance: 15+ typography pairs + 10 layout variants, admin-switchable.
 // Re-uses the same Google Fonts catalog as profile-appearance for consistency.
 
 import {
   PROFILE_TYPOGRAPHY_PAIRS,
   ACCENT_PRESETS as PROFILE_ACCENT_PRESETS,
   type ProfileTypographyPair,
+  type TypographyCategory,
 } from "./profile-appearance";
+
+export { type ProfileTypographyPair, type TypographyCategory };
 
 export const STOREFRONT_TYPOGRAPHY_PAIRS: ProfileTypographyPair[] = PROFILE_TYPOGRAPHY_PAIRS;
 export const STOREFRONT_ACCENT_PRESETS = PROFILE_ACCENT_PRESETS;
@@ -57,4 +60,3 @@ export function getStorefrontTypographyPair(id: string | undefined): ProfileTypo
 export function getStorefrontLayoutVariant(id: string | undefined): StorefrontLayoutVariant {
   return STOREFRONT_LAYOUT_VARIANTS.find((l) => l.id === id) ?? STOREFRONT_LAYOUT_VARIANTS[0];
 }
-// code:4ce0
