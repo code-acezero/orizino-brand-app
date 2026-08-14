@@ -329,17 +329,7 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
                   setActiveIndex(realIndex);
                   setLightboxOpen(true);
                 }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                <div className="absolute bottom-3 left-0 w-full px-3 text-center z-10">
-                  <span className="block text-[10px] text-white/70 tracking-widest uppercase font-mono mb-0.5">
-                    Lookbook {(i % images.length) + 1}
-                  </span>
-                  <h3 className="text-xs font-bold text-white tracking-tight truncate">
-                    {productName}
-                  </h3>
-                </div>
-              </li>
+              />
             ))}
           </ul>
         </div>

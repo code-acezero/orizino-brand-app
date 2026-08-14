@@ -28,12 +28,36 @@ import {
   Columns,
   ArrowRight,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
 } from "lucide-react";
 import { toast } from "@/lib/app-toast";
 import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
 export type LayoutStyle = "dark-luxury" | "glass" | "neon" | "minimal" | "magazine" | "glass-minimal";
 export type GalleryStyle = "default" | "infinity" | "coverflow" | "filmstrip" | "mosaic" | "parallax-stack";
+
+const DEMO_GALLERY_IMAGES: Record<string, string[]> = {
+  charcoal: [
+    "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1578587018452-892bacefd3f2?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
+  ],
+  vanilla: [
+    "https://images.unsplash.com/photo-1578587018452-892bacefd3f2?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
+  ],
+  cherry: [
+    "https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1578587018452-892bacefd3f2?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
+  ],
+};
 
 interface ProductPageConfig {
   layout: LayoutStyle;
@@ -235,6 +259,7 @@ export default function ProductDetailLayoutPanel() {
   const [openAccordion, setOpenAccordion] = useState<"specs" | "story" | "fit" | "reviews" | null>("specs");
   const [previewSelectedSize, setPreviewSelectedSize] = useState("L");
   const [previewSelectedColor, setPreviewSelectedColor] = useState("charcoal");
+  const [previewGalleryActiveIdx, setPreviewGalleryActiveIdx] = useState(0);
 
   const { data: layoutSettingsRow } = useQuery({
     queryKey: ["admin-product-page-layout"],
@@ -394,53 +419,316 @@ export default function ProductDetailLayoutPanel() {
           <div className={`mx-auto ${previewMode === "mobile" ? "max-w-xs" : previewMode === "split" ? "max-w-5xl" : "max-w-4xl"}`}>
             <div className={`grid gap-5 ${previewMode === "mobile" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-12"} items-start`}>
               
-              {/* Product Gallery Column */}
+              {/* Product Gallery Live Engine Preview Column */}
               <div className={`${previewMode === "mobile" ? "col-span-1" : "md:col-span-6"} space-y-2.5`}>
-                {/* Main Image Frame with chosen Gallery Engine styling */}
-                <div
-                  className={`relative aspect-square rounded-2xl overflow-hidden border flex flex-col items-center justify-between p-4 transition-all ${
-                    cfg.layout === "dark-luxury"
-                      ? "bg-zinc-950 border-white/10"
-                      : cfg.layout === "neon"
-                      ? "bg-zinc-900 border-primary/40"
-                      : "bg-secondary/40 border-border/70"
-                  }`}
-                >
-                  {/* Gallery Engine Badge */}
-                  <div className="w-full flex items-center justify-between z-10">
-                    <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-black/60 text-white backdrop-blur-md uppercase tracking-wider">
-                      {activeGalleryObj.label}
-                    </span>
-                    {cfg.show_scarcity_badge && (
-                      <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center gap-1 font-bold">
-                        <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
-                      </span>
-                    )}
-                  </div>
+                {(() => {
+                  const galleryImages = DEMO_GALLERY_IMAGES[previewSelectedColor] || DEMO_GALLERY_IMAGES.charcoal;
+                  const activeImg = galleryImages[previewGalleryActiveIdx % galleryImages.length];
 
-                  {/* Visual 3D / Mockup Centerpiece */}
-                  <div className="my-auto flex flex-col items-center justify-center text-center space-y-2">
-                    <span className="text-4xl">{activeGalleryObj.emoji}</span>
-                    <span className="text-xs font-bold uppercase tracking-wider opacity-80 font-mono">
-                      {activeGalleryObj.badge} Active
-                    </span>
-                    <p className="text-[9.5px] max-w-[200px] opacity-60">
-                      High-resolution 380 GSM garment photography
-                    </p>
-                  </div>
+                  if (cfg.gallery === "infinity") {
+                    return (
+                      <div className="relative aspect-square rounded-2xl overflow-hidden border border-border/70 bg-black flex flex-col justify-between p-3 group">
+                        {/* Ambient background blur */}
+                        <div
+                          className="absolute inset-0 bg-cover bg-center blur-2xl opacity-40 pointer-events-none transition-all duration-700"
+                          style={{ backgroundImage: `url(${activeImg})` }}
+                        />
+                        {/* Engine badge & scarcity */}
+                        <div className="w-full flex items-center justify-between z-10">
+                          <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
+                            Infinity Loop 3D
+                          </span>
+                          {cfg.show_scarcity_badge && (
+                            <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+                              <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
+                            </span>
+                          )}
+                        </div>
 
-                  {/* Thumbnail Strip / 3D Navigation Dots */}
-                  <div className="flex items-center gap-1.5 z-10">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div
-                        key={i}
-                        className={`h-1.5 rounded-full transition-all ${
-                          i === 1 ? "w-5 bg-primary" : "w-1.5 bg-foreground/25"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
+                        {/* 3D revolving carousel preview cards */}
+                        <div className="relative flex items-center justify-center my-auto w-full h-44" style={{ perspective: "800px" }}>
+                          {/* Left background card */}
+                          <div
+                            className="absolute w-24 h-36 rounded-xl overflow-hidden border border-white/20 opacity-40 transition-all duration-300"
+                            style={{ transform: "translateX(-65px) translateZ(-60px) rotateY(25deg)" }}
+                          >
+                            <img src={galleryImages[(previewGalleryActiveIdx + 1) % galleryImages.length]} alt="" className="w-full h-full object-cover" />
+                          </div>
+                          {/* Right background card */}
+                          <div
+                            className="absolute w-24 h-36 rounded-xl overflow-hidden border border-white/20 opacity-40 transition-all duration-300"
+                            style={{ transform: "translateX(65px) translateZ(-60px) rotateY(-25deg)" }}
+                          >
+                            <img src={galleryImages[(previewGalleryActiveIdx + 2) % galleryImages.length]} alt="" className="w-full h-full object-cover" />
+                          </div>
+                          {/* Center active card */}
+                          <div
+                            className="relative w-32 h-44 rounded-2xl overflow-hidden border border-primary ring-1 ring-primary/40 z-10 transition-all duration-300"
+                            style={{ transform: "translateZ(0px)" }}
+                          >
+                            <img src={activeImg} alt="" className="w-full h-full object-cover" />
+                          </div>
+
+                          {/* Navigation Arrows */}
+                          <button
+                            onClick={() => setPreviewGalleryActiveIdx((p) => (p - 1 + galleryImages.length) % galleryImages.length)}
+                            className="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setPreviewGalleryActiveIdx((p) => (p + 1) % galleryImages.length)}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Frame Counter */}
+                        <div className="z-10 text-center">
+                          <span className="text-[9px] font-mono text-white/80 bg-black/60 px-2.5 py-0.5 rounded-full border border-white/15">
+                            {previewGalleryActiveIdx + 1} / {galleryImages.length}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (cfg.gallery === "coverflow") {
+                    return (
+                      <div className="relative aspect-square rounded-2xl overflow-hidden border border-border/70 bg-card/60 flex flex-col justify-between p-3 group">
+                        <div className="w-full flex items-center justify-between z-10">
+                          <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
+                            Coverflow 3D
+                          </span>
+                          {cfg.show_scarcity_badge && (
+                            <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+                              <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 3D Coverflow Stage */}
+                        <div className="relative flex items-center justify-center my-auto w-full h-44" style={{ perspective: "900px" }}>
+                          <div
+                            className="absolute w-28 h-36 rounded-xl overflow-hidden border border-border/60 opacity-50 cursor-pointer transition-all duration-300"
+                            style={{ transform: "translateX(-60px) rotateY(35deg) scale(0.85)" }}
+                            onClick={() => setPreviewGalleryActiveIdx((p) => (p - 1 + galleryImages.length) % galleryImages.length)}
+                          >
+                            <img src={galleryImages[(previewGalleryActiveIdx + 1) % galleryImages.length]} alt="" className="w-full h-full object-cover" />
+                          </div>
+                          <div
+                            className="relative w-36 h-44 rounded-2xl overflow-hidden border border-primary ring-1 ring-primary/40 z-10 transition-all duration-300"
+                          >
+                            <img src={activeImg} alt="" className="w-full h-full object-cover" />
+                          </div>
+                          <div
+                            className="absolute w-28 h-36 rounded-xl overflow-hidden border border-border/60 opacity-50 cursor-pointer transition-all duration-300"
+                            style={{ transform: "translateX(60px) rotateY(-35deg) scale(0.85)" }}
+                            onClick={() => setPreviewGalleryActiveIdx((p) => (p + 1) % galleryImages.length)}
+                          >
+                            <img src={galleryImages[(previewGalleryActiveIdx + 2) % galleryImages.length]} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        </div>
+
+                        {/* Indicators & Navigation */}
+                        <div className="flex items-center justify-center gap-1.5 z-10">
+                          {galleryImages.map((_, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setPreviewGalleryActiveIdx(i)}
+                              className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                                i === previewGalleryActiveIdx ? "w-5 bg-primary" : "w-1.5 bg-foreground/25 hover:bg-foreground/50"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (cfg.gallery === "filmstrip") {
+                    return (
+                      <div className="space-y-2">
+                        <div className="relative aspect-[16/10] rounded-2xl overflow-hidden border border-border/70 bg-black flex items-center justify-center group">
+                          {/* Left sprocket */}
+                          <div className="absolute top-0 bottom-0 left-0 w-4 z-10 flex flex-col justify-around items-center bg-black/90 border-r border-white/10">
+                            {[1, 2, 3, 4, 5].map((i) => (
+                              <div key={i} className="w-1.5 h-1.5 rounded-[1px] bg-white/20" />
+                            ))}
+                          </div>
+                          {/* Right sprocket */}
+                          <div className="absolute top-0 bottom-0 right-0 w-4 z-10 flex flex-col justify-around items-center bg-black/90 border-l border-white/10">
+                            {[1, 2, 3, 4, 5].map((i) => (
+                              <div key={i} className="w-1.5 h-1.5 rounded-[1px] bg-white/20" />
+                            ))}
+                          </div>
+
+                          <img
+                            src={activeImg}
+                            alt=""
+                            className="w-full h-full object-cover px-4"
+                          />
+
+                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/75 backdrop-blur-md rounded-full px-2.5 py-0.5 text-[8.5px] font-mono text-white border border-white/15">
+                            FRAME 0{previewGalleryActiveIdx + 1} / 0{galleryImages.length}
+                          </div>
+                        </div>
+
+                        {/* Filmstrip thumbnails */}
+                        <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+                          {galleryImages.map((img, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setPreviewGalleryActiveIdx(i)}
+                              className={`w-14 h-10 rounded-lg overflow-hidden border cursor-pointer transition-all ${
+                                i === previewGalleryActiveIdx
+                                  ? "border-primary ring-1 ring-primary/40 opacity-100"
+                                  : "border-border/60 opacity-40 hover:opacity-80 grayscale"
+                              }`}
+                            >
+                              <img src={img} alt="" className="w-full h-full object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (cfg.gallery === "mosaic") {
+                    return (
+                      <div className="grid grid-cols-3 gap-1.5 aspect-square rounded-2xl overflow-hidden border border-border/70 bg-card/60 p-1">
+                        <div className="col-span-2 row-span-2 relative rounded-xl overflow-hidden border border-border/40 group cursor-pointer">
+                          <img src={galleryImages[0]} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          {cfg.show_scarcity_badge && (
+                            <span className="absolute top-2 left-2 text-[8px] font-mono px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-bold">
+                              ONLY 4 LEFT
+                            </span>
+                          )}
+                        </div>
+                        <div className="col-span-1 row-span-1 rounded-xl overflow-hidden border border-border/40 group cursor-pointer">
+                          <img src={galleryImages[1]} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        </div>
+                        <div className="col-span-1 row-span-1 rounded-xl overflow-hidden border border-border/40 group cursor-pointer relative">
+                          <img src={galleryImages[2]} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <span className="text-white text-xs font-mono font-bold">+1</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (cfg.gallery === "parallax-stack") {
+                    return (
+                      <div className="relative aspect-square rounded-2xl overflow-hidden border border-border/70 bg-card/60 flex flex-col justify-between p-3 group">
+                        <div className="w-full flex items-center justify-between z-10">
+                          <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
+                            Parallax Stack 3D
+                          </span>
+                          {cfg.show_scarcity_badge && (
+                            <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+                              <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 3D Stacked Cards Stage */}
+                        <div className="relative flex items-center justify-center my-auto w-full h-44" style={{ perspective: "900px" }}>
+                          <div
+                            className="absolute w-36 h-40 rounded-xl overflow-hidden border border-border/60 opacity-30 transition-all duration-300"
+                            style={{ transform: "translateY(-14px) scale(0.88)" }}
+                          >
+                            <img src={galleryImages[(previewGalleryActiveIdx + 2) % galleryImages.length]} alt="" className="w-full h-full object-cover" />
+                          </div>
+                          <div
+                            className="absolute w-38 h-42 rounded-xl overflow-hidden border border-border/70 opacity-60 transition-all duration-300"
+                            style={{ transform: "translateY(-7px) scale(0.94)" }}
+                          >
+                            <img src={galleryImages[(previewGalleryActiveIdx + 1) % galleryImages.length]} alt="" className="w-full h-full object-cover" />
+                          </div>
+                          <div
+                            className="relative w-40 h-44 rounded-2xl overflow-hidden border border-primary ring-1 ring-primary/40 z-10 transition-all duration-300"
+                          >
+                            <img src={activeImg} alt="" className="w-full h-full object-cover" />
+                          </div>
+
+                          {/* Navigation Buttons */}
+                          <button
+                            onClick={() => setPreviewGalleryActiveIdx((p) => (p - 1 + galleryImages.length) % galleryImages.length)}
+                            className="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setPreviewGalleryActiveIdx((p) => (p + 1) % galleryImages.length)}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div className="z-10 text-center">
+                          <span className="text-[9px] font-mono text-foreground/80 bg-secondary/60 px-2.5 py-0.5 rounded-full border border-border/50">
+                            Card {previewGalleryActiveIdx + 1} of {galleryImages.length}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Default: Classic Lightbox Zoom
+                  return (
+                    <div className="space-y-2">
+                      <div className="relative aspect-square rounded-2xl overflow-hidden border border-border/70 bg-card/60 group">
+                        <img
+                          src={activeImg}
+                          alt="Preview Garment"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        {/* Loupe Simulation Badge */}
+                        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md rounded-full px-2 py-0.5 text-[8.5px] font-mono text-white flex items-center gap-1 border border-white/20">
+                          <ZoomIn className="w-3 h-3 text-primary" /> Classic Loupe
+                        </div>
+                        {cfg.show_scarcity_badge && (
+                          <span className="absolute top-3 right-3 text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+                            <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
+                          </span>
+                        )}
+                        {/* Navigation Arrows */}
+                        <button
+                          onClick={() => setPreviewGalleryActiveIdx((p) => (p - 1 + galleryImages.length) % galleryImages.length)}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setPreviewGalleryActiveIdx((p) => (p + 1) % galleryImages.length)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Thumbnail Strip */}
+                      <div className="flex gap-2 overflow-x-auto pb-0.5">
+                        {galleryImages.map((img, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setPreviewGalleryActiveIdx(idx)}
+                            className={`w-14 h-14 rounded-xl overflow-hidden border cursor-pointer transition-all ${
+                              previewGalleryActiveIdx === idx
+                                ? "border-primary ring-1 ring-primary/40 opacity-100 scale-102"
+                                : "border-border/60 opacity-60 hover:opacity-100"
+                            }`}
+                          >
+                            <img src={img} alt="" className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Product Info & Conversion Column */}
