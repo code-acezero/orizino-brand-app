@@ -174,6 +174,7 @@ export function CompanyNav({ variant }: CompanyNavProps) {
               href={shopUrl}
               target="_blank"
               rel="noopener noreferrer"
+              suppressHydrationWarning
               className="text-[11px] uppercase tracking-[0.14em] font-medium text-foreground transition-all hover:bg-foreground hover:text-background px-4 py-2 rounded-full border border-border"
             >
               {link.label} ↗
@@ -181,6 +182,7 @@ export function CompanyNav({ variant }: CompanyNavProps) {
           ))}
           <a
             href={signInUrl}
+            suppressHydrationWarning
             className="text-[11px] uppercase tracking-[0.14em] font-medium text-background bg-foreground hover:opacity-80 transition-opacity px-5 py-2 rounded-full shadow-sm"
           >
             Sign In
