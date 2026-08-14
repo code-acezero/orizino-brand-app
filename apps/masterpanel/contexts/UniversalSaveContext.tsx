@@ -7,18 +7,30 @@ export interface UniversalSaveAction {
   isSaving?: boolean;
   isDirty?: boolean;
   onSave: () => Promise<any> | void;
+  onUndo?: () => void;
+  canUndo?: boolean;
+  onRedo?: () => void;
+  canRedo?: boolean;
+  onReject?: () => void;
+  canReject?: boolean;
 }
 
 interface UniversalSaveContextType {
   activeAction: UniversalSaveAction | null;
   registerSaveAction: (action: UniversalSaveAction | null) => void;
   triggerSave: () => void;
+  triggerUndo: () => void;
+  triggerRedo: () => void;
+  triggerReject: () => void;
 }
 
 const UniversalSaveContext = createContext<UniversalSaveContextType>({
   activeAction: null,
   registerSaveAction: () => {},
   triggerSave: () => {},
+  triggerUndo: () => {},
+  triggerRedo: () => {},
+  triggerReject: () => {},
 });
 
 export const UniversalSaveProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -34,8 +46,35 @@ export const UniversalSaveProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [activeAction]);
 
+  const triggerUndo = useCallback(() => {
+    if (activeAction?.onUndo && activeAction.canUndo !== false) {
+      activeAction.onUndo();
+    }
+  }, [activeAction]);
+
+  const triggerRedo = useCallback(() => {
+    if (activeAction?.onRedo && activeAction.canRedo !== false) {
+      activeAction.onRedo();
+    }
+  }, [activeAction]);
+
+  const triggerReject = useCallback(() => {
+    if (activeAction?.onReject && activeAction.canReject !== false) {
+      activeAction.onReject();
+    }
+  }, [activeAction]);
+
   return (
-    <UniversalSaveContext.Provider value={{ activeAction, registerSaveAction, triggerSave }}>
+    <UniversalSaveContext.Provider
+      value={{
+        activeAction,
+        registerSaveAction,
+        triggerSave,
+        triggerUndo,
+        triggerRedo,
+        triggerReject,
+      }}
+    >
       {children}
     </UniversalSaveContext.Provider>
   );

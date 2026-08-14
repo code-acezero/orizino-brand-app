@@ -2,11 +2,11 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUniversalSave } from "@/contexts/UniversalSaveContext";
-import { Check, Loader2, Save } from "lucide-react";
+import { Check, Loader2, Undo2, Redo2, RotateCcw } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export const UniversalFloatingSaveButton: React.FC = () => {
-  const { activeAction, triggerSave } = useUniversalSave();
+  const { activeAction, triggerSave, triggerUndo, triggerRedo, triggerReject } = useUniversalSave();
   const isMobile = useIsMobile();
   const [isMac, setIsMac] = useState(false);
 
@@ -16,14 +16,38 @@ export const UniversalFloatingSaveButton: React.FC = () => {
     }
   }, []);
 
-  // Global Ctrl+S / Cmd+S shortcut interceptor
+  // Global Keyboard shortcuts: Ctrl+S (Save), Ctrl+Z (Undo), Ctrl+Y / Ctrl+Shift+Z (Redo)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const isInput =
+        document.activeElement instanceof HTMLInputElement ||
+        document.activeElement instanceof HTMLTextAreaElement;
+
+      // Ctrl+S / Cmd+S: Save
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
         if (activeAction?.onSave && !activeAction.isSaving) {
           e.preventDefault();
           e.stopPropagation();
           activeAction.onSave();
+        }
+      }
+
+      // If not currently editing a native input/textarea, handle Undo / Redo
+      if (!isInput) {
+        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z") {
+          if (activeAction?.onUndo && activeAction.canUndo !== false) {
+            e.preventDefault();
+            activeAction.onUndo();
+          }
+        }
+        if (
+          ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") ||
+          ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "z")
+        ) {
+          if (activeAction?.onRedo && activeAction.canRedo !== false) {
+            e.preventDefault();
+            activeAction.onRedo();
+          }
         }
       }
     };
@@ -34,44 +58,98 @@ export const UniversalFloatingSaveButton: React.FC = () => {
 
   if (!activeAction || !activeAction.onSave) return null;
 
+  const hasUndo = Boolean(activeAction.onUndo);
+  const hasRedo = Boolean(activeAction.onRedo);
+  const hasReject = Boolean(activeAction.onReject);
+  const canUndo = activeAction.canUndo !== false && hasUndo;
+  const canRedo = activeAction.canRedo !== false && hasRedo;
+  const canReject = activeAction.canReject !== false && hasReject;
+
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: 35, scale: 0.92 }}
+        initial={{ opacity: 0, y: 35, scale: 0.94 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 35, scale: 0.92 }}
-        transition={{ type: "spring", stiffness: 420, damping: 30 }}
+        exit={{ opacity: 0, y: 35, scale: 0.94 }}
+        transition={{ type: "spring", stiffness: 440, damping: 28 }}
         className={`fixed z-50 left-1/2 -translate-x-1/2 ${
           isMobile ? "bottom-20" : "bottom-6 md:bottom-8"
         }`}
       >
-        <button
-          type="button"
-          onClick={triggerSave}
-          disabled={activeAction.isSaving}
-          className="group relative flex items-center gap-2.5 px-4 py-2 rounded-full border border-border/80 dark:border-white/15 bg-background/90 dark:bg-card/90 backdrop-blur-2xl shadow-[0_14px_45px_rgba(0,0,0,0.32)] ring-1 ring-primary/25 text-foreground transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] hover:border-primary/60 hover:shadow-[0_18px_55px_rgba(var(--primary-rgb),0.2)] cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-          aria-label={activeAction.label || "Save Changes"}
-        >
-          {/* Status Icon */}
-          <div className="w-5 h-5 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors shrink-0">
+        <div className="flex items-center gap-1.5 p-1.5 rounded-full border border-border/80 dark:border-white/15 bg-background/90 dark:bg-card/90 backdrop-blur-2xl shadow-[0_16px_50px_rgba(0,0,0,0.35)] ring-1 ring-primary/20 select-none transition-all">
+          
+          {/* ── 1. SMALL BUTTON NAMED AS SAVE ON THE LEFT SIDE ── */}
+          <button
+            type="button"
+            onClick={triggerSave}
+            disabled={activeAction.isSaving}
+            className="group flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold hover:opacity-95 active:scale-95 transition-all shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            title={`Save (${isMac ? "⌘S" : "Ctrl+S"})`}
+            aria-label="Save changes"
+          >
             {activeAction.isSaving ? (
-              <Loader2 className="w-3 h-3 animate-spin text-primary group-hover:text-primary-foreground" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
             ) : (
-              <Check className="w-3 h-3" />
+              <Check className="w-3.5 h-3.5 shrink-0" />
             )}
-          </div>
+            <span className="tracking-tight">{activeAction.isSaving ? "Saving…" : "Save"}</span>
+            <kbd className="hidden sm:inline-block text-[9px] font-mono opacity-70 ml-0.5 font-semibold">
+              {isMac ? "⌘" : "^"}S
+            </kbd>
+          </button>
 
-          {/* Label */}
-          <span className="text-xs font-bold tracking-tight text-foreground whitespace-nowrap">
-            {activeAction.isSaving ? "Saving changes…" : activeAction.label || "Save Changes"}
-          </span>
+          {/* ── 2. UNDO BUTTON ── */}
+          <button
+            type="button"
+            onClick={triggerUndo}
+            disabled={!canUndo}
+            className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+              canUndo
+                ? "text-foreground hover:bg-secondary/80 active:scale-90 cursor-pointer"
+                : "text-muted-foreground/40 cursor-not-allowed"
+            }`}
+            title={canUndo ? `Undo (${isMac ? "⌘Z" : "Ctrl+Z"})` : "Nothing to undo"}
+            aria-label="Undo"
+          >
+            <Undo2 className="w-3.5 h-3.5" />
+          </button>
 
-          {/* Keyboard shortcut pill */}
-          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-secondary/80 border border-border/60 text-[9px] font-mono text-muted-foreground font-semibold shadow-xs">
-            <span>{isMac ? "⌘" : "Ctrl"}</span>
-            <span>S</span>
-          </kbd>
-        </button>
+          {/* ── 3. REDO BUTTON ── */}
+          <button
+            type="button"
+            onClick={triggerRedo}
+            disabled={!canRedo}
+            className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+              canRedo
+                ? "text-foreground hover:bg-secondary/80 active:scale-90 cursor-pointer"
+                : "text-muted-foreground/40 cursor-not-allowed"
+            }`}
+            title={canRedo ? `Redo (${isMac ? "⌘⇧Z" : "Ctrl+Y"})` : "Nothing to redo"}
+            aria-label="Redo"
+          >
+            <Redo2 className="w-3.5 h-3.5" />
+          </button>
+
+          {/* ── 4. DIVIDER ── */}
+          <div className="h-4 w-px bg-border/60 mx-0.5" />
+
+          {/* ── 5. REJECT OPTION ── */}
+          <button
+            type="button"
+            onClick={triggerReject}
+            disabled={!canReject}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all ${
+              canReject
+                ? "text-destructive hover:text-destructive hover:bg-destructive/10 active:scale-95 cursor-pointer"
+                : "text-muted-foreground/40 cursor-not-allowed"
+            }`}
+            title={canReject ? "Discard unsaved changes and revert to last saved state" : "No changes to reject"}
+            aria-label="Reject changes"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>Reject</span>
+          </button>
+        </div>
       </motion.div>
     </AnimatePresence>
   );

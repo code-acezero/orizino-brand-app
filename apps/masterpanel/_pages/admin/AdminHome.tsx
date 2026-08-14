@@ -717,32 +717,49 @@ const AdminHome = () => {
   const { dragIndex: featCatDragIdx, overIndex: featCatOverIdx, getDragProps: getFeatCatDragProps } = useDragReorder(localCategories, handleFeatCatReorder);
   const { dragIndex: featProdDragIdx, overIndex: featProdOverIdx, getDragProps: getFeatProdDragProps } = useDragReorder(localProducts, handleFeatProdReorder);
 
+  const handleHomeReject = useCallback(() => {
+    qc.invalidateQueries({ queryKey: ["admin-home-section-order"] });
+    qc.invalidateQueries({ queryKey: ["admin-sales-config"] });
+    qc.invalidateQueries({ queryKey: ["admin-home-layout"] });
+    qc.invalidateQueries({ queryKey: ["admin-home-lookbook"] });
+    qc.invalidateQueries({ queryKey: ["admin-home-instagram"] });
+    qc.invalidateQueries({ queryKey: ["admin-home-press-quote"] });
+    qc.invalidateQueries({ queryKey: ["admin-home-category-mosaic"] });
+    toast.warning("Changes discarded and reverted to saved state");
+  }, [qc]);
+
   // Dynamic universal save action for the active tab in AdminHome
   const activeSaveAction = useMemo(() => {
     if (activeTab === "dashboard" || activeTab === "cinematic-showcase") return null;
     if (activeTab === "campaigns") {
       return {
-        label: "Save Campaigns & Layout",
+        label: "Save",
         onSave: async () => {
           await saveSectionOrder.mutateAsync();
           await saveSales.mutateAsync();
         },
         isSaving: saveSectionOrder.isPending || saveSales.isPending,
+        onReject: handleHomeReject,
+        canReject: true,
       };
     }
     if (activeTab === "layout") {
       return {
-        label: "Save Appearance Settings",
+        label: "Save",
         onSave: () => saveLayout.mutate(),
         isSaving: saveLayout.isPending,
+        onReject: handleHomeReject,
+        canReject: true,
       };
     }
     return {
-      label: "Save Home Configuration",
+      label: "Save",
       onSave: () => saveSectionOrder.mutate(),
       isSaving: saveSectionOrder.isPending,
+      onReject: handleHomeReject,
+      canReject: true,
     };
-  }, [activeTab, saveSectionOrder, saveSales, saveLayout]);
+  }, [activeTab, saveSectionOrder, saveSales, saveLayout, handleHomeReject]);
 
   useRegisterUniversalSave(activeSaveAction, [activeSaveAction]);
 

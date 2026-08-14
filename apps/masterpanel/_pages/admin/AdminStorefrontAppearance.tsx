@@ -64,9 +64,14 @@ const AdminStorefrontAppearance: React.FC = () => {
 
   useRegisterUniversalSave(
     {
-      label: "Save Storefront Appearance",
+      label: "Save",
       onSave: save,
       isSaving: saving,
+      onReject: () => {
+        setCfg(defaultStorefrontAppearance);
+        toast.warning("Appearance settings reset to default");
+      },
+      canReject: true,
     },
     [cfg, saving]
   );

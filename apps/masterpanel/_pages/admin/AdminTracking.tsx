@@ -148,11 +148,16 @@ const AdminTracking: React.FC = () => {
 
   useRegisterUniversalSave(
     {
-      label: "Save Tracking Settings",
+      label: "Save",
       onSave: saveAll,
       isSaving: saveMutation.isPending,
+      onReject: () => {
+        queryClient.invalidateQueries({ queryKey: ["admin-tracking-configs"] });
+        toast.warning("Tracking settings reverted");
+      },
+      canReject: true,
     },
-    [fbPixel, googleAds, searchConsole, adSetup, saveMutation.isPending]
+    [fbPixel, googleAds, searchConsole, adSetup, saveMutation.isPending, queryClient]
   );
 
   const copySnippet = (text: string) => {

@@ -413,12 +413,17 @@ const AdminShowcase = () => {
   useRegisterUniversalSave(
     currentShowcaseTab === "settings" || currentShowcaseTab === "effects"
       ? {
-          label: currentShowcaseTab === "settings" ? "Save Slider Settings" : "Save Motion Effects",
+          label: "Save",
           onSave: () => saveConfig.mutate(),
           isSaving: saveConfig.isPending,
+          onReject: () => {
+            qc.invalidateQueries({ queryKey: ["admin-showcase-config"] });
+            toast.warning("Changes discarded");
+          },
+          canReject: true,
         }
       : null,
-    [currentShowcaseTab, config, saveConfig.isPending]
+    [currentShowcaseTab, config, saveConfig.isPending, qc]
   );
 
   return (
@@ -1225,23 +1230,81 @@ export function ProductShowcaseTab() {
 
   const handleManualSave = () => {
     saveConfig(entries, isEnabled, showFeatured);
+    setUndoStack([]);
+    setRedoStack([]);
   };
+
+  // Undo & Redo stacks
+  const [undoStack, setUndoStack] = useState<{ entries: ShowcaseEntry[]; isEnabled: boolean; showFeatured: boolean }[]>([]);
+  const [redoStack, setRedoStack] = useState<{ entries: ShowcaseEntry[]; isEnabled: boolean; showFeatured: boolean }[]>([]);
+
+  const pushHistory = useCallback(() => {
+    setUndoStack((prev) => [...prev.slice(-25), { entries, isEnabled, showFeatured }]);
+    setRedoStack([]);
+  }, [entries, isEnabled, showFeatured]);
+
+  const handleUndo = useCallback(() => {
+    if (undoStack.length === 0) return;
+    const prev = undoStack[undoStack.length - 1];
+    setUndoStack((s) => s.slice(0, -1));
+    setRedoStack((s) => [...s, { entries, isEnabled, showFeatured }]);
+    setEntries(prev.entries);
+    setIsEnabled(prev.isEnabled);
+    setShowFeatured(prev.showFeatured);
+    toast.info("Undone change");
+  }, [undoStack, entries, isEnabled, showFeatured]);
+
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0) return;
+    const next = redoStack[redoStack.length - 1];
+    setRedoStack((s) => s.slice(0, -1));
+    setUndoStack((s) => [...s, { entries, isEnabled, showFeatured }]);
+    setEntries(next.entries);
+    setIsEnabled(next.isEnabled);
+    setShowFeatured(next.showFeatured);
+    toast.info("Redone change");
+  }, [redoStack, entries, isEnabled, showFeatured]);
+
+  const handleReject = useCallback(() => {
+    if (savedConfig) {
+      if (Array.isArray(savedConfig)) {
+        setEntries(savedConfig as ShowcaseEntry[]);
+        setIsEnabled(true);
+        setShowFeatured(false);
+      } else if (typeof savedConfig === "object") {
+        setEntries(Array.isArray(savedConfig.entries) ? (savedConfig.entries as ShowcaseEntry[]) : []);
+        setIsEnabled(savedConfig.is_enabled !== false);
+        setShowFeatured(Boolean(savedConfig.show_featured));
+      }
+    }
+    setUndoStack([]);
+    setRedoStack([]);
+    toast.warning("Unsaved changes discarded and reverted");
+  }, [savedConfig]);
 
   // Register universal floating save button for Product Showcase
   useRegisterUniversalSave(
     {
-      label: "Save Bento Showcase",
+      label: "Save",
       onSave: handleManualSave,
       isSaving,
+      onUndo: handleUndo,
+      canUndo: undoStack.length > 0,
+      onRedo: handleRedo,
+      canRedo: redoStack.length > 0,
+      onReject: handleReject,
+      canReject: undoStack.length > 0,
     },
-    [entries, isEnabled, showFeatured, isSaving]
+    [entries, isEnabled, showFeatured, isSaving, undoStack.length, redoStack.length, handleUndo, handleRedo, handleReject]
   );
 
   const updateCard = (id: string, patch: Partial<ShowcaseEntry>) => {
+    pushHistory();
     setEntries((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   };
 
   const handleAddCard = () => {
+    pushHistory();
     const newEntry: ShowcaseEntry = {
       ...emptyEntry,
       id: crypto.randomUUID(),
@@ -1265,6 +1328,7 @@ export function ProductShowcaseTab() {
 
   const handleDuplicateCard = (card: ShowcaseEntry, e: React.MouseEvent) => {
     e.stopPropagation();
+    pushHistory();
     const dupe: ShowcaseEntry = {
       ...card,
       id: crypto.randomUUID(),
@@ -1279,6 +1343,7 @@ export function ProductShowcaseTab() {
 
   const handleDeleteCard = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    pushHistory();
     const next = entries
       .filter((c) => c.id !== id)
       .map((c) => (c.follow_card_id === id ? { ...c, follow_card_id: null } : c));
@@ -1292,6 +1357,7 @@ export function ProductShowcaseTab() {
 
   const handleMoveCard = (idx: number, dir: -1 | 1, e: React.MouseEvent) => {
     e.stopPropagation();
+    pushHistory();
     const next = [...entries];
     const newIdx = idx + dir;
     if (newIdx < 0 || newIdx >= next.length) return;
@@ -1301,6 +1367,7 @@ export function ProductShowcaseTab() {
   };
 
   const handleImportFeaturedProducts = () => {
+    pushHistory();
     const featuredProds = products.filter((p: any) => p.is_featured);
     const targetProds = featuredProds.length > 0 ? featuredProds : products.slice(0, 4);
     if (targetProds.length === 0) {
@@ -2525,11 +2592,16 @@ export function MarqueeStripTab() {
   // Register universal floating save button for Marquee Strip
   useRegisterUniversalSave(
     {
-      label: "Save Marquee Strip",
+      label: "Save",
       onSave: handleSave,
       isSaving: saving,
+      onReject: () => {
+        qc.invalidateQueries({ queryKey: ["marquee-config-admin"] });
+        toast.warning("Changes discarded");
+      },
+      canReject: true,
     },
-    [words, separator, saving]
+    [words, separator, saving, qc]
   );
 
   return (
