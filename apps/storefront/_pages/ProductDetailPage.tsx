@@ -219,7 +219,7 @@ const ProductDetailPage: React.FC = () => {
       const obj: any = (val && typeof val === "object") ? val : {};
       return {
         layout: (obj.layout || "glass") as LayoutStyle,
-        gallery: (obj.gallery || "default") as GalleryStyle,
+        gallery: (obj.gallery || "carousel-cards") as GalleryStyle,
       };
     },
     staleTime: 2000,

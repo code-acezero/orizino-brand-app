@@ -95,7 +95,7 @@ interface ProductPageConfig {
 
 const DEFAULT_CONFIG: ProductPageConfig = {
   layout: "glass",
-  gallery: "default",
+  gallery: "carousel-cards",
   show_sticky_tray: true,
   show_scarcity_badge: true,
   show_trust_badges: true,
@@ -112,36 +112,36 @@ const STUDIO_PRESETS: {
   icon: React.ElementType;
 }[] = [
   {
-    layout: "dark-luxury" as LayoutStyle,
-    gallery: "infinity" as GalleryStyle,
-    label: "Midnight Runway",
-    tag: "High Fashion",
-    desc: "Obsidian dark background, gold ambient glow & continuous 3D Infinity Loop gallery.",
-    icon: Crown,
-  },
-  {
     layout: "glass" as LayoutStyle,
-    gallery: "coverflow" as GalleryStyle,
+    gallery: "carousel-cards" as GalleryStyle,
     label: "Orizino Atrium",
-    tag: "Signature",
-    desc: "Signature Orizino Elegant frosted glass cards & 3D Coverflow perspective rotation.",
+    tag: "Default / Signature",
+    desc: "Signature Orizino Elegant frosted glass surface with panoramic 3D Horizon track and ambient lighting.",
     icon: Box,
-  },
-  {
-    layout: "neon" as LayoutStyle,
-    gallery: "parallax-stack" as GalleryStyle,
-    label: "High-Voltage Drop",
-    tag: "Cyber Street",
-    desc: "Cyberpunk edge glow, electrified price accent & 3D cursor parallax card stack.",
-    icon: Zap,
   },
   {
     layout: "minimal" as LayoutStyle,
     gallery: "default" as GalleryStyle,
-    label: "Pure Minimalist",
-    tag: "Scandinavian",
-    desc: "Pure whitespace, clean typography, hairline borders & Lightbox Zoom lens.",
+    label: "Orizino Classic",
+    tag: "Timeless",
+    desc: "Apple-inspired pure minimalist monochrome layout with precision typography and classic zoom lens rail.",
     icon: Square,
+  },
+  {
+    layout: "neon" as LayoutStyle,
+    gallery: "infinity" as GalleryStyle,
+    label: "Orizino Hyped",
+    tag: "Cyber Street",
+    desc: "Electrified neon cyber styling with glowing borders and continuous 3D Infinity Orbit loop gallery.",
+    icon: Zap,
+  },
+  {
+    layout: "dark-luxury" as LayoutStyle,
+    gallery: "studio-turntable" as GalleryStyle,
+    label: "Midnight Atelier",
+    tag: "Dark Luxury",
+    desc: "Obsidian dark background, gold ambient glow & interactive 360° Studio Orbit turntable.",
+    icon: Crown,
   },
   {
     layout: "magazine" as LayoutStyle,
@@ -1773,6 +1773,14 @@ export default function ProductDetailLayoutPanel() {
               <p className="text-[10.5px] text-muted-foreground">1-click designer pairings of surface aesthetics and 3D gallery engines.</p>
             </div>
           </div>
+          {(() => {
+            const isMatched = STUDIO_PRESETS.some((rec) => rec.layout === cfg.layout && rec.gallery === cfg.gallery);
+            return (
+              <span className="text-[9.5px] font-mono text-muted-foreground bg-secondary/30 px-2.5 py-1 rounded-full border border-border/60">
+                Active: <strong className="text-foreground">{isMatched ? (STUDIO_PRESETS.find(p => p.layout === cfg.layout && p.gallery === cfg.gallery)?.label) : "Custom Studio"}</strong>
+              </span>
+            );
+          })()}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1821,6 +1829,63 @@ export default function ProductDetailLayoutPanel() {
               </motion.button>
             );
           })}
+
+          {/* 7. CUSTOM MANUAL BLOCK */}
+          {(() => {
+            const isMatched = STUDIO_PRESETS.some((rec) => rec.layout === cfg.layout && rec.gallery === cfg.gallery);
+            const isCustomActive = !isMatched;
+            return (
+              <motion.div
+                whileHover={{ y: -2 }}
+                className={`text-left p-3.5 rounded-2xl border transition-all flex flex-col justify-between group relative overflow-hidden ${
+                  isCustomActive
+                    ? "border-primary bg-gradient-to-b from-primary/10 via-card/90 to-card ring-1 ring-primary/40 shadow-sm"
+                    : "border-border/60 bg-card/40 opacity-80"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-colors shrink-0 ${
+                        isCustomActive
+                          ? "bg-primary/20 border-primary/50 text-primary"
+                          : "bg-secondary/40 dark:bg-white/5 border-border/60 text-muted-foreground"
+                      }`}
+                    >
+                      <Sliders className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-bold text-foreground text-xs leading-tight">Custom Studio</p>
+                        {isCustomActive && (
+                          <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[8.5px] font-mono text-muted-foreground uppercase font-semibold">
+                        {isCustomActive ? "Manual Selection" : "Customizable"}
+                      </span>
+                    </div>
+                  </div>
+                  {isCustomActive ? (
+                    <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-xs">
+                      <Check className="w-3 h-3 stroke-[2.5]" />
+                    </span>
+                  ) : (
+                    <span className="w-5 h-5 rounded-full border border-border/40 flex items-center justify-center shrink-0 opacity-40">
+                      <Sliders className="w-2.5 h-2.5 text-muted-foreground" />
+                    </span>
+                  )}
+                </div>
+                <p className="text-muted-foreground text-[10.5px] leading-relaxed">
+                  {isCustomActive
+                    ? `Active pairing: ${activeLayoutObj.label} layout with ${activeGalleryObj.label} motion engine.`
+                    : "Active automatically when you manually pick custom surface layouts or 3D gallery engines below."}
+                </p>
+              </motion.div>
+            );
+          })()}
         </div>
       </div>
 
