@@ -32,12 +32,16 @@ export default function EditorialSplitGallery({
   return (
     <div className="space-y-3 w-full select-none">
       {/* ── DUAL EDITORIAL SPLIT VIEWPORT ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full">
         {/* Primary View */}
         <div
-          className="relative h-[380px] sm:h-[480px] rounded-2xl overflow-hidden bg-muted/20 border border-border/60 group cursor-pointer"
+          className="relative h-[420px] sm:h-[540px] md:h-[580px] rounded-3xl overflow-hidden bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] border border-border/80 group cursor-pointer shadow-lg"
           onClick={() => openLightbox(primaryIdx)}
         >
+          {/* Studio Accent Lighting */}
+          <div className="absolute top-0 inset-x-0 h-40 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none z-10" />
+          <div className="absolute bottom-6 inset-x-6 h-16 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.14),transparent_70%)] pointer-events-none blur-md z-10" />
+
           <AnimatePresence mode="wait">
             <motion.img
               key={images[primaryIdx]}
@@ -52,35 +56,36 @@ export default function EditorialSplitGallery({
           </AnimatePresence>
 
           {/* Badges */}
-          <div className="absolute top-3 left-3 flex items-center gap-2 z-10">
-            <span className="text-[9px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
-              Runway 01
-            </span>
+          <div className="absolute top-3.5 left-3.5 flex items-center gap-2 z-20">
             {discount > 0 && (
-              <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold">
-                -{discount}%
+              <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-rose-500 text-white font-bold shadow-sm">
+                -{discount}% OFF
               </span>
             )}
           </div>
 
           <button
             type="button"
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-105 z-10"
+            className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-105 z-20 backdrop-blur-md shadow-sm"
             title="Inspect fullscreen"
           >
-            <Maximize2 className="w-3.5 h-3.5" />
+            <Maximize2 className="w-4 h-4" />
           </button>
 
-          <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md rounded-full px-3 py-1 text-[9.5px] font-mono text-white/90 border border-white/15 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
-            <Eye className="w-3 h-3 text-primary" /> Silhouette View
+          <div className="absolute bottom-3.5 left-3.5 bg-background/85 backdrop-blur-md rounded-full px-3.5 py-1 text-[9.5px] font-mono text-foreground border border-border/60 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity z-20 shadow-xs">
+            <Eye className="w-3.5 h-3.5 text-primary" /> Silhouette View
           </div>
         </div>
 
         {/* Secondary Detail View */}
         <div
-          className="relative h-[380px] sm:h-[480px] rounded-2xl overflow-hidden bg-muted/20 border border-border/60 group cursor-pointer hidden sm:block"
+          className="relative h-[420px] sm:h-[540px] md:h-[580px] rounded-3xl overflow-hidden bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] border border-border/80 group cursor-pointer hidden sm:block shadow-lg"
           onClick={() => openLightbox(secondaryIdx)}
         >
+          {/* Studio Accent Lighting */}
+          <div className="absolute top-0 inset-x-0 h-40 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none z-10" />
+          <div className="absolute bottom-6 inset-x-6 h-16 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.14),transparent_70%)] pointer-events-none blur-md z-10" />
+
           <AnimatePresence mode="wait">
             <motion.img
               key={images[secondaryIdx]}
@@ -94,22 +99,16 @@ export default function EditorialSplitGallery({
             />
           </AnimatePresence>
 
-          <div className="absolute top-3 left-3 z-10">
-            <span className="text-[9px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
-              Runway 02
-            </span>
-          </div>
-
           <button
             type="button"
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-105 z-10"
+            className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-105 z-20 backdrop-blur-md shadow-sm"
             title="Inspect fullscreen"
           >
-            <Maximize2 className="w-3.5 h-3.5" />
+            <Maximize2 className="w-4 h-4" />
           </button>
 
-          <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md rounded-full px-3 py-1 text-[9.5px] font-mono text-white/90 border border-white/15 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
-            <Sparkles className="w-3 h-3 text-primary" /> Detail & Craft
+          <div className="absolute bottom-3.5 left-3.5 bg-background/85 backdrop-blur-md rounded-full px-3.5 py-1 text-[9.5px] font-mono text-foreground border border-border/60 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity z-20 shadow-xs">
+            <Sparkles className="w-3.5 h-3.5 text-primary" /> Detail & Craft
           </div>
         </div>
       </div>

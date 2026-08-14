@@ -845,7 +845,7 @@ const AdminStudioHorizonCarouselPreview = ({
   }, [activeIdx]);
 
   return (
-    <div className="relative h-[480px] w-full rounded-2xl overflow-hidden bg-black flex flex-col justify-between p-4 select-none group border border-border/70">
+    <div className="relative h-[500px] w-full rounded-2xl overflow-hidden bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] flex flex-col justify-between p-4 select-none group border border-border/80">
       <div
         className="absolute -inset-8 bg-cover bg-center transition-all duration-700 pointer-events-none"
         style={{
@@ -854,20 +854,22 @@ const AdminStudioHorizonCarouselPreview = ({
           transform: "scale(1.1)",
         }}
       />
-      <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/90 pointer-events-none" />
+      {/* Studio Accent Lighting */}
+      <div className="absolute top-0 inset-x-0 h-40 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none z-10" />
+      <div className="absolute bottom-8 inset-x-6 h-16 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.15),transparent_70%)] pointer-events-none blur-md z-10" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.35)_100%)] pointer-events-none z-10" />
 
       <div className="w-full flex items-center justify-between z-20">
-        <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
-          Horizon Track
-        </span>
-        {showScarcity && (
-          <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
-            <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
-          </span>
-        )}
+        <div>
+          {showScarcity && (
+            <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+              <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="relative flex items-center justify-center my-auto w-full h-[360px] pointer-events-auto overflow-hidden">
+      <div className="relative flex items-center justify-center my-auto w-full h-[380px] pointer-events-auto overflow-hidden">
         {images.map((img, i) => {
           const half = total / 2;
           let diff = i - currentIdx;
@@ -884,17 +886,17 @@ const AdminStudioHorizonCarouselPreview = ({
           let zIndex = 30;
 
           if (isLeft) {
-            x = "-65%";
-            scale = 0.85;
+            x = "-58%";
+            scale = 0.86;
             opacity = 0.45;
             zIndex = 20;
           } else if (isRight) {
-            x = "65%";
-            scale = 0.85;
+            x = "58%";
+            scale = 0.86;
             opacity = 0.45;
             zIndex = 20;
           } else if (!isCenter) {
-            x = diff > 0 ? "120%" : "-120%";
+            x = diff > 0 ? "110%" : "-110%";
             scale = 0.65;
             opacity = 0;
             zIndex = 10;
@@ -907,15 +909,17 @@ const AdminStudioHorizonCarouselPreview = ({
               transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
               style={{
                 position: "absolute",
-                width: "14.5rem",
-                height: "20.5rem",
+                width: "16.5rem",
+                height: "23.5rem",
                 zIndex,
               }}
               onClick={() => {
                 setCurrentIdx(i);
                 onNavigate(i);
               }}
-              className="cursor-pointer rounded-2xl overflow-hidden shadow-2xl border border-white/10"
+              className={`cursor-pointer rounded-2xl overflow-hidden shadow-2xl transition-all ${
+                isCenter ? "border border-border/80 ring-1 ring-primary/40" : "border border-border/40 hover:border-border"
+              }`}
             >
               <img src={img} alt="" className="w-full h-full object-cover select-none pointer-events-none rounded-2xl" />
               <div
@@ -935,7 +939,7 @@ const AdminStudioHorizonCarouselPreview = ({
             setCurrentIdx(next);
             onNavigate(next);
           }}
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/65 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer transition-all hover:scale-105"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 shadow-sm"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -947,7 +951,7 @@ const AdminStudioHorizonCarouselPreview = ({
             setCurrentIdx(next);
             onNavigate(next);
           }}
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/65 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer transition-all hover:scale-105"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 shadow-sm"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -964,12 +968,12 @@ const AdminStudioHorizonCarouselPreview = ({
                 onNavigate(i);
               }}
               className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                i === currentIdx ? "w-5 bg-primary" : "w-1.5 bg-white/30 hover:bg-white/60"
+                i === currentIdx ? "w-5 bg-primary" : "w-1.5 bg-foreground/25 hover:bg-foreground/50"
               }`}
             />
           ))}
         </div>
-        <span className="text-[9.5px] font-mono text-white/80 bg-black/60 px-2.5 py-0.5 rounded-full border border-white/15">
+        <span className="text-[9.5px] font-mono text-foreground/80 bg-background/80 px-2.5 py-0.5 rounded-full border border-border/60 shadow-xs">
           {currentIdx + 1} / {total}
         </span>
       </div>
@@ -993,7 +997,7 @@ const AdminStudioTurntablePreview = ({
   const currentAngleDeg = Math.round((activeIdx / total) * 360);
 
   return (
-    <div className="relative h-[480px] w-full rounded-2xl overflow-hidden bg-black flex flex-col justify-between p-4 select-none group border border-border/70">
+    <div className="relative h-[500px] w-full rounded-2xl overflow-hidden bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] flex flex-col justify-between p-4 select-none group border border-border/80">
       {/* Ambient studio backdrop */}
       <div
         className="absolute -inset-8 bg-cover bg-center transition-all duration-500 pointer-events-none"
@@ -1003,27 +1007,30 @@ const AdminStudioTurntablePreview = ({
           transform: "scale(1.1)",
         }}
       />
-      <div className="absolute inset-0 bg-radial from-white/10 via-transparent to-black/90 pointer-events-none" />
+      {/* Studio Spotlight Cone */}
+      <div className="absolute top-0 inset-x-0 h-40 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none z-10" />
+      <div className="absolute bottom-8 inset-x-6 h-16 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.15),transparent_70%)] pointer-events-none blur-md z-10" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.35)_100%)] pointer-events-none z-10" />
 
       {/* Header */}
       <div className="w-full flex items-center justify-between z-20">
-        <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-black/75 text-white backdrop-blur-md uppercase tracking-wider border border-white/15 flex items-center gap-1">
+        <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-background/80 text-foreground backdrop-blur-md uppercase tracking-wider border border-border/60 flex items-center gap-1 shadow-xs">
           <RotateCw className="w-2.5 h-2.5 text-primary" /> {currentAngleDeg}° STUDIO ORBIT
         </span>
         {showScarcity && (
-          <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+          <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1 shadow-xs">
             <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
           </span>
         )}
       </div>
 
       {/* Turntable Stage */}
-      <div className="relative flex items-center justify-center my-auto w-full h-[340px] pointer-events-auto">
-        <div className="absolute bottom-1 w-64 h-8 rounded-[100%] bg-radial from-primary/30 via-black/80 to-transparent blur-md pointer-events-none" />
+      <div className="relative flex items-center justify-center my-auto w-full h-[360px] pointer-events-auto">
+        <div className="absolute bottom-1 w-64 h-8 rounded-[100%] bg-radial from-primary/30 via-background/80 to-transparent blur-md pointer-events-none" />
 
-        <div className="relative w-[14.5rem] h-[20.5rem] rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+        <div className="relative w-[16.5rem] h-[23.5rem] rounded-2xl overflow-hidden border border-border/80 ring-1 ring-primary/40 shadow-2xl bg-card/40">
           <img src={images[activeIdx]} alt="" className="w-full h-full object-cover rounded-2xl select-none pointer-events-none" />
-          <div className="absolute inset-0 bg-radial from-transparent via-black/20 to-black/50 pointer-events-none rounded-2xl" />
+          <div className="absolute inset-0 bg-radial from-transparent via-black/15 to-black/45 pointer-events-none rounded-2xl" />
         </div>
 
         <button
@@ -1032,7 +1039,7 @@ const AdminStudioTurntablePreview = ({
             e.stopPropagation();
             onNavigate((activeIdx - 1 + total) % total);
           }}
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/65 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer transition-all hover:scale-105"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 shadow-sm"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -1042,7 +1049,7 @@ const AdminStudioTurntablePreview = ({
             e.stopPropagation();
             onNavigate((activeIdx + 1) % total);
           }}
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/65 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer transition-all hover:scale-105"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 shadow-sm"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -1050,7 +1057,7 @@ const AdminStudioTurntablePreview = ({
 
       {/* Rotary ticks */}
       <div className="z-20 flex flex-col gap-2">
-        <div className="w-full h-1 rounded-full bg-white/15 overflow-hidden">
+        <div className="w-full h-1 rounded-full bg-foreground/10 overflow-hidden">
           <div className="h-full bg-primary rounded-full transition-all duration-200" style={{ width: `${((activeIdx + 1) / total) * 100}%` }} />
         </div>
         <div className="flex items-center justify-between gap-2">
@@ -1061,17 +1068,17 @@ const AdminStudioTurntablePreview = ({
                 type="button"
                 onClick={() => onNavigate(i)}
                 className={`relative w-12 h-10 rounded-lg overflow-hidden border cursor-pointer transition-all shrink-0 ${
-                  i === activeIdx ? "border-primary ring-1 ring-primary/40 opacity-100 scale-105" : "border-white/15 opacity-40 hover:opacity-80"
+                  i === activeIdx ? "border-primary ring-1 ring-primary/40 opacity-100 scale-105" : "border-border/60 opacity-50 hover:opacity-80"
                 }`}
               >
                 <img src={img} alt="" className="w-full h-full object-cover" />
-                <span className="absolute bottom-0 inset-x-0 text-center text-[7px] font-mono font-bold bg-black/80 text-white">
+                <span className="absolute bottom-0 inset-x-0 text-center text-[7px] font-mono font-bold bg-background/90 text-foreground">
                   {Math.round((i / total) * 360)}°
                 </span>
               </button>
             ))}
           </div>
-          <span className="text-[9.5px] font-mono text-white/80 bg-black/60 px-2.5 py-0.5 rounded-full border border-white/15 shrink-0">
+          <span className="text-[9.5px] font-mono text-foreground/80 bg-background/80 px-2.5 py-0.5 rounded-full border border-border/60 shrink-0 shadow-xs">
             {activeIdx + 1} / {total}
           </span>
         </div>

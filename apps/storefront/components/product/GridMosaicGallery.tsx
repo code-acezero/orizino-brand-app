@@ -41,16 +41,16 @@ const GridMosaicGallery: React.FC<GridMosaicGalleryProps> = ({
   return (
     <>
       <div
-        className={`grid grid-cols-3 gap-2 ${
+        className={`grid grid-cols-3 gap-2.5 ${
           isMobile
-            ? "grid-rows-[repeat(3,minmax(110px,1fr))]"
-            : "grid-rows-[repeat(3,minmax(130px,180px))]"
-        } rounded-3xl overflow-hidden border border-border/60 p-1 bg-card/60`}
+            ? "grid-rows-[repeat(3,minmax(130px,1fr))]"
+            : "grid-rows-[repeat(3,minmax(160px,200px))]"
+        } rounded-3xl overflow-hidden border border-border/80 p-2 bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] shadow-lg`}
       >
         {displayed.map((img, idx) => (
           <motion.div
             key={idx}
-            className={`relative overflow-hidden rounded-2xl cursor-pointer group border border-border/40 ${getSpan(
+            className={`relative overflow-hidden rounded-2xl cursor-pointer group border border-border/50 shadow-md ${getSpan(
               idx,
               images.length
             )}`}
@@ -67,14 +67,14 @@ const GridMosaicGallery: React.FC<GridMosaicGalleryProps> = ({
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
             
             {idx === 0 && discount > 0 && (
-              <span className="absolute top-3 left-3 z-10 text-xs font-bold py-0.5 px-2.5 rounded-full bg-rose-500 text-white font-mono">
-                -{discount}%
+              <span className="absolute top-3 left-3 z-10 text-[10px] font-mono font-bold py-1 px-3 rounded-full bg-rose-500 text-white shadow-sm">
+                -{discount}% OFF
               </span>
             )}
             
             {idx === 4 && remaining > 0 && (
-              <div className="absolute inset-0 bg-black/65 backdrop-blur-xs flex items-center justify-center">
-                <span className="text-white text-xl font-mono font-bold">+{remaining}</span>
+              <div className="absolute inset-0 bg-background/80 backdrop-blur-xs flex items-center justify-center border border-border/60">
+                <span className="text-foreground text-xl font-mono font-bold">+{remaining}</span>
               </div>
             )}
           </motion.div>

@@ -44,8 +44,8 @@ const CoverflowGallery: React.FC<CoverflowGalleryProps> = ({
   return (
     <>
       <div
-        className="relative w-full overflow-hidden rounded-3xl bg-card/60 border border-border/60"
-        style={{ height: isMobile ? "55vh" : "500px", perspective: "1200px" }}
+        className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] border border-border/80 min-h-[520px] sm:min-h-[580px]"
+        style={{ height: isMobile ? "58vh" : "560px", perspective: "1200px" }}
         onTouchStart={(e) => {
           touchStartX.current = e.touches[0].clientX;
         }}
@@ -54,9 +54,14 @@ const CoverflowGallery: React.FC<CoverflowGalleryProps> = ({
           if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
         }}
       >
+        {/* ── AMBIENT STUDIO LIGHTING & SPOTLIGHT PEDESTAL ── */}
+        <div className="absolute top-0 inset-x-0 h-48 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none" />
+        <div className="absolute bottom-10 inset-x-8 h-20 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.15),transparent_70%)] pointer-events-none blur-md" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.35)_100%)] pointer-events-none" />
+
         {/* Preserved 3D Stage */}
         <div
-          className="absolute inset-0 flex items-center justify-center"
+          className="absolute inset-0 flex items-center justify-center pointer-events-auto overflow-hidden"
           style={{ transformStyle: "preserve-3d" }}
         >
           {images.map((img, idx) => {
@@ -67,12 +72,13 @@ const CoverflowGallery: React.FC<CoverflowGalleryProps> = ({
                 key={idx}
                 animate={style}
                 transition={{ type: "spring", stiffness: 240, damping: 26 }}
-                className={`absolute cursor-pointer rounded-2xl overflow-hidden border transition-colors ${
+                className={`absolute cursor-pointer rounded-2xl overflow-hidden border shadow-2xl transition-colors ${
                   isCenter ? "border-primary ring-1 ring-primary/40" : "border-border/60"
                 }`}
                 style={{
-                  width: isMobile ? "65vw" : "320px",
-                  height: isMobile ? "42vh" : "420px",
+                  width: isMobile ? "74vw" : "360px",
+                  height: isMobile ? "46vh" : "460px",
+                  maxHeight: "88%",
                   transformStyle: "preserve-3d",
                 }}
                 onClick={() => {
@@ -83,13 +89,15 @@ const CoverflowGallery: React.FC<CoverflowGalleryProps> = ({
                 <img
                   src={img}
                   alt={`${productName} ${idx + 1}`}
-                  className="w-full h-full object-cover select-none pointer-events-none"
+                  className="w-full h-full object-cover select-none pointer-events-none rounded-2xl"
                   draggable={false}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className={`absolute inset-0 transition-opacity duration-300 pointer-events-none rounded-2xl ${
+                  isCenter ? "bg-gradient-to-t from-black/30 via-transparent to-transparent" : "bg-black/40"
+                }`} />
                 {isCenter && (
                   <div className="absolute bottom-3 left-3 right-3 text-center">
-                    <span className="text-white/80 text-[11px] font-mono tracking-wider uppercase">
+                    <span className="text-white/80 text-[11px] font-mono tracking-wider uppercase bg-black/60 px-3 py-1 rounded-full backdrop-blur-md border border-white/10">
                       {idx + 1} / {images.length}
                     </span>
                   </div>
@@ -100,8 +108,8 @@ const CoverflowGallery: React.FC<CoverflowGalleryProps> = ({
         </div>
 
         {discount > 0 && (
-          <span className="absolute top-4 left-4 z-20 text-xs font-bold py-0.5 px-2.5 rounded-full bg-rose-500 text-white font-mono">
-            -{discount}%
+          <span className="absolute top-4 left-4 z-20 text-[10px] font-mono font-bold py-1 px-3 rounded-full bg-rose-500 text-white shadow-sm">
+            -{discount}% OFF
           </span>
         )}
 

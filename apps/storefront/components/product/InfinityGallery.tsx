@@ -168,31 +168,36 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
     <>
       <div
         ref={containerRef}
-        className="relative w-full overflow-hidden rounded-3xl bg-black select-none group"
+        className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] select-none group border border-border/80 min-h-[520px] sm:min-h-[580px]"
         style={{
-          height: isMobile ? "58vh" : "520px",
+          height: isMobile ? "58vh" : "560px",
           perspective: "1200px",
         }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* ── 1. AMBIENT BACKDROP ── */}
+        {/* ── 1. AMBIENT BACKDROP & STUDIO SPOTLIGHT ── */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <AnimatePresence mode="popLayout">
             <motion.div
               key={activeIndex}
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.38 }}
+              animate={{ opacity: 0.3 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.7 }}
               className="absolute -inset-10 bg-cover bg-center"
               style={{
                 backgroundImage: `url(${images[activeIndex]})`,
-                filter: "blur(48px) brightness(0.4) saturate(1.3)",
+                filter: "blur(54px) brightness(0.35) saturate(1.25)",
               }}
             />
           </AnimatePresence>
-          <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/90 pointer-events-none" />
+          {/* Overhead Accent Studio Spotlight */}
+          <div className="absolute top-0 inset-x-0 h-48 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none" />
+          {/* Pedestal Stage Floor Reflection */}
+          <div className="absolute bottom-10 inset-x-8 h-20 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.15),transparent_70%)] pointer-events-none blur-md" />
+          {/* Soft Vignette */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.35)_100%)] pointer-events-none" />
         </div>
 
         {/* ── 2. 3D PERSPECTIVE CAROUSEL STAGE ── */}
@@ -221,8 +226,10 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
                 }}
                 style={{
                   position: "absolute",
-                  width: isMobile ? "70vw" : "19rem",
-                  height: isMobile ? "46vh" : "25.5rem",
+                  width: isMobile ? "75vw" : "21rem",
+                  maxWidth: "80vw",
+                  height: isMobile ? "48vh" : "28rem",
+                  maxHeight: "88%",
                   transformStyle: "preserve-3d",
                   zIndex: style.zIndex,
                   pointerEvents: style.pointerEvents,
@@ -235,7 +242,11 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
                     setActiveIndex(idx);
                   }
                 }}
-                className="cursor-pointer rounded-2xl overflow-hidden shadow-none border-none outline-none"
+                className={`cursor-pointer rounded-2xl overflow-hidden shadow-2xl transition-all ${
+                  isCenter
+                    ? "border border-border/80 ring-1 ring-primary/40"
+                    : "border border-border/40 hover:border-border"
+                }`}
               >
                 {/* Clean full-bleed garment photograph */}
                 <img
@@ -249,8 +260,8 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
                 <div
                   className={`absolute inset-0 transition-opacity duration-300 pointer-events-none rounded-2xl ${
                     isCenter
-                      ? "bg-gradient-to-t from-black/35 via-transparent to-transparent"
-                      : "bg-black/35 hover:bg-black/15"
+                      ? "bg-gradient-to-t from-black/30 via-transparent to-transparent"
+                      : "bg-black/40 hover:bg-black/20"
                   }`}
                 />
               </motion.div>
@@ -261,8 +272,8 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
         {/* ── 3. HUD CONTROLS & FLOATING BADGES ── */}
         {/* Discount Badge */}
         {discount > 0 && (
-          <span className="absolute top-4 left-4 z-30 text-[11px] font-mono font-bold py-0.5 px-2.5 rounded-full bg-rose-500 text-white tracking-tight">
-            -{discount}%
+          <span className="absolute top-4 left-4 z-30 text-[10px] font-mono font-bold py-1 px-3 rounded-full bg-rose-500 text-white tracking-tight shadow-sm">
+            -{discount}% OFF
           </span>
         )}
 
@@ -274,7 +285,7 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
             pauseAutoPlay();
             navigate(-1);
           }}
-          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/55 hover:bg-black/85 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border border-white/10"
+          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background text-foreground flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border border-border/70 shadow-md backdrop-blur-md"
           aria-label="Previous image"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -288,14 +299,14 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
             pauseAutoPlay();
             navigate(1);
           }}
-          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/55 hover:bg-black/85 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border border-white/10"
+          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background text-foreground flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border border-border/70 shadow-md backdrop-blur-md"
           aria-label="Next image"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
 
         {/* Bottom Pill Indicators & Counter */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 bg-black/60 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 bg-background/85 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-border/60 shadow-xs">
           <div className="flex items-center gap-1.5">
             {images.map((_, i) => (
               <button
@@ -309,25 +320,26 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
                 className={`h-1.5 rounded-full transition-all cursor-pointer ${
                   i === activeIndex
                     ? "w-5 bg-primary"
-                    : "w-1.5 bg-white/30 hover:bg-white/60"
+                    : "w-1.5 bg-foreground/25 hover:bg-foreground/50"
                 }`}
                 aria-label={`Go to image ${i + 1}`}
               />
             ))}
           </div>
-          <span className="text-white/80 text-[10.5px] font-mono font-bold pl-1 border-l border-white/15">
+          <span className="text-foreground/80 text-[10.5px] font-mono font-bold pl-1 border-l border-border/60">
             {activeIndex + 1} / {total}
           </span>
         </div>
 
         {/* Fullscreen Lightbox Trigger Button */}
-        <div
-          className="absolute top-4 right-4 z-30 bg-black/55 backdrop-blur-md rounded-full p-2 text-white/80 hover:text-white cursor-pointer transition-colors hover:scale-105 border border-white/10"
+        <button
+          type="button"
+          className="absolute top-4 right-4 z-30 bg-background/80 hover:bg-background backdrop-blur-md rounded-full p-2 text-foreground cursor-pointer transition-all hover:scale-105 border border-border/60 shadow-xs"
           onClick={() => setLightboxOpen(true)}
           title="Fullscreen Zoom"
         >
           <ZoomIn className="w-4 h-4" />
-        </div>
+        </button>
       </div>
 
       {/* Fullscreen Lightbox Modal */}

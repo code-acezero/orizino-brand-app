@@ -149,7 +149,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
               ? "rounded-2xl bg-secondary/15 border border-border/40"
               : isEditorial
               ? "rounded-none aspect-[4/3] bg-card border border-border/40"
-              : "rounded-3xl aspect-square bg-card/80 border border-border/60"
+              : "rounded-3xl aspect-[1/1] sm:aspect-[4/5] bg-gradient-to-b from-card via-background to-card dark:from-[#161616] dark:via-[#111111] dark:to-[#090909] border border-border/80 shadow-xl"
           }`}
           {...(!isMobile
             ? {
@@ -185,6 +185,10 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
             setPanPosition({ x: 0, y: 0 });
           }}
         >
+          {/* Studio Accent Lighting */}
+          <div className="absolute top-0 inset-x-0 h-44 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.2),transparent_70%)] pointer-events-none z-10" />
+          <div className="absolute bottom-6 inset-x-6 h-16 rounded-full bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.14),transparent_70%)] pointer-events-none blur-md z-10" />
+
           <AnimatePresence mode="wait">
             <motion.div
               key={selected}
