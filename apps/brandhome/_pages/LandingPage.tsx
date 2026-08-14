@@ -132,12 +132,12 @@ const LandingPage: React.FC = () => {
           </>
         ) : (
           <>
-            {/* Rich luxury ambient cherry & charcoal glow */}
+            {/* Rich luxury ambient monochrome spotlight glow */}
             <div
               className="absolute inset-0 z-0 pointer-events-none"
               style={{
                 background:
-                  "radial-gradient(ellipse 80% 50% at 50% 12%, hsl(359 100% 30% / 0.18), transparent 70%), radial-gradient(ellipse 60% 40% at 50% 75%, hsl(30 33% 90% / 0.04), transparent 75%)",
+                  "radial-gradient(ellipse 80% 50% at 50% 12%, hsl(var(--foreground) / 0.08), transparent 70%), radial-gradient(ellipse 60% 40% at 50% 75%, hsl(var(--foreground) / 0.03), transparent 75%)",
               }}
             />
             {/* Fine luxury stage grid aura */}
