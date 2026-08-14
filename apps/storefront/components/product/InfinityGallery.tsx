@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ProductLightboxModal from "./ProductLightboxModal";
@@ -11,7 +11,7 @@ interface InfinityGalleryProps {
   discount?: number;
 }
 
-const AUTO_ROTATE_DELAY = 4000;
+const AUTO_ROTATE_DELAY = 4500;
 const RESUME_IDLE_DELAY = 5000;
 const MIN_CYLINDER_SLOTS = 6;
 
@@ -50,35 +50,6 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
 
   const numSlots = cylinderSlots.length;
   const activeImageIndex = cylinderSlots[activeSlot]?.originalIndex ?? 0;
-
-  // ── MOUSE PARALLAX TRACKING ──
-  const rawMouseX = useMotionValue(0);
-  const rawMouseY = useMotionValue(0);
-
-  const springConfig = { stiffness: 150, damping: 22, mass: 0.8 };
-  const mouseX = useSpring(rawMouseX, springConfig);
-  const mouseY = useSpring(rawMouseY, springConfig);
-
-  const stageTiltX = useTransform(mouseY, [-0.5, 0.5], [6, -6]);
-  const stageTiltY = useTransform(mouseX, [-0.5, 0.5], [-8, 8]);
-  const bgShiftX = useTransform(mouseX, [-0.5, 0.5], [22, -22]);
-  const bgShiftY = useTransform(mouseY, [-0.5, 0.5], [16, -16]);
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (isMobile) return;
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      rawMouseX.set((e.clientX - rect.left) / rect.width - 0.5);
-      rawMouseY.set((e.clientY - rect.top) / rect.height - 0.5);
-    },
-    [isMobile, rawMouseX, rawMouseY]
-  );
-
-  const handleMouseLeave = useCallback(() => {
-    rawMouseX.set(0);
-    rawMouseY.set(0);
-  }, [rawMouseX, rawMouseY]);
 
   // ── CYLINDER ROTATION NAVIGATION ──
   const rotateCylinder = useCallback(
@@ -155,15 +126,15 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
     // 3D coordinates on cylinder surface
     const x = Math.sin(angle) * radius;
     const z = Math.cos(angle) * radius - radius;
-    const rotateY = -angle * (180 / Math.PI); // Tangent to cylinder arc
+    const rotateY = -angle * (180 / Math.PI);
 
     const cosVal = Math.cos(angle);
-    // Smooth depth scaling (1.0 at front, 0.70 at back)
+    // Smooth depth scaling (1.0 at front, 0.72 at back)
     const scale = 0.72 + 0.28 * Math.max(0, (1 + cosVal) / 2);
 
-    // Front-facing cards are fully visible; cards curving behind fade softly
-    const opacity = cosVal > -0.2 ? Math.min(1, Math.max(0.25, (1 + cosVal) / 1.5)) : 0;
-    const blur = cosVal > 0.3 ? 0 : Math.min(5, (1 - cosVal) * 3);
+    // Front-facing cards are crisp; curving side/back cards blend seamlessly
+    const opacity = cosVal > -0.15 ? Math.min(1, Math.max(0.2, (1 + cosVal) / 1.6)) : 0;
+    const blur = cosVal > 0.4 ? 0 : Math.min(4, (1 - cosVal) * 2.5);
     const zIndex = Math.round((1 + cosVal) * 50);
 
     return { x, z, rotateY, scale, opacity, blur, zIndex };
@@ -175,50 +146,37 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
     <>
       <div
         ref={containerRef}
-        className="relative w-full overflow-hidden rounded-3xl border border-border/60 bg-black select-none group"
+        className="relative w-full overflow-hidden rounded-3xl bg-black select-none group"
         style={{
           height: isMobile ? "60vh" : "540px",
           perspective: "1300px",
         }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* ── 1. AMBIENT BLENDING PARALLAX BACKDROP ── */}
-        <motion.div
-          className="absolute inset-0 pointer-events-none overflow-hidden"
-          style={isMobile ? {} : { x: bgShiftX, y: bgShiftY }}
-        >
+        {/* ── 1. AMBIENT BLENDING BACKDROP ── */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <AnimatePresence mode="popLayout">
             <motion.div
               key={activeImageIndex}
-              initial={{ opacity: 0, scale: 1.08 }}
-              animate={{ opacity: 0.42, scale: 1 }}
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 0.4, scale: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               className="absolute -inset-12 bg-cover bg-center"
               style={{
                 backgroundImage: `url(${images[activeImageIndex]})`,
-                filter: "blur(54px) brightness(0.4) saturate(1.35)",
+                filter: "blur(54px) brightness(0.4) saturate(1.3)",
               }}
             />
           </AnimatePresence>
           <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/90 pointer-events-none" />
-        </motion.div>
+        </div>
 
         {/* ── 2. 3D CYLINDRICAL CAROUSEL REVOLUTION STAGE ── */}
-        <motion.div
+        <div
           className="absolute inset-0 flex items-center justify-center pointer-events-auto"
-          style={
-            isMobile
-              ? { transformStyle: "preserve-3d" }
-              : {
-                  rotateX: stageTiltX,
-                  rotateY: stageTiltY,
-                  transformStyle: "preserve-3d",
-                }
-          }
+          style={{ transformStyle: "preserve-3d" }}
         >
           {cylinderSlots.map((slot, idx) => {
             const isCenter = idx === activeSlot;
@@ -236,14 +194,11 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
                   filter: `blur(${geo.blur}px)`,
                 }}
                 transition={{
-                  type: "spring",
-                  stiffness: 220,
-                  damping: 25,
-                  mass: 0.65,
+                  duration: 0.65,
+                  ease: [0.22, 1, 0.36, 1],
                 }}
                 style={{
                   position: "absolute",
-                  // Bigger, bolder luxury garment presence
                   width: isMobile ? "68vw" : "19rem",
                   height: isMobile ? "48vh" : "26rem",
                   transformStyle: "preserve-3d",
@@ -257,13 +212,9 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
                     setActiveSlot(idx);
                   }
                 }}
-                className={`cursor-pointer rounded-2xl overflow-hidden border transition-colors ${
-                  isCenter
-                    ? "border-primary/90 ring-1 ring-primary/40 shadow-none"
-                    : "border-white/20 hover:border-white/40 shadow-none"
-                }`}
+                className="cursor-pointer rounded-2xl overflow-hidden shadow-none border-none outline-none"
               >
-                {/* Full-bleed high resolution photo */}
+                {/* Full-bleed borderless high resolution photo */}
                 <img
                   src={slot.src}
                   alt={`${productName} angle ${slot.originalIndex + 1}`}
@@ -271,18 +222,18 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
                   draggable={false}
                 />
 
-                {/* Soft ambient lighting edge */}
+                {/* Soft ambient gradient overlay for smooth depth blending */}
                 <div
                   className={`absolute inset-0 transition-opacity duration-300 pointer-events-none ${
                     isCenter
-                      ? "bg-gradient-to-t from-black/40 via-transparent to-transparent"
-                      : "bg-black/30 hover:bg-black/15"
+                      ? "bg-gradient-to-t from-black/35 via-transparent to-transparent"
+                      : "bg-black/40 hover:bg-black/20"
                   }`}
                 />
               </motion.div>
             );
           })}
-        </motion.div>
+        </div>
 
         {/* ── 3. HUD CONTROLS & FLOATING BADGES ── */}
         {/* Discount Badge */}
@@ -299,7 +250,7 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
             pauseAutoPlay();
             rotateCylinder(-1);
           }}
-          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/55 hover:bg-black/85 border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
+          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border-none outline-none"
           aria-label="Previous image"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -312,14 +263,14 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
             pauseAutoPlay();
             rotateCylinder(1);
           }}
-          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/55 hover:bg-black/85 border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
+          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border-none outline-none"
           aria-label="Next image"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
 
         {/* Bottom Pill Indicators & Counter */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 bg-black/65 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/15">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 bg-black/60 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10">
           <div className="flex items-center gap-1.5">
             {images.map((_, i) => (
               <button
@@ -327,7 +278,6 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   pauseAutoPlay();
-                  // Find nearest slot corresponding to this original image
                   const targetSlot = cylinderSlots.findIndex((s) => s.originalIndex === i);
                   if (targetSlot !== -1) setActiveSlot(targetSlot);
                 }}
@@ -340,14 +290,14 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
               />
             ))}
           </div>
-          <span className="text-white/80 text-[10.5px] font-mono font-bold pl-1 border-l border-white/20">
+          <span className="text-white/80 text-[10.5px] font-mono font-bold pl-1 border-l border-white/15">
             {activeImageIndex + 1} / {images.length}
           </span>
         </div>
 
         {/* Fullscreen Lightbox Trigger Button */}
         <div
-          className="absolute top-4 right-4 z-30 bg-black/55 backdrop-blur-md rounded-full p-2 text-white/80 hover:text-white border border-white/15 cursor-pointer transition-colors hover:scale-105"
+          className="absolute top-4 right-4 z-30 bg-black/50 backdrop-blur-md rounded-full p-2 text-white/80 hover:text-white cursor-pointer transition-colors hover:scale-105 border border-white/10"
           onClick={() => setLightboxOpen(true)}
           title="Fullscreen Zoom"
         >

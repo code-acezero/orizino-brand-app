@@ -454,21 +454,21 @@ export default function ProductDetailLayoutPanel() {
                         <div className="relative flex items-center justify-center my-auto w-full h-48" style={{ perspective: "900px" }}>
                           {/* Left background card */}
                           <div
-                            className="absolute w-28 h-40 rounded-xl overflow-hidden border border-white/20 opacity-45 transition-all duration-300"
+                            className="absolute w-28 h-40 rounded-xl overflow-hidden opacity-45 transition-all duration-300 shadow-none"
                             style={{ transform: "translateX(-75px) translateZ(-65px) rotateY(28deg)" }}
                           >
                             <img src={galleryImages[(previewGalleryActiveIdx + 1) % galleryImages.length]} alt="" className="w-full h-full object-cover" />
                           </div>
                           {/* Right background card */}
                           <div
-                            className="absolute w-28 h-40 rounded-xl overflow-hidden border border-white/20 opacity-45 transition-all duration-300"
+                            className="absolute w-28 h-40 rounded-xl overflow-hidden opacity-45 transition-all duration-300 shadow-none"
                             style={{ transform: "translateX(75px) translateZ(-65px) rotateY(-28deg)" }}
                           >
                             <img src={galleryImages[(previewGalleryActiveIdx + 2) % galleryImages.length]} alt="" className="w-full h-full object-cover" />
                           </div>
                           {/* Center active card */}
                           <div
-                            className="relative w-36 h-48 rounded-2xl overflow-hidden border border-primary ring-1 ring-primary/40 z-10 transition-all duration-300"
+                            className="relative w-36 h-48 rounded-2xl overflow-hidden z-10 transition-all duration-300 shadow-none"
                             style={{ transform: "translateZ(0px)" }}
                           >
                             <img src={activeImg} alt="" className="w-full h-full object-cover" />
