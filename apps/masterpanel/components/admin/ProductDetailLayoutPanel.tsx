@@ -27,6 +27,7 @@ import {
   Eye,
   Columns,
   ArrowRight,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "@/lib/app-toast";
 import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
@@ -231,7 +232,7 @@ const GALLERY_ENGINES: {
 export default function ProductDetailLayoutPanel() {
   const qc = useQueryClient();
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "split">("desktop");
-  const [activePreviewTab, setActivePreviewTab] = useState<"specs" | "story" | "fit" | "reviews">("specs");
+  const [openAccordion, setOpenAccordion] = useState<"specs" | "story" | "fit" | "reviews" | null>("specs");
   const [previewSelectedSize, setPreviewSelectedSize] = useState("L");
   const [previewSelectedColor, setPreviewSelectedColor] = useState("charcoal");
 
@@ -569,71 +570,157 @@ export default function ProductDetailLayoutPanel() {
               </div>
             </div>
 
-            {/* Content Tabs (Specs, Story, Fit Guide, Reviews) */}
-            <div className="mt-6 pt-4 border-t border-border/40 space-y-3">
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-secondary/30 border border-border/40 overflow-x-auto scrollbar-none">
-                {[
-                  { id: "specs", label: "Garment Specs", icon: Sliders },
-                  { id: "story", label: "Atelier Story", icon: Sparkles },
-                  { id: "fit", label: "Fit & Measurements", icon: Ruler },
-                  { id: "reviews", label: "Verified Reviews", icon: MessageSquare },
-                ].map((t) => {
-                  const active = activePreviewTab === t.id;
-                  const Icon = t.icon;
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => setActivePreviewTab(t.id as any)}
-                      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                        active
-                          ? "bg-card text-foreground shadow-2xs font-bold border border-border/60"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <Icon className="w-3 h-3 text-primary" />
-                      <span>{t.label}</span>
-                    </button>
-                  );
-                })}
+            {/* ── LUXURY PRODUCT INTELLIGENCE (ACCORDION DISCLOSURES — NO ROW MENUS) ── */}
+            <div className="mt-6 pt-4 border-t border-border/40 space-y-2">
+              <div className="flex items-center justify-between pb-1">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground font-bold">
+                  Product Architecture &amp; Intelligence
+                </span>
+                <span className="text-[9px] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                  Interactive Disclosures
+                </span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-card/60 border border-border/50 text-xs space-y-1.5">
-                {activePreviewTab === "specs" && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10.5px]">
-                    <div>
-                      <span className="opacity-50 block font-mono text-[9px]">FABRIC DENSITY</span>
-                      <strong className="text-foreground">380 GSM French Terry</strong>
+              <div className="space-y-1.5">
+                {/* 1. Garment Specs */}
+                <div className="rounded-xl border border-border/60 bg-card/60 overflow-hidden transition-all">
+                  <button
+                    onClick={() => setOpenAccordion(openAccordion === "specs" ? null : "specs")}
+                    className="w-full flex items-center justify-between p-3 text-left hover:bg-secondary/20 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <Sliders className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-foreground">Garment Specifications</h4>
+                        <span className="text-[9.5px] text-muted-foreground">380 GSM • Combed Cotton • Dhaka Atelier</span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="opacity-50 block font-mono text-[9px]">COMPOSITION</span>
-                      <strong className="text-foreground">100% Combed Cotton</strong>
+                    <ChevronDown
+                      className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
+                        openAccordion === "specs" ? "rotate-180 text-primary" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {openAccordion === "specs" && (
+                    <div className="p-3 pt-0 border-t border-border/30 mt-1">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-[10.5px]">
+                        <div className="p-2 rounded-lg bg-secondary/30">
+                          <span className="opacity-50 block font-mono text-[8.5px] uppercase">Fabric Density</span>
+                          <strong className="text-foreground">380 GSM Heavy Terry</strong>
+                        </div>
+                        <div className="p-2 rounded-lg bg-secondary/30">
+                          <span className="opacity-50 block font-mono text-[8.5px] uppercase">Yarn Fiber</span>
+                          <strong className="text-foreground">100% Combed Cotton</strong>
+                        </div>
+                        <div className="p-2 rounded-lg bg-secondary/30">
+                          <span className="opacity-50 block font-mono text-[8.5px] uppercase">Atelier Origin</span>
+                          <strong className="text-foreground">Dhaka, Bangladesh</strong>
+                        </div>
+                        <div className="p-2 rounded-lg bg-secondary/30">
+                          <span className="opacity-50 block font-mono text-[8.5px] uppercase">Hardware</span>
+                          <strong className="text-foreground">Laser-Etched Aglets</strong>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <span className="opacity-50 block font-mono text-[9px]">ORIGIN</span>
-                      <strong className="text-foreground">Dhaka Atelier, BD</strong>
+                  )}
+                </div>
+
+                {/* 2. Atelier Story */}
+                <div className="rounded-xl border border-border/60 bg-card/60 overflow-hidden transition-all">
+                  <button
+                    onClick={() => setOpenAccordion(openAccordion === "story" ? null : "story")}
+                    className="w-full flex items-center justify-between p-3 text-left hover:bg-secondary/20 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-foreground">Atelier Craft &amp; Story</h4>
+                        <span className="text-[9.5px] text-muted-foreground">Yarn-dyed organic ring-spun cotton</span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="opacity-50 block font-mono text-[9px]">HARDWARE</span>
-                      <strong className="text-foreground">Custom Metal Aglets</strong>
+                    <ChevronDown
+                      className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
+                        openAccordion === "story" ? "rotate-180 text-primary" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {openAccordion === "story" && (
+                    <div className="p-3 pt-0 border-t border-border/30 mt-1">
+                      <p className="text-xs text-muted-foreground leading-relaxed pt-2">
+                        Engineered from yarn-dyed organic ring-spun cotton. Each piece is garment-dyed in Dhaka and enzyme washed for a broken-in vintage patina with heavyweight boxy drape.
+                      </p>
                     </div>
-                  </div>
-                )}
-                {activePreviewTab === "story" && (
-                  <p className="text-muted-foreground text-xs leading-relaxed">
-                    Engineered from yarn-dyed organic ring-spun cotton. Each piece is garment-dyed in Dhaka and enzyme washed for a broken-in vintage patina with heavyweight boxy drape.
-                  </p>
-                )}
-                {activePreviewTab === "fit" && (
-                  <p className="text-muted-foreground text-xs leading-relaxed">
-                    Boxy oversized silhouette with dropped shoulders. True to contemporary streetwear sizing. Take your normal size for relaxed drape, or size down for tailored fit.
-                  </p>
-                )}
-                {activePreviewTab === "reviews" && (
-                  <div className="flex items-center justify-between text-xs">
-                    <span>⭐️⭐️⭐️⭐️⭐️ &ldquo;Insane 380 GSM fabric weight and perfect boxy silhouette.&rdquo;</span>
-                    <span className="font-mono opacity-60 text-[9px]">Verified Buyer — 2 days ago</span>
-                  </div>
-                )}
+                  )}
+                </div>
+
+                {/* 3. Fit & Measurements */}
+                <div className="rounded-xl border border-border/60 bg-card/60 overflow-hidden transition-all">
+                  <button
+                    onClick={() => setOpenAccordion(openAccordion === "fit" ? null : "fit")}
+                    className="w-full flex items-center justify-between p-3 text-left hover:bg-secondary/20 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <Ruler className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-foreground">Fit Guidance &amp; Sizing</h4>
+                        <span className="text-[9.5px] text-muted-foreground">Boxy oversized streetwear silhouette</span>
+                      </div>
+                    </div>
+                    <ChevronDown
+                      className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
+                        openAccordion === "fit" ? "rotate-180 text-primary" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {openAccordion === "fit" && (
+                    <div className="p-3 pt-0 border-t border-border/30 mt-1">
+                      <p className="text-xs text-muted-foreground leading-relaxed pt-2">
+                        Boxy oversized silhouette with dropped shoulders. True to contemporary streetwear sizing. Take your normal size for relaxed drape, or size down for tailored fit.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Verified Reviews */}
+                <div className="rounded-xl border border-border/60 bg-card/60 overflow-hidden transition-all">
+                  <button
+                    onClick={() => setOpenAccordion(openAccordion === "reviews" ? null : "reviews")}
+                    className="w-full flex items-center justify-between p-3 text-left hover:bg-secondary/20 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <MessageSquare className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-foreground">Customer Reviews &amp; Ratings</h4>
+                        <span className="text-[9.5px] text-muted-foreground">⭐️⭐️⭐️⭐️⭐️ 4.9/5 (48 verified buyers)</span>
+                      </div>
+                    </div>
+                    <ChevronDown
+                      className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
+                        openAccordion === "reviews" ? "rotate-180 text-primary" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {openAccordion === "reviews" && (
+                    <div className="p-3 pt-0 border-t border-border/30 mt-1">
+                      <div className="flex items-center justify-between text-xs pt-2">
+                        <span>⭐️⭐️⭐️⭐️⭐️ &ldquo;Insane 380 GSM fabric weight and perfect boxy silhouette.&rdquo;</span>
+                        <span className="font-mono opacity-60 text-[9px]">Verified Buyer — 2 days ago</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
