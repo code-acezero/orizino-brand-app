@@ -1500,7 +1500,7 @@ const { data: products = [] } = useQuery({
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* ── TOP SYMMETRICAL CONTROL BAR ── */}
-      <div className="sticky top-[52px] z-20 bg-background/90 backdrop-blur-xl py-3 px-3.5 sm:px-5 rounded-2xl border border-border/50 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+      <div className="relative xl:sticky xl:top-[52px] z-10 bg-background/95 backdrop-blur-xl py-3 px-3.5 sm:px-5 rounded-2xl border border-border/50 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
             <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1565,7 +1565,7 @@ const { data: products = [] } = useQuery({
       </div>
 
       {/* ── MOBILE VIEW SELECTOR (Visible only on < xl screens) ── */}
-      <div className="xl:hidden flex items-center p-1 rounded-xl bg-secondary/30 border border-border/50">
+      <div className="xl:hidden flex items-center p-1.5 rounded-xl bg-secondary/40 border border-border/60 shadow-xs my-1">
         <button
           type="button"
           onClick={() => setMobileView("deck")}

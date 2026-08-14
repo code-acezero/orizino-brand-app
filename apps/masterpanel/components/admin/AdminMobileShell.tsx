@@ -251,7 +251,7 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
 
   // Lock body scroll behavior + native-feel touch
   useEffect(() => {
-    document.body.style.overscrollBehaviorY = "none";
+    document.body.style.overscrollBehaviorY = "contain";
     return () => {
       document.body.style.overscrollBehaviorY = "";
     };
@@ -599,9 +599,9 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
 
       {/* Main content */}
       <main
-        className="relative z-10 flex-1 px-3 overflow-auto"
+        className="relative z-10 flex-1 px-2.5 sm:px-3 overflow-y-auto overflow-x-hidden min-h-0 touch-pan-y"
         style={{
-          paddingBottom: "calc(72px + env(safe-area-inset-bottom))",
+          paddingBottom: "calc(84px + env(safe-area-inset-bottom))",
           WebkitOverflowScrolling: "touch",
         }}
       >
