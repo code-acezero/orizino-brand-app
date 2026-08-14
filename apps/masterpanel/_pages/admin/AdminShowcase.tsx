@@ -19,7 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import ImageUpload from "@/components/ImageUpload";
 import VideoUpload from "@/components/VideoUpload";
 import { toast } from "@/lib/app-toast";
-import { Plus, Pencil, Trash2, Settings2, Layers, GripVertical, Copy, Link2, Palette, Wand2, Eye, Monitor, Smartphone, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Play, Pause, Image, FileText, LayoutGrid, Type, ArrowUp, ArrowDown, RotateCcw, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, Settings2, Layers, GripVertical, Copy, Link2, Palette, Wand2, Eye, Monitor, Smartphone, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Play, Pause, Image, FileText, LayoutGrid, Type, ArrowUp, ArrowDown, ArrowLeft, RotateCcw, Check } from "lucide-react";
 import { useDragReorder } from "@/hooks/use-drag-reorder";
 import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
@@ -1124,9 +1124,7 @@ export function ProductShowcaseTab() {
       return val?.value ?? val;
     },
   });
-
-  // Products list for linking
-  const { data: products = [] } = useQuery({
+const { data: products = [] } = useQuery({
     queryKey: ["admin-products-list"],
     queryFn: async () => {
       const { data } = await supabase
@@ -1142,6 +1140,7 @@ export function ProductShowcaseTab() {
 
   const [isEnabled, setIsEnabled] = useState(true);
   const [showFeatured, setShowFeatured] = useState(false);
+  const [mobileView, setMobileView] = useState<"deck" | "inspector">("deck");
   const hasInitialized = useRef(false);
 
   useEffect(() => {
@@ -1323,6 +1322,7 @@ export function ProductShowcaseTab() {
     const next = [...entries, newEntry];
     setEntries(next);
     setSelectedId(newEntry.id);
+    setMobileView("inspector");
     toast.success("New card added and opened in inspector");
   };
 
@@ -1338,6 +1338,7 @@ export function ProductShowcaseTab() {
     const next = [...entries, dupe];
     setEntries(next);
     setSelectedId(dupe.id);
+    setMobileView("inspector");
     toast.success("Card duplicated and selected");
   };
 
@@ -1417,6 +1418,7 @@ export function ProductShowcaseTab() {
     if (merged.length > 0 && !selectedId) {
       setSelectedId(merged[0].id);
     }
+    setMobileView("inspector");
     toast.success(`Imported ${newCards.length} featured products into the Bento Deck`);
   };
 
@@ -1455,7 +1457,7 @@ export function ProductShowcaseTab() {
           }
     );
     setEntries(updated);
-    toast.success("Applied this card's styling and layout to all other cards!");
+    toast.success(`Applied style config from "${sourceCard.title || 'Card'}" to all ${entries.length} cards`);
   };
 
   const selectedCard = entries.find((e) => e.id === selectedId) || null;
@@ -1464,43 +1466,45 @@ export function ProductShowcaseTab() {
   const linkedProduct = selectedCard?.product_id ? products.find((p: any) => p.id === selectedCard.product_id) : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* ── TOP SYMMETRICAL CONTROL BAR ── */}
-      <div className="sticky top-[52px] z-20 bg-background/90 backdrop-blur-xl py-3 px-4 md:px-6 rounded-2xl border border-border/50 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="sticky top-[52px] z-20 bg-background/90 backdrop-blur-xl py-3 px-3.5 sm:px-5 rounded-2xl border border-border/50 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-            <LayoutGrid className="w-5 h-5" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+            <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+              <h2 className="text-sm sm:text-base md:text-lg font-bold tracking-tight text-foreground truncate">
                 Cinematic Bento Showcase
               </h2>
-              <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary bg-primary/5">
-                {entries.filter(e => e.is_active !== false).length} Active / {entries.length} Total
+              <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary bg-primary/5 shrink-0">
+                {entries.filter(e => e.is_active !== false).length}/{entries.length} Active
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] sm:text-xs text-muted-foreground truncate sm:whitespace-normal">
               Configure symmetrical bento architecture, luxury styling presets, and editorial copy.
             </p>
           </div>
         </div>
 
         {/* Global Controls & Actions */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border/40 bg-secondary/15">
-            <Label className="text-xs font-medium cursor-pointer">Section Enabled</Label>
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
+          <div className="flex items-center justify-between sm:justify-start gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-border/40 bg-secondary/15">
+            <Label className="text-[11px] sm:text-xs font-medium cursor-pointer">Enabled</Label>
             <Switch
               checked={isEnabled}
               onCheckedChange={(val) => setIsEnabled(val)}
+              className="scale-90 sm:scale-100"
             />
           </div>
 
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border/40 bg-secondary/15">
-            <Label className="text-xs font-medium cursor-pointer">Auto Fallback</Label>
+          <div className="flex items-center justify-between sm:justify-start gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-border/40 bg-secondary/15">
+            <Label className="text-[11px] sm:text-xs font-medium cursor-pointer">Auto Fallback</Label>
             <Switch
               checked={showFeatured}
               onCheckedChange={(val) => setShowFeatured(val)}
+              className="scale-90 sm:scale-100"
             />
           </div>
 
@@ -1509,10 +1513,10 @@ export function ProductShowcaseTab() {
             variant="outline"
             size="sm"
             onClick={handleImportFeaturedProducts}
-            className="h-9 px-3 text-xs font-semibold gap-1.5 border-border/60 hover:bg-secondary/20"
+            className="h-8 sm:h-9 px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold gap-1.5 border-border/60 hover:bg-secondary/20 w-full sm:w-auto"
           >
             <Layers className="w-3.5 h-3.5 text-primary" />
-            Import Featured
+            <span className="truncate">Import Featured</span>
           </Button>
 
           <Button
@@ -1520,28 +1524,56 @@ export function ProductShowcaseTab() {
             variant="outline"
             size="sm"
             onClick={handleAddCard}
-            className="h-9 px-3 text-xs font-semibold gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+            className="h-8 sm:h-9 px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold gap-1.5 border-primary/30 text-primary hover:bg-primary/10 w-full sm:w-auto"
           >
             <Plus className="w-3.5 h-3.5" />
-            Add Bento Card
+            <span className="truncate">Add Bento Card</span>
           </Button>
         </div>
+      </div>
+
+      {/* ── MOBILE VIEW SELECTOR (Visible only on < xl screens) ── */}
+      <div className="xl:hidden flex items-center p-1 rounded-xl bg-secondary/30 border border-border/50">
+        <button
+          type="button"
+          onClick={() => setMobileView("deck")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            mobileView === "deck"
+              ? "bg-card text-foreground shadow-xs border border-border/60"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5 text-primary" />
+          <span>Bento Deck ({entries.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileView("inspector")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            mobileView === "inspector"
+              ? "bg-card text-foreground shadow-xs border border-border/60"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Settings2 className="w-3.5 h-3.5 text-primary" />
+          <span>Inspector {selectedCard ? `(#${selectedIndex + 1})` : ""}</span>
+        </button>
       </div>
 
       {/* ── MAIN SYMMETRICAL SPLIT WORKSPACE (NO POPUP) ── */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         
         {/* LEFT COLUMN: Bento Cards Deck */}
-        <div className="xl:col-span-5 space-y-4">
+        <div className={`space-y-4 ${mobileView === "inspector" ? "hidden xl:block" : "block"} xl:col-span-5`}>
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-foreground">
                 Bento Deck ({entries.length})
               </h3>
             </div>
-            <span className="text-[11px] text-muted-foreground font-mono">
-              Click a card to inspect & edit
+            <span className="text-[10px] sm:text-[11px] text-muted-foreground font-mono">
+              Tap card to inspect & edit
             </span>
           </div>
 
@@ -1562,7 +1594,7 @@ export function ProductShowcaseTab() {
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5 sm:space-y-3">
               {entries
                 .sort((a, b) => a.sort_order - b.sort_order)
                 .map((entry, idx) => {
@@ -1574,31 +1606,34 @@ export function ProductShowcaseTab() {
                   return (
                     <div
                       key={entry.id}
-                      onClick={() => setSelectedId(entry.id)}
-                      className={`group relative p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                      onClick={() => {
+                        setSelectedId(entry.id);
+                        setMobileView("inspector");
+                      }}
+                      className={`group relative p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer ${
                         isSelected
                           ? "border-primary bg-primary/5 shadow-md ring-2 ring-primary/30"
                           : "border-border/50 bg-card/40 hover:border-border hover:bg-card/75 shadow-sm"
                       } ${!isActive && !isSelected ? "opacity-60" : ""}`}
                     >
-                      <div className="flex items-center gap-3.5">
+                      <div className="flex items-center gap-2.5 sm:gap-3.5">
                         {/* Thumbnail + Layout badge */}
-                        <div className="relative w-20 h-16 rounded-xl overflow-hidden bg-secondary/30 shrink-0 border border-border/40">
+                        <div className="relative w-16 h-14 sm:w-20 sm:h-16 rounded-xl overflow-hidden bg-secondary/30 shrink-0 border border-border/40">
                           {entry.image_url ? (
                             <img src={entry.image_url} alt="" className="w-full h-full object-cover" />
                           ) : prod?.thumbnail ? (
                             <img src={prod.thumbnail} alt="" className="w-full h-full object-cover" />
                           ) : entry.video_url ? (
                             <div className="w-full h-full flex items-center justify-center text-primary bg-primary/10">
-                              <Play className="w-5 h-5" />
+                              <Play className="w-4 h-4 sm:w-5 sm:h-5" />
                             </div>
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                              <Image className="w-5 h-5" />
+                              <Image className="w-4 h-4 sm:w-5 sm:h-5" />
                             </div>
                           )}
 
-                          <span className="absolute bottom-1 right-1 font-mono text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-background/80 backdrop-blur-xs border border-white/10 text-foreground">
+                          <span className="absolute bottom-0.5 right-0.5 font-mono text-[7.5px] sm:text-[8px] font-bold uppercase px-1 sm:px-1.5 py-0.5 rounded bg-background/80 backdrop-blur-xs border border-white/10 text-foreground">
                             {entry.layout_type || "auto"}
                           </span>
                         </div>
@@ -1606,8 +1641,8 @@ export function ProductShowcaseTab() {
                         {/* Title & Metadata */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-1 mb-0.5">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-mono font-bold shrink-0 ${
+                            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                              <span className={`w-4 h-4 sm:w-5 sm:h-5 rounded-md flex items-center justify-center text-[9px] sm:text-[10px] font-mono font-bold shrink-0 ${
                                 isSelected ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
                               }`}>
                                 {idx + 1}
@@ -1617,32 +1652,32 @@ export function ProductShowcaseTab() {
                               </p>
                             </div>
                             {prod?.price && (
-                              <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                              <span className="font-mono text-[11px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
                                 ৳{Number(prod.price).toLocaleString()}
                               </span>
                             )}
                           </div>
 
-                          <p className="text-[10.5px] text-muted-foreground truncate mb-1.5">
+                          <p className="text-[10px] sm:text-[10.5px] text-muted-foreground truncate mb-1">
                             {prod ? `Linked: ${prod.name}` : entry.subtitle || "No product linked"}
                           </p>
 
                           {/* Attribute Tags */}
                           <div className="flex flex-wrap gap-1 items-center">
                             {parent ? (
-                              <span className="text-[8.5px] font-mono font-semibold px-1.5 py-0.5 rounded border border-primary/30 text-primary bg-primary/10">
-                                🔗 Follows #{entries.findIndex(x => x.id === parent.id) + 1}
+                              <span className="text-[8px] sm:text-[8.5px] font-mono font-semibold px-1.5 py-0.5 rounded border border-primary/30 text-primary bg-primary/10">
+                                🔗 #{entries.findIndex(x => x.id === parent.id) + 1}
                               </span>
                             ) : (
-                              <span className="text-[8.5px] font-mono px-1.5 py-0.5 rounded border border-border/60 bg-secondary/30 text-muted-foreground">
-                                ⚙️ Individual
+                              <span className="text-[8px] sm:text-[8.5px] font-mono px-1.5 py-0.5 rounded border border-border/60 bg-secondary/30 text-muted-foreground">
+                                ⚙️ Custom
                               </span>
                             )}
-                            <span className="text-[8.5px] font-mono uppercase px-1.5 py-0.5 rounded border border-border/60 bg-secondary/30 text-foreground/80">
+                            <span className="text-[8px] sm:text-[8.5px] font-mono uppercase px-1.5 py-0.5 rounded border border-border/60 bg-secondary/30 text-foreground/80">
                               {entry.card_style || "glass"}
                             </span>
                             {entry.badge_tag && (
-                              <span className="text-[8.5px] font-mono uppercase px-1.5 py-0.5 rounded bg-background/60 border border-white/10 text-cherry dark:text-foreground/90 font-bold">
+                              <span className="text-[8px] sm:text-[8.5px] font-mono uppercase px-1.5 py-0.5 rounded bg-background/60 border border-white/10 text-cherry dark:text-foreground/90 font-bold max-w-[110px] truncate">
                                 {entry.badge_tag}
                               </span>
                             )}
@@ -1650,12 +1685,12 @@ export function ProductShowcaseTab() {
                         </div>
 
                         {/* Quick Controls */}
-                        <div className="flex flex-col items-center gap-1 shrink-0 pl-1 border-l border-border/30">
+                        <div className="flex flex-col items-center justify-between gap-1 shrink-0 pl-1 border-l border-border/30">
                           <div className="flex items-center gap-0.5">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                              className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground hover:text-foreground"
                               onClick={(e) => handleMoveCard(idx, -1, e)}
                               disabled={idx === 0}
                               title="Move Up"
@@ -1665,7 +1700,7 @@ export function ProductShowcaseTab() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                              className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground hover:text-foreground"
                               onClick={(e) => handleMoveCard(idx, 1, e)}
                               disabled={idx === entries.length - 1}
                               title="Move Down"
@@ -1674,18 +1709,18 @@ export function ProductShowcaseTab() {
                             </Button>
                           </div>
 
-                          <div className="flex items-center gap-1.5 pt-0.5">
+                          <div className="flex items-center gap-1 pt-0.5">
                             <Switch
                               checked={isActive}
                               onCheckedChange={(val) => {
                                 updateCard(entry.id, { is_active: val });
                               }}
-                              className="scale-75 origin-center"
+                              className="scale-[0.65] sm:scale-75 origin-center"
                             />
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-muted-foreground hover:text-primary"
+                              className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground hover:text-primary"
                               onClick={(e) => handleDuplicateCard(entry, e)}
                               title="Duplicate Card"
                             >
@@ -1694,7 +1729,7 @@ export function ProductShowcaseTab() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                              className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground hover:text-destructive"
                               onClick={(e) => handleDeleteCard(entry.id, e)}
                               title="Delete Card"
                             >
@@ -1711,11 +1746,11 @@ export function ProductShowcaseTab() {
         </div>
 
         {/* RIGHT COLUMN: Dedicated Symmetrical Card Inspector */}
-        <div className="xl:col-span-7 sticky top-[130px] self-start max-h-[calc(100vh-150px)] overflow-y-auto pr-1">
+        <div className={`xl:col-span-7 xl:sticky xl:top-[130px] xl:self-start xl:max-h-[calc(100vh-150px)] xl:overflow-y-auto pr-0 xl:pr-1 ${mobileView === "deck" ? "hidden xl:block" : "block"}`}>
           {!selectedCard ? (
-            <div className="py-20 px-8 rounded-2xl border border-dashed border-border/50 bg-card/20 text-center flex flex-col items-center justify-center">
-              <LayoutGrid className="w-12 h-12 text-muted-foreground/30 mb-3" />
-              <h3 className="text-base font-bold text-foreground mb-1">No Card Selected for Inspection</h3>
+            <div className="py-16 sm:py-20 px-6 sm:px-8 rounded-2xl border border-dashed border-border/50 bg-card/20 text-center flex flex-col items-center justify-center">
+              <LayoutGrid className="w-10 h-10 sm:w-12 sm:h-12 text-muted-foreground/30 mb-3" />
+              <h3 className="text-sm sm:text-base font-bold text-foreground mb-1">No Card Selected for Inspection</h3>
               <p className="text-xs text-muted-foreground max-w-sm mb-4">
                 Select any card from the deck on the left to edit its content, layout, styling, and specs inline.
               </p>
@@ -1726,32 +1761,43 @@ export function ProductShowcaseTab() {
           ) : (
             <Card className="border-border/50 bg-card/50 backdrop-blur-md shadow-md overflow-hidden">
               {/* Header */}
-              <CardHeader className="border-b border-border/30 bg-secondary/15 p-4 sm:p-5 flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="w-7 h-7 rounded-lg bg-primary text-primary-foreground font-mono font-bold text-xs flex items-center justify-center shrink-0">
-                    #{selectedIndex + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <CardTitle className="text-sm sm:text-base font-bold truncate">
-                      {selectedCard.title || "Untitled Card"}
-                    </CardTitle>
-                    <p className="text-[11px] text-muted-foreground truncate">
-                      {selectedCard.layout_type || "auto"} span • {selectedCard.card_style || "glass"} theme
-                    </p>
+              <CardHeader className="border-b border-border/30 bg-secondary/15 p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center justify-between sm:justify-start gap-2.5 min-w-0 w-full sm:w-auto">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setMobileView("deck")}
+                      className="xl:hidden h-8 px-2 text-xs font-semibold gap-1 text-muted-foreground hover:text-foreground shrink-0"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" /> Deck
+                    </Button>
+
+                    <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-primary text-primary-foreground font-mono font-bold text-xs flex items-center justify-center shrink-0">
+                      #{selectedIndex + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <CardTitle className="text-xs sm:text-sm md:text-base font-bold truncate">
+                        {selectedCard.title || "Untitled Card"}
+                      </CardTitle>
+                      <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">
+                        {selectedCard.layout_type || "auto"} span • {selectedCard.card_style || "glass"} theme
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                   {selectedCard.product_id && selectedCard.product_id !== "none" && (
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => handleAutofillFromProduct(selectedCard.product_id!)}
-                      className="h-8 px-2.5 text-xs font-semibold gap-1 border-border/60 hover:bg-secondary/30"
+                      className="h-7 sm:h-8 px-2 sm:px-2.5 text-[11px] sm:text-xs font-semibold gap-1 border-border/60 hover:bg-secondary/30"
                       title="Re-sync title, image, price, and slug from product"
                     >
-                      <RotateCcw className="w-3 h-3 text-primary" /> Sync Product
+                      <RotateCcw className="w-3 h-3 text-primary" /> Sync
                     </Button>
                   )}
                   <Button
@@ -1759,7 +1805,7 @@ export function ProductShowcaseTab() {
                     variant="outline"
                     size="sm"
                     onClick={() => applyStyleToAllCards(selectedCard)}
-                    className="h-8 px-2.5 text-xs font-semibold gap-1 border-primary/30 text-primary hover:bg-primary/10"
+                    className="h-7 sm:h-8 px-2 sm:px-2.5 text-[11px] sm:text-xs font-semibold gap-1 border-primary/30 text-primary hover:bg-primary/10"
                     title="Apply this card's styling and layout to all deck cards"
                   >
                     <Copy className="w-3 h-3" /> Apply to All
