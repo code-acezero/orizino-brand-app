@@ -253,6 +253,7 @@ const GALLERY_ENGINES: {
   },
 ];
 
+// ── 1. STUDIO INFINITY LOOP 3D PREVIEW ──
 const AdminStudioInfinityPreview = ({
   images,
   activeIdx,
@@ -279,7 +280,7 @@ const AdminStudioInfinityPreview = ({
         onNavigate(next);
         return next;
       });
-    }, 4000);
+    }, 4500);
     return () => clearInterval(timer);
   }, [total, onNavigate]);
 
@@ -296,23 +297,23 @@ const AdminStudioInfinityPreview = ({
       return { x: "0%", scale: 1, rotateY: 0, opacity: 1, zIndex: 30 };
     }
     if (diff === -1) {
-      return { x: "-64%", scale: 0.82, rotateY: 28, opacity: 0.42, zIndex: 20 };
+      return { x: "-64%", scale: 0.84, rotateY: 28, opacity: 0.45, zIndex: 20 };
     }
     if (diff === 1) {
-      return { x: "64%", scale: 0.82, rotateY: -28, opacity: 0.42, zIndex: 20 };
+      return { x: "64%", scale: 0.84, rotateY: -28, opacity: 0.45, zIndex: 20 };
     }
     const isRight = diff > 0;
-    return { x: isRight ? "115%" : "-115%", scale: 0.6, rotateY: isRight ? -45 : 45, opacity: 0, zIndex: 10 };
+    return { x: isRight ? "120%" : "-120%", scale: 0.6, rotateY: isRight ? -45 : 45, opacity: 0, zIndex: 10 };
   };
 
   return (
-    <div className="relative aspect-square rounded-2xl overflow-hidden bg-black flex flex-col justify-between p-3 select-none group border border-border/70">
+    <div className="relative h-[480px] w-full rounded-2xl overflow-hidden bg-black flex flex-col justify-between p-4 select-none group border border-border/70">
       {/* Ambient background blur */}
       <div
         className="absolute -inset-8 bg-cover bg-center transition-all duration-700 pointer-events-none"
         style={{
           backgroundImage: `url(${images[currentIdx]})`,
-          filter: "blur(36px) brightness(0.35) saturate(1.2)",
+          filter: "blur(40px) brightness(0.35) saturate(1.2)",
           transform: "scale(1.1)",
         }}
       />
@@ -320,18 +321,18 @@ const AdminStudioInfinityPreview = ({
 
       {/* Header Badges */}
       <div className="w-full flex items-center justify-between z-20">
-        <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
+        <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
           Infinity Loop 3D
         </span>
         {showScarcity && (
-          <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+          <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
             <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
           </span>
         )}
       </div>
 
       {/* 3D Perspective Stage */}
-      <div className="relative flex items-center justify-center my-auto w-full h-52 pointer-events-auto overflow-hidden" style={{ perspective: "850px", transformStyle: "preserve-3d" }}>
+      <div className="relative flex items-center justify-center my-auto w-full h-[360px] pointer-events-auto overflow-hidden" style={{ perspective: "950px", transformStyle: "preserve-3d" }}>
         {images.map((img, i) => {
           const style = getCardStyle(i);
           const isCenter = i === currentIdx;
@@ -351,8 +352,8 @@ const AdminStudioInfinityPreview = ({
               }}
               style={{
                 position: "absolute",
-                width: "9.5rem",
-                height: "13rem",
+                width: "14.5rem",
+                height: "20.5rem",
                 transformStyle: "preserve-3d",
                 zIndex: style.zIndex,
               }}
@@ -360,12 +361,12 @@ const AdminStudioInfinityPreview = ({
                 setCurrentIdx(i);
                 onNavigate(i);
               }}
-              className="cursor-pointer rounded-xl overflow-hidden shadow-none border-none outline-none"
+              className="cursor-pointer rounded-2xl overflow-hidden shadow-2xl border-none outline-none"
             >
-              <img src={img} alt="" className="w-full h-full object-cover select-none pointer-events-none rounded-xl" />
+              <img src={img} alt="" className="w-full h-full object-cover select-none pointer-events-none rounded-2xl" />
               <div
-                className={`absolute inset-0 transition-opacity duration-300 pointer-events-none rounded-xl ${
-                  isCenter ? "bg-gradient-to-t from-black/35 via-transparent to-transparent" : "bg-black/30 hover:bg-black/10"
+                className={`absolute inset-0 transition-opacity duration-300 pointer-events-none rounded-2xl ${
+                  isCenter ? "bg-gradient-to-t from-black/35 via-transparent to-transparent" : "bg-black/35 hover:bg-black/15"
                 }`}
               />
             </motion.div>
@@ -381,7 +382,7 @@ const AdminStudioInfinityPreview = ({
             setCurrentIdx(next);
             onNavigate(next);
           }}
-          className="absolute left-1 top-1/2 -translate-y-1/2 z-30 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/65 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer transition-all hover:scale-105"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -393,26 +394,284 @@ const AdminStudioInfinityPreview = ({
             setCurrentIdx(next);
             onNavigate(next);
           }}
-          className="absolute right-1 top-1/2 -translate-y-1/2 z-30 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/65 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer transition-all hover:scale-105"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
       {/* Bottom Counter and Dot Indicator */}
-      <div className="z-20 flex items-center justify-center gap-2">
-        <div className="flex items-center gap-1">
+      <div className="z-20 flex items-center justify-center gap-2.5">
+        <div className="flex items-center gap-1.5">
           {images.map((_, i) => (
             <div
               key={i}
-              className={`h-1 rounded-full transition-all ${
-                i === currentIdx ? "w-3.5 bg-primary" : "w-1 bg-white/30"
+              className={`h-1.5 rounded-full transition-all ${
+                i === currentIdx ? "w-4 bg-primary" : "w-1.5 bg-white/30"
               }`}
             />
           ))}
         </div>
-        <span className="text-[9px] font-mono text-white/80 bg-black/60 px-2 py-0.5 rounded-full border border-white/15">
+        <span className="text-[9.5px] font-mono text-white/80 bg-black/60 px-2.5 py-0.5 rounded-full border border-white/15">
           {currentIdx + 1} / {total}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// ── 2. STUDIO COVERFLOW 3D PREVIEW ──
+const AdminStudioCoverflowPreview = ({
+  images,
+  activeIdx,
+  onNavigate,
+  showScarcity,
+}: {
+  images: string[];
+  activeIdx: number;
+  onNavigate: (idx: number) => void;
+  showScarcity: boolean;
+}) => {
+  const total = images.length;
+  const [currentIdx, setCurrentIdx] = React.useState(activeIdx);
+
+  React.useEffect(() => {
+    setCurrentIdx(activeIdx);
+  }, [activeIdx]);
+
+  const getCardStyle = (idx: number) => {
+    const half = total / 2;
+    let diff = idx - currentIdx;
+    while (diff > half) diff -= total;
+    while (diff < -half) diff += total;
+
+    if (diff === 0) {
+      return { x: "0%", scale: 1, rotateY: 0, opacity: 1, zIndex: 30 };
+    }
+    if (diff === -1) {
+      return { x: "-62%", scale: 0.84, rotateY: 35, opacity: 0.48, zIndex: 20 };
+    }
+    if (diff === 1) {
+      return { x: "62%", scale: 0.84, rotateY: -35, opacity: 0.48, zIndex: 20 };
+    }
+    const isRight = diff > 0;
+    return { x: isRight ? "115%" : "-115%", scale: 0.6, rotateY: isRight ? -45 : 45, opacity: 0, zIndex: 10 };
+  };
+
+  return (
+    <div className="relative h-[480px] w-full rounded-2xl overflow-hidden bg-black flex flex-col justify-between p-4 select-none group border border-border/70">
+      <div
+        className="absolute -inset-8 bg-cover bg-center transition-all duration-700 pointer-events-none"
+        style={{
+          backgroundImage: `url(${images[currentIdx]})`,
+          filter: "blur(40px) brightness(0.35) saturate(1.2)",
+          transform: "scale(1.1)",
+        }}
+      />
+      <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/90 pointer-events-none" />
+
+      <div className="w-full flex items-center justify-between z-20">
+        <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
+          Coverflow 3D
+        </span>
+        {showScarcity && (
+          <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+            <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
+          </span>
+        )}
+      </div>
+
+      <div className="relative flex items-center justify-center my-auto w-full h-[360px] pointer-events-auto overflow-hidden" style={{ perspective: "900px", transformStyle: "preserve-3d" }}>
+        {images.map((img, i) => {
+          const style = getCardStyle(i);
+          const isCenter = i === currentIdx;
+
+          return (
+            <motion.div
+              key={i}
+              animate={{
+                x: style.x,
+                scale: style.scale,
+                rotateY: style.rotateY,
+                opacity: style.opacity,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 180,
+                damping: 24,
+                mass: 0.7,
+              }}
+              style={{
+                position: "absolute",
+                width: "14.5rem",
+                height: "20.5rem",
+                transformStyle: "preserve-3d",
+                zIndex: style.zIndex,
+              }}
+              onClick={() => {
+                setCurrentIdx(i);
+                onNavigate(i);
+              }}
+              className="cursor-pointer rounded-2xl overflow-hidden shadow-2xl border border-white/10"
+            >
+              <img src={img} alt="" className="w-full h-full object-cover select-none pointer-events-none rounded-2xl" />
+              <div
+                className={`absolute inset-0 transition-opacity duration-300 pointer-events-none rounded-2xl ${
+                  isCenter ? "bg-gradient-to-t from-black/25 via-transparent to-transparent" : "bg-black/40 hover:bg-black/20"
+                }`}
+              />
+            </motion.div>
+          );
+        })}
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            const next = (currentIdx - 1 + total) % total;
+            setCurrentIdx(next);
+            onNavigate(next);
+          }}
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/65 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer transition-all hover:scale-105"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            const next = (currentIdx + 1) % total;
+            setCurrentIdx(next);
+            onNavigate(next);
+          }}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/65 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer transition-all hover:scale-105"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="z-20 flex items-center justify-center gap-2.5">
+        <div className="flex items-center gap-1.5">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                setCurrentIdx(i);
+                onNavigate(i);
+              }}
+              className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                i === currentIdx ? "w-5 bg-primary" : "w-1.5 bg-white/30 hover:bg-white/60"
+              }`}
+            />
+          ))}
+        </div>
+        <span className="text-[9.5px] font-mono text-white/80 bg-black/60 px-2.5 py-0.5 rounded-full border border-white/15">
+          {currentIdx + 1} / {total}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// ── 3. STUDIO PARALLAX STACK 3D PREVIEW ──
+const AdminStudioParallaxStackPreview = ({
+  images,
+  activeIdx,
+  onNavigate,
+  showScarcity,
+}: {
+  images: string[];
+  activeIdx: number;
+  onNavigate: (idx: number) => void;
+  showScarcity: boolean;
+}) => {
+  const total = images.length;
+  const [currentIdx, setCurrentIdx] = React.useState(activeIdx);
+
+  React.useEffect(() => {
+    setCurrentIdx(activeIdx);
+  }, [activeIdx]);
+
+  return (
+    <div className="relative h-[480px] w-full rounded-2xl overflow-hidden bg-black flex flex-col justify-between p-4 select-none group border border-border/70">
+      <div
+        className="absolute -inset-8 bg-cover bg-center transition-all duration-700 pointer-events-none"
+        style={{
+          backgroundImage: `url(${images[currentIdx]})`,
+          filter: "blur(40px) brightness(0.35) saturate(1.2)",
+          transform: "scale(1.1)",
+        }}
+      />
+      <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/90 pointer-events-none" />
+
+      <div className="w-full flex items-center justify-between z-20">
+        <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
+          Parallax Stack 3D
+        </span>
+        {showScarcity && (
+          <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+            <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
+          </span>
+        )}
+      </div>
+
+      <div className="relative flex items-center justify-center my-auto w-full h-[360px] pointer-events-auto" style={{ perspective: "900px" }}>
+        {/* Back card */}
+        <div
+          className="absolute w-[14rem] h-[19.5rem] rounded-2xl overflow-hidden border border-white/10 opacity-35 transition-all duration-300 shadow-2xl"
+          style={{ transform: "translateY(-18px) scale(0.88)" }}
+        >
+          <img src={images[(currentIdx + 2) % total]} alt="" className="w-full h-full object-cover" />
+        </div>
+        {/* Mid card */}
+        <div
+          className="absolute w-[14.5rem] h-[20rem] rounded-2xl overflow-hidden border border-white/15 opacity-65 transition-all duration-300 shadow-2xl"
+          style={{ transform: "translateY(-9px) scale(0.94)" }}
+        >
+          <img src={images[(currentIdx + 1) % total]} alt="" className="w-full h-full object-cover" />
+        </div>
+        {/* Front active card */}
+        <div
+          className="relative w-[15rem] h-[20.5rem] rounded-2xl overflow-hidden border border-primary/50 shadow-2xl z-20 transition-all duration-300 cursor-pointer"
+          onClick={() => {
+            const next = (currentIdx + 1) % total;
+            setCurrentIdx(next);
+            onNavigate(next);
+          }}
+        >
+          <img src={images[currentIdx]} alt="" className="w-full h-full object-cover" />
+        </div>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            const next = (currentIdx - 1 + total) % total;
+            setCurrentIdx(next);
+            onNavigate(next);
+          }}
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/65 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer transition-all hover:scale-105"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            const next = (currentIdx + 1) % total;
+            setCurrentIdx(next);
+            onNavigate(next);
+          }}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/65 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer transition-all hover:scale-105"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="z-20 text-center">
+        <span className="text-[9.5px] font-mono text-white/80 bg-black/60 px-3 py-0.5 rounded-full border border-white/15">
+          Card {currentIdx + 1} of {total} (Click to cycle)
         </span>
       </div>
     </div>
@@ -609,70 +868,51 @@ export default function ProductDetailLayoutPanel() {
 
                   if (cfg.gallery === "coverflow") {
                     return (
-                      <div className="relative aspect-square rounded-2xl overflow-hidden border border-border/70 bg-card/60 flex flex-col justify-between p-3 group">
-                        <div className="w-full flex items-center justify-between z-10">
-                          <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
-                            Coverflow 3D
-                          </span>
-                          {cfg.show_scarcity_badge && (
-                            <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
-                              <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
-                            </span>
-                          )}
-                        </div>
+                      <AdminStudioCoverflowPreview
+                        images={galleryImages}
+                        activeIdx={previewGalleryActiveIdx}
+                        onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
+                        showScarcity={cfg.show_scarcity_badge}
+                      />
+                    );
+                  }
 
-                        {/* 3D Coverflow Stage */}
-                        <div className="relative flex items-center justify-center my-auto w-full h-44" style={{ perspective: "900px" }}>
-                          <div
-                            className="absolute w-28 h-36 rounded-xl overflow-hidden border border-border/60 opacity-50 cursor-pointer transition-all duration-300"
-                            style={{ transform: "translateX(-60px) rotateY(35deg) scale(0.85)" }}
-                            onClick={() => setPreviewGalleryActiveIdx((p) => (p - 1 + galleryImages.length) % galleryImages.length)}
-                          >
-                            <img src={galleryImages[(previewGalleryActiveIdx + 1) % galleryImages.length]} alt="" className="w-full h-full object-cover" />
-                          </div>
-                          <div
-                            className="relative w-36 h-44 rounded-2xl overflow-hidden border border-primary ring-1 ring-primary/40 z-10 transition-all duration-300"
-                          >
-                            <img src={activeImg} alt="" className="w-full h-full object-cover" />
-                          </div>
-                          <div
-                            className="absolute w-28 h-36 rounded-xl overflow-hidden border border-border/60 opacity-50 cursor-pointer transition-all duration-300"
-                            style={{ transform: "translateX(60px) rotateY(-35deg) scale(0.85)" }}
-                            onClick={() => setPreviewGalleryActiveIdx((p) => (p + 1) % galleryImages.length)}
-                          >
-                            <img src={galleryImages[(previewGalleryActiveIdx + 2) % galleryImages.length]} alt="" className="w-full h-full object-cover" />
-                          </div>
-                        </div>
-
-                        {/* Indicators & Navigation */}
-                        <div className="flex items-center justify-center gap-1.5 z-10">
-                          {galleryImages.map((_, i) => (
-                            <button
-                              key={i}
-                              onClick={() => setPreviewGalleryActiveIdx(i)}
-                              className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                                i === previewGalleryActiveIdx ? "w-5 bg-primary" : "w-1.5 bg-foreground/25 hover:bg-foreground/50"
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
+                  if (cfg.gallery === "parallax-stack") {
+                    return (
+                      <AdminStudioParallaxStackPreview
+                        images={galleryImages}
+                        activeIdx={previewGalleryActiveIdx}
+                        onNavigate={(idx) => setPreviewGalleryActiveIdx(idx)}
+                        showScarcity={cfg.show_scarcity_badge}
+                      />
                     );
                   }
 
                   if (cfg.gallery === "filmstrip") {
                     return (
-                      <div className="space-y-2">
-                        <div className="relative aspect-[16/10] rounded-2xl overflow-hidden border border-border/70 bg-black flex items-center justify-center group">
+                      <div className="h-[480px] flex flex-col justify-between rounded-2xl overflow-hidden border border-border/70 bg-black p-3 group select-none">
+                        <div className="w-full flex items-center justify-between z-10">
+                          <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
+                            Filmstrip Cinema
+                          </span>
+                          {cfg.show_scarcity_badge && (
+                            <span className="text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+                              <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Main Film Frame */}
+                        <div className="relative h-[360px] w-full rounded-xl overflow-hidden bg-black flex items-center justify-center border border-white/10">
                           {/* Left sprocket */}
                           <div className="absolute top-0 bottom-0 left-0 w-4 z-10 flex flex-col justify-around items-center bg-black/90 border-r border-white/10">
-                            {[1, 2, 3, 4, 5].map((i) => (
+                            {[1, 2, 3, 4, 5, 6].map((i) => (
                               <div key={i} className="w-1.5 h-1.5 rounded-[1px] bg-white/20" />
                             ))}
                           </div>
                           {/* Right sprocket */}
                           <div className="absolute top-0 bottom-0 right-0 w-4 z-10 flex flex-col justify-around items-center bg-black/90 border-l border-white/10">
-                            {[1, 2, 3, 4, 5].map((i) => (
+                            {[1, 2, 3, 4, 5, 6].map((i) => (
                               <div key={i} className="w-1.5 h-1.5 rounded-[1px] bg-white/20" />
                             ))}
                           </div>
@@ -680,24 +920,24 @@ export default function ProductDetailLayoutPanel() {
                           <img
                             src={activeImg}
                             alt=""
-                            className="w-full h-full object-cover px-4"
+                            className="w-full h-full object-cover px-4 rounded-xl"
                           />
 
-                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/75 backdrop-blur-md rounded-full px-2.5 py-0.5 text-[8.5px] font-mono text-white border border-white/15">
+                          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md rounded-full px-3 py-0.5 text-[8.5px] font-mono text-white border border-white/15">
                             FRAME 0{previewGalleryActiveIdx + 1} / 0{galleryImages.length}
                           </div>
                         </div>
 
                         {/* Filmstrip thumbnails */}
-                        <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+                        <div className="flex gap-2 overflow-x-auto pb-0.5">
                           {galleryImages.map((img, i) => (
                             <button
                               key={i}
                               onClick={() => setPreviewGalleryActiveIdx(i)}
-                              className={`w-14 h-10 rounded-lg overflow-hidden border cursor-pointer transition-all ${
+                              className={`w-16 h-12 rounded-lg overflow-hidden border cursor-pointer transition-all shrink-0 ${
                                 i === previewGalleryActiveIdx
-                                  ? "border-primary ring-1 ring-primary/40 opacity-100"
-                                  : "border-border/60 opacity-40 hover:opacity-80 grayscale"
+                                  ? "border-primary ring-1 ring-primary/40 opacity-100 scale-105"
+                                  : "border-white/15 opacity-40 hover:opacity-80 grayscale"
                               }`}
                             >
                               <img src={img} alt="" className="w-full h-full object-cover" />
@@ -710,81 +950,28 @@ export default function ProductDetailLayoutPanel() {
 
                   if (cfg.gallery === "mosaic") {
                     return (
-                      <div className="grid grid-cols-3 gap-1.5 aspect-square rounded-2xl overflow-hidden border border-border/70 bg-card/60 p-1">
+                      <div className="h-[480px] grid grid-cols-3 grid-rows-2 gap-2 rounded-2xl overflow-hidden border border-border/70 bg-card/60 p-2 select-none">
                         <div className="col-span-2 row-span-2 relative rounded-xl overflow-hidden border border-border/40 group cursor-pointer">
                           <img src={galleryImages[0]} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                          {cfg.show_scarcity_badge && (
-                            <span className="absolute top-2 left-2 text-[8px] font-mono px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-bold">
-                              ONLY 4 LEFT
+                          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                            <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
+                              Mosaic Grid
                             </span>
-                          )}
+                            {cfg.show_scarcity_badge && (
+                              <span className="text-[8px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold">
+                                ONLY 4 LEFT
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="col-span-1 row-span-1 rounded-xl overflow-hidden border border-border/40 group cursor-pointer">
-                          <img src={galleryImages[1]} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          <img src={galleryImages[1 % galleryImages.length]} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                         </div>
                         <div className="col-span-1 row-span-1 rounded-xl overflow-hidden border border-border/40 group cursor-pointer relative">
-                          <img src={galleryImages[2]} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          <img src={galleryImages[2 % galleryImages.length]} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <span className="text-white text-xs font-mono font-bold">+1</span>
+                            <span className="text-white text-xs font-mono font-bold">+{galleryImages.length}</span>
                           </div>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (cfg.gallery === "parallax-stack") {
-                    return (
-                      <div className="relative aspect-square rounded-2xl overflow-hidden border border-border/70 bg-card/60 flex flex-col justify-between p-3 group">
-                        <div className="w-full flex items-center justify-between z-10">
-                          <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15">
-                            Parallax Stack 3D
-                          </span>
-                          {cfg.show_scarcity_badge && (
-                            <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
-                              <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
-                            </span>
-                          )}
-                        </div>
-
-                        {/* 3D Stacked Cards Stage */}
-                        <div className="relative flex items-center justify-center my-auto w-full h-44" style={{ perspective: "900px" }}>
-                          <div
-                            className="absolute w-36 h-40 rounded-xl overflow-hidden border border-border/60 opacity-30 transition-all duration-300"
-                            style={{ transform: "translateY(-14px) scale(0.88)" }}
-                          >
-                            <img src={galleryImages[(previewGalleryActiveIdx + 2) % galleryImages.length]} alt="" className="w-full h-full object-cover" />
-                          </div>
-                          <div
-                            className="absolute w-38 h-42 rounded-xl overflow-hidden border border-border/70 opacity-60 transition-all duration-300"
-                            style={{ transform: "translateY(-7px) scale(0.94)" }}
-                          >
-                            <img src={galleryImages[(previewGalleryActiveIdx + 1) % galleryImages.length]} alt="" className="w-full h-full object-cover" />
-                          </div>
-                          <div
-                            className="relative w-40 h-44 rounded-2xl overflow-hidden border border-primary ring-1 ring-primary/40 z-10 transition-all duration-300"
-                          >
-                            <img src={activeImg} alt="" className="w-full h-full object-cover" />
-                          </div>
-
-                          {/* Navigation Buttons */}
-                          <button
-                            onClick={() => setPreviewGalleryActiveIdx((p) => (p - 1 + galleryImages.length) % galleryImages.length)}
-                            className="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setPreviewGalleryActiveIdx((p) => (p + 1) % galleryImages.length)}
-                            className="absolute right-1 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
-
-                        <div className="z-10 text-center">
-                          <span className="text-[9px] font-mono text-foreground/80 bg-secondary/60 px-2.5 py-0.5 rounded-full border border-border/50">
-                            Card {previewGalleryActiveIdx + 1} of {galleryImages.length}
-                          </span>
                         </div>
                       </div>
                     );
@@ -792,32 +979,32 @@ export default function ProductDetailLayoutPanel() {
 
                   // Default: Classic Lightbox Zoom
                   return (
-                    <div className="space-y-2">
-                      <div className="relative aspect-square rounded-2xl overflow-hidden border border-border/70 bg-card/60 group">
+                    <div className="h-[480px] flex flex-col justify-between rounded-2xl overflow-hidden border border-border/70 bg-card/60 p-3 select-none">
+                      <div className="relative h-[380px] w-full rounded-xl overflow-hidden border border-border/40 group">
                         <img
                           src={activeImg}
                           alt="Preview Garment"
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                         {/* Loupe Simulation Badge */}
-                        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md rounded-full px-2 py-0.5 text-[8.5px] font-mono text-white flex items-center gap-1 border border-white/20">
+                        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md rounded-full px-2.5 py-0.5 text-[8.5px] font-mono text-white flex items-center gap-1 border border-white/20">
                           <ZoomIn className="w-3 h-3 text-primary" /> Classic Loupe
                         </div>
                         {cfg.show_scarcity_badge && (
-                          <span className="absolute top-3 right-3 text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
+                          <span className="absolute top-3 right-3 text-[8.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1">
                             <Flame className="w-2.5 h-2.5" /> ONLY 4 LEFT
                           </span>
                         )}
                         {/* Navigation Arrows */}
                         <button
                           onClick={() => setPreviewGalleryActiveIdx((p) => (p - 1 + galleryImages.length) % galleryImages.length)}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/65 text-white flex items-center justify-center hover:bg-black/90 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
                         >
                           <ChevronLeft className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setPreviewGalleryActiveIdx((p) => (p + 1) % galleryImages.length)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/65 text-white flex items-center justify-center hover:bg-black/90 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
                         >
                           <ChevronRight className="w-4 h-4" />
                         </button>
@@ -829,9 +1016,9 @@ export default function ProductDetailLayoutPanel() {
                           <button
                             key={idx}
                             onClick={() => setPreviewGalleryActiveIdx(idx)}
-                            className={`w-14 h-14 rounded-xl overflow-hidden border cursor-pointer transition-all ${
+                            className={`w-16 h-12 rounded-xl overflow-hidden border cursor-pointer transition-all shrink-0 ${
                               previewGalleryActiveIdx === idx
-                                ? "border-primary ring-1 ring-primary/40 opacity-100 scale-102"
+                                ? "border-primary ring-1 ring-primary/40 opacity-100 scale-105"
                                 : "border-border/60 opacity-60 hover:opacity-100"
                             }`}
                           >
