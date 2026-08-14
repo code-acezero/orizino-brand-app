@@ -90,6 +90,7 @@ export function AdminSidebar() {
   const { pinned, toggle: togglePin } = usePinned();
 
   const isMasterPanelHome = location.pathname === "/" || location.pathname === "/master";
+  const headerTitle = isMasterPanelHome ? "Master Panel" : "Control Panel";
   const isSettingsSubroute = (() => {
     const clean = location.pathname.replace(/\/+$/, "");
     return clean === "/brand/branding" || clean.startsWith("/brand/branding") ||
