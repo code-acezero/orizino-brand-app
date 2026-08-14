@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ProductLightboxModal from "./ProductLightboxModal";
@@ -13,7 +13,6 @@ interface InfinityGalleryProps {
 
 const AUTO_ROTATE_DELAY = 4500;
 const RESUME_IDLE_DELAY = 5000;
-const MIN_CYLINDER_SLOTS = 6;
 
 const InfinityGallery: React.FC<InfinityGalleryProps> = ({
   images,
@@ -21,7 +20,7 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
   discount = 0,
 }) => {
   const isMobile = useIsMobile();
-  const [rotationDeg, setRotationDeg] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isAutoPlay, setIsAutoPlay] = useState(true);
 
@@ -29,45 +28,14 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
   const autoPlayTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Build cylinder slots array (ensure minimum 6 slots for smooth full 360° circle)
-  const cylinderSlots = useMemo(() => {
-    if (!images || images.length === 0) return [];
-    if (images.length >= MIN_CYLINDER_SLOTS) {
-      return images.map((src, originalIndex) => ({ src, originalIndex }));
-    }
-    const slots: { src: string; originalIndex: number }[] = [];
-    let idx = 0;
-    while (slots.length < MIN_CYLINDER_SLOTS || slots.length % images.length !== 0) {
-      slots.push({
-        src: images[idx % images.length],
-        originalIndex: idx % images.length,
-      });
-      idx++;
-    }
-    return slots;
-  }, [images]);
+  const total = images.length;
 
-  const numSlots = cylinderSlots.length;
-  const stepDeg = numSlots > 0 ? 360 / numSlots : 60;
-  const radius = isMobile ? 190 : 300;
-
-  // Active original image index derived from current continuous cylinder rotation
-  const activeSlotIndex = useMemo(() => {
-    if (numSlots === 0) return 0;
-    const rawStep = Math.round(rotationDeg / stepDeg);
-    return ((rawStep % numSlots) + numSlots) % numSlots;
-  }, [rotationDeg, stepDeg, numSlots]);
-
-  const activeImageIndex = cylinderSlots[activeSlotIndex]?.originalIndex ?? 0;
-
-  // ── CONTINUOUS CYLINDER NAVIGATION ──
-  const rotateNext = useCallback(() => {
-    setRotationDeg((prev) => prev + stepDeg);
-  }, [stepDeg]);
-
-  const rotatePrev = useCallback(() => {
-    setRotationDeg((prev) => prev - stepDeg);
-  }, [stepDeg]);
+  const navigate = useCallback(
+    (direction: 1 | -1) => {
+      setActiveIndex((prev) => (prev + direction + total) % total);
+    },
+    [total]
+  );
 
   const pauseAutoPlay = useCallback(() => {
     setIsAutoPlay(false);
@@ -75,22 +43,22 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
     idleTimer.current = setTimeout(() => setIsAutoPlay(true), RESUME_IDLE_DELAY);
   }, []);
 
-  // Auto-play interval
+  // Auto-play timer
   useEffect(() => {
-    if (!isAutoPlay || lightboxOpen || numSlots <= 1) {
+    if (!isAutoPlay || lightboxOpen || total <= 1) {
       if (autoPlayTimer.current) clearInterval(autoPlayTimer.current);
       autoPlayTimer.current = null;
       return;
     }
 
     autoPlayTimer.current = setInterval(() => {
-      rotateNext();
+      navigate(1);
     }, AUTO_ROTATE_DELAY);
 
     return () => {
       if (autoPlayTimer.current) clearInterval(autoPlayTimer.current);
     };
-  }, [isAutoPlay, lightboxOpen, numSlots, rotateNext]);
+  }, [isAutoPlay, lightboxOpen, total, navigate]);
 
   useEffect(() => {
     return () => {
@@ -99,7 +67,7 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
     };
   }, []);
 
-  // ── TOUCH SWIPE GESTURES ──
+  // Touch Swipe Gesture
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
 
@@ -113,9 +81,85 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     const dy = e.changedTouches[0].clientY - touchStartY.current;
     if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-      if (dx < 0) rotateNext();
-      else rotatePrev();
+      navigate(dx < 0 ? 1 : -1);
     }
+  };
+
+  // Calculate 3D card layout position relative to active card
+  const getCardStyle = (idx: number) => {
+    if (total <= 1) {
+      return {
+        x: "0%",
+        scale: 1,
+        rotateY: 0,
+        z: 0,
+        opacity: 1,
+        filter: "brightness(1) blur(0px)",
+        zIndex: 30,
+        pointerEvents: "auto" as const,
+      };
+    }
+
+    // Circular shortest distance: [-floor(total/2) ... +floor(total/2)]
+    const half = total / 2;
+    let diff = idx - activeIndex;
+    while (diff > half) diff -= total;
+    while (diff < -half) diff += total;
+
+    // Center active focus card
+    if (diff === 0) {
+      return {
+        x: "0%",
+        scale: 1,
+        rotateY: 0,
+        z: 40,
+        opacity: 1,
+        filter: "brightness(1) blur(0px)",
+        zIndex: 30,
+        pointerEvents: "auto" as const,
+      };
+    }
+
+    // Left perspective wing card
+    if (diff === -1) {
+      return {
+        x: isMobile ? "-60%" : "-64%",
+        scale: 0.82,
+        rotateY: 28,
+        z: -50,
+        opacity: 0.42,
+        filter: "brightness(0.65) blur(0.5px)",
+        zIndex: 20,
+        pointerEvents: "auto" as const,
+      };
+    }
+
+    // Right perspective wing card
+    if (diff === 1) {
+      return {
+        x: isMobile ? "60%" : "64%",
+        scale: 0.82,
+        rotateY: -28,
+        z: -50,
+        opacity: 0.42,
+        filter: "brightness(0.65) blur(0.5px)",
+        zIndex: 20,
+        pointerEvents: "auto" as const,
+      };
+    }
+
+    // Hidden cards in the background
+    const isRight = diff > 0;
+    return {
+      x: isRight ? "115%" : "-115%",
+      scale: 0.62,
+      rotateY: isRight ? -45 : 45,
+      z: -150,
+      opacity: 0,
+      filter: "brightness(0.4) blur(3px)",
+      zIndex: 10,
+      pointerEvents: "none" as const,
+    };
   };
 
   if (!images || images.length === 0) return null;
@@ -127,93 +171,93 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
         className="relative w-full overflow-hidden rounded-3xl bg-black select-none group"
         style={{
           height: isMobile ? "58vh" : "520px",
-          perspective: isMobile ? "1000px" : "1300px",
+          perspective: "1200px",
         }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
         {/* ── 1. AMBIENT BACKDROP ── */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div
-            className="absolute -inset-10 bg-cover bg-center transition-all duration-700"
-            style={{
-              backgroundImage: `url(${images[activeImageIndex]})`,
-              filter: "blur(40px) brightness(0.35) saturate(1.2)",
-              transform: "scale(1.1)",
-            }}
-          />
+          <AnimatePresence mode="popLayout">
+            <motion.div
+              key={activeIndex}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.38 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.7 }}
+              className="absolute -inset-10 bg-cover bg-center"
+              style={{
+                backgroundImage: `url(${images[activeIndex]})`,
+                filter: "blur(48px) brightness(0.4) saturate(1.3)",
+              }}
+            />
+          </AnimatePresence>
           <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/90 pointer-events-none" />
         </div>
 
-        {/* ── 2. CONTINUOUS 3D ROTATING CYLINDER STAGE ── */}
+        {/* ── 2. 3D PERSPECTIVE CAROUSEL STAGE ── */}
         <div
-          className="absolute inset-0 flex items-center justify-center pointer-events-auto"
+          className="absolute inset-0 flex items-center justify-center pointer-events-auto overflow-hidden"
           style={{ transformStyle: "preserve-3d" }}
         >
-          <motion.div
-            className="relative flex items-center justify-center w-full h-full"
-            style={{
-              transformStyle: "preserve-3d",
-              willChange: "transform",
-            }}
-            animate={{ rotateY: -rotationDeg }}
-            transition={{
-              type: "spring",
-              stiffness: 95,
-              damping: 19,
-              mass: 0.7,
-            }}
-          >
-            {cylinderSlots.map((slot, idx) => {
-              const cardAngle = idx * stepDeg;
-              const isFront = idx === activeSlotIndex;
+          {images.map((img, idx) => {
+            const isCenter = idx === activeIndex;
+            const style = getCardStyle(idx);
 
-              return (
+            return (
+              <motion.div
+                key={idx}
+                animate={{
+                  x: style.x,
+                  scale: style.scale,
+                  rotateY: style.rotateY,
+                  z: style.z,
+                  opacity: style.opacity,
+                  filter: style.filter,
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 160,
+                  damping: 24,
+                  mass: 0.75,
+                }}
+                style={{
+                  position: "absolute",
+                  width: isMobile ? "70vw" : "19rem",
+                  height: isMobile ? "46vh" : "25.5rem",
+                  transformStyle: "preserve-3d",
+                  zIndex: style.zIndex,
+                  pointerEvents: style.pointerEvents,
+                }}
+                onClick={() => {
+                  pauseAutoPlay();
+                  if (isCenter) {
+                    setLightboxOpen(true);
+                  } else {
+                    setActiveIndex(idx);
+                  }
+                }}
+                className="cursor-pointer rounded-2xl overflow-hidden shadow-none border-none outline-none"
+              >
+                {/* Clean full-bleed garment photograph */}
+                <img
+                  src={img}
+                  alt={`${productName} view ${idx + 1}`}
+                  className="w-full h-full object-cover select-none pointer-events-none rounded-2xl"
+                  draggable={false}
+                />
+
+                {/* Soft ambient depth lighting */}
                 <div
-                  key={idx}
-                  style={{
-                    position: "absolute",
-                    width: isMobile ? "68vw" : "18.5rem",
-                    height: isMobile ? "46vh" : "25rem",
-                    transform: `rotateY(${cardAngle}deg) translateZ(${radius}px)`,
-                    transformStyle: "preserve-3d",
-                    backfaceVisibility: "hidden",
-                    WebkitBackfaceVisibility: "hidden",
-                  }}
-                  onClick={() => {
-                    pauseAutoPlay();
-                    if (isFront) {
-                      setLightboxOpen(true);
-                    } else {
-                      // Smoothly rotate to this clicked slot
-                      const diff = idx - activeSlotIndex;
-                      let delta = diff;
-                      if (delta > numSlots / 2) delta -= numSlots;
-                      if (delta < -numSlots / 2) delta += numSlots;
-                      setRotationDeg((prev) => prev + delta * stepDeg);
-                    }
-                  }}
-                  className="cursor-pointer rounded-2xl overflow-hidden shadow-none border-none outline-none group/card"
-                >
-                  <img
-                    src={slot.src}
-                    alt={`${productName} view ${slot.originalIndex + 1}`}
-                    className="w-full h-full object-cover select-none pointer-events-none rounded-2xl"
-                    draggable={false}
-                  />
-
-                  {/* Soft ambient lighting overlay */}
-                  <div
-                    className={`absolute inset-0 transition-opacity duration-300 pointer-events-none rounded-2xl ${
-                      isFront
-                        ? "bg-gradient-to-t from-black/35 via-transparent to-transparent"
-                        : "bg-black/30 hover:bg-black/10"
-                    }`}
-                  />
-                </div>
-              );
-            })}
-          </motion.div>
+                  className={`absolute inset-0 transition-opacity duration-300 pointer-events-none rounded-2xl ${
+                    isCenter
+                      ? "bg-gradient-to-t from-black/35 via-transparent to-transparent"
+                      : "bg-black/35 hover:bg-black/15"
+                  }`}
+                />
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* ── 3. HUD CONTROLS & FLOATING BADGES ── */}
@@ -230,7 +274,7 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
           onClick={(e) => {
             e.stopPropagation();
             pauseAutoPlay();
-            rotatePrev();
+            navigate(-1);
           }}
           className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/55 hover:bg-black/85 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border border-white/10"
           aria-label="Previous image"
@@ -244,7 +288,7 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
           onClick={(e) => {
             e.stopPropagation();
             pauseAutoPlay();
-            rotateNext();
+            navigate(1);
           }}
           className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/55 hover:bg-black/85 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border border-white/10"
           aria-label="Next image"
@@ -262,17 +306,10 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   pauseAutoPlay();
-                  const targetSlot = cylinderSlots.findIndex((s) => s.originalIndex === i);
-                  if (targetSlot !== -1) {
-                    const diff = targetSlot - activeSlotIndex;
-                    let delta = diff;
-                    if (delta > numSlots / 2) delta -= numSlots;
-                    if (delta < -numSlots / 2) delta += numSlots;
-                    setRotationDeg((prev) => prev + delta * stepDeg);
-                  }
+                  setActiveIndex(i);
                 }}
                 className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                  i === activeImageIndex
+                  i === activeIndex
                     ? "w-5 bg-primary"
                     : "w-1.5 bg-white/30 hover:bg-white/60"
                 }`}
@@ -281,7 +318,7 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
             ))}
           </div>
           <span className="text-white/80 text-[10.5px] font-mono font-bold pl-1 border-l border-white/15">
-            {activeImageIndex + 1} / {images.length}
+            {activeIndex + 1} / {total}
           </span>
         </div>
 
@@ -301,7 +338,7 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
         onClose={() => setLightboxOpen(false)}
         images={images}
         productName={productName}
-        startIndex={activeImageIndex}
+        startIndex={activeIndex}
       />
     </>
   );

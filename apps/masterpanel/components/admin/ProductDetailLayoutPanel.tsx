@@ -264,39 +264,46 @@ const AdminStudioInfinityPreview = ({
   onNavigate: (idx: number) => void;
   showScarcity: boolean;
 }) => {
-  const numSlots = Math.max(6, images.length);
-  const slots = React.useMemo(() => {
-    const list: { src: string; originalIndex: number }[] = [];
-    for (let i = 0; i < numSlots; i++) {
-      list.push({
-        src: images[i % images.length],
-        originalIndex: i % images.length,
-      });
-    }
-    return list;
-  }, [images, numSlots]);
-
-  const stepDeg = 360 / numSlots;
-  const [rotationDeg, setRotationDeg] = React.useState(activeIdx * stepDeg);
+  const total = images.length;
+  const [currentIdx, setCurrentIdx] = React.useState(activeIdx);
 
   React.useEffect(() => {
-    setRotationDeg(activeIdx * stepDeg);
-  }, [activeIdx, stepDeg]);
+    setCurrentIdx(activeIdx);
+  }, [activeIdx]);
 
   React.useEffect(() => {
+    if (total <= 1) return;
     const timer = setInterval(() => {
-      setRotationDeg((prev) => prev + stepDeg);
+      setCurrentIdx((prev) => {
+        const next = (prev + 1) % total;
+        onNavigate(next);
+        return next;
+      });
     }, 4000);
     return () => clearInterval(timer);
-  }, [stepDeg]);
+  }, [total, onNavigate]);
 
-  const activeSlotIndex = React.useMemo(() => {
-    const rawStep = Math.round(rotationDeg / stepDeg);
-    return ((rawStep % numSlots) + numSlots) % numSlots;
-  }, [rotationDeg, stepDeg, numSlots]);
+  const getCardStyle = (idx: number) => {
+    if (total <= 1) {
+      return { x: "0%", scale: 1, rotateY: 0, opacity: 1, zIndex: 30 };
+    }
+    const half = total / 2;
+    let diff = idx - currentIdx;
+    while (diff > half) diff -= total;
+    while (diff < -half) diff += total;
 
-  const activeOriginalIndex = slots[activeSlotIndex]?.originalIndex ?? 0;
-  const radius = 145;
+    if (diff === 0) {
+      return { x: "0%", scale: 1, rotateY: 0, opacity: 1, zIndex: 30 };
+    }
+    if (diff === -1) {
+      return { x: "-64%", scale: 0.82, rotateY: 28, opacity: 0.42, zIndex: 20 };
+    }
+    if (diff === 1) {
+      return { x: "64%", scale: 0.82, rotateY: -28, opacity: 0.42, zIndex: 20 };
+    }
+    const isRight = diff > 0;
+    return { x: isRight ? "115%" : "-115%", scale: 0.6, rotateY: isRight ? -45 : 45, opacity: 0, zIndex: 10 };
+  };
 
   return (
     <div className="relative aspect-square rounded-2xl overflow-hidden bg-black flex flex-col justify-between p-3 select-none group border border-border/70">
@@ -304,7 +311,7 @@ const AdminStudioInfinityPreview = ({
       <div
         className="absolute -inset-8 bg-cover bg-center transition-all duration-700 pointer-events-none"
         style={{
-          backgroundImage: `url(${images[activeOriginalIndex]})`,
+          backgroundImage: `url(${images[currentIdx]})`,
           filter: "blur(36px) brightness(0.35) saturate(1.2)",
           transform: "scale(1.1)",
         }}
@@ -323,67 +330,58 @@ const AdminStudioInfinityPreview = ({
         )}
       </div>
 
-      {/* 3D Cylindrical Arc Stage */}
-      <div className="relative flex items-center justify-center my-auto w-full h-52 pointer-events-auto" style={{ perspective: "850px", transformStyle: "preserve-3d" }}>
-        <motion.div
-          className="relative flex items-center justify-center w-full h-full"
-          style={{
-            transformStyle: "preserve-3d",
-            willChange: "transform",
-          }}
-          animate={{ rotateY: -rotationDeg }}
-          transition={{
-            type: "spring",
-            stiffness: 95,
-            damping: 19,
-            mass: 0.7,
-          }}
-        >
-          {slots.map((slot, i) => {
-            const cardAngle = i * stepDeg;
-            const isFront = i === activeSlotIndex;
+      {/* 3D Perspective Stage */}
+      <div className="relative flex items-center justify-center my-auto w-full h-52 pointer-events-auto overflow-hidden" style={{ perspective: "850px", transformStyle: "preserve-3d" }}>
+        {images.map((img, i) => {
+          const style = getCardStyle(i);
+          const isCenter = i === currentIdx;
 
-            return (
+          return (
+            <motion.div
+              key={i}
+              animate={{
+                x: style.x,
+                scale: style.scale,
+                rotateY: style.rotateY,
+                opacity: style.opacity,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 160,
+                damping: 24,
+                mass: 0.75,
+              }}
+              style={{
+                position: "absolute",
+                width: "9.5rem",
+                height: "13rem",
+                transformStyle: "preserve-3d",
+                zIndex: style.zIndex,
+              }}
+              onClick={() => {
+                setCurrentIdx(i);
+                onNavigate(i);
+              }}
+              className="cursor-pointer rounded-xl overflow-hidden shadow-none border-none outline-none"
+            >
+              <img src={img} alt="" className="w-full h-full object-cover select-none pointer-events-none rounded-xl" />
               <div
-                key={i}
-                style={{
-                  position: "absolute",
-                  width: "9.5rem",
-                  height: "13rem",
-                  transform: `rotateY(${cardAngle}deg) translateZ(${radius}px)`,
-                  transformStyle: "preserve-3d",
-                  backfaceVisibility: "hidden",
-                  WebkitBackfaceVisibility: "hidden",
-                }}
-                onClick={() => {
-                  const diff = i - activeSlotIndex;
-                  let delta = diff;
-                  if (delta > numSlots / 2) delta -= numSlots;
-                  if (delta < -numSlots / 2) delta += numSlots;
-                  setRotationDeg((prev) => prev + delta * stepDeg);
-                  onNavigate(slot.originalIndex);
-                }}
-                className="cursor-pointer rounded-xl overflow-hidden shadow-none border-none outline-none"
-              >
-                <img src={slot.src} alt="" className="w-full h-full object-cover select-none pointer-events-none rounded-xl" />
-                <div
-                  className={`absolute inset-0 transition-opacity duration-300 pointer-events-none rounded-xl ${
-                    isFront ? "bg-gradient-to-t from-black/35 via-transparent to-transparent" : "bg-black/30 hover:bg-black/10"
-                  }`}
-                />
-              </div>
-            );
-          })}
-        </motion.div>
+                className={`absolute inset-0 transition-opacity duration-300 pointer-events-none rounded-xl ${
+                  isCenter ? "bg-gradient-to-t from-black/35 via-transparent to-transparent" : "bg-black/30 hover:bg-black/10"
+                }`}
+              />
+            </motion.div>
+          );
+        })}
 
         {/* Navigation Arrows */}
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setRotationDeg((prev) => prev - stepDeg);
-            const nextSlot = (activeSlotIndex - 1 + numSlots) % numSlots;
-            onNavigate(slots[nextSlot].originalIndex);
+            const next = (currentIdx - 1 + total) % total;
+            setCurrentIdx(next);
+            onNavigate(next);
           }}
           className="absolute left-1 top-1/2 -translate-y-1/2 z-30 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
         >
@@ -393,9 +391,9 @@ const AdminStudioInfinityPreview = ({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setRotationDeg((prev) => prev + stepDeg);
-            const nextSlot = (activeSlotIndex + 1) % numSlots;
-            onNavigate(slots[nextSlot].originalIndex);
+            const next = (currentIdx + 1) % total;
+            setCurrentIdx(next);
+            onNavigate(next);
           }}
           className="absolute right-1 top-1/2 -translate-y-1/2 z-30 w-7 h-7 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 cursor-pointer"
         >
@@ -410,13 +408,13 @@ const AdminStudioInfinityPreview = ({
             <div
               key={i}
               className={`h-1 rounded-full transition-all ${
-                i === activeOriginalIndex ? "w-3.5 bg-primary" : "w-1 bg-white/30"
+                i === currentIdx ? "w-3.5 bg-primary" : "w-1 bg-white/30"
               }`}
             />
           ))}
         </div>
         <span className="text-[9px] font-mono text-white/80 bg-black/60 px-2 py-0.5 rounded-full border border-white/15">
-          {activeOriginalIndex + 1} / {images.length}
+          {currentIdx + 1} / {total}
         </span>
       </div>
     </div>
