@@ -15,6 +15,13 @@ import {
   RefreshCw,
   Filter,
   ChevronDown,
+  ShoppingBag,
+  ArrowRight,
+  Quote,
+  Sun,
+  Moon,
+  Columns,
+  Eye,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/lib/app-toast";
@@ -42,6 +49,12 @@ import {
 } from "@/lib/storefront-appearance";
 import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 import { useQueryClient } from "@tanstack/react-query";
+
+const PRESET_SNIPPETS = [
+  { label: "Oversized Drop", head: "HIGH-STRUCTURE 380GSM TERRY", body: "Tailored with dropped shoulders and double-needle french terry for a heavyweight boxy drape." },
+  { label: "Dhaka Atelier", head: "CRAFTED IN DHAKA ATELIER", body: "Every seam reinforced with 380 GSM combed cotton and garment-dyed vintage washes." },
+  { label: "Limited Capsule", head: "WINTER CAPSULE 004 / 50 PIECES", body: "Engineered boxy silhouette with custom metal hardware and minimal branding accents." },
+];
 
 const loadedFonts = new Set<string>();
 function ensureFont(gfUrl: string) {
@@ -81,6 +94,8 @@ const AdminStorefrontAppearance: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [customSampleText, setCustomSampleText] = useState("");
   const [customBodyText, setCustomBodyText] = useState("");
+  const [previewScene, setPreviewScene] = useState<"hero" | "product" | "editorial">("hero");
+  const [previewTheme, setPreviewTheme] = useState<"split" | "dark" | "light">("split");
 
   useEffect(() => {
     STOREFRONT_TYPOGRAPHY_PAIRS.forEach((p) => {
@@ -346,65 +361,352 @@ const AdminStorefrontAppearance: React.FC = () => {
         })}
       </div>
 
-      {/* ── INTERACTIVE TESTER (COMPACT) ── */}
-      <Card className="border-border/50 bg-card/60 shadow-xs rounded-xl overflow-hidden">
-        <CardHeader className="py-2.5 px-3.5 border-b border-border/40 bg-secondary/15">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sliders className="w-3 h-3 text-primary" />
-              <CardTitle className="text-xs font-bold text-foreground">Live Typography Laboratory</CardTitle>
+      {/* ── LIVE TYPOGRAPHY STUDIO (LUXURY REDESIGN) ── */}
+      <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-md shadow-sm overflow-hidden space-y-0">
+        {/* Header Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 sm:px-4 border-b border-border/40 bg-secondary/20">
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex items-center justify-center">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="absolute w-3.5 h-3.5 rounded-full bg-emerald-500/20" />
             </div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-bold text-foreground tracking-tight">Live Typography Studio</h3>
+              <Badge variant="outline" className="text-[9px] font-mono border-primary/30 text-primary bg-primary/10">
+                Display: {activeHeadingName}
+              </Badge>
+              <Badge variant="secondary" className="hidden sm:inline-flex text-[9px] font-mono text-muted-foreground">
+                Body: {extractFontName(activePair.body)}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Right Controls: Scene Selector & Theme Mode Switcher */}
+          <div className="flex items-center gap-2">
+            {/* Scene Selector */}
+            <div className="flex items-center p-0.5 rounded-lg bg-background/80 border border-border/50 shadow-2xs">
+              <button
+                onClick={() => setPreviewScene("hero")}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
+                  previewScene === "hero"
+                    ? "bg-primary text-primary-foreground shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Sparkles className="w-2.5 h-2.5" />
+                <span>Hero Drop</span>
+              </button>
+              <button
+                onClick={() => setPreviewScene("product")}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
+                  previewScene === "product"
+                    ? "bg-primary text-primary-foreground shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <ShoppingBag className="w-2.5 h-2.5" />
+                <span>Product Card</span>
+              </button>
+              <button
+                onClick={() => setPreviewScene("editorial")}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
+                  previewScene === "editorial"
+                    ? "bg-primary text-primary-foreground shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Quote className="w-2.5 h-2.5" />
+                <span>Lookbook Story</span>
+              </button>
+            </div>
+
+            {/* Theme Toggle (Split, Dark, Light) */}
+            <div className="hidden sm:flex items-center p-0.5 rounded-lg bg-background/80 border border-border/50 shadow-2xs">
+              <button
+                onClick={() => setPreviewTheme("split")}
+                title="Split Dark & Light"
+                className={`p-1 rounded-md text-[10px] transition-all cursor-pointer ${
+                  previewTheme === "split" ? "bg-secondary text-foreground font-bold" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Columns className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => setPreviewTheme("dark")}
+                title="Dark Mode"
+                className={`p-1 rounded-md text-[10px] transition-all cursor-pointer ${
+                  previewTheme === "dark" ? "bg-secondary text-foreground font-bold" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Moon className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => setPreviewTheme("light")}
+                title="Light Mode"
+                className={`p-1 rounded-md text-[10px] transition-all cursor-pointer ${
+                  previewTheme === "light" ? "bg-secondary text-foreground font-bold" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Sun className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Interactive Custom Text Bar with Quick Presets */}
+        <div className="p-3 bg-card/40 border-b border-border/30 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+              <span className="text-[9.5px] font-mono text-muted-foreground shrink-0 uppercase tracking-wider">
+                Presets:
+              </span>
+              {PRESET_SNIPPETS.map((pr) => (
+                <button
+                  key={pr.label}
+                  onClick={() => {
+                    setCustomSampleText(pr.head);
+                    setCustomBodyText(pr.body);
+                  }}
+                  className="px-2 py-0.5 rounded-md text-[9.5px] font-medium bg-secondary/40 hover:bg-secondary border border-border/40 text-foreground transition-colors cursor-pointer shrink-0"
+                >
+                  {pr.label}
+                </button>
+              ))}
+            </div>
+
             {(customSampleText || customBodyText) && (
               <button
                 onClick={() => {
                   setCustomSampleText("");
                   setCustomBodyText("");
                 }}
-                className="text-[9.5px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
+                className="text-[9.5px] font-mono text-muted-foreground hover:text-primary flex items-center gap-1 cursor-pointer transition-colors ml-auto"
               >
-                <RefreshCw className="w-2.5 h-2.5" /> Reset
+                <RefreshCw className="w-2.5 h-2.5" /> Clear custom text
               </button>
             )}
           </div>
-        </CardHeader>
-        <CardContent className="p-3 space-y-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <Input
-              value={customSampleText}
-              onChange={(e) => setCustomSampleText(e.target.value)}
-              placeholder="Headline preview text..."
-              className="text-xs rounded-lg h-7.5 bg-background border-border/50"
-            />
-            <Input
-              value={customBodyText}
-              onChange={(e) => setCustomBodyText(e.target.value)}
-              placeholder="Body preview text..."
-              className="text-xs rounded-lg h-7.5 bg-background border-border/50"
-            />
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-0.5">
-            <div className="rounded-lg border border-white/10 bg-black/90 p-3 text-white space-y-1">
-              <span className="text-[8.5px] font-mono text-zinc-400">DARK STOREFRONT THEME</span>
-              <h4 className="text-sm sm:text-base font-bold text-white line-clamp-1" style={{ fontFamily: activePair.heading }}>
-                {customSampleText || "High-Structure 380GSM Oversized Terry"}
-              </h4>
-              <p className="text-[10px] text-zinc-300 line-clamp-1" style={{ fontFamily: activePair.body }}>
-                {customBodyText || "Cut with dropped shoulders and a heavy ribbed collar for a boxy silhouette."}
-              </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="relative">
+              <Type className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+              <Input
+                value={customSampleText}
+                onChange={(e) => setCustomSampleText(e.target.value)}
+                placeholder="Headline text: e.g. HIGH-STRUCTURE 380GSM TERRY"
+                className="pl-7.5 text-xs rounded-lg h-7.5 bg-background/60 border-border/50"
+              />
             </div>
-            <div className="rounded-lg border border-border/60 bg-[#faf8f5] dark:bg-zinc-900/90 p-3 text-zinc-900 dark:text-zinc-100 space-y-1">
-              <span className="text-[8.5px] font-mono text-zinc-500">EDITORIAL MINIMAL THEME</span>
-              <h4 className="text-sm sm:text-base font-bold line-clamp-1" style={{ fontFamily: activePair.heading }}>
-                {customSampleText || "Minimalist French Terry Collection"}
-              </h4>
-              <p className="text-[10px] text-zinc-600 dark:text-zinc-300 line-clamp-1" style={{ fontFamily: activePair.body }}>
-                {customBodyText || "Precision crafted in Dhaka with double-needle stitching and raw luxury aesthetics."}
-              </p>
+            <div className="relative">
+              <Sliders className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+              <Input
+                value={customBodyText}
+                onChange={(e) => setCustomBodyText(e.target.value)}
+                placeholder="Body text: e.g. Tailored with dropped shoulders..."
+                className="pl-7.5 text-xs rounded-lg h-7.5 bg-background/60 border-border/50"
+              />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Live Stage Canvas */}
+        <div className="p-3 sm:p-4 bg-background/40">
+          {previewScene === "hero" && (
+            <div className={`grid gap-3 ${previewTheme === "split" ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}>
+              {/* Dark Hero */}
+              {(previewTheme === "split" || previewTheme === "dark") && (
+                <div className="relative rounded-xl border border-white/10 bg-[#161616] p-4 sm:p-5 text-white overflow-hidden flex flex-col justify-between min-h-[170px] shadow-md">
+                  <div className="absolute inset-0 bg-radial-gradient from-primary/15 via-transparent to-transparent opacity-60 pointer-events-none" />
+                  <div className="relative z-10 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[8.5px] font-mono tracking-widest text-zinc-400 uppercase">
+                        ORIZINO STUDIO — A/W 2026
+                      </span>
+                      <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-primary/20 text-primary border border-primary/30 uppercase">
+                        LIMITED 50 PIECES
+                      </span>
+                    </div>
+
+                    <h4
+                      className="text-lg sm:text-xl font-extrabold tracking-tight text-white line-clamp-2 uppercase"
+                      style={{ fontFamily: activePair.heading }}
+                    >
+                      {customSampleText || "ARCHITECTURAL OVERSIZED TERRY"}
+                    </h4>
+
+                    <p
+                      className="text-xs text-zinc-300 line-clamp-2 leading-relaxed max-w-lg"
+                      style={{ fontFamily: activePair.body }}
+                    >
+                      {customBodyText ||
+                        "Tailored with dropped shoulders and double-needle french terry for a heavyweight boxy drape."}
+                    </p>
+                  </div>
+
+                  <div className="relative z-10 mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="px-3 py-1 rounded-md text-[10px] font-bold bg-primary text-white flex items-center gap-1 shadow-xs"
+                        style={{ fontFamily: activePair.heading }}
+                      >
+                        EXPLORE DROP <ArrowRight className="w-2.5 h-2.5" />
+                      </span>
+                      <span
+                        className="px-2.5 py-1 rounded-md text-[10px] text-zinc-400 hover:text-white border border-white/10"
+                        style={{ fontFamily: activePair.body }}
+                      >
+                        LOOKBOOK
+                      </span>
+                    </div>
+                    <span className="text-[8.5px] font-mono text-zinc-500">Dark Aesthetic</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Light Hero */}
+              {(previewTheme === "split" || previewTheme === "light") && (
+                <div className="relative rounded-xl border border-border/80 bg-[#FAF8F5] p-4 sm:p-5 text-zinc-900 overflow-hidden flex flex-col justify-between min-h-[170px] shadow-sm">
+                  <div className="relative z-10 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[8.5px] font-mono tracking-widest text-zinc-500 uppercase">
+                        EDITORIAL ARCHIVE — DROP 004
+                      </span>
+                      <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-zinc-200 text-zinc-700 border border-zinc-300 uppercase">
+                        DHAKA ATELIER
+                      </span>
+                    </div>
+
+                    <h4
+                      className="text-lg sm:text-xl font-extrabold tracking-tight text-zinc-950 line-clamp-2 uppercase"
+                      style={{ fontFamily: activePair.heading }}
+                    >
+                      {customSampleText || "MINIMALIST FRENCH TERRY CAPSULE"}
+                    </h4>
+
+                    <p
+                      className="text-xs text-zinc-700 line-clamp-2 leading-relaxed max-w-lg"
+                      style={{ fontFamily: activePair.body }}
+                    >
+                      {customBodyText ||
+                        "Precision crafted in Dhaka with double-needle stitching, raw luxury aesthetics, and boxy drape."}
+                    </p>
+                  </div>
+
+                  <div className="relative z-10 mt-3 pt-2.5 border-t border-zinc-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="px-3 py-1 rounded-md text-[10px] font-bold bg-zinc-900 text-white flex items-center gap-1 shadow-xs"
+                        style={{ fontFamily: activePair.heading }}
+                      >
+                        DISCOVER <ArrowRight className="w-2.5 h-2.5" />
+                      </span>
+                      <span
+                        className="px-2.5 py-1 rounded-md text-[10px] text-zinc-600 border border-zinc-300"
+                        style={{ fontFamily: activePair.body }}
+                      >
+                        SPECIFICATIONS
+                      </span>
+                    </div>
+                    <span className="text-[8.5px] font-mono text-zinc-500">Vanilla Light</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {previewScene === "product" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Product Card Dark */}
+              <div className="rounded-xl border border-white/10 bg-[#161616] p-3 text-white flex gap-3 shadow-md items-center">
+                <div className="w-20 h-24 rounded-lg bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex flex-col items-center justify-center shrink-0 text-center p-1">
+                  <span className="text-[8px] font-mono text-zinc-400">380 GSM</span>
+                  <span className="text-xs font-bold text-white mt-1" style={{ fontFamily: activePair.heading }}>
+                    TEE
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <span className="text-[8px] font-mono text-zinc-400 uppercase tracking-wider">01 / APPAREL</span>
+                  <h4 className="text-sm font-bold text-white truncate" style={{ fontFamily: activePair.heading }}>
+                    {customSampleText || "Heavyweight Boxy Drop Tee"}
+                  </h4>
+                  <p className="text-[10.5px] text-zinc-300 line-clamp-2 leading-tight" style={{ fontFamily: activePair.body }}>
+                    {customBodyText || "Reinforced rib collar and custom silhouette crafted in Dhaka."}
+                  </p>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs font-bold text-primary font-mono">$68.00 USD</span>
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/10 text-white">IN STOCK</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Card Light */}
+              <div className="rounded-xl border border-border/80 bg-[#FAF8F5] p-3 text-zinc-900 flex gap-3 shadow-sm items-center">
+                <div className="w-20 h-24 rounded-lg bg-gradient-to-br from-zinc-100 to-zinc-200 border border-zinc-300 flex flex-col items-center justify-center shrink-0 text-center p-1">
+                  <span className="text-[8px] font-mono text-zinc-500">420 GSM</span>
+                  <span className="text-xs font-bold text-zinc-900 mt-1" style={{ fontFamily: activePair.heading }}>
+                    HOODIE
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-wider">02 / OUTERWEAR</span>
+                  <h4 className="text-sm font-bold text-zinc-950 truncate" style={{ fontFamily: activePair.heading }}>
+                    {customSampleText || "Overdyed Terry Zip Hoodie"}
+                  </h4>
+                  <p className="text-[10.5px] text-zinc-700 line-clamp-2 leading-tight" style={{ fontFamily: activePair.body }}>
+                    {customBodyText || "Double-needle construction with raw-hem metal zipper finishes."}
+                  </p>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs font-bold text-zinc-900 font-mono">$120.00 USD</span>
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-zinc-200 text-zinc-800">LIMITED</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {previewScene === "editorial" && (
+            <div className="rounded-xl border border-border/70 bg-card p-4 sm:p-5 space-y-3 shadow-sm">
+              <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                <span className="text-[9px] font-mono uppercase tracking-widest text-primary font-bold">
+                  ORIZINO EDITORIAL STATEMENT
+                </span>
+                <span className="text-[8.5px] font-mono text-muted-foreground">Vol. 04 / Contemporary Dhaka</span>
+              </div>
+              <blockquote
+                className="text-base sm:text-lg font-bold text-foreground leading-snug tracking-tight"
+                style={{ fontFamily: activePair.heading }}
+              >
+                &ldquo;{customSampleText || "Architecture for the human form — where rigid structure meets effortless drape."}&rdquo;
+              </blockquote>
+              <p
+                className="text-xs text-muted-foreground leading-relaxed columns-1 sm:columns-2 gap-4 pt-1"
+                style={{ fontFamily: activePair.body }}
+              >
+                {customBodyText ||
+                  "Every garment in our capsule is engineered starting with raw yarn density. We believe that true contemporary luxury requires no oversized logos — rather, presence is defined by silhouette, fabric weight, and tailored precision."}
+              </p>
+            </div>
+          )}
+
+          {/* Typography Telemetry Strip */}
+          <div className="mt-3 pt-2.5 border-t border-border/40 flex flex-wrap items-center justify-between gap-2 text-[9.5px] font-mono text-muted-foreground">
+            <div className="flex items-center gap-3">
+              <span>
+                <strong className="text-foreground">Display:</strong> {activeHeadingName}
+              </span>
+              <span>
+                <strong className="text-foreground">Body:</strong> {extractFontName(activePair.body)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground/70">Sample Glyphs:</span>
+              <span className="text-foreground font-sans text-xs tracking-wider" style={{ fontFamily: activePair.heading }}>
+                Aa Bb Gg Rr 0123456789 &amp;?!
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* ── STRUCTURAL & CALIBRATION OPTIONS (COMPACT) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
