@@ -263,7 +263,9 @@ const Footer: React.FC = () => {
                   )}
                   <div className="flex items-baseline gap-1.5 sm:gap-2">
                     <span
-                      className="text-xl sm:text-2xl lg:text-4xl xl:text-5xl tracking-[0.14em] uppercase text-foreground font-extrabold group-hover:text-primary transition-colors duration-300"
+                      translate="no"
+                      data-brand="orizino"
+                      className="brand-name notranslate skiptranslate text-xl sm:text-2xl lg:text-4xl xl:text-5xl tracking-[0.14em] uppercase text-foreground font-extrabold group-hover:text-primary transition-colors duration-300"
                       style={{
                         fontFamily: titleFont
                           ? `'${titleFont}', var(--font-title, var(--font-display))`
@@ -348,7 +350,9 @@ const Footer: React.FC = () => {
                   )}
                   <div className="flex items-baseline gap-1">
                     <span
-                      className="text-xs tracking-[0.14em] uppercase text-foreground font-extrabold group-hover:text-primary transition-colors duration-300"
+                      translate="no"
+                      data-brand="orizino"
+                      className="brand-name notranslate skiptranslate text-xs tracking-[0.14em] uppercase text-foreground font-extrabold group-hover:text-primary transition-colors duration-300"
                       style={{
                         fontFamily: titleFont
                           ? `'${titleFont}', var(--font-title, var(--font-display))`

@@ -996,7 +996,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     `;
   }, []);
 
-  // Helper to set or clear the Google Translate cookies
+  // Helper to thoroughly purge or set Google Translate cookies
   const syncGoogleTranslateCookie = useCallback((code: string) => {
     if (typeof window === "undefined" || typeof document === "undefined") return;
     try {
@@ -1005,10 +1005,27 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const gCode = code === "zh" ? "zh-CN" : code;
 
       if (!code || code === "en") {
-        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${hostname};`;
-        if (!isLocalhost) {
-          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${hostname};`;
+        // Deep purge of googtrans cookies across all potential domains and paths
+        const hostParts = hostname.split(".");
+        const domainVariants = [
+          "",
+          hostname,
+          `.${hostname}`,
+          hostParts.length >= 2 ? `.${hostParts.slice(-2).join(".")}` : "",
+        ].filter(Boolean);
+
+        domainVariants.forEach((d) => {
+          const domStr = d ? `; domain=${d}` : "";
+          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/` + domStr;
+          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=` + domStr;
+          document.cookie = `googtrans=/en/en; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/` + domStr;
+        });
+
+        // Reset the translation combo box if it exists
+        const combo = document.querySelector(".goog-te-combo") as HTMLSelectElement;
+        if (combo && combo.value !== "") {
+          combo.value = "";
+          combo.dispatchEvent(new Event("change"));
         }
       } else {
         document.cookie = `googtrans=/en/${gCode}; path=/;`;
@@ -1016,13 +1033,22 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (!isLocalhost) {
           document.cookie = `googtrans=/en/${gCode}; path=/; domain=.${hostname};`;
         }
-      }
 
-      const combo = document.querySelector(".goog-te-combo") as HTMLSelectElement;
-      if (combo) {
-        if (combo.value !== gCode) {
-          combo.value = gCode;
-          combo.dispatchEvent(new Event("change"));
+        // Dynamically load Google Translate Element script if user explicitly chose a non-English language
+        if (!document.getElementById("google-translate-script")) {
+          const script = document.createElement("script");
+          script.id = "google-translate-script";
+          script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+          script.async = true;
+          document.head.appendChild(script);
+        }
+
+        const combo = document.querySelector(".goog-te-combo") as HTMLSelectElement;
+        if (combo) {
+          if (combo.value !== gCode) {
+            combo.value = gCode;
+            combo.dispatchEvent(new Event("change"));
+          }
         }
       }
     } catch (e) {
@@ -1030,7 +1056,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  // Initialize Google Translate Element script and cleanup CSS once
+  // Initialize Google Translate callback and cleanup CSS
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -1117,15 +1143,21 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     };
 
-    const scriptId = "google-translate-script";
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement("script");
-      script.id = scriptId;
-      script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-      script.async = true;
-      document.head.appendChild(script);
+    // Ensure English starts completely clean with 0 cookies
+    const currentPref = localStorage.getItem("preferred_language");
+    if (!currentPref || currentPref === "en") {
+      syncGoogleTranslateCookie("en");
+    } else {
+      // Load Google Translate script only if user previously chose non-English
+      if (!document.getElementById("google-translate-script")) {
+        const script = document.createElement("script");
+        script.id = "google-translate-script";
+        script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+        script.async = true;
+        document.head.appendChild(script);
+      }
     }
-  }, []);
+  }, [syncGoogleTranslateCookie]);
 
   const setLanguage = useCallback(
     (code: string) => {
@@ -1139,7 +1171,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (combo) {
         combo.value = code === "zh" ? "zh-CN" : code;
         combo.dispatchEvent(new Event("change"));
-      } else {
+      } else if (code !== "en") {
         setTimeout(() => {
           window.location.reload();
         }, 150);
@@ -1175,7 +1207,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
-    // Detection logic via browser locale & timezone
+    // Default is strictly English
+    setLanguageState("en");
+    syncGoogleTranslateCookie("en");
+
+    // Detection logic via browser locale & timezone (ONLY suggests, never auto-forces)
     const detectFromEnvironment = () => {
       const navLang = (navigator.language || (navigator as any).userLanguage || "en").toLowerCase();
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
@@ -1265,13 +1301,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setDetectedCountry(countryLabel);
         setDetectedLang(foundLang);
 
+        // English remains the active language. Offer user the option via subtle toast.
         if (!hasChosenPrompt) {
-          // Select detected language by default on first visit
-          setLanguageState(foundLang.code);
-          loadFontForLanguage(foundLang.code);
-          syncGoogleTranslateCookie(foundLang.code);
-
-          // Trigger the prompt inside the Dynamic Island via toast with actions
           const detectedTarget = foundLang;
           setTimeout(() => {
             toast({
@@ -1305,11 +1336,55 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Update dir, lang, and font on html element whenever language changes
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const langDef = ALL_LANGUAGES.find((l) => l.code === language);
     document.documentElement.dir = langDef?.dir || "ltr";
     document.documentElement.lang = language;
     loadFontForLanguage(language);
+
+    // When on English, enforce notranslate meta tag to stop automatic browser translations
+    const metaId = "orizino-meta-notranslate";
+    let metaTag = document.getElementById(metaId) as HTMLMetaElement | null;
+    if (language === "en") {
+      if (!metaTag) {
+        metaTag = document.createElement("meta");
+        metaTag.id = metaId;
+        metaTag.name = "google";
+        metaTag.content = "notranslate";
+        document.head.appendChild(metaTag);
+      }
+    } else {
+      if (metaTag && metaTag.parentNode) {
+        metaTag.parentNode.removeChild(metaTag);
+      }
+    }
   }, [language, loadFontForLanguage]);
+
+  // Brand Name Non-Translation Guardian
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+
+    const protectBrandElements = () => {
+      try {
+        const brandEls = document.querySelectorAll(
+          '.brand-title, .brand-name, .brand-logo, [data-brand="orizino"], .font-editorial, .font-sans-brand'
+        );
+        brandEls.forEach((el) => {
+          if (!el.getAttribute("translate")) {
+            el.setAttribute("translate", "no");
+          }
+          if (!el.classList.contains("notranslate")) {
+            el.classList.add("notranslate", "skiptranslate");
+          }
+        });
+      } catch {}
+    };
+
+    protectBrandElements();
+    const interval = setInterval(protectBrandElements, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const t = useCallback(
     (key: string): string => {

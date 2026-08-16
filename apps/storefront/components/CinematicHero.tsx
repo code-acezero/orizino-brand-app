@@ -404,7 +404,9 @@ const CinematicHero: React.FC = () => {
             >
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden px-4" aria-hidden="true">
                 <span
-                  className="font-editorial text-foreground/8 dark:text-foreground/15 font-extrabold max-w-full text-center tracking-tight select-none uppercase transition-colors"
+                  translate="no"
+                  data-brand="orizino"
+                  className="font-editorial brand-title notranslate skiptranslate text-foreground/8 dark:text-foreground/15 font-extrabold max-w-full text-center tracking-tight select-none uppercase transition-colors"
                   style={{ fontSize: "clamp(3.5rem, 14vw, 14rem)", lineHeight: 1 }}
                 >
                   ORIZINO

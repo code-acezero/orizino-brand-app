@@ -280,7 +280,9 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                       />
                     ) : (
                       <span
-                        className="inline-flex items-center text-lg sm:text-xl md:text-2xl tracking-[0.16em] uppercase text-foreground group-hover:text-primary transition-colors duration-300 font-bold leading-none select-none"
+                        translate="no"
+                        data-brand="orizino"
+                        className="inline-flex items-center brand-name notranslate skiptranslate text-lg sm:text-xl md:text-2xl tracking-[0.16em] uppercase text-foreground group-hover:text-primary transition-colors duration-300 font-bold leading-none select-none"
                         style={{
                           fontFamily: titleFont
                             ? `'${titleFont}', var(--font-title, var(--font-display))`
@@ -831,7 +833,9 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                       />
                     ) : (
                       <span
-                        className="text-base tracking-[0.14em] uppercase text-foreground font-bold leading-none select-none"
+                        translate="no"
+                        data-brand="orizino"
+                        className="text-base tracking-[0.14em] uppercase text-foreground font-bold leading-none select-none brand-name notranslate skiptranslate"
                         style={{
                           fontFamily: titleFont
                             ? `'${titleFont}', var(--font-title, var(--font-display))`
