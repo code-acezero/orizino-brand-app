@@ -150,15 +150,11 @@ export const adminNav: AdminNavSection[] = [
         description: "Sales overview, revenue volume & quick stats",
       },
       {
-        title: "Orders",
+        title: "Orders & Returns",
         url: "/sales/orders",
         icon: ShoppingCart,
         section: "orders",
-        description: "Online orders & customer returns",
-        children: [
-          { title: "Orders",            url: "/sales/orders" },
-          { title: "Returns",           url: "/sales/returns" },
-        ],
+        description: "Online orders, returns, cancellations & verification",
       },
       {
         title: "Offline Orders",
