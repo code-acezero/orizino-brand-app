@@ -25,8 +25,8 @@ export const ALL_LANGUAGES: LangDef[] = [
     region: "Europe",
     dir: "ltr",
     countryNames: ["United States", "United Kingdom", "Canada", "Australia", "New Zealand", "Global"],
-    fontFamilyDisplay: "'Instrument Serif', 'Cinzel', serif",
-    fontFamilyBody: "'Plus Jakarta Sans', sans-serif",
+    fontFamilyDisplay: "var(--font-display, var(--storefront-font-heading, 'Instrument Serif', serif))",
+    fontFamilyBody: "var(--font-body, var(--storefront-font-body, 'Plus Jakarta Sans', sans-serif))",
   },
 
   // ── ASIAN LANGUAGES ──
@@ -903,28 +903,34 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       document.head.appendChild(styleEl);
     }
 
-    const displayFont = langObj.fontFamilyDisplay || "'Instrument Serif', 'Cinzel', serif";
-    const bodyFont = langObj.fontFamilyBody || "'Plus Jakarta Sans', sans-serif";
+    const isEnglish = code === "en";
+    const displayFont = isEnglish
+      ? "var(--font-display, var(--storefront-font-heading, inherit))"
+      : (langObj.fontFamilyDisplay || "'Instrument Serif', 'Cinzel', serif");
+    const bodyFont = isEnglish
+      ? "var(--font-body, var(--storefront-font-body, inherit))"
+      : (langObj.fontFamilyBody || "'Plus Jakarta Sans', sans-serif");
 
     styleEl.innerHTML = `
       :root {
         --lang-font-display: ${displayFont};
         --lang-font-body: ${bodyFont};
       }
-      html[lang="${code}"],
+      ${
+        !isEnglish
+          ? `
       html[lang="${code}"] body,
       html[lang="${code}"] p,
-      html[lang="${code}"] span,
-      html[lang="${code}"] a,
-      html[lang="${code}"] button,
+      html[lang="${code}"] span:not([class*="font-"]),
+      html[lang="${code}"] a:not([class*="font-"]),
+      html[lang="${code}"] button:not([class*="font-"]),
       html[lang="${code}"] input,
       html[lang="${code}"] textarea,
       html[lang="${code}"] select,
       html[lang="${code}"] .font-sans-brand,
       html[lang="${code}"] .font-body,
-      html[lang="${code}"] .font-sans,
-      html[lang="${code}"] [class*="font-sans"] {
-        font-family: var(--lang-font-body), 'DM Sans', 'Inter', sans-serif !important;
+      html[lang="${code}"] .font-sans {
+        font-family: var(--lang-font-body), var(--font-body, sans-serif);
       }
       html[lang="${code}"] .font-display,
       html[lang="${code}"] .font-serif,
@@ -935,9 +941,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       html[lang="${code}"] h4,
       html[lang="${code}"] h5,
       html[lang="${code}"] h6,
-      html[lang="${code}"] .brand-heading,
-      html[lang="${code}"] [class*="heading-"] {
-        font-family: var(--lang-font-display), var(--lang-font-body), 'Playfair Display', serif !important;
+      html[lang="${code}"] .brand-heading {
+        font-family: var(--lang-font-display), var(--lang-font-body), var(--font-display, serif);
+      }
+      `
+          : ""
       }
       /* Suppress text highlight flash and artifacts from Google Translate */
       .goog-text-highlight,

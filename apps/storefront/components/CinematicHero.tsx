@@ -164,7 +164,7 @@ const CinematicHero: React.FC = () => {
   const titleFont =
     appearanceData?.title_font ||
     appearanceData?.storefront_appearance?.title_font ||
-    "Playfair Display";
+    undefined;
 
   const defaultSlides: Slide[] = [
     {
@@ -422,28 +422,28 @@ const CinematicHero: React.FC = () => {
         </motion.div>
       </AnimatePresence>
 
-      {/* ── Content Area with Mobile-Optimized Bottom Stack ── */}
+      {/* ── Content Area: Top title tag center-aligned with the navigation arrow (top-1/2) ── */}
       <div
-        className={`absolute inset-0 flex items-end lg:items-center pointer-events-none z-10 ${textPosition === "center"
+        className={`absolute inset-x-0 top-1/2 -translate-y-3 sm:-translate-y-3.5 flex items-start pointer-events-none z-10 ${textPosition === "center"
             ? "justify-center text-center"
             : textPosition === "right"
               ? "justify-end text-right"
               : ""
           }`}
       >
-        <div className="w-full px-5 sm:px-9 lg:px-11 xl:px-12 pb-12 sm:pb-16 lg:pb-0">
+        <div className="w-full px-6 sm:px-10 lg:px-12 xl:px-14">
           <AnimatePresence mode="wait" initial={false}>
-            {/* CONTENT BOX — Positioned tightly with Counter directly atop the 3 rows */}
+            {/* CONTENT BOX — Top Counter pill & Subtitle sits directly aligned with the center navigation arrow */}
             <motion.div
               key={slide.id + "-content"}
-              className="w-full max-w-[480px] sm:max-w-[640px] lg:max-w-[760px] flex flex-col justify-end pointer-events-auto"
+              className="w-full max-w-[480px] sm:max-w-[640px] lg:max-w-[760px] flex flex-col justify-start pointer-events-auto"
               style={{ willChange: "opacity, transform, filter" }}
               variants={textVariants}
               initial="initial"
               animate="animate"
               exit="exit"
             >
-              {/* 1. Counter Pill & Subtitle — Sits tightly directly on top of the headline */}
+              {/* 1. Counter Pill & Subtitle — Sits aligned with center arrow */}
               <div className="flex items-center gap-2 sm:gap-3 mb-1.5 sm:mb-2.5 shrink-0 flex-wrap">
                 <span className="font-sans-brand text-foreground/80 text-[9px] sm:text-[0.62rem] tracking-[0.2em] bg-background/60 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-border/30 shadow-xs">
                   {String(current + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
