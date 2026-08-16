@@ -1396,7 +1396,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const protectBrandElements = () => {
       try {
         const brandEls = document.querySelectorAll(
-          '.brand-title, .brand-name, .brand-logo, [data-brand="orizino"], .font-editorial, .font-sans-brand'
+          '.brand-title, .brand-name, .brand-logo, [data-brand="orizino"], .brand-token'
         );
         brandEls.forEach((el) => {
           if (!el.getAttribute("translate")) {
