@@ -4,6 +4,33 @@ import { supabase } from "@orizino/supabase/client";
 import { useAuth } from "./AuthContext";
 import { toast } from "../lib/app-toast";
 
+// Safely patch Node.prototype.removeChild and Node.prototype.insertBefore
+// to prevent React hydration / reconciliation crashes when Google Translate or browser
+// translation extensions mutate or wrap text nodes in <font> tags.
+if (typeof window !== "undefined") {
+  const originalRemoveChild = Node.prototype.removeChild;
+  Node.prototype.removeChild = function <T extends Node>(child: T): T {
+    if (child.parentNode !== this) {
+      if (child.parentNode) {
+        return child.parentNode.removeChild(child) as T;
+      }
+      return child;
+    }
+    return originalRemoveChild.call(this, child) as T;
+  };
+
+  const originalInsertBefore = Node.prototype.insertBefore;
+  Node.prototype.insertBefore = function <T extends Node>(newNode: T, referenceNode: Node | null): T {
+    if (referenceNode && referenceNode.parentNode !== this) {
+      if (referenceNode.parentNode) {
+        return referenceNode.parentNode.insertBefore(newNode, referenceNode) as T;
+      }
+      return this.appendChild(newNode) as T;
+    }
+    return originalInsertBefore.call(this, newNode, referenceNode) as T;
+  };
+}
+
 export interface LangDef {
   code: string;
   label: string;
@@ -943,6 +970,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       html[lang="${code}"] h6,
       html[lang="${code}"] .brand-heading {
         font-family: var(--lang-font-display), var(--lang-font-body), var(--font-display, serif);
+        letter-spacing: 0em !important;
       }
       `
           : ""
@@ -1355,8 +1383,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         document.head.appendChild(metaTag);
       }
     } else {
-      if (metaTag && metaTag.parentNode) {
-        metaTag.parentNode.removeChild(metaTag);
+      if (metaTag) {
+        metaTag.remove();
       }
     }
   }, [language, loadFontForLanguage]);

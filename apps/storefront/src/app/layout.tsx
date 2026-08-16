@@ -22,6 +22,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Anek+Bangla:wght@300;400;500;600;700;800&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){if(typeof Node!=='undefined'&&Node.prototype){var origRemoveChild=Node.prototype.removeChild;Node.prototype.removeChild=function(child){if(child.parentNode!==this){if(child.parentNode){return child.parentNode.removeChild(child);}return child;}return origRemoveChild.call(this,child);};var origInsertBefore=Node.prototype.insertBefore;Node.prototype.insertBefore=function(newNode,refNode){if(refNode&&refNode.parentNode!==this){if(refNode.parentNode){return refNode.parentNode.insertBefore(newNode,refNode);}return this.appendChild(newNode);}return origInsertBefore.call(this,newNode,refNode);};}})();`,
+          }}
+        />
       </head>
       <body
         suppressHydrationWarning

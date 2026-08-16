@@ -69,20 +69,24 @@ const KineticTitle = ({
   style?: React.CSSProperties;
   fontFamily?: string;
 }) => {
+  // Detect complex non-Latin scripts (Bengali, Devanagari, Arabic, CJK, etc.)
+  const isComplexScript = /[\u0980-\u09FF\u0900-\u097F\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uAC00-\uD7AF\u1000-\u109F\u0E00-\u0E7F]/.test(text);
   const words = text.split(" ");
   const customStyle: React.CSSProperties = {
     ...style,
     fontFamily: fontFamily
       ? (FONT_FAMILY_MAP[fontFamily] || `'${fontFamily}', var(--font-title, var(--font-display))`)
       : 'var(--font-title, var(--font-display))',
+    lineHeight: isComplexScript ? 1.25 : (style?.lineHeight ?? 1.18),
+    letterSpacing: isComplexScript ? '0' : (style?.letterSpacing ?? '-0.01em'),
   };
 
   return (
-    <h1 className={className} style={customStyle}>
+    <h1 className={`${className || ''} overflow-visible py-1`} style={customStyle}>
       {words.map((word, i) => (
         <motion.span
           key={i}
-          className="inline-block mr-[0.25em]"
+          className="inline-block mr-[0.25em] py-0.5 overflow-visible"
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
@@ -461,13 +465,13 @@ const CinematicHero: React.FC = () => {
               </div>
 
               {/* 2. Headline Container — Max 3 big rows */}
-              <div className="flex flex-col justify-end items-start mb-0.5 sm:mb-1">
+              <div className="flex flex-col justify-end items-start mb-0.5 sm:mb-1 overflow-visible">
                 {slide.title && (
                   <KineticTitle
                     key={slide.id + "-title"}
                     text={slide.title}
                     fontFamily={titleFont}
-                    className="heading-editorial text-foreground line-clamp-3"
+                    className="heading-editorial text-foreground"
                     style={{
                       fontSize:
                         slide.title.length <= 35
@@ -475,8 +479,8 @@ const CinematicHero: React.FC = () => {
                           : slide.title.length <= 55
                             ? "clamp(1.5rem, 4.6vw, 3.75rem)"
                             : "clamp(1.25rem, 3.6vw, 3rem)",
-                      lineHeight: 1.08,
-                      letterSpacing: "-0.02em",
+                      lineHeight: 1.18,
+                      letterSpacing: "-0.01em",
                     }}
                   />
                 )}
