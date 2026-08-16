@@ -96,80 +96,80 @@ function gen(
 }
 
 export const themePalettes: ThemePalette[] = [
-  // 1 — DEFAULT: Monochrome Charcoal + White [based on light/dark mode]
+  // 1 — Cherry Vanilla (Signature Brand Palette: Cherry Cola Red Accent + Midnight Charcoal + Cream Vanilla)
   {
     id: "cherry_vanilla",
-    name: "Monochrome Charcoal",
-    preview: ["#18181b", "#fafafa", "#27272a", "#18181b", "#fafafa", "#27272a"],
+    name: "Cherry Vanilla",
+    preview: ["#9a0002", "#1c1c1a", "#efe6dd", "#9a0002", "#1c1c1a", "#efe6dd"],
     dark: {
-      "--background": "0 0% 14%",              /* #242424 Monochrome Charcoal */
-      "--foreground": "0 0% 98%",              /* #FAFAFA Crisp Pure White */
-      "--card": "0 0% 17%",                    /* #2B2B2B Charcoal Card */
-      "--card-foreground": "0 0% 98%",
-      "--popover": "0 0% 17%",
-      "--popover-foreground": "0 0% 98%",
-      "--primary": "0 0% 98%",                 /* Pure White Primary */
-      "--primary-foreground": "0 0% 12%",      /* Charcoal text on primary button */
-      "--secondary": "0 0% 21%",               /* Secondary Charcoal */
-      "--secondary-foreground": "0 0% 90%",
-      "--muted": "0 0% 18%",
-      "--muted-foreground": "0 0% 65%",
-      "--accent": "0 0% 23%",
-      "--accent-foreground": "0 0% 98%",
+      "--background": "60 4% 11%",              /* #1c1c1a Midnight Charcoal */
+      "--foreground": "30 33% 95%",              /* #efe6dd Cream Vanilla */
+      "--card": "60 4% 14%",                    /* Slightly elevated charcoal */
+      "--card-foreground": "30 33% 95%",
+      "--popover": "60 4% 14%",
+      "--popover-foreground": "30 33% 95%",
+      "--primary": "359 100% 30%",             /* #9a0002 Cherry Cola */
+      "--primary-foreground": "30 33% 95%",    /* Cream Vanilla text */
+      "--secondary": "60 4% 18%",              /* Secondary Charcoal */
+      "--secondary-foreground": "30 33% 90%",
+      "--muted": "60 4% 15%",
+      "--muted-foreground": "30 10% 60%",
+      "--accent": "359 100% 30%",              /* #9a0002 Cherry Cola Red Accent */
+      "--accent-foreground": "30 33% 95%",     /* #efe6dd Cream Vanilla */
       "--destructive": "0 72% 51%",
       "--destructive-foreground": "0 0% 98%",
-      "--border": "0 0% 25%",
-      "--input": "0 0% 25%",
-      "--ring": "0 0% 98%",
-      "--gradient-primary": "linear-gradient(135deg, hsl(0 0% 98%), hsl(0 0% 80%))",
-      "--gradient-accent": "linear-gradient(135deg, hsl(0 0% 98%), hsl(0 0% 25%))",
-      "--gradient-glow": "radial-gradient(ellipse at center, hsl(0 0% 100% / 0.12), transparent 70%)",
-      "--glass-bg": "0 0% 16% / 0.7",
-      "--glass-border": "0 0% 32% / 0.4",
-      "--glass-shadow": "0 8px 32px hsl(0 0% 0% / 0.35)",
-      "--sidebar-background": "0 0% 15%",
-      "--sidebar-foreground": "0 0% 98%",
-      "--sidebar-primary": "0 0% 98%",
-      "--sidebar-primary-foreground": "0 0% 12%",
-      "--sidebar-accent": "0 0% 21%",
-      "--sidebar-accent-foreground": "0 0% 98%",
-      "--sidebar-border": "0 0% 25%",
-      "--sidebar-ring": "0 0% 98%",
+      "--border": "60 4% 20%",
+      "--input": "60 4% 20%",
+      "--ring": "359 100% 30%",
+      "--gradient-primary": "linear-gradient(135deg, hsl(359 100% 30%), hsl(359 80% 20%))",
+      "--gradient-accent": "linear-gradient(135deg, hsl(359 100% 30%), hsl(30 33% 90%))",
+      "--gradient-glow": "radial-gradient(ellipse at center, hsl(359 100% 30% / 0.2), transparent 70%)",
+      "--glass-bg": "60 4% 12% / 0.7",
+      "--glass-border": "30 33% 90% / 0.15",
+      "--glass-shadow": "0 8px 32px hsl(0 0% 0% / 0.4)",
+      "--sidebar-background": "60 4% 10%",
+      "--sidebar-foreground": "30 33% 95%",
+      "--sidebar-primary": "359 100% 30%",
+      "--sidebar-primary-foreground": "30 33% 95%",
+      "--sidebar-accent": "60 4% 16%",
+      "--sidebar-accent-foreground": "30 33% 95%",
+      "--sidebar-border": "60 4% 18%",
+      "--sidebar-ring": "359 100% 30%",
     },
     light: {
-      "--background": "0 0% 100%",            /* #FFFFFF Crisp Clean White */
-      "--foreground": "0 0% 14%",              /* #242424 Monochrome Charcoal */
-      "--card": "0 0% 98%",                    /* #FAFAFA Card */
-      "--card-foreground": "0 0% 14%",
+      "--background": "30 33% 95%",            /* #efe6dd Cream Vanilla */
+      "--foreground": "60 4% 11%",              /* #1c1c1a Midnight Charcoal */
+      "--card": "0 0% 100%",                   /* Clean White Card */
+      "--card-foreground": "60 4% 11%",
       "--popover": "0 0% 100%",
-      "--popover-foreground": "0 0% 14%",
-      "--primary": "0 0% 14%",                 /* Charcoal Primary */
-      "--primary-foreground": "0 0% 98%",      /* White text on primary button */
-      "--secondary": "0 0% 93%",
-      "--secondary-foreground": "0 0% 14%",
-      "--muted": "0 0% 94%",
-      "--muted-foreground": "0 0% 42%",
-      "--accent": "0 0% 92%",
-      "--accent-foreground": "0 0% 14%",
+      "--popover-foreground": "60 4% 11%",
+      "--primary": "359 100% 30%",             /* #9a0002 Cherry Cola */
+      "--primary-foreground": "30 33% 95%",    /* Cream Vanilla text */
+      "--secondary": "30 20% 90%",
+      "--secondary-foreground": "60 4% 11%",
+      "--muted": "30 20% 92%",
+      "--muted-foreground": "60 4% 40%",
+      "--accent": "359 100% 30%",              /* #9a0002 Cherry Cola Red Accent */
+      "--accent-foreground": "30 33% 95%",     /* #efe6dd Cream Vanilla */
       "--destructive": "0 72% 51%",
       "--destructive-foreground": "0 0% 98%",
-      "--border": "0 0% 88%",
-      "--input": "0 0% 88%",
-      "--ring": "0 0% 14%",
-      "--gradient-primary": "linear-gradient(135deg, hsl(0 0% 14%), hsl(0 0% 28%))",
-      "--gradient-accent": "linear-gradient(135deg, hsl(0 0% 14%), hsl(0 0% 88%))",
-      "--gradient-glow": "radial-gradient(ellipse at center, hsl(0 0% 14% / 0.08), transparent 70%)",
+      "--border": "30 20% 85%",
+      "--input": "30 20% 85%",
+      "--ring": "359 100% 30%",
+      "--gradient-primary": "linear-gradient(135deg, hsl(359 100% 30%), hsl(359 75% 22%))",
+      "--gradient-accent": "linear-gradient(135deg, hsl(359 100% 30%), hsl(30 33% 90%))",
+      "--gradient-glow": "radial-gradient(ellipse at center, hsl(359 100% 30% / 0.1), transparent 70%)",
       "--glass-bg": "0 0% 100% / 0.8",
-      "--glass-border": "0 0% 85% / 0.5",
-      "--glass-shadow": "0 8px 32px hsl(0 0% 0% / 0.06)",
-      "--sidebar-background": "0 0% 98%",
-      "--sidebar-foreground": "0 0% 14%",
-      "--sidebar-primary": "0 0% 14%",
-      "--sidebar-primary-foreground": "0 0% 98%",
-      "--sidebar-accent": "0 0% 93%",
-      "--sidebar-accent-foreground": "0 0% 14%",
-      "--sidebar-border": "0 0% 88%",
-      "--sidebar-ring": "0 0% 14%",
+      "--glass-border": "30 20% 80% / 0.5",
+      "--glass-shadow": "0 8px 32px hsl(0 0% 0% / 0.08)",
+      "--sidebar-background": "30 30% 97%",
+      "--sidebar-foreground": "60 4% 11%",
+      "--sidebar-primary": "359 100% 30%",
+      "--sidebar-primary-foreground": "30 33% 95%",
+      "--sidebar-accent": "30 20% 92%",
+      "--sidebar-accent-foreground": "60 4% 11%",
+      "--sidebar-border": "30 20% 85%",
+      "--sidebar-ring": "359 100% 30%",
     },
   },
 

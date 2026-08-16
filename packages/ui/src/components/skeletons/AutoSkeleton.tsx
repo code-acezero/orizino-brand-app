@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { useLocation } from "../../../shared/src/lib/router-compat";
+import { useLocation } from "@orizino/shared";
 import TableSkeleton from "./TableSkeleton";
 import CardGridSkeleton from "./CardGridSkeleton";
 import FormSkeleton from "./FormSkeleton";

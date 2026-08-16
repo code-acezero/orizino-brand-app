@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/lib/app-toast";
-import { Newspaper, Plus, Trash2, Edit3, Eye, Save, Sparkles, Image as ImageIcon, Calendar, Tag, Check, Loader2 } from "lucide-react";
+import { Newspaper, Plus, Trash2, Edit3, Eye, Save, Image as ImageIcon, Calendar, Tag, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -168,7 +168,7 @@ export default function AdminBrandHomeNews() {
       {/* Global Newsroom Settings */}
       <div className="bg-card/60 border border-border/60 rounded-2xl p-6 mb-8 space-y-4">
         <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" /> Newsroom Display Headers
+          <Newspaper className="w-4 h-4 text-primary" /> Newsroom Display Headers
         </h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>

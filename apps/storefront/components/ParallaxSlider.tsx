@@ -304,17 +304,6 @@ const ParallaxSlider: React.FC = () => {
 
   return (
     <div className="relative">
-      {/* Gradient mesh background behind slider */}
-      <div className="absolute -inset-4 -z-10 opacity-60 blur-2xl pointer-events-none" aria-hidden="true"
-        style={{
-          background: `
-            radial-gradient(ellipse 50% 60% at 15% 20%, hsl(var(--primary) / 0.2), transparent),
-            radial-gradient(ellipse 40% 50% at 80% 30%, hsl(var(--accent) / 0.15), transparent),
-            radial-gradient(ellipse 60% 40% at 50% 90%, hsl(var(--primary) / 0.1), transparent),
-            radial-gradient(ellipse 30% 40% at 90% 80%, hsl(var(--accent) / 0.12), transparent)
-          `,
-        }}
-      />
 
       <motion.div
         ref={containerRef}

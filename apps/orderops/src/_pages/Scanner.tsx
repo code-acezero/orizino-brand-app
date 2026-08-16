@@ -2,6 +2,7 @@ import { useState } from "react";
 import { BarcodeScanner, ScannerLaunchCard } from "@/components/BarcodeScanner";
 import { lookupSerial, type SerialLookupRow } from "@/lib/serials";
 import { PackageCheck, PackageX, ScanLine } from "lucide-react";
+import { extractSerialCode } from "@orizino/shared";
 
 const STATUS_STYLE: Record<string, string> = {
   available: "bg-emerald-500/15 text-emerald-700",
@@ -15,7 +16,9 @@ export function Scanner() {
   const [active, setActive] = useState(false);
   const [history, setHistory] = useState<{ code: string; row: SerialLookupRow | null }[]>([]);
 
-  const handleScan = async (code: string) => {
+  const handleScan = async (rawCode: string) => {
+    const code = extractSerialCode(rawCode);
+    if (!code) return;
     try {
       const row = await lookupSerial(code);
       setHistory((prev) => [{ code, row }, ...prev].slice(0, 30));

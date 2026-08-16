@@ -10,22 +10,53 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Reserve scrollbar space so Radix scroll-lock (dropdowns, dialogs) doesn't shift layout */
-html {
-  scrollbar-gutter: stable;
+/* Body never scrolls (admin shell is h-screen overflow-hidden) — no gutter needed.
+ * Do NOT add scrollbar-gutter: stable here; it causes Radix to measure a false
+ * 17px gap and inject margin-right on every dropdown open. */
+
+/*
+ * GLOBAL FLOATING UI Z-INDEX FIX
+ * --------------------------------
+ * The sticky AdminTopBar uses backdrop-blur which creates a CSS stacking
+ * context at z-30. Radix portals (dropdown, select, popover, dialog, sheet)
+ * render into <body> but can appear behind the nav due to stacking context
+ * layering. We force all Radix portal wrappers to z-index 200 so they
+ * always paint above the z-30 header stacking context.
+ */
+
+/* Popper-based floaters: DropdownMenu, Popover, Select, Tooltip, HoverCard */
+[data-radix-popper-content-wrapper] {
+  z-index: 200 !important;
+  pointer-events: auto !important;
 }
 
-/* Ensure dropdowns, selects, and popovers never freeze or lock page scrolling */
+/* Fixed overlays: Dialog, AlertDialog, Sheet */
+[data-radix-dialog-overlay],
+[data-radix-alert-dialog-overlay] {
+  z-index: 200 !important;
+}
+
+/* Fixed content panels: Dialog, AlertDialog, Sheet */
+[data-radix-dialog-content],
+[data-radix-alert-dialog-content] {
+  z-index: 201 !important;
+}
+
+/* Prevent dropdown / select / modal opening from shrinking or shifting page width */
+html,
+body,
 body[data-scroll-locked],
 html[data-scroll-locked] {
-  overflow: auto !important;
-  margin-right: 0 !important;
-  pointer-events: auto !important;
+  padding-right: 0px !important;
+  margin-right: 0px !important;
 }
 
-/* Ensure popper content wrapper allows outer touches and interactions */
-[data-radix-popper-content-wrapper] {
-  pointer-events: auto !important;
+/* Sticker studio right column — hide the scrollbar track */
+.sticker-studio-right-col::-webkit-scrollbar {
+  display: none;
+}
+.sticker-studio-right-col {
+  scrollbar-width: none;
 }
 
 @theme inline {
@@ -804,4 +835,32 @@ a, button, [role="button"] {
   --gradient-glow: radial-gradient(ellipse at center, hsl(0 0% 0% / 0.12), transparent 65%);
   --gradient-gold: linear-gradient(135deg, hsl(0 0% 60%), hsl(0 0% 30%));
 }
+
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  animation: marquee-scroll 25s linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
+}
+/* Clean transparent autofill for cinematic dark and light input themes */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  -webkit-text-fill-color: currentColor !important;
+  caret-color: currentColor !important;
+  border-radius: 8px !important;
+  transition: background-color 5000s ease-in-out 0s;
+  background-color: transparent !important;
+}
+
 /* code:4ce0 */
+

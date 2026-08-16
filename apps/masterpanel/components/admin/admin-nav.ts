@@ -6,6 +6,7 @@ import {
   ShoppingCart,
   Users,
   Star,
+  Heart,
   Image,
   Settings,
   MessageSquare,
@@ -34,7 +35,7 @@ import {
   BarChart3,
   Search,
   Type,
-  Sparkles,
+  Paintbrush,
   Wand2,
   Workflow,
   Layout,
@@ -63,6 +64,8 @@ import {
   ShieldCheck,
   Mail,
   ClipboardList,
+  ScanLine,
+  Store,
   type LucideIcon,
 } from "lucide-react";
 
@@ -118,87 +121,65 @@ export const adminNav: AdminNavSection[] = [
         icon: LayoutGrid,
         description: "Section navigator & KPIs",
         children: [
-          { title: "Overview",     url: "/" },
-          { title: "Sales",        url: "/sales" },
-          { title: "Marketing",    url: "/marketing" },
-          { title: "Email",        url: "/email" },
-          { title: "Affiliate",    url: "/affiliate" },
-          { title: "Public Contents & UI", url: "/brand" },
-          { title: "Backend",      url: "/system" },
-          { title: "Settings",     url: "/settings-ai" },
-          { title: "Corporate",    url: "/team" },
+          { title: "Overview",                     url: "/" },
+          { title: "Customer & Sales",             url: "/sales" },
+          { title: "Products, Shipping & Offers",   url: "/sales/products-management?tab=products" },
+          { title: "Marketing",           url: "/marketing" },
+          { title: "Email",               url: "/email" },
+          { title: "Affiliate",           url: "/affiliate" },
+          { title: "Public Contents & UI",url: "/brand" },
+          { title: "Backend",             url: "/system" },
+          { title: "Settings",            url: "/settings-ai" },
+          { title: "Corporate",           url: "/team" },
         ],
       },
     ],
   },
 
   // ─────────────────────────────────────────────────────────────────
-  // ADMIN  /admin — sales management
+  // 1. Customer & Sales — sales management, orders & support
   // ─────────────────────────────────────────────────────────────────
   {
-    label: "Sales & Operations",
+    label: "Customer & Sales",
     items: [
-      // ── Hub pages (section dashboards) ──
       {
         title: "Sales Dashboard",
         url: "/sales",
         icon: LayoutDashboard,
         section: "orders",
-        description: "Sales overview & quick stats",
+        description: "Sales overview, revenue volume & quick stats",
       },
       {
-        title: "Products Management",
-        url: "/sales/products-management",
-        icon: Package,
-        section: "products",
-        description: "Products, categories, serials, scanner & stickers",
+        title: "Orders",
+        url: "/sales/orders",
+        icon: ShoppingCart,
+        section: "orders",
+        description: "Online orders & customer returns",
         children: [
-          { title: "Products",      url: "/sales/products-management?tab=products" },
-          { title: "Categories",    url: "/sales/products-management?tab=categories" },
-          { title: "Stock & Serials", url: "/sales/products-management?tab=stock" },
-          { title: "Barcode Scanner", url: "/sales/products-management?tab=scanner" },
+          { title: "Orders",            url: "/sales/orders" },
+          { title: "Returns",           url: "/sales/returns" },
         ],
       },
       {
         title: "Offline Orders",
         url: "/sales/offline-orders",
-        icon: ShoppingCart,
+        icon: Store,
         section: "offline_orders",
-        description: "Create manual sales (counter, Page, WhatsApp, TikTok, Instagram) with continuous barcode scanning",
+        description: "Counter POS, Page, WhatsApp, TikTok & manual sales with live scanning",
       },
       {
-        title: "Invoice & Stickers",
-        url: "/sales/invoice-stickers",
-        icon: Receipt,
-        section: "orders",
-        description: "Invoice designer, order stickers & product serial stickers",
-        children: [
-          { title: "Invoice Designer",         url: "/sales/invoice-stickers?tab=invoice" },
-          { title: "Order Sticker",            url: "/sales/invoice-stickers?tab=order-sticker" },
-          { title: "Product Serial Sticker",   url: "/sales/invoice-stickers?tab=product-sticker" },
-        ],
-      },
-      {
-        title: "Promotions & Merch",
-        url: "/sales/coupons",
-        icon: Package,
+        title: "Product Scanner",
+        url: "/sales/products-management?tab=scanner",
+        icon: ScanLine,
         section: "products",
-        description: "Reviews, coupons, promos & showcase",
-        children: [
-          { title: "Reviews",         url: "/sales/reviews" },
-          { title: "Requests",        url: "/sales/requests" },
-          { title: "Coupons",         url: "/sales/coupons" },
-          { title: "User Promos",     url: "/sales/user-promos" },
-          { title: "Delivery Offers", url: "/sales/delivery-offers" },
-        ],
+        description: "High-speed camera & physical serial scanner for sales, returns, and verification",
       },
-
       {
         title: "Customer Support",
         url: "/sales/customers-hub",
         icon: Users,
         section: "customers",
-        description: "Customers, support & email",
+        description: "Customers, support inbox, analytics & live activity",
         children: [
           {
             title: "Customers",
@@ -212,26 +193,73 @@ export const adminNav: AdminNavSection[] = [
           { title: "Customer Analytics", url: "/sales/customer-analytics" },
           { title: "Live Activity",      url: "/sales/live-activity" },
           { title: "Announcements",      url: "/marketing/announcements" },
+        ],
+      },
+    ],
+  },
 
-
-
+  // ─────────────────────────────────────────────────────────────────
+  // 2. Products, Shipping & Offers — catalogue, stock, shipping & offers
+  // ─────────────────────────────────────────────────────────────────
+  {
+    label: "Products, Shipping & Offers",
+    items: [
+      {
+        title: "Products",
+        url: "/sales/products-management?tab=products",
+        icon: Package,
+        section: "products",
+        description: "Product catalogue, variant matrix, pricing & bulk upload",
+      },
+      {
+        title: "Categories",
+        url: "/sales/products-management?tab=categories",
+        icon: FolderTree,
+        section: "products",
+        description: "Catalogue hierarchy, storefront filters, branding visuals & SEO",
+      },
+      {
+        title: "Stock & Serials",
+        url: "/sales/products-management?tab=stock",
+        icon: Layers,
+        section: "products",
+        description: "Global two-way stock sync, serial logs & inventory movement",
+      },
+      {
+        title: "Customer Reviews",
+        url: "/sales/reviews",
+        icon: Star,
+        section: "products",
+        description: "Product star ratings, customer feedback & moderation",
+      },
+      {
+        title: "Wishlists & Demand",
+        url: "/sales/requests",
+        icon: Heart,
+        section: "products",
+        description: "Customer wishlist saves, restock alert queues & purchasing demand",
+      },
+      {
+        title: "Invoice & Stickers",
+        url: "/sales/invoice-stickers",
+        icon: Receipt,
+        section: "orders",
+        description: "Invoice & POS slip designer, and product serial stickers",
+        children: [
+          { title: "Invoice & POS Config",     url: "/sales/invoice-stickers" },
+          { title: "Product Serial Sticker",   url: "/sales/invoice-stickers?tab=product-sticker" },
         ],
       },
       {
-        title: "Payments & Couriers",
-        url: "/sales/payments-couriers",
-        icon: CreditCard,
-        section: "orders",
-        adminOnly: true,
-        description: "Gateways, shipping & couriers",
+        title: "Promotions & Discounts",
+        url: "/sales/coupons",
+        icon: Tag,
+        section: "products",
+        description: "Discount coupons, targeted user promos & delivery offers",
         children: [
-          { title: "Payment Gateways",  url: "/sales/payment-gateways" },
-          { title: "Orders",            url: "/sales/orders" },
-          { title: "Returns",           url: "/sales/returns" },
-          { title: "Shipping",          url: "/sales/shipping" },
-          { title: "Couriers",          url: "/sales/couriers" },
-          { title: "Hubs & Pricing",    url: "/sales/courier-management" },
-          { title: "Delivery Offers",   url: "/sales/delivery-offers" },
+          { title: "Discount Coupons",       url: "/sales/coupons?tab=coupons" },
+          { title: "Targeted User Promos",   url: "/sales/coupons?tab=user-promos" },
+          { title: "Delivery Offers",        url: "/sales/delivery-offers" },
         ],
       },
     ],
@@ -405,14 +433,37 @@ export const adminNav: AdminNavSection[] = [
           { title: "Home Dashboard",     url: "/brand/home?tab=dashboard" },
           { title: "Home Analytics",     url: "/brand/home?tab=analytics" },
           { title: "Category & Section Layout", url: "/brand/home?tab=category-displays" },
+          { title: "Marquee Strip Ticker", url: "/brand/home?tab=marquee" },
           { title: "Campaigns & Drops",  url: "/brand/home?tab=campaigns" },
           { title: "Editorial & Social", url: "/brand/home?tab=editorial" },
           { title: "Appearance & Theme", url: "/brand/home?tab=layout" },
-          { title: "Cinematic Showcase", url: "/brand/home?tab=cinematic-showcase" },
-          { title: "Slider Config",     url: "/brand/showcase" },
+          { title: "Storefront Showcase", url: "/sales/showcase" },
           { title: "Banners & Promos",   url: "/brand/banners" },
           { title: "Footer Config",      url: "/brand/footer" },
         ],
+      },
+      {
+        title: "Appearance & Typography",
+        url: "/brand/appearance",
+        icon: Palette,
+        adminOnly: true,
+        section: "storefront_ui",
+        description: "Typography pairings, marquee ticker studio, layout & auth styling",
+        children: [
+          { title: "Storefront Typography", url: "/brand/appearance?tab=storefront" },
+          { title: "Marquee Ticker Studio", url: "/brand/appearance?tab=marquee" },
+          { title: "Product Detail Layout", url: "/brand/appearance?tab=product" },
+          { title: "Profile Appearance",   url: "/brand/appearance?tab=profile" },
+          { title: "Auth Page Styling",    url: "/brand/appearance?tab=auth" },
+        ],
+      },
+      {
+        title: "Branding & Assets",
+        url: "/brand/branding",
+        icon: Paintbrush,
+        adminOnly: true,
+        section: "storefront_ui",
+        description: "Logo, favicon, icons, color tokens & brand voice",
       },
       {
         title: "BrandHome UI",
@@ -611,6 +662,15 @@ export const adminNav: AdminNavSection[] = [
         keywords: "telegram bot chat notifications",
       },
       {
+        title: "Payment Gateways",
+        url: "/sales/payment-gateways",
+        icon: CreditCard,
+        section: "settings",
+        adminOnly: true,
+        description: "MFS personal accounts (bKash, Nagad, Rocket, Upay), COD, Stripe & merchant gateway config",
+        keywords: "payments payment gateways bkash nagad rocket upay stripe cod qr code merchant",
+      },
+      {
         title: "Redirects",
         url: "/settings-ai/redirects",
         icon: ExternalLink,
@@ -724,5 +784,5 @@ export const mobilePrimary: Array<{ title: string; url: string; icon: LucideIcon
   { title: "Settings",  url: "/settings-ai",                  icon: Settings,        section: "settings" },
 ];
 
-export { Eye, BarChart3, Search, Type, Sparkles, Layout, Receipt, Mail, Send, AtSign, ShieldCheck, ClipboardList, Briefcase };
+export { Eye, BarChart3, Search, Type, Paintbrush, Layout, Receipt, Mail, Send, AtSign, ShieldCheck, ClipboardList, Briefcase };
 // code:4ce0

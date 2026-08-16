@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TableLoadingRow, TableEmptyRow, EmptyState } from "@/components/admin/TableStates";
 import { Activity, AlertTriangle, RefreshCw, Database, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { toast } from "sonner";
+import { toast } from "@/lib/app-toast";
 
 type Summary = {
   http_response_rows: number;

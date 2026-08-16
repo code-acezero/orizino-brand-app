@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { storefrontHref, shopHref, getShopLabel } from "@/lib/cross-app-urls";
 import { BrandTitle } from "@/lib/brand-title";
+import LanguageMenu from "@/components/footer/LanguageMenu";
 
 import { usePathname } from "next/navigation";
 
@@ -228,6 +229,10 @@ export function CompanyNav({ variant }: CompanyNavProps) {
                 </a>
               )
             )}
+            <div className="py-2 border-t border-border/40 flex items-center justify-between">
+              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Language</span>
+              <LanguageMenu variant="default" />
+            </div>
             <a
               href={signInUrl}
               onClick={() => setOpen(false)}

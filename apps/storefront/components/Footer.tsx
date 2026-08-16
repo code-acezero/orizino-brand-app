@@ -542,7 +542,7 @@ const Footer: React.FC = () => {
         <div className="hidden lg:flex items-center justify-between py-4 lg:py-5 w-full font-sans-brand text-xs">
           {/* Left: Copyright text and CTA links */}
           <div className="flex items-center gap-x-3 text-foreground/60 shrink-0">
-            <span>© {year} {siteName}. All rights reserved.</span>
+            <span>© {year} <span className="notranslate skiptranslate" translate="no">{siteName}</span>. All rights reserved.</span>
             <span className="text-foreground/20">•</span>
             <div className="flex items-center gap-x-3">
               {LEGAL_LINKS.map((l, idx) => (
@@ -594,7 +594,7 @@ const Footer: React.FC = () => {
         <div className="lg:hidden relative w-full flex flex-col sm:flex-row items-center justify-center py-1 overflow-x-auto scrollbar-none text-center">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-x-2.5 gap-y-1 font-sans-brand text-[8.5px] sm:text-[9px] text-foreground/40 leading-none">
             {/* Copyright text */}
-            <span className="inline-flex items-center shrink-0">© {year} {siteName}. All rights reserved.</span>
+            <span className="inline-flex items-center shrink-0">© {year} <span className="notranslate skiptranslate" translate="no">{siteName}</span>. All rights reserved.</span>
 
             {/* Separator dot — visible on sm+ screens */}
             <span className="hidden sm:inline-flex items-center text-foreground/20 text-[7px] shrink-0">•</span>

@@ -12,6 +12,7 @@
 
 export type MasterSectionKey =
   | "sales"
+  | "products"
   | "seo"
   | "email"
   | "affiliate"
@@ -33,15 +34,16 @@ export interface MasterSection {
 }
 
 export const MASTER_SECTIONS: readonly MasterSection[] = [
-  { key: "sales",     segment: "sales",       label: "Sales & Operations",   path: "/sales" },
-  { key: "seo",       segment: "marketing",     label: "Marketing Management", path: "/marketing" },
-  { key: "email",     segment: "email",       label: "Email Marketing",      path: "/email" },
-  { key: "affiliate", segment: "affiliate",   label: "Affiliate Program",    path: "/affiliate" },
-  { key: "brand",     segment: "brand",       label: "Public Contents & UI", path: "/brand/home" },
-  { key: "system",    segment: "system",      label: "Backend & System",     path: "/system" },
-  { key: "settings",  segment: "settings-ai", label: "Settings & AI",        path: "/settings-ai" },
-  { key: "team",      segment: "team",        label: "Team & Access",        path: "/team" },
-  { key: "master",    segment: "master",      label: "All Sections",         path: "/master" },
+  { key: "sales",     segment: "sales",             label: "Customer & Sales",             path: "/sales" },
+  { key: "products",  segment: "products-payments", label: "Products, Shipping & Offers",  path: "/sales/products-management?tab=products" },
+  { key: "seo",       segment: "marketing",         label: "Marketing Management",        path: "/marketing" },
+  { key: "email",     segment: "email",             label: "Email Marketing",             path: "/email" },
+  { key: "affiliate", segment: "affiliate",         label: "Affiliate Program",           path: "/affiliate" },
+  { key: "brand",     segment: "brand",             label: "Public Contents & UI",        path: "/brand/home" },
+  { key: "system",    segment: "system",            label: "Backend & System",            path: "/system" },
+  { key: "settings",  segment: "settings-ai",       label: "Settings & AI",               path: "/settings-ai" },
+  { key: "team",      segment: "team",              label: "Team & Access",               path: "/team" },
+  { key: "master",    segment: "master",            label: "All Sections",                path: "/master" },
 ] as const;
 
 /** Lookup by first URL segment (no leading slash). */
@@ -52,6 +54,7 @@ export const SECTION_BY_SEGMENT: Record<string, MasterSection> =
 export const SECTION_LABELS: Record<string, string> = {
   "": "Admin Management",
   ...Object.fromEntries(MASTER_SECTIONS.map((s) => [s.segment, s.label])),
+  products: "Products, Shipping & Offers",
 };
 
 /** Every section landing path — used by the sidebar to require exact match. */
@@ -72,8 +75,11 @@ const ALL_NAV_LABELS = [
 export const SEGMENT_TO_NAV_LABELS: Record<string, string[]> = {
   "": ["Overview"],     // Master Panel Home shows Overview section (Master Controls)
   master: ["Overview"], // /master merged with home
+  sales: ["Customer & Sales"],
+  products: ["Products, Shipping & Offers"],
+  "products-payments": ["Products, Shipping & Offers"],
   ...Object.fromEntries(
-    MASTER_SECTIONS.filter((s) => s.key !== "master").map((s) => [
+    MASTER_SECTIONS.filter((s) => s.key !== "master" && s.key !== "sales" && s.key !== "products").map((s) => [
       s.segment,
       [s.label],
     ]),

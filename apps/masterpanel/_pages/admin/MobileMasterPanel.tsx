@@ -19,21 +19,26 @@ type Group = { key: string; title: string; items: SectionRowItem[] };
 
 const GROUPS: Group[] = [
   {
-    key: "sales", title: "Sales & Operations",
+    key: "sales", title: "Customer & Sales",
     items: [
-      { key: "dashboard",  title: "Dashboard",       sub: "Overview & KPIs",           url: "/sales",                    icon: LayoutGrid,   color: "#f59e0b" },
-      { key: "orders",     title: "Orders",          sub: "Fulfilment & tracking",     url: "/sales/orders",             icon: ShoppingCart, color: "#f59e0b" },
-      { key: "products",   title: "Products",        sub: "Catalog & inventory",       url: "/sales/products-hub",       icon: Package,      color: "#f59e0b" },
-      { key: "scanner",    title: "Barcode Scanner", sub: "Camera & physical scanner", url: "/sales/products-management?tab=scanner", icon: ScanLine, color: "#f59e0b" },
-      { key: "customers",  title: "Customers",       sub: "Accounts, notes & tags",    url: "/sales/customers-hub",      icon: Users,        color: "#a855f7" },
-      { key: "reviews",    title: "Reviews",         sub: "Ratings & feedback",        url: "/sales/reviews",            icon: Star,         color: "#f59e0b" },
-      { key: "returns",    title: "Returns",         sub: "RMAs & refunds",            url: "/sales/returns",            icon: Truck,        color: "#f59e0b" },
-      { key: "coupons",    title: "Coupons",         sub: "Promo codes",               url: "/sales/coupons",            icon: Tag,          color: "#f59e0b" },
-      { key: "delivery",   title: "Delivery Offers", sub: "Shipping incentives",       url: "/sales/delivery-offers",    icon: Gift,         color: "#f59e0b" },
-      { key: "payments",   title: "Payments",        sub: "Gateways & couriers",       url: "/sales/payments-couriers",  icon: CreditCard,   color: "#f59e0b" },
-      { key: "shipping",   title: "Shipping",        sub: "Rates & zones",             url: "/sales/shipping",           icon: Truck,        color: "#f59e0b" },
-      { key: "live",       title: "Live Activity",   sub: "Realtime visitors",         url: "/sales/live-activity",      icon: Radio,        color: "#38bdf8" },
-      { key: "analytics",  title: "Analytics",       sub: "Sales & behavior insights", url: "/sales/customer-analytics", icon: BarChart3,    color: "#38bdf8" },
+      { key: "dashboard",  title: "Sales Dashboard", sub: "Overview & KPIs",           url: "/sales",                                     icon: LayoutGrid,   color: "#f59e0b" },
+      { key: "orders",     title: "Orders",          sub: "Fulfilment & tracking",     url: "/sales/orders",                             icon: ShoppingCart, color: "#f59e0b" },
+      { key: "offline",    title: "Offline Orders",  sub: "Counter POS & manual sales",url: "/sales/offline-orders",                     icon: ShoppingCart, color: "#f59e0b" },
+      { key: "scanner",    title: "Product Scanner", sub: "Camera & physical scanner", url: "/sales/products-management?tab=scanner",     icon: ScanLine,     color: "#f59e0b" },
+      { key: "customers",  title: "Customer Support",sub: "Accounts, inbox & live chat",url: "/sales/customers-hub",                    icon: Users,        color: "#a855f7" },
+      { key: "analytics",  title: "Analytics",       sub: "Sales & behavior insights", url: "/sales/customer-analytics",                icon: BarChart3,    color: "#38bdf8" },
+      { key: "live",       title: "Live Activity",   sub: "Realtime visitors",         url: "/sales/live-activity",                      icon: Radio,        color: "#38bdf8" },
+    ],
+  },
+  {
+    key: "products_payments", title: "Products, Shipping & Offers",
+    items: [
+      { key: "products",   title: "Products",        sub: "Catalogue & variants",      url: "/sales/products-management?tab=products",   icon: Package,      color: "#10b981" },
+      { key: "categories", title: "Categories",      sub: "Tree, visuals & SEO",       url: "/sales/products-management?tab=categories", icon: Layers,       color: "#10b981" },
+      { key: "stock",      title: "Stock & Serials", sub: "Two-way sync & serial logs",url: "/sales/products-management?tab=stock",      icon: Layers,       color: "#10b981" },
+      { key: "stickers",   title: "Invoice & Stickers",sub: "Slip & serial stickers",  url: "/sales/invoice-stickers",                   icon: FileText,     color: "#10b981" },
+      { key: "promotions", title: "Promotions",      sub: "Coupons, discounts & promos",url: "/sales/coupons",                           icon: Tag,          color: "#10b981" },
+      { key: "shipping",   title: "Shipping & Couriers",sub: "Rates, hubs & offers",   url: "/sales/shipping",                           icon: Truck,        color: "#10b981" },
     ],
   },
   {
@@ -94,6 +99,7 @@ const GROUPS: Group[] = [
     items: [
       { key: "db",       title: "DB Health",       sub: "Database vitals",     url: "/system/db-health",        icon: Database, color: "#38bdf8" },
       { key: "debug",    title: "Debug",           sub: "Diagnostics & logs",  url: "/system/debug",            icon: Bug,      color: "#38bdf8" },
+      { key: "payments",   title: "Payment Gateways",sub: "MFS, COD & Stripe", url: "/sales/payment-gateways",      icon: CreditCard, color: "#94a3b8" },
       { key: "settings", title: "Site Settings",   sub: "Global config",       url: "/settings-ai",                 icon: Settings, color: "#94a3b8" },
       { key: "ai",       title: "AI Settings",     sub: "Widget & memory",     url: "/settings-ai/ai-settings",     icon: Bot,      color: "#94a3b8" },
       { key: "calls",    title: "Call Settings",   sub: "Voice & telephony",   url: "/settings-ai/call-settings",   icon: Radio,    color: "#94a3b8" },

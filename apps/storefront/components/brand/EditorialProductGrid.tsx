@@ -45,13 +45,6 @@ const EditorialProductGrid: React.FC<EditorialProductGridProps> = ({
 
   return (
     <section ref={ref} className="w-full relative pt-2">
-      {/* Top ambient shadow blend for smooth section transition */}
-      <div
-        className="absolute -top-6 left-0 right-0 h-16 pointer-events-none z-0"
-        style={{
-          background: "linear-gradient(to bottom, hsl(var(--background) / 0.9), transparent)",
-        }}
-      />
       {/* Luxury Section Header */}
       <motion.div
         className="flex flex-col items-center text-center justify-center mb-8 gap-2"
@@ -74,55 +67,50 @@ const EditorialProductGrid: React.FC<EditorialProductGridProps> = ({
         ) : null}
       </motion.div>
 
-      {/* Centered Cards Container — Up to 7 items with bigger card width & small gaps */}
-      {isLoading ? (
-        <div className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-5 w-full">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="w-[calc(50%-0.5rem)] sm:w-[210px] md:w-[230px] lg:w-[250px] xl:w-[260px] shrink-0">
-              <ProductCardSkeleton />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <motion.div
-          className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-5 w-full"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "100px" }}
-        >
-          {displayed.map((product) => (
-            <motion.div
-              key={product.id}
-              variants={cardVariants}
-              className="w-[calc(50%-0.5rem)] sm:w-[210px] md:w-[230px] lg:w-[250px] xl:w-[260px] shrink-0"
-            >
-              <ProductCard
-                id={product.id}
-                name={product.name}
-                price={Number(product.price)}
-                compareAtPrice={product.compare_at_price ? Number(product.compare_at_price) : undefined}
-                thumbnail={product.thumbnail ?? undefined}
-                avgRating={product.avg_rating ? Number(product.avg_rating) : undefined}
-                reviewCount={product.review_count ?? undefined}
-                slug={product.slug}
-              />
-            </motion.div>
-          ))}
-        </motion.div>
-      )}
+      {/* Grid: 2 columns on mobile, 3 on tablet, 4 on desktop */}
+      <motion.div
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5"
+        variants={containerVariants}
+        initial="hidden"
+        animate={inView ? "visible" : "hidden"}
+      >
+        {isLoading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))
+          : displayed.map((product) => (
+              <motion.div key={product.id} variants={cardVariants}>
+                <ProductCard
+                  id={product.id}
+                  name={product.name}
+                  price={Number(product.price)}
+                  compareAtPrice={product.compare_at_price ? Number(product.compare_at_price) : undefined}
+                  thumbnail={product.thumbnail || (Array.isArray(product.images) ? product.images[0] : null)}
+                  avgRating={product.avg_rating || 0}
+                  reviewCount={product.review_count || 0}
+                  slug={product.slug}
+                  createdAt={product.created_at}
+                />
+              </motion.div>
+            ))}
+      </motion.div>
 
-      {/* Mobile view all */}
-      <div className="sm:hidden mt-6 text-center">
-        <a
-          href={viewAllLink}
-          className="inline-flex items-center gap-1.5 text-xs font-medium tracking-[0.14em] uppercase font-sans-brand text-muted-foreground hover:text-foreground transition-colors"
-        >
-          View All <ArrowRight className="w-3 h-3" />
-        </a>
-      </div>
+      {/* View All CTA */}
+      {viewAllLink && (
+        <div className="mt-8 flex justify-center">
+          <a
+            href={viewAllLink}
+            suppressHydrationWarning
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-border/80 text-foreground font-sans-brand text-xs font-semibold tracking-widest uppercase hover:bg-secondary/60 transition-all duration-300 group"
+          >
+            <span>View All Pieces</span>
+            <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+          </a>
+        </div>
+      )}
     </section>
   );
 };
 
-export default EditorialProductGrid;
+export default React.memo(EditorialProductGrid);
+// code:4ce0

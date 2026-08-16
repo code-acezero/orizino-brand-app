@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "@/lib/router-compat";
 import { motion } from "framer-motion";
 import type { Variants } from "framer-motion";
-import { Package, FolderTree, Star, MessageSquare, Layers, Tag, Gift, Percent, ChevronRight } from "lucide-react";
+import { Package, FolderTree, Star, MessageSquare, Layers, Tag, Gift, Percent, ChevronRight, Heart } from "lucide-react";
 
 const SECTIONS = [
   {
@@ -13,24 +13,18 @@ const SECTIONS = [
       { title: "Products",    url: "/sales/products-management?tab=products",   icon: Package,     desc: "Inventory, variants & pricing" },
       { title: "Categories",  url: "/sales/products-management?tab=categories", icon: FolderTree,  desc: "Product taxonomy & hierarchy" },
       { title: "Stock & Serials", url: "/sales/products-management?tab=stock",  icon: Package,     desc: "Serial numbers, barcodes & Sheets sync" },
-      { title: "Scanner",     url: "/sales/products-management?tab=scanner",    icon: Package,     desc: "Camera barcode scanner" },
+      { title: "Product Scanner", url: "/sales/products-management?tab=scanner", icon: Package, desc: "Serial & product scanner" },
       { title: "Reviews",     url: "/sales/reviews",     icon: Star,        desc: "Customer product reviews" },
-      { title: "Requests",    url: "/sales/requests",    icon: MessageSquare, desc: "Product requests & imports" },
+      { title: "Wishlists & Demand", url: "/sales/requests", icon: Heart, desc: "Customer wishlists & restock alerts" },
 
     ],
   },
   {
-    group: "Promotions",
+    group: "Promotions & Discounts",
     items: [
-      { title: "Coupons",         url: "/sales/coupons",        icon: Tag,    desc: "Discount codes & vouchers" },
-      { title: "User Promos",     url: "/sales/user-promos",    icon: Gift,   desc: "Targeted user promotions" },
-      { title: "Delivery Offers", url: "/sales/delivery-offers", icon: Percent, desc: "Free & flat-rate shipping" },
-    ],
-  },
-  {
-    group: "Storefront",
-    items: [
-      { title: "Showcase Slider", url: "/sales/showcase", icon: Layers, desc: "Hero slides, effects & settings" },
+      { title: "Coupons & Vouchers", url: "/sales/coupons?tab=coupons", icon: Tag, desc: "Discount codes, limits & targeting" },
+      { title: "Targeted User Promos", url: "/sales/coupons?tab=user-promos", icon: Gift, desc: "Audience conditions & popup triggers" },
+      { title: "Delivery Offers", url: "/sales/delivery-offers", icon: Percent, desc: "Free shipping rules & courier waivers" },
     ],
   },
 ];

@@ -31,7 +31,7 @@ export default function SkeletonWatermark({
   };
 
   return (
-    <div className={`relative inline-flex flex-col items-center justify-center select-none pointer-events-none ${className}`}>
+    <div className={`relative inline-flex flex-col items-center justify-center select-none pointer-events-none notranslate skiptranslate ${className}`} translate="no">
       <img
         src="/orizino-logo.svg"
         alt="Orizino"
@@ -39,10 +39,11 @@ export default function SkeletonWatermark({
         style={{ filter: "brightness(0) invert(1)" }}
       />
       {showText && (
-        <span className={`font-extrabold uppercase font-display text-foreground/30 dark:text-foreground/40 mt-2 ${textSizes[size]}`}>
+        <span className={`font-extrabold uppercase font-display text-foreground/30 dark:text-foreground/40 mt-2 notranslate ${textSizes[size]}`} translate="no">
           ORIZINO
         </span>
       )}
     </div>
   );
 }
+// code:4ce0

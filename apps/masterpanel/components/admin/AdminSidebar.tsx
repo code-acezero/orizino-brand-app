@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { Search, ArrowLeft, ChevronDown, ChevronUp, Star, StarOff, LayoutGrid, UserCircle2, MapPin, IdCard, KeyRound, Users2, Inbox, History, Smartphone, ShoppingCart, Tag, Palette, Activity, Settings, Home, Send } from "lucide-react";
+import { Search, ArrowLeft, ChevronDown, ChevronUp, Star, StarOff, LayoutGrid, UserCircle2, MapPin, IdCard, KeyRound, Users2, Inbox, History, Smartphone, ShoppingCart, Tag, Palette, Activity, Settings, Home, Send, Package } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "@/lib/router-compat";
 import { storefrontHref, shopHref, getBackToShopLabel, getBackToShopLabelShort, orderOpsHref } from "@/lib/cross-app-urls";
@@ -40,7 +40,8 @@ import {
 } from "@/lib/master-sections";
 
 const MASTER_CONTROL_ITEMS = [
-  { title: "Sales & Operations", url: "/sales", icon: ShoppingCart, color: "#f59e0b", section: "orders" },
+  { title: "Customer & Sales", url: "/sales", icon: ShoppingCart, color: "#f59e0b", section: "orders" },
+  { title: "Products, Shipping & Offers", url: "/sales/products-management?tab=products", icon: Package, color: "#10b981", section: "products" },
   { title: "Marketing Management", url: "/marketing", icon: Search, color: "#f97316", section: "seo" },
   { title: "Email Marketing", url: "/email", icon: Send, color: "#06b6d4", section: "customers" },
   { title: "Affiliate Program", url: "/affiliate", icon: Tag, color: "#84cc16", section: "affiliate" },
@@ -93,16 +94,39 @@ export function AdminSidebar() {
   const headerTitle = isMasterPanelHome ? "Master Panel" : "Control Panel";
   const isSettingsSubroute = (() => {
     const clean = location.pathname.replace(/\/+$/, "");
-    return clean === "/brand" ||
-           clean === "/brand/branding" || clean.startsWith("/brand/branding") ||
-           clean === "/brand/appearance" || clean.startsWith("/brand/appearance") ||
-           clean === "/settings-ai" || clean.startsWith("/settings-ai") ||
-           clean === "/settings" || clean.startsWith("/settings");
+    return clean === "/settings-ai" || clean.startsWith("/settings-ai") ||
+           clean === "/settings" || clean.startsWith("/settings") ||
+           clean.startsWith("/sales/payment-gateways");
+  })();
+
+  const isProductShippingOffersRoute = (() => {
+    const clean = location.pathname.replace(/\/+$/, "");
+    const search = location.search;
+    return (
+      clean.startsWith("/sales/products") ||
+      clean.startsWith("/sales/categories") ||
+      clean.startsWith("/sales/stock") ||
+      clean.startsWith("/sales/invoice-stickers") ||
+      clean.startsWith("/sales/coupons") ||
+      clean.startsWith("/sales/reviews") ||
+      clean.startsWith("/sales/requests") ||
+      clean.startsWith("/sales/user-promos") ||
+      clean.startsWith("/sales/showcase") ||
+      clean.startsWith("/sales/shipping") ||
+      clean.startsWith("/sales/couriers") ||
+      clean.startsWith("/sales/courier-management") ||
+      clean.startsWith("/sales/delivery-offers") ||
+      clean.startsWith("/sales/payments-couriers") ||
+      clean.startsWith("/products") ||
+      (clean === "/sales/products-management" && !search.includes("tab=scanner"))
+    );
   })();
 
   const sectionLabel = (() => {
     if (isSettingsSubroute) return "Settings & AI";
+    if (isProductShippingOffersRoute) return "Products, Shipping & Offers";
     const seg = location.pathname.replace(/\/+$/, "").split("/")[1] ?? "";
+    if (seg === "sales") return "Customer & Sales";
     return SECTION_LABELS[seg] ?? "Admin Management";
   })();
 
@@ -110,8 +134,10 @@ export function AdminSidebar() {
   const visibleNavLabels = (() => {
     if (query.trim()) return null;
     if (isSettingsSubroute) return ["Settings & AI"];
+    if (isProductShippingOffersRoute) return ["Products, Shipping & Offers"];
     const seg = location.pathname.replace(/\/+$/, "").split("/")[1] ?? "";
-    return SEGMENT_TO_NAV_LABELS[seg] ?? ["Overview", "Sales & Operations"];
+    if (seg === "sales") return ["Customer & Sales"];
+    return SEGMENT_TO_NAV_LABELS[seg] ?? ["Overview"];
   })();
 
 
@@ -201,10 +227,21 @@ export function AdminSidebar() {
     return pathMatches(cleanPath);
   };
 
-  const isChildActive = (childUrl: string) => {
+  const isChildActive = (childUrl: string, siblings?: Array<{ url: string }>) => {
     const { path: base, query } = splitNavUrl(childUrl);
     if (!pathMatches(base, !!query)) return false;
-    return searchMatches(query);
+    if (query) return searchMatches(query);
+
+    // If this child URL has no query string, check if any sibling matches a specific query in current URL
+    if (siblings?.length) {
+      const anySiblingMatches = siblings.some((sib) => {
+        if (sib.url === childUrl) return false;
+        const { path: sPath, query: sQuery } = splitNavUrl(sib.url);
+        return pathMatches(sPath, true) && sQuery && searchMatches(sQuery);
+      });
+      if (anySiblingMatches) return false;
+    }
+    return true;
   };
 
   // When on a group's base path with no `?tab=` in the URL, the page's
@@ -222,7 +259,6 @@ export function AdminSidebar() {
     return target.slice(0, -1).every(([key, value]) => current.get(key) === value);
   };
 
-
   const getBadge = (url: string) =>
     url === "/sales/support" && openSupportCount > 0 ? openSupportCount : null;
 
@@ -231,7 +267,10 @@ export function AdminSidebar() {
   const hasActiveDescendant = (item: AdminNavItem): boolean => {
     if (!item.children?.length) return false;
     return item.children.some(
-      (c, idx) => isChildActive(c.url) || isDefaultChild(c.url, idx) || hasActiveDescendant(c as AdminNavItem),
+      (c, idx) =>
+        isChildActive(c.url, item.children) ||
+        isDefaultChild(c.url, idx) ||
+        hasActiveDescendant(c as AdminNavItem),
     );
   };
 
@@ -290,7 +329,7 @@ export function AdminSidebar() {
     const hasChildren = !!item.children?.length;
     const descendantActive = hasChildren && hasActiveDescendant(item);
     const ownActive = isActive(item.url);
-    const active = ownActive && !descendantActive;
+    const isParentActive = ownActive || descendantActive;
     const defaultOpen = ownActive || descendantActive;
     const open = openGroups[item.url] ?? defaultOpen;
     const isPinned = pinned.includes(item.url);
@@ -307,8 +346,8 @@ export function AdminSidebar() {
               setOpenGroups((p) => ({ ...p, [item.url]: !(p[item.url] ?? defaultOpen) }));
             } : undefined}
             className={
-              (active
-                ? "h-9 text-[13px] bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary font-medium rounded-lg"
+              (isParentActive
+                ? "h-9 text-[13px] bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary font-semibold rounded-lg"
                 : "h-9 text-[13px] text-muted-foreground hover:bg-muted/50 hover:text-foreground rounded-lg") +
               (!collapsed && showPin ? (hasChildren ? " pr-12" : " pr-7") : "")
             }
@@ -363,10 +402,10 @@ export function AdminSidebar() {
             {item.children!.map((child, idx) => {
               const hasSub = !!child.children?.length;
               const subActive = hasSub && child.children!.some(
-                (sub, sIdx) => isChildActive(sub.url) || isDefaultChild(sub.url, sIdx),
+                (sub, sIdx) => isChildActive(sub.url, child.children) || isDefaultChild(sub.url, sIdx),
               );
-              const childOwnActive = isChildActive(child.url) || isDefaultChild(child.url, idx);
-              const cActive = childOwnActive && !subActive;
+              const childOwnActive = isChildActive(child.url, item.children) || isDefaultChild(child.url, idx);
+              const cActive = childOwnActive || subActive;
               const subOpen = openGroups[child.url] ?? (childOwnActive || subActive);
 
               return (
@@ -380,7 +419,7 @@ export function AdminSidebar() {
                         }}
                         className={`flex-1 flex items-center justify-between h-7 px-2 rounded-md text-[12px] transition-colors ${
                           cActive
-                            ? "text-primary bg-primary/8 font-medium"
+                            ? "text-primary bg-primary/10 font-semibold"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                         }`}
                       >
@@ -395,7 +434,7 @@ export function AdminSidebar() {
                         onClick={closeOnMobile}
                         className={`flex-1 flex items-center h-7 px-2 rounded-md text-[12px] transition-colors ${
                           cActive
-                            ? "text-primary bg-primary/8 font-medium"
+                            ? "text-primary bg-primary/10 font-semibold"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                         }`}
                       >
@@ -406,7 +445,7 @@ export function AdminSidebar() {
                   {hasSub && subOpen && (
                     <div className="ml-3 mt-0.5 pl-3 border-l border-border/30 space-y-0.5">
                       {child.children!.map((sub, sIdx) => {
-                        const sActive = isChildActive(sub.url) || isDefaultChild(sub.url, sIdx);
+                        const sActive = isChildActive(sub.url, child.children) || isDefaultChild(sub.url, sIdx);
 
                         return (
                           <NavLink
@@ -415,7 +454,7 @@ export function AdminSidebar() {
                             onClick={closeOnMobile}
                             className={`flex items-center h-6 px-2 rounded-md text-[11.5px] transition-colors ${
                               sActive
-                                ? "text-primary bg-primary/8 font-medium"
+                                ? "text-primary bg-primary/10 font-semibold"
                                 : "text-muted-foreground/90 hover:text-foreground hover:bg-muted/40"
                             }`}
                           >
@@ -710,7 +749,7 @@ export function AdminSidebar() {
                       return staff?.hasAccess(item.section) ?? false;
                     }).map((item) => {
                       const Icon = item.icon;
-                      const isSectionActive = normalizedCurrentPath === item.url || normalizedCurrentPath.startsWith(item.url + "/");
+                      const isSectionActive = !isMasterPanelHome && sectionLabel === item.title;
                       return (
                         <DropdownMenuItem key={item.url} asChild>
                           <NavLink

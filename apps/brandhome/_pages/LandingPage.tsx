@@ -248,6 +248,7 @@ const LandingPage: React.FC = () => {
               href={shopUrl}
               target="_blank"
               rel="noreferrer"
+              suppressHydrationWarning
               className="inline-flex items-center justify-center gap-2.5 font-sans-brand text-[11px] sm:text-xs tracking-[0.18em] uppercase px-7 py-3.5 sm:px-8 sm:py-4 rounded-full font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] shadow-lg hover:shadow-xl bg-foreground text-background hover:bg-foreground/90 cursor-pointer"
             >
               <ShoppingBag className="w-4 h-4 shrink-0" strokeWidth={1.75} />

@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import { motion } from "framer-motion";
-import { ShieldCheck, FileText, RefreshCw, Cookie, Mail, Phone, MapPin, ChevronRight, Sparkles, Lock, ArrowUpRight } from "lucide-react";
+import { ShieldCheck, FileText, RefreshCw, Cookie, Mail, Phone, MapPin, ChevronRight, Lock, ArrowUpRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface LegalPageProps {
@@ -105,7 +105,7 @@ const LegalPage: React.FC<LegalPageProps> = ({ slug }) => {
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="space-y-2 max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[11px] font-bold text-primary uppercase tracking-wider">
-                <Sparkles className="w-3 h-3" /> Official Policy
+                <ShieldCheck className="w-3 h-3" /> Official Policy
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground">
                 {title}

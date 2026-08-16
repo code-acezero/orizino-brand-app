@@ -664,8 +664,41 @@ const ProductDetailPage: React.FC = () => {
 
       <CurrencyWidget price={effectivePrice} />
 
-      {product.short_description && (
-        <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{product.short_description}</p>
+      {/* Available Offers / Voucher Strip */}
+      {applicableCoupons && applicableCoupons.length > 0 && (
+        <div className="p-3 rounded-2xl bg-secondary/30 border border-border/50 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+            <span className="flex items-center gap-1.5 text-primary">
+              <TicketPercent className="w-3.5 h-3.5" />
+              <span>Available Offers & Coupons</span>
+            </span>
+            <span className="text-[10px] text-muted-foreground">Tap to copy code</span>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {applicableCoupons.map((c: any) => (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(c.code);
+                  try {
+                    localStorage.setItem("orizino_applied_coupon", c.code);
+                    sessionStorage.setItem("orizino_applied_coupon", c.code);
+                    window.dispatchEvent(new CustomEvent("coupon-applied", { detail: c.code }));
+                  } catch {}
+                  toast.success(`Coupon ${c.code} applied!`);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card border border-primary/20 hover:border-primary/50 text-xs shrink-0 transition-all font-mono shadow-xs group"
+              >
+                <span className="font-bold text-foreground group-hover:text-primary">{c.code}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-sans font-bold">
+                  {c.discount_type === "percentage" ? `${c.discount_value}% OFF` : `৳${c.discount_value} OFF`}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {hasVariants && (

@@ -164,13 +164,14 @@ export function BrandTitle({
   // "custom" every visual chunk shares one color.
   return (
     <span
-      className={(className ?? "") + " inline-flex items-baseline " + gapClassName}
+      className={(className ?? "") + " inline-flex items-baseline notranslate skiptranslate " + gapClassName}
       style={style}
+      translate="no"
     >
       {chunks.map((chunk, ci) => {
         const c = colors[ci];
         return (
-          <span key={ci} className="inline-flex" style={c ? { color: c } : undefined}>
+          <span key={ci} className="inline-flex notranslate skiptranslate" translate="no" style={c ? { color: c } : undefined}>
             {chunk}
           </span>
         );

@@ -58,32 +58,26 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ visible }) => {
           transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
           className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-background select-none pointer-events-none"
         >
-          {/* Subtle ambient backdrop radial glow */}
-          <div
-            aria-hidden
-            className="absolute w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-primary/10 blur-3xl pointer-events-none"
-          />
-
-          {/* Centered Large Brand Logo Showcase */}
+          {/* Centered Luxury Brand Logo & Title Watermark */}
           <motion.div
-            initial={{ scale: 0.92, opacity: 0 }}
+            initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="relative z-10 flex flex-col items-center justify-center space-y-4 px-4 text-center"
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="relative z-10 flex flex-col items-center justify-center space-y-3 sm:space-y-4 px-6 text-center max-w-sm sm:max-w-md w-full"
           >
-            {/* Prominent Large Logo */}
-            <div className="w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 flex items-center justify-center">
+            {/* Watermark Logo with gentle luxury opacity */}
+            <div className="w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 flex items-center justify-center opacity-30 transition-opacity">
               {logoUrl ? (
                 <BrandImage
                   src={logoUrl}
                   alt={siteName}
                   filter={logoFilter}
                   customColor={logoTint}
-                  className="w-full h-full object-contain drop-shadow-sm"
+                  className="w-full h-full object-contain"
                 />
               ) : (
                 <span
-                  className="text-7xl sm:text-8xl font-black text-primary select-none"
+                  className="text-6xl sm:text-7xl md:text-8xl font-black text-foreground select-none"
                   style={{ fontFamily: `'${titleFont}', sans-serif` }}
                 >
                   {siteName.charAt(0)}
@@ -93,13 +87,13 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ visible }) => {
 
             {/* Brand Title Watermark */}
             <h1
-              className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-[0.2em] uppercase text-foreground/80"
+              className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-[0.25em] uppercase text-foreground/40"
               style={{ fontFamily: `'${titleFont}', sans-serif` }}
             >
               {siteName}
             </h1>
 
-            <p className="text-[9.5px] sm:text-[11px] font-mono font-medium tracking-[0.3em] uppercase text-muted-foreground/60">
+            <p className="text-[9px] sm:text-[10px] font-mono tracking-[0.35em] uppercase text-muted-foreground/40">
               EST. 2026 • LUXURY ATELIER
             </p>
           </motion.div>

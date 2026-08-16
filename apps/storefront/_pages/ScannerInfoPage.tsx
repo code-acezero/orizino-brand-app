@@ -10,7 +10,6 @@ import {
   ArrowRight,
   HelpCircle,
   ChevronDown,
-  Sparkles,
   Check,
   Search,
   Tag,

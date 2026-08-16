@@ -27,7 +27,7 @@ import {
   type ProfileAppearanceConfig,
   type TypographyCategory,
 } from "@/lib/profile-appearance";
-import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
+import { useRegisterUniversalSave, useUndoRedoState } from "@/contexts/UniversalSaveContext";
 import { useQueryClient } from "@tanstack/react-query";
 
 const loadedFonts = new Set<string>();
@@ -60,9 +60,10 @@ function extractFontName(fontFamilyStr: string): string {
 }
 
 const AdminProfileAppearance: React.FC = () => {
-  useSeoMeta("Profile Appearance", "Switch Profile & Settings typography and layout");
+  useSeoMeta("Profile Appearance", "Typography and layout for customer accounts");
   const qc = useQueryClient();
-  const [cfg, setCfg] = useState<ProfileAppearanceConfig>(defaultProfileAppearance);
+  const [cfg, setCfg, { undo, redo, canUndo, canRedo, reject, canReject, setInitial }] =
+    useUndoRedoState<ProfileAppearanceConfig>(defaultProfileAppearance);
   const [saving, setSaving] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<TypographyCategory>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -81,9 +82,9 @@ const AdminProfileAppearance: React.FC = () => {
         .eq("key", "profile_appearance")
         .maybeSingle();
       const v = (data?.value as unknown as Partial<ProfileAppearanceConfig>) || null;
-      if (v) setCfg({ ...defaultProfileAppearance, ...v });
+      if (v) setInitial({ ...defaultProfileAppearance, ...v });
     })();
-  }, []);
+  }, [setInitial]);
 
   const save = async () => {
     setSaving(true);
@@ -104,13 +105,17 @@ const AdminProfileAppearance: React.FC = () => {
       label: "Save Profile Appearance",
       onSave: save,
       isSaving: saving,
+      onUndo: undo,
+      canUndo: canUndo,
+      onRedo: redo,
+      canRedo: canRedo,
       onReject: () => {
-        setCfg(defaultProfileAppearance);
-        toast.warning("Profile appearance reset to default");
+        reject();
+        toast.warning("Profile appearance reverted");
       },
-      canReject: true,
+      canReject: canReject,
     },
-    [cfg, saving]
+    [cfg, saving, canUndo, canRedo, canReject]
   );
 
   const activePair = getTypographyPair(cfg.typography_pair);

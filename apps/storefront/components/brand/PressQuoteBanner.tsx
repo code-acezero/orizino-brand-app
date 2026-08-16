@@ -65,7 +65,7 @@ const PressQuoteBanner: React.FC<PressQuoteBannerProps> = ({
           transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
         >
           {/* Subtle Background Quote Watermark */}
-          <div className="absolute -right-6 -bottom-10 pointer-events-none opacity-5 dark:opacity-10 text-foreground" aria-hidden="true">
+          <div suppressHydrationWarning className="absolute -right-6 -bottom-10 pointer-events-none opacity-5 dark:opacity-10 text-foreground" aria-hidden="true">
             <Quote className="w-64 h-64 sm:w-80 sm:h-80 stroke-1" />
           </div>
 

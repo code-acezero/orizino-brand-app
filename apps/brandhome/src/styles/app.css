@@ -431,6 +431,15 @@
     overscroll-behavior-y: contain;
   }
 
+  /* Prevent Radix scroll-lock from shifting layout on dropdown/modal open.
+   * Radix injects margin-right (gapMode=margin) + overflow:hidden on body.
+   * We cancel both. The body scroll lock is still active (touch events blocked)
+   * but the visual shift is eliminated. */
+  body[data-scroll-locked] {
+    padding-right: 0 !important;
+    margin-right: 0 !important;
+  }
+
   .overflow-y-auto, .overflow-auto, .overflow-x-auto {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
@@ -828,9 +837,7 @@ html.perf-no-3d * {
   transform-style: flat !important;
   perspective: none !important;
 }
-html.perf-lite {
-  /* Drop expensive backdrop filters and heavy shadows in lite mode */
-}
+/* Drop expensive backdrop filters and heavy shadows in lite mode */
 html.perf-lite *,
 html.perf-lite *::before,
 html.perf-lite *::after {
@@ -850,7 +857,6 @@ html.perf-lite *::after {
 /* ── Mobile UI smoothness ──────────────────────────────────── */
 * {
   -webkit-tap-highlight-color: transparent;
-  tap-highlight-color: transparent;
 }
 a, button, [role="button"] {
   touch-action: manipulation;

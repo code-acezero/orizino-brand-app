@@ -8,7 +8,8 @@ import {
   Bell,
   Phone,
   ExternalLink,
-  Sparkles,
+  Brain,
+  Cpu,
   MessageSquare,
   Palette,
   Layout,
@@ -23,6 +24,7 @@ import {
   ShieldCheck,
   Megaphone,
   ShoppingBag,
+  CreditCard,
 } from "lucide-react";
 import { BrandImage, type LogoFilter } from "@/lib/brand-image";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -100,7 +102,7 @@ export default function SettingsAiDashboard() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-full">
-                <Sparkles className="w-3 h-3 text-primary animate-pulse" />
+                <Cpu className="w-3 h-3 text-primary animate-pulse" />
                 Settings &amp; AI Control Center
               </span>
               <Badge variant="outline" className="text-[10px] font-mono border-border/60 text-muted-foreground">
@@ -177,11 +179,11 @@ export default function SettingsAiDashboard() {
                 {aiMemory.isLoading ? "…" : aiMemory.data ?? 0}
               </p>
               <p className="text-[11px] text-primary font-medium flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> Stored Insights
+                <Brain className="w-3 h-3" /> Stored Insights
               </p>
             </div>
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Sparkles className="w-5.5 h-5.5" />
+              <Brain className="w-5.5 h-5.5" />
             </div>
           </CardContent>
         </Card>
@@ -287,7 +289,7 @@ export default function SettingsAiDashboard() {
               {
                 title: "Recommendations Engine",
                 desc: "Collaborative filtering & AI cart upsell suggestions",
-                icon: Sparkles,
+                icon: Brain,
                 url: "/settings-ai/recommendations",
                 badge: "AI Model",
               },
@@ -348,6 +350,12 @@ export default function SettingsAiDashboard() {
                 desc: "Theme palette, logo filter & brand voice",
                 icon: Palette,
                 url: "/brand/branding",
+              },
+              {
+                title: "Payment Gateways",
+                desc: "MFS (bKash, Nagad, Upay, Rocket), COD & Stripe",
+                icon: CreditCard,
+                url: "/sales/payment-gateways",
               },
               {
                 title: "General Preferences",

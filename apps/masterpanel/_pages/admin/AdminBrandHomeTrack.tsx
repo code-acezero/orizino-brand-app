@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/lib/app-toast";
-import { Truck, Save, Sparkles, Shield, Phone, MessageSquare, MapPin, Search, CheckCircle2, Clock, Loader2 } from "lucide-react";
+import { Truck, Save, Shield, Phone, MessageSquare, MapPin, Search, CheckCircle2, Clock, Loader2 } from "lucide-react";
 import { BrandHomeSubNav } from "@/components/admin/BrandHomeSubNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -128,7 +128,7 @@ export default function AdminBrandHomeTrack() {
         {/* Global Tracking Page Headers */}
         <div className="bg-card/60 border border-border/60 rounded-2xl p-6 mb-8 space-y-4">
           <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-emerald-500" /> Tracking Hero Banner
+            <Truck className="w-4 h-4 text-emerald-500" /> Tracking Hero Banner
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>

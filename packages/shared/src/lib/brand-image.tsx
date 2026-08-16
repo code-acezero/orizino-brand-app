@@ -94,7 +94,7 @@ export const BrandImage: React.FC<BrandImageProps> = ({
   const merged = { ...style, ...extraStyle };
 
   if (isMask) {
-    return <div role="img" aria-label={alt} className={cn("inline-block shrink-0", className)} style={merged} />;
+    return <div suppressHydrationWarning role="img" aria-label={alt} translate="no" className={cn("inline-block shrink-0 notranslate skiptranslate", className)} style={merged} />;
   }
-  return <img src={src} alt={alt} className={cn("object-contain shrink-0", className)} style={merged} />;
+  return <img suppressHydrationWarning src={src} alt={alt} translate="no" className={cn("object-contain shrink-0 notranslate skiptranslate", className)} style={merged} />;
 };

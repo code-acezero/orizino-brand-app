@@ -8,10 +8,11 @@ const ProductCardSkeleton: React.FC<{ className?: string }> = ({ className = "" 
     <div className="relative w-full aspect-[3/4] bg-secondary/40 flex items-center justify-center overflow-hidden">
       <SkeletonWatermark size="md" />
     </div>
-    {/* Product Info matching ProductCard layout */}
-    <div className="p-3.5 sm:p-4 flex flex-col items-center justify-center text-center gap-2">
-      <div className="h-4 bg-secondary/50 rounded-md w-3/4" />
-      <div className="h-5 bg-secondary/40 rounded-md w-1/3 mt-1" />
+    {/* Product Info matching compact ProductCard layout with 2-line placeholder */}
+    <div className="px-2 py-2 sm:px-3 sm:py-2.5 flex flex-col items-center justify-center text-center gap-1.5">
+      <div className="h-3 bg-secondary/50 rounded w-4/5" />
+      <div className="h-3 bg-secondary/40 rounded w-1/2" />
+      <div className="h-4 bg-secondary/40 rounded w-1/3 mt-0.5" />
     </div>
   </div>
 );

@@ -10,11 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
+import { useRegisterUniversalSave, useUndoRedoState } from "@/contexts/UniversalSaveContext";
 
 const AdminAuthAppearance: React.FC = () => {
   const qc = useQueryClient();
-  const [cfg, setCfg] = useState<AuthAppearance>(DEFAULT_AUTH_APPEARANCE);
+  const [cfg, setCfg, { undo, redo, canUndo, canRedo, reject, canReject, setInitial }] =
+    useUndoRedoState<AuthAppearance>(DEFAULT_AUTH_APPEARANCE);
   const [saving, setSaving] = useState(false);
 
   const { data } = useQuery({
@@ -32,8 +33,8 @@ const AdminAuthAppearance: React.FC = () => {
   });
 
   useEffect(() => {
-    if (data) setCfg(data);
-  }, [data]);
+    if (data) setInitial(data);
+  }, [data, setInitial]);
 
   const set = <K extends keyof AuthAppearance>(k: K, v: AuthAppearance[K]) =>
     setCfg((c) => ({ ...c, [k]: v }));
@@ -58,13 +59,17 @@ const AdminAuthAppearance: React.FC = () => {
       label: "Save Auth Design",
       onSave: save,
       isSaving: saving,
+      onUndo: undo,
+      canUndo: canUndo,
+      onRedo: redo,
+      canRedo: canRedo,
       onReject: () => {
-        setCfg(DEFAULT_AUTH_APPEARANCE);
-        toast.warning("Auth appearance reset to default");
+        reject();
+        toast.warning("Auth appearance reverted");
       },
-      canReject: true,
+      canReject: canReject,
     },
-    [cfg, saving]
+    [cfg, saving, canUndo, canRedo, canReject]
   );
 
   return (

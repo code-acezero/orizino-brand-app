@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/lib/app-toast";
 import {
   FileText, Save, Plus, Trash2, Eye, Blocks, Code2, ShieldCheck,
-  RefreshCw, Cookie, Search, ExternalLink, Sparkles, Layers,
+  RefreshCw, Cookie, Search, ExternalLink, Layers,
   Globe, Check, Loader2, FileCode, SearchCheck
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -363,7 +363,7 @@ const AdminCmsPages = () => {
                         <h4 className="font-bold text-sm text-foreground mb-1">Markdown Content Detected</h4>
                         <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-4">This page currently uses raw Markdown text. Would you like to convert it to the drag-and-drop Visual Block Builder?</p>
                         <Button onClick={convertToBlocks} variant="outline" className="rounded-xl gap-2 font-semibold text-xs">
-                          <Sparkles className="w-3.5 h-3.5 text-primary" /> Convert to Visual Blocks
+                          <Layers className="w-3.5 h-3.5 text-primary" /> Convert to Visual Blocks
                         </Button>
                       </div>
                     )}

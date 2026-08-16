@@ -23,11 +23,49 @@ interface MFSPaymentProofProps {
   onProofSubmitted: (screenshotUrl: string, transactionId: string) => void;
 }
 
-const methodColors: Record<string, string> = {
-  bkash: "from-pink-500/20 to-pink-600/10 border-pink-500/30",
-  nagad: "from-orange-500/20 to-orange-600/10 border-orange-500/30",
-  upay: "from-blue-500/20 to-blue-600/10 border-blue-500/30",
-  rocket: "from-purple-500/20 to-purple-600/10 border-purple-500/30",
+const MFS_THEME_CONFIG: Record<
+  string,
+  {
+    gradient: string;
+    brandColor: string;
+    badgeBg: string;
+    badgeText: string;
+    badgeBorder: string;
+    prompt: string;
+  }
+> = {
+  bkash: {
+    gradient: "from-[#E2136E]/15 via-[#E2136E]/5 to-transparent border-[#E2136E]/30",
+    brandColor: "#E2136E",
+    badgeBg: "bg-[#E2136E]/10",
+    badgeText: "text-[#E2136E]",
+    badgeBorder: "border-[#E2136E]/30",
+    prompt: "Scan with bKash App",
+  },
+  nagad: {
+    gradient: "from-[#EA1D25]/15 via-[#F7941D]/5 to-transparent border-[#EA1D25]/30",
+    brandColor: "#EA1D25",
+    badgeBg: "bg-[#EA1D25]/10",
+    badgeText: "text-[#EA1D25]",
+    badgeBorder: "border-[#EA1D25]/30",
+    prompt: "Scan with Nagad App",
+  },
+  rocket: {
+    gradient: "from-[#8C3494]/15 via-[#8C3494]/5 to-transparent border-[#8C3494]/30",
+    brandColor: "#8C3494",
+    badgeBg: "bg-[#8C3494]/10",
+    badgeText: "text-[#8C3494]",
+    badgeBorder: "border-[#8C3494]/30",
+    prompt: "Scan with Rocket App",
+  },
+  upay: {
+    gradient: "from-[#0B438E]/15 via-[#FFC709]/10 to-transparent border-[#0B438E]/30",
+    brandColor: "#0B438E",
+    badgeBg: "bg-[#0B438E]/10",
+    badgeText: "text-[#0B438E] dark:text-[#5B9EF7]",
+    badgeBorder: "border-[#0B438E]/30",
+    prompt: "Scan with Upay App",
+  },
 };
 
 const methodLabels: Record<string, string> = {
@@ -37,9 +75,13 @@ const methodLabels: Record<string, string> = {
   rocket: "Rocket",
 };
 
+import { MFSLogo } from "@orizino/ui";
+
 const MFSPaymentProof: React.FC<MFSPaymentProofProps> = ({
   method, accountInfo, amount, formatPrice, onProofSubmitted,
 }) => {
+  const normMethod = method.toLowerCase();
+  const theme = MFS_THEME_CONFIG[normMethod] || MFS_THEME_CONFIG.bkash;
   const [screenshotUrl, setScreenshotUrl] = useState("");
   const [transactionId, setTransactionId] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -77,37 +119,70 @@ const MFSPaymentProof: React.FC<MFSPaymentProofProps> = ({
     onProofSubmitted(screenshotUrl, transactionId);
   };
 
-  const colorClass = methodColors[method] || methodColors.bkash;
-
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
       {/* Account Info Card */}
-      <div className={`rounded-2xl border bg-gradient-to-br ${colorClass} p-5 space-y-3`}>
-        <div className="flex items-center gap-2">
-          <Smartphone className="w-5 h-5 text-primary" />
-          <h4 className="font-display font-semibold text-foreground">
-            Send {formatPrice(amount)} to {methodLabels[method]}
-          </h4>
+      <div className={`rounded-2xl border bg-gradient-to-br ${theme.gradient} p-5 space-y-4 shadow-sm`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full overflow-hidden shadow-xs flex items-center justify-center shrink-0 ring-2 ring-white/30 dark:ring-white/10 bg-white">
+              <MFSLogo method={normMethod} className="w-full h-full object-cover" />
+            </div>
+            <div>
+              <h4 className="font-display font-semibold text-foreground text-base">
+                Send {formatPrice(amount)} via {methodLabels[normMethod] || normMethod}
+              </h4>
+              <p className="text-xs text-muted-foreground">Personal / Merchant Account</p>
+            </div>
+          </div>
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
+            <Smartphone className="w-3.5 h-3.5" />
+            {theme.prompt}
+          </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <p className="text-muted-foreground text-xs">Account Number</p>
-            <p className="text-foreground font-mono font-bold text-lg tracking-wider">{accountInfo.account_number}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground text-xs">Account Holder</p>
-            <p className="text-foreground font-medium">{accountInfo.account_holder}</p>
-          </div>
-        </div>
-
+        {/* QR Code Container */}
         {accountInfo.qr_code_url && (
-          <div className="flex justify-center py-2">
-            <img src={accountInfo.qr_code_url} alt="QR Code" className="w-40 h-40 rounded-xl bg-white p-2 object-contain" />
+          <div className="flex flex-col items-center justify-center py-2">
+            <div
+              className="relative p-2.5 rounded-2xl bg-white shadow-md border-2 transition-transform hover:scale-[1.02]"
+              style={{ borderColor: theme.brandColor }}
+            >
+              <img
+                src={accountInfo.qr_code_url}
+                alt={`${normMethod} QR Code`}
+                className="w-44 h-44 sm:w-48 sm:h-48 object-contain rounded-xl"
+              />
+              <div
+                className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white uppercase tracking-wider shadow-xs"
+                style={{ backgroundColor: theme.brandColor }}
+              >
+                Scan & Pay
+              </div>
+            </div>
           </div>
         )}
 
-        <p className="text-sm text-muted-foreground bg-secondary/30 rounded-xl p-3">{accountInfo.instructions}</p>
+        <div className="grid grid-cols-2 gap-3 text-sm bg-background/50 backdrop-blur-xs p-3 rounded-xl border border-border/50">
+          <div>
+            <p className="text-muted-foreground text-xs font-medium">Account Number</p>
+            <p className="text-foreground font-mono font-bold text-base sm:text-lg tracking-wider select-all">
+              {accountInfo.account_number}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground text-xs font-medium">Account Name</p>
+            <p className="text-foreground font-medium text-sm sm:text-base truncate">
+              {accountInfo.account_holder || "Orizino Brand"}
+            </p>
+          </div>
+        </div>
+
+        {accountInfo.instructions && (
+          <p className="text-xs text-muted-foreground bg-secondary/30 rounded-xl p-3 border border-border/30 leading-relaxed">
+            {accountInfo.instructions}
+          </p>
+        )}
       </div>
 
       {/* Screenshot Upload */}

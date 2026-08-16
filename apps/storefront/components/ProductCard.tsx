@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import { Link } from "@/lib/router-compat";
 import { Heart, ShoppingCart, Loader2, Share2 } from "lucide-react";
 import { trackClick } from "@/hooks/use-analytics";
@@ -11,7 +11,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "@/lib/app-toast";
-import { formatDistanceToNow } from "date-fns";
 
 import ImageWithFallback from "@/components/ImageWithFallback";
 
@@ -62,7 +61,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const brandIcon = useBrandIcon();
-  // Use shared auth context — avoids a per-card getUser() query
   const { user } = useAuth();
 
   const [addingToCart, setAddingToCart] = useState(false);
@@ -72,8 +70,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const [togglingWishlist, setTogglingWishlist] = useState(false);
   const [flyAnim, setFlyAnim] = useState<{ src: string; rect: DOMRect } | null>(null);
   const [hovered, setHovered] = useState(false);
+  const [showCartOnMobile, setShowCartOnMobile] = useState(false);
   const [sharing, setSharing] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
+  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoHideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // "New" badge — products < 14 days
   const isNew = createdAt
@@ -84,7 +86,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100)
     : 0;
 
-  // ── Single merged query: variants + secondary image (was 2 separate queries) ──
+  // Variants and secondary image query
   const { data: cardData } = useQuery({
     queryKey: ["product-card-data", id],
     queryFn: async () => {
@@ -115,7 +117,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const secondaryImage = cardData?.secondaryImage ?? null;
 
   // Wishlist state
-  React.useEffect(() => {
+  useEffect(() => {
     if (!user) return;
     (supabase.from as any)("wishlists").select("id").eq("user_id", user.id).eq("product_id", id).maybeSingle()
       .then(({ data }: any) => setInWishlist(!!data));
@@ -199,19 +201,72 @@ const ProductCard: React.FC<ProductCardProps> = ({
     }
   }, [isSoldOut, addingToCart, hasVariants, id, slug, thumbnail, name, price, user, queryClient]);
 
+  // ── Tap-and-Hold Touch Gesture for Mobile ──
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+    if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current);
+
+    holdTimerRef.current = setTimeout(() => {
+      setShowCartOnMobile(true);
+      // Auto-hide after 4.5 seconds of inactivity
+      autoHideTimerRef.current = setTimeout(() => {
+        setShowCartOnMobile(false);
+      }, 4500);
+    }, 220); // 220ms hold threshold
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartPosRef.current) return;
+    const touch = e.touches[0];
+    const diffX = Math.abs(touch.clientX - touchStartPosRef.current.x);
+    const diffY = Math.abs(touch.clientY - touchStartPosRef.current.y);
+
+    // If user scrolls > 10px, cancel tap-and-hold
+    if (diffX > 10 || diffY > 10) {
+      if (holdTimerRef.current) {
+        clearTimeout(holdTimerRef.current);
+        holdTimerRef.current = null;
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    touchStartPosRef.current = null;
+  };
+
+  useEffect(() => {
+    return () => {
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+      if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current);
+    };
+  }, []);
+
+  const isCartVisible = hovered || showCartOnMobile;
+
   return (
     <>
       <article
         className={`group relative flex flex-col overflow-hidden bg-card select-none transition-all duration-500 w-full max-w-[280px] mx-auto ${className}`}
         style={{
           borderRadius: 0,
-          transform: hovered ? "translateY(-4px)" : "translateY(0)",
-          boxShadow: hovered ? "0 16px 36px -12px hsl(var(--primary) / 0.15)" : "0 0 0 1px hsl(var(--border) / 0.3)",
-          transition: "transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1)",
+          transform: hovered ? "translateY(-3px)" : "translateY(0)",
+          boxShadow: hovered ? "0 12px 28px -8px hsl(var(--primary) / 0.14)" : "0 0 0 1px hsl(var(--border) / 0.3)",
+          transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
           willChange: "transform, box-shadow",
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
       >
         {/* ── Image area ── */}
         <Link
@@ -251,7 +306,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           )}
 
           {/* Elegant bottom blend gradient */}
-          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-card via-card/20 to-transparent opacity-60 z-10 pointer-events-none mix-blend-normal transition-opacity duration-300 group-hover:opacity-40" />
+          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-card via-card/15 to-transparent opacity-50 z-10 pointer-events-none transition-opacity duration-300 group-hover:opacity-30" />
 
           {/* Sold out overlay */}
           {isSoldOut && (
@@ -262,7 +317,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Badges */}
           {brandIcon && (
-            <div className="absolute top-2.5 right-2.5 z-20 w-8 h-8 flex items-center justify-center">
+            <div className="absolute top-2.5 right-2.5 z-20 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center pointer-events-none">
               <img
                 src={brandIcon}
                 alt="Brand Logo"
@@ -295,7 +350,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </div>
 
           {/* ── Action buttons: Share & Wishlist ── */}
-          <div className="absolute bottom-12 right-2.5 z-20 flex flex-col gap-3">
+          <div className="absolute bottom-10 right-2 z-20 flex flex-col gap-2.5">
             <button
               onClick={handleShare}
               aria-label="Share product"
@@ -307,7 +362,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 willChange: "transform, opacity",
               }}
             >
-              <Share2 className="w-5 h-5" strokeWidth={1.5} />
+              <Share2 className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
             </button>
             <button
               className={`flex items-center justify-center transition-all duration-300 hover:text-primary hover:scale-110 text-foreground/80 filter drop-shadow-md ${
@@ -322,45 +377,45 @@ const ProductCard: React.FC<ProductCardProps> = ({
               aria-label={inWishlist ? "Remove from wishlist" : "Save"}
             >
               <Heart
-                className="w-5 h-5 transition-colors"
+                className="w-4 h-4 sm:w-5 sm:h-5 transition-colors"
                 strokeWidth={1.5}
                 style={{
-                  fill: inWishlist ? "hsl(var(--cherry))" : "transparent",
-                  stroke: inWishlist ? "hsl(var(--cherry))" : "currentColor",
+                  fill: inWishlist ? "hsl(var(--primary))" : "transparent",
+                  stroke: inWishlist ? "hsl(var(--primary))" : "currentColor",
                 }}
               />
             </button>
           </div>
 
-          {/* ── Add to cart — slides up smoothly ── */}
+          {/* ── Add to Cart / Select Options — Shown on Hover (Desktop) or Tap-and-Hold (Mobile) ── */}
           <div
-            className={`absolute bottom-0 left-0 right-0 ${
-              hovered || isMobile ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
+            className={`absolute bottom-0 left-0 right-0 z-30 ${
+              isCartVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"
             }`}
             style={{
-              transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease",
+              transition: "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease",
               willChange: "transform, opacity",
             }}
           >
             <button
               onClick={handleAddToCart}
               disabled={addingToCart || isSoldOut}
-              className="w-full py-2.5 font-sans-brand font-medium text-[10px] tracking-[0.2em] uppercase flex items-center justify-center gap-2 disabled:opacity-60 transition-colors"
+              className="w-full py-2 sm:py-2.5 font-sans-brand font-semibold text-[9px] sm:text-[10px] tracking-[0.18em] uppercase flex items-center justify-center gap-1.5 disabled:opacity-60 transition-colors shadow-md cursor-pointer"
               style={{
-                background: isSoldOut ? "hsl(var(--muted))" : "hsl(var(--cherry))",
-                color: "hsl(var(--cream))",
+                background: isSoldOut ? "hsl(var(--muted))" : "#9a0002",
+                color: "#efe6dd",
                 borderRadius: 0,
               }}
             >
               {addingToCart ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-3 h-3 animate-spin" />
               ) : isSoldOut ? (
                 "Sold Out"
               ) : hasVariants ? (
                 "Select Options"
               ) : (
                 <>
-                  <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  <ShoppingCart className="w-3 h-3" strokeWidth={1.5} />
                   Add to Bag
                 </>
               )}
@@ -369,19 +424,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Cherry underline reveal */}
           <div
-            className={`absolute bottom-0 left-0 h-0.5 ${hovered ? "w-full" : "w-0"}`}
+            className={`absolute bottom-0 left-0 h-0.5 z-20 ${hovered ? "w-full" : "w-0"}`}
             style={{
-              background: "hsl(var(--cherry))",
+              background: "#9a0002",
               transition: "width 0.45s cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           />
         </Link>
 
-        {/* ── Product Info ── */}
-        <div className="flex flex-col items-center text-center gap-1.5 p-3.5 sm:p-4">
+        {/* ── Product Info: Compact Height + Space for 2 Rows of Text ── */}
+        <div className="flex flex-col items-center text-center px-2 py-2 sm:px-3 sm:py-2.5 gap-0.5 sm:gap-1">
+          {/* 2 Rows of Text */}
           <Link
             href={`/product/${slug}`}
-            className="font-sans-brand text-xs sm:text-sm font-medium tracking-wide text-foreground/90 truncate w-full hover:text-primary transition-colors text-center"
+            className="font-sans-brand text-[11px] sm:text-xs font-medium tracking-tight text-foreground/90 line-clamp-2 min-h-[2.4em] sm:min-h-[2.5em] leading-[1.22] flex items-center justify-center text-center hover:text-primary transition-colors w-full"
             title={name}
           >
             {name}
@@ -389,28 +445,28 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Color swatch dots */}
           {variantColors.length > 1 && (
-            <div className="flex items-center justify-center gap-1 mt-0.5">
+            <div className="flex items-center justify-center gap-1 my-0.5">
               {variantColors.slice(0, 5).map((color, i) => (
                 <span
                   key={i}
-                  className="w-2.5 h-2.5 rounded-full border border-foreground/15 shrink-0"
+                  className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full border border-foreground/15 shrink-0"
                   style={{ backgroundColor: color }}
                   title={color}
                 />
               ))}
               {variantColors.length > 5 && (
-                <span className="text-[8px] text-muted-foreground font-sans-brand">+{variantColors.length - 5}</span>
+                <span className="text-[7.5px] sm:text-[8px] text-muted-foreground font-sans-brand">+{variantColors.length - 5}</span>
               )}
             </div>
           )}
 
-          {/* Bigger Price display */}
-          <div className="flex items-baseline justify-center gap-2 mt-1">
-            <span className="text-base sm:text-lg md:text-xl font-bold text-foreground tracking-tight">
+          {/* Price display */}
+          <div className="flex items-baseline justify-center gap-1.5 mt-0.5">
+            <span className="text-xs sm:text-sm md:text-base font-bold text-foreground tracking-tight">
               {formatPrice(price)}
             </span>
             {compareAtPrice && compareAtPrice > price && (
-              <span className="text-xs sm:text-sm text-muted-foreground/60 line-through font-medium">
+              <span className="text-[10px] sm:text-xs text-muted-foreground/60 line-through font-medium">
                 {formatPrice(compareAtPrice)}
               </span>
             )}
@@ -443,3 +499,4 @@ const ProductCard: React.FC<ProductCardProps> = ({
 };
 
 export default ProductCard;
+// code:4ce0

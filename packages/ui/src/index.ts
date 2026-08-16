@@ -33,3 +33,6 @@ export * from "./components/mobile/index";
 
 // Skeletons
 export * from "./components/skeletons/index";
+
+// Payment & MFS Logos
+export * from "./components/PaymentLogos";

@@ -6,7 +6,7 @@ import {
   Lock, Smartphone, Mail, Volume2, VolumeX, Languages, Monitor, TrendingUp,
   Trash2, Download, HelpCircle, MessageSquare, FileText, Info,
   BellRing, ShoppingBag, Tag, Package, Megaphone, AlertTriangle,
-  Coins, Sparkles, Type, Zap, Contrast, Maximize2, Vibrate, PlayCircle,
+  Coins, Type, Zap, Contrast, Maximize2, Vibrate, PlayCircle,
   Sliders, Key, Laptop, LifeBuoy, CheckCircle2, User
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -120,6 +120,8 @@ const SettingsPage: React.FC = () => {
   const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>(defaultNotifPrefs);
   const [displayPrefs, setDisplayPrefs] = useState<DisplayPrefs>(defaultDisplayPrefs);
   const [section, setSection] = useState<SectionId>("appearance");
+  const [langSearch, setLangSearch] = useState("");
+  const [langRegion, setLangRegion] = useState<"All" | "Asia" | "Europe">("All");
 
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
@@ -646,23 +648,59 @@ const SettingsPage: React.FC = () => {
                 {section === "general" && (
                   <div className="space-y-4">
                     <div className="rounded-md border border-border/40 bg-card/60 backdrop-blur-md p-5 sm:p-6 space-y-4">
-                      <div className="flex items-center gap-2 pb-2 border-b border-border/30">
-                        <Languages className="w-4 h-4 text-primary" />
-                        <h2 className="text-base font-bold text-foreground">{t("settings.language") || "Language"}</h2>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/30">
+                        <div className="flex items-center gap-2">
+                          <Languages className="w-4 h-4 text-primary" />
+                          <h2 className="text-base font-bold text-foreground">{t("settings.language") || "Language & Region"}</h2>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {(["All", "Asia", "Europe"] as const).map((r) => (
+                            <button
+                              key={r}
+                              type="button"
+                              onClick={() => setLangRegion(r)}
+                              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                                langRegion === r ? "bg-primary text-primary-foreground font-bold shadow-xs" : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              {r}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {ALL_LANGUAGES.map((l) => (
+
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={langSearch}
+                          onChange={(e) => setLangSearch(e.target.value)}
+                          placeholder="Search languages by name or code..."
+                          className="w-full h-9 px-3 rounded-lg bg-background/50 border border-border/50 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-80 overflow-y-auto pr-1">
+                        {ALL_LANGUAGES.filter((l) => {
+                          const matchesRegion =
+                            langRegion === "All" ||
+                            (langRegion === "Asia" && (l.region === "Asia" || l.region === "Middle East")) ||
+                            (langRegion === "Europe" && l.region === "Europe");
+                          if (!matchesRegion) return false;
+                          if (!langSearch.trim()) return true;
+                          const q = langSearch.toLowerCase();
+                          return l.label.toLowerCase().includes(q) || l.nativeLabel.toLowerCase().includes(q) || l.code.toLowerCase().includes(q);
+                        }).map((l) => (
                           <button
                             key={l.code}
                             type="button"
                             onClick={() => setLang(l.code)}
-                            className={`flex items-center justify-between p-3 rounded-md border text-left transition-colors ${
-                              language === l.code ? "border-primary bg-primary/10 text-foreground font-bold" : "border-border/40 hover:border-primary/30 text-muted-foreground"
+                            className={`flex items-center justify-between p-3 rounded-lg border text-left transition-colors cursor-pointer ${
+                              language === l.code ? "border-primary bg-primary/10 text-foreground font-bold ring-1 ring-primary/30" : "border-border/40 hover:border-primary/30 text-muted-foreground hover:text-foreground"
                             }`}
                           >
-                            <div>
-                              <p className="text-xs font-semibold">{l.nativeLabel}</p>
-                              <p className="text-[10px] text-muted-foreground">{l.label}</p>
+                            <div className="min-w-0 pr-1">
+                              <p className="text-xs font-semibold truncate">{l.nativeLabel}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">{l.label}</p>
                             </div>
                             {language === l.code && <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />}
                           </button>

@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
   Save, Trash2, Plus, Layout, ShieldCheck, Mail, Phone,
-  MapPin, Globe, Sparkles, Sliders, Layers, Link as LinkIcon,
+  MapPin, Globe, Sliders, Layers, Link as LinkIcon,
   Loader2, Zap
 } from "lucide-react";
 import { Instagram, Facebook, Twitter, Youtube } from "@/components/ui/social-icons";
@@ -300,7 +300,7 @@ const AdminFooter: React.FC = () => {
       <div className="space-y-6">
         <div className="bg-card/60 border border-border/60 rounded-2xl p-6 space-y-4">
           <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" /> 1. Select Footer Layout Preset
+            <Sliders className="w-4 h-4 text-primary" /> 1. Select Footer Layout Preset
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

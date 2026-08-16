@@ -3,7 +3,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LayoutGrid, Check, Sparkles, ShoppingBag } from "lucide-react";
+import { LayoutGrid, Check, ShoppingBag } from "lucide-react";
 import { useSiteSettings } from "./useSiteSettings";
 import { STOREFRONT_LAYOUTS, DEFAULT_STOREFRONT_LAYOUT } from "@/hooks/use-storefront-layout";
 import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
@@ -74,7 +74,7 @@ const PREVIEWS: Record<string, React.ReactElement> = {
 };
 
 const StorefrontLayoutPanel: React.FC = () => {
-  const { form, setForm, save } = useSiteSettings(defaults);
+  const { form, setForm, save, undo, redo, canUndo, canRedo, reject, canReject } = useSiteSettings(defaults);
   const current = (form.storefront_layout as string) ?? DEFAULT_STOREFRONT_LAYOUT;
 
   useRegisterUniversalSave(
@@ -85,13 +85,17 @@ const StorefrontLayoutPanel: React.FC = () => {
         toast.success("Shop layout saved");
       },
       isSaving: save.isPending,
+      onUndo: undo,
+      canUndo: canUndo,
+      onRedo: redo,
+      canRedo: canRedo,
       onReject: () => {
-        setForm(defaults);
-        toast.warning("Layout reset to default");
+        reject();
+        toast.warning("Layout changes reverted");
       },
-      canReject: true,
+      canReject: canReject,
     },
-    [form, save.isPending]
+    [form, save.isPending, canUndo, canRedo, canReject]
   );
 
   return (

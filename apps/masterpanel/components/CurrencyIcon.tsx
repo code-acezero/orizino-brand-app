@@ -45,7 +45,8 @@ const CurrencyIcon: React.FC<CurrencyIconProps> = ({ code, className }) => {
   const symbol = def?.symbol || upper;
   return (
     <span
-      className={className}
+      className={`${className || ""} notranslate currency-symbol`}
+      translate="no"
       style={{
         display: "inline-flex",
         alignItems: "center",

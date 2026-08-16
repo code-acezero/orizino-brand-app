@@ -1,19 +1,22 @@
 "use client";
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Bot, User, Headphones, Phone, PhoneOff, Mic, MicOff, AlertTriangle, MessageSquare, ChevronDown, Paperclip, Smile, Sparkles } from "lucide-react";
+import { X, Send, Bot, User, Headphones, Phone, PhoneOff, Mic, MicOff, AlertTriangle, MessageSquare, ChevronDown, Paperclip, Smile, Sparkles, LifeBuoy, ChevronLeft, ChevronRight, Lock, Plus, Ticket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "@/lib/router-compat";
+import { Link, useLocation } from "@/lib/router-compat";
 import { useServerFn } from "@/lib/server-fn-compat";
 import { flagHandoffToHuman } from "@/lib/ai-handoff.functions";
 import ReactMarkdown from "react-markdown";
 import { toast } from "@/lib/app-toast";
-import { getIceServers } from "@/lib/ice-servers";
-import { playRingtone, stopRingtone } from "@/lib/sounds";
+import { getIceServers, getRTCConfiguration } from "@/lib/ice-servers";
+import { playRingtone, stopRingtone, playOutgoingDialTone, stopOutgoingDialTone, playCallConnectedSound, playCallEndedSound } from "@/lib/sounds";
 import { useAiWidgetSettings } from "@/hooks/use-ai-widget-settings";
 import { useAdaptivePolling } from "@/hooks/use-adaptive-polling";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getTicketStatusInfo } from "@/lib/ticket-status";
+import { AudioWaveVisualizer } from "@/components/AudioWaveVisualizer";
 
 
 interface Attachment {
@@ -314,6 +317,50 @@ function useDocumentVisible() {
   return visible;
 }
 
+/* ── Inline Outgoing Call Banner (Dialing state) ── */
+const OutgoingCallWidget: React.FC<{
+  visible: boolean;
+  onCancel: () => void;
+}> = ({ visible, onCancel }) => (
+  <AnimatePresence>
+    {visible && (
+      <motion.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: "auto" }}
+        exit={{ opacity: 0, height: 0 }}
+        className="overflow-hidden border-b border-primary/30"
+      >
+        <div className="p-3.5 bg-gradient-to-r from-cherry/15 via-primary/10 to-transparent flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="relative w-9 h-9 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0">
+              <span className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
+              <Phone className="w-4 h-4 relative z-10" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-foreground">Calling Specialist...</span>
+                <span className="text-[9px] font-mono uppercase font-bold px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 animate-pulse">
+                  Ringing
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground truncate">Awaiting support specialist answer</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <AudioWaveVisualizer active color="bg-primary" height={16} barCount={4} />
+            <button
+              onClick={onCancel}
+              className="h-7 px-2.5 rounded-lg bg-destructive/15 hover:bg-destructive/25 text-destructive text-[11px] font-bold border border-destructive/30 flex items-center gap-1 transition-all"
+            >
+              <PhoneOff className="w-3 h-3" /> Cancel
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
 /* ── Inline Incoming Call UI (inside widget) ── */
 const IncomingCallWidget: React.FC<{
   visible: boolean;
@@ -326,33 +373,39 @@ const IncomingCallWidget: React.FC<{
         initial={{ opacity: 0, height: 0 }}
         animate={{ opacity: 1, height: "auto" }}
         exit={{ opacity: 0, height: 0 }}
-        className="border-b border-border/50 overflow-hidden"
+        className="border-b border-emerald-500/30 overflow-hidden"
       >
-        <div className="p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping" />
-              <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
-                <Phone className="w-5 h-5 text-white" />
+        <div className="p-3.5 bg-gradient-to-r from-emerald-500/15 via-emerald-500/10 to-transparent">
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shrink-0 shadow-md">
+                <span className="absolute inset-0 rounded-full bg-emerald-400/40 animate-ping" />
+                <Phone className="w-5 h-5 text-white relative z-10" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-foreground truncate">Support Specialist</span>
+                  <span className="text-[9px] font-mono uppercase font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    Incoming Call
+                  </span>
+                </div>
+                <p className="text-[10.5px] text-muted-foreground">Orizino concierge live voice call</p>
               </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Incoming Voice Call</p>
-              <p className="text-[11px] text-muted-foreground">Support agent calling...</p>
-            </div>
+            <AudioWaveVisualizer active color="bg-emerald-500" height={18} barCount={5} />
           </div>
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center justify-center gap-3 pt-1">
             <button
               onClick={onReject}
-              className="w-11 h-11 rounded-full bg-destructive/90 hover:bg-destructive flex items-center justify-center transition-all shadow-lg"
+              className="flex-1 py-1.5 rounded-xl bg-destructive/15 text-destructive hover:bg-destructive/25 border border-destructive/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs"
             >
-              <PhoneOff className="w-5 h-5 text-white" />
+              <PhoneOff className="w-3.5 h-3.5" /> Decline
             </button>
             <button
               onClick={onAccept}
-              className="w-11 h-11 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center transition-all shadow-lg animate-pulse"
+              className="flex-1 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md animate-pulse"
             >
-              <Phone className="w-5 h-5 text-white" />
+              <Phone className="w-3.5 h-3.5" /> Accept Call
             </button>
           </div>
         </div>
@@ -363,60 +416,66 @@ const IncomingCallWidget: React.FC<{
 
 const fmtDuration = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
-/* ── Active Call Panel — premium, concentric pulse rings ── */
+/* ── Active Call Panel — premium with live audio wave & timer ── */
 const ActiveCallWidget: React.FC<{
   duration: number;
   muted: boolean;
+  stream?: MediaStream | null;
   onToggleMute: () => void;
   onHangup: () => void;
-}> = ({ duration, muted, onToggleMute, onHangup }) => {
+}> = ({ duration, muted, stream, onToggleMute, onHangup }) => {
   return (
     <motion.div
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
-      className="overflow-hidden border-b border-emerald-500/20"
+      className="overflow-hidden border-b border-emerald-500/25"
     >
-      <div className="relative px-4 py-5 bg-gradient-to-br from-emerald-500/12 via-emerald-500/5 to-transparent">
+      <div className="relative px-4 py-3 bg-gradient-to-br from-emerald-500/15 via-emerald-500/8 to-transparent">
         <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
-        <div className="flex items-center gap-4">
-          {/* Concentric pulse rings */}
-          <div className="relative w-14 h-14 flex items-center justify-center">
-            {[0, 0.4, 0.8].map((d, i) => (
-              <motion.span
-                key={i}
-                className="absolute inset-0 rounded-full border border-emerald-400/40"
-                animate={{ scale: [1, 1.6], opacity: [0.7, 0] }}
-                transition={{ repeat: Infinity, duration: 1.8, delay: d, ease: "easeOut" }}
-              />
-            ))}
-            <div className="relative w-11 h-11 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_8px_24px_-6px_hsl(152_82%_45%/0.6)] flex items-center justify-center">
-              <Phone className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="relative w-10 h-10 flex items-center justify-center shrink-0">
+              <span className="absolute inset-0 rounded-full bg-emerald-400/30 animate-pulse" />
+              <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-sm flex items-center justify-center">
+                <Phone className="w-4 h-4 text-white" />
+              </div>
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-foreground">Voice Call Active</span>
+                <span className="text-[9.5px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
+                  {fmtDuration(duration)}
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                HD Audio · End-to-End Encrypted
+              </p>
             </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-emerald-500/90 font-semibold">Voice Call</p>
-            <p className="text-sm font-medium text-foreground/90 truncate">Connected with agent</p>
-            <p className="text-[11px] text-muted-foreground font-mono mt-0.5">{fmtDuration(duration)}</p>
-          </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 shrink-0">
+            <AudioWaveVisualizer stream={stream} active={!muted} color="bg-emerald-400" height={20} barCount={6} />
             <button
               onClick={onToggleMute}
-              aria-label={muted ? "Unmute" : "Mute"}
-              className={`w-10 h-10 rounded-full border transition-all flex items-center justify-center backdrop-blur-sm ${
+              aria-label={muted ? "Unmute mic" : "Mute mic"}
+              className={`w-8 h-8 rounded-xl border transition-all flex items-center justify-center backdrop-blur-sm ${
                 muted
                   ? "bg-destructive/15 border-destructive/40 text-destructive hover:bg-destructive/25"
-                  : "bg-card/60 border-border/60 text-foreground/80 hover:bg-card"
+                  : "bg-card/70 border-border/60 text-foreground/90 hover:bg-card"
               }`}
+              title={muted ? "Unmute Microphone" : "Mute Microphone"}
             >
-              {muted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              {muted ? <MicOff className="w-3.5 h-3.5 text-destructive" /> : <Mic className="w-3.5 h-3.5 text-emerald-500" />}
             </button>
             <button
               onClick={onHangup}
               aria-label="End call"
-              className="w-10 h-10 rounded-full bg-destructive text-white shadow-[0_6px_18px_-4px_hsl(0_84%_60%/0.55)] hover:bg-destructive/90 transition-all flex items-center justify-center"
+              className="w-8 h-8 rounded-xl bg-destructive text-white shadow-xs hover:bg-destructive/90 transition-all flex items-center justify-center"
+              title="End Voice Call"
             >
-              <PhoneOff className="w-4 h-4" />
+              <PhoneOff className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -477,7 +536,7 @@ const AIChatWidget: React.FC = () => {
   const qc = useQueryClient();
   const location = useLocation();
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"chat" | "complaint">("chat");
+  const [activeTab, setActiveTab] = useState<"chat" | "tickets" | "complaint">("chat");
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -485,6 +544,12 @@ const AIChatWidget: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Tickets state inside FAB
+  const [fabSelectedTicketId, setFabSelectedTicketId] = useState<string | null>(null);
+  const [fabTicketReply, setFabTicketReply] = useState("");
+  const [fabSendingReply, setFabSendingReply] = useState(false);
+  const fabTicketScrollRef = useRef<HTMLDivElement>(null);
 
   // Complaint state
   const [complaintSubject, setComplaintSubject] = useState("");
@@ -503,6 +568,7 @@ const AIChatWidget: React.FC = () => {
 
   // Call state
   const [incomingCall, setIncomingCall] = useState(false);
+  const [isCallingOut, setIsCallingOut] = useState(false);
 
   // Admin-managed widget config (texts, greetings, premade questions, welcome)
   const { data: widgetSettings } = useAiWidgetSettings();
@@ -517,6 +583,14 @@ const AIChatWidget: React.FC = () => {
     if (incomingCall) { playRingtone(); } else { stopRingtone(); }
     return () => stopRingtone();
   }, [incomingCall]);
+
+  // Clean up sounds on unmount
+  useEffect(() => {
+    return () => {
+      stopRingtone();
+      stopOutgoingDialTone();
+    };
+  }, []);
   const [callActive, setCallActive] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [callMuted, setCallMuted] = useState(false);
@@ -627,12 +701,12 @@ const AIChatWidget: React.FC = () => {
     gcTime: 30 * 60 * 1000,
   });
 
+  const { language } = useLanguage();
   const isEnabled = aiConfig?.is_enabled !== false;
-  const agentName = aiConfig?.name || "";
-  const welcomeMessage = aiConfig?.welcome_message || "Hi! How can I help you?";
-  const avatarType = aiConfig?.avatar_type || "emoji";
-  const avatarUrl = aiConfig?.avatar_url || "";
-  const avatarEmoji = aiConfig?.avatar_emoji || "";
+  const agentName = aiConfig?.name || "MR. Slime";
+  const welcomeMessage = aiConfig?.welcome_message || "Hey! Welcome to Orizino. I'm MR. Slime—your official AI concierge & luxury fit companion.";
+  const avatarUrl = aiConfig?.avatar_url || "https://oectjdngvrqnxwhnwfrt.supabase.co/storage/v1/object/public/site-assets/ai-agent/mr-slime.jpg";
+  const avatarType = "image";
 
   // Floating bubble (FAB) admin-driven look & feel
   const fabBubbleColor: string = aiConfig?.fab_bubble_color || "hsl(var(--primary))";
@@ -657,14 +731,16 @@ const AIChatWidget: React.FC = () => {
   const fabEnergyEnabled: boolean = aiConfig?.fab_enable_energy !== false;
   const fabEnergyInterval: number = Math.max(2, Number(aiConfig?.fab_energy_interval ?? 5));
   const fabShowHoverLabel: boolean = aiConfig?.fab_show_hover_label !== false;
-  const fabHoverLabel: string = aiConfig?.fab_hover_label_text || "Chat with us";
+  const fabHoverLabel: string = aiConfig?.fab_hover_label_text || "Chat with MR. Slime";
   const fabSize: number = Math.max(44, Math.min(96, Number(aiConfig?.fab_size ?? 56)));
-  // Floating texts now come from the admin-managed widget settings table.
+  // Floating texts now come from the admin-managed widget settings table or site_settings
   const fabUnderwaterTexts: string[] = useMemo(() => {
     return widgetSettings?.fab_floating_texts?.length
       ? widgetSettings.fab_floating_texts
-      : ["Ask Agent Flow", "Find your style", "Track an order", "Need a recommendation?"];
-  }, [widgetSettings?.fab_floating_texts]);
+      : aiConfig?.fab_underwater_texts?.length
+      ? aiConfig.fab_underwater_texts
+      : ["MR. Slime", "Find Your Fit", "240+ GSM Cotton", "Track Order", "Dhaka Atelier"];
+  }, [widgetSettings?.fab_floating_texts, aiConfig?.fab_underwater_texts]);
   const fabAnimationIntensity = Math.max(1, Math.min(10, widgetSettings?.fab_animation_intensity ?? 5));
   const fabShowAvatarInline = widgetSettings?.fab_show_avatar_inline ?? true;
 
@@ -703,14 +779,124 @@ const AIChatWidget: React.FC = () => {
   }, []);
 
   const AgentAvatar = React.memo(({ size = "w-8 h-8", iconSize = "w-4 h-4" }: { size?: string; iconSize?: string }) =>
-    avatarType === "image" && avatarUrl ? (
-      <img src={avatarUrl} alt={agentName} className={`${size} object-contain`} loading="eager" decoding="async" style={{ background: "transparent" }} />
+    avatarUrl ? (
+      <img src={avatarUrl} alt={agentName || "Orizino AI"} className={`${size} object-cover rounded-full`} loading="eager" decoding="async" style={{ background: "transparent" }} />
     ) : (
-      <div className={`${size} flex items-center justify-center bg-transparent`}>
-        {avatarEmoji ? <span className={iconSize === "w-4 h-4" ? "text-base" : "text-sm"}>{avatarEmoji}</span> : <Bot className={`${iconSize} text-primary`} />}
+      <div className={`${size} flex items-center justify-center rounded-full bg-primary/15 text-primary`}>
+        <Bot className={`${iconSize} text-primary`} />
       </div>
     )
   );
+
+  // Fetch user support tickets
+  const { data: userFabTickets = [], refetch: refetchFabTickets } = useQuery({
+    queryKey: ["user-fab-tickets", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("support_conversations")
+        .select("id, subject, status, type, created_at, updated_at, assigned_to")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!user && open,
+    staleTime: 10_000,
+  });
+
+  const activeFabTicketsCount = useMemo(() => {
+    return userFabTickets.filter((t: any) => t.status !== "closed").length;
+  }, [userFabTickets]);
+
+  const fabSelectedTicket = useMemo(() => {
+    if (!fabSelectedTicketId) return null;
+    return userFabTickets.find((t: any) => t.id === fabSelectedTicketId) || null;
+  }, [userFabTickets, fabSelectedTicketId]);
+
+  // Messages for fabSelectedTicket
+  const { data: fabSelectedTicketMessages = [], refetch: refetchFabSelectedTicketMessages } = useQuery({
+    queryKey: ["fab-selected-ticket-messages", fabSelectedTicketId],
+    queryFn: async () => {
+      if (!fabSelectedTicketId) return [];
+      const { data } = await supabase
+        .from("support_messages")
+        .select("*")
+        .eq("conversation_id", fabSelectedTicketId)
+        .order("created_at", { ascending: true });
+      return data || [];
+    },
+    enabled: !!fabSelectedTicketId && activeTab === "tickets" && open,
+    staleTime: 5000,
+  });
+
+  // Realtime subscription for FAB tickets and active ticket messages
+  useEffect(() => {
+    if (!user || !open) return;
+    const channels: any[] = [];
+
+    const convChannel = supabase
+      .channel(`fab-user-convs-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_conversations", filter: `user_id=eq.${user.id}` }, () => {
+        refetchFabTickets();
+        qc.invalidateQueries({ queryKey: ["user-fab-tickets", user.id] });
+      })
+      .subscribe();
+    channels.push(convChannel);
+
+    if (fabSelectedTicketId) {
+      const msgChannel = supabase
+        .channel(`fab-ticket-msgs-${fabSelectedTicketId}`)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages", filter: `conversation_id=eq.${fabSelectedTicketId}` }, () => {
+          refetchFabSelectedTicketMessages();
+          qc.invalidateQueries({ queryKey: ["fab-selected-ticket-messages", fabSelectedTicketId] });
+        })
+        .subscribe();
+      channels.push(msgChannel);
+    }
+
+    return () => {
+      channels.forEach((c) => supabase.removeChannel(c));
+    };
+  }, [user, open, fabSelectedTicketId, refetchFabTickets, refetchFabSelectedTicketMessages, qc]);
+
+  // Scroll to bottom on ticket messages
+  useEffect(() => {
+    if (fabTicketScrollRef.current) {
+      fabTicketScrollRef.current.scrollTop = fabTicketScrollRef.current.scrollHeight;
+    }
+  }, [fabSelectedTicketMessages]);
+
+  const sendFabTicketReply = async () => {
+    if (!fabTicketReply.trim() || !fabSelectedTicketId || !user) return;
+    if (fabSelectedTicket?.status === "closed") {
+      toast.error("This ticket has been closed by admin.");
+      return;
+    }
+    setFabSendingReply(true);
+    try {
+      const text = fabTicketReply.trim();
+      const { error } = await supabase.from("support_messages").insert({
+        conversation_id: fabSelectedTicketId,
+        sender_id: user.id,
+        sender_type: "user",
+        content: text,
+      });
+      if (error) throw error;
+
+      await supabase.from("support_conversations").update({
+        updated_at: new Date().toISOString(),
+        needs_human: true,
+      }).eq("id", fabSelectedTicketId);
+
+      setFabTicketReply("");
+      refetchFabSelectedTicketMessages();
+      refetchFabTickets();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send reply");
+    } finally {
+      setFabSendingReply(false);
+    }
+  };
 
   // Fetch previous conversations (read-only display)
   const { data: pastConversations = [] } = useQuery({
@@ -820,21 +1006,22 @@ const AIChatWidget: React.FC = () => {
 
   const acceptCall = async () => {
     setIncomingCall(false);
+    setIsCallingOut(false);
+    stopRingtone();
+    stopOutgoingDialTone();
 
     callChannelRef.current?.send({
       type: "broadcast",
       event: "call-response",
-      payload: { action: "accepted" },
+      payload: { action: "accepted", from: user?.id },
     });
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localStreamRef.current = stream;
 
-      const iceServers = await getIceServers();
-      const pc = new RTCPeerConnection({
-        iceServers: iceServers as RTCIceServer[],
-      });
+      const rtcConfig = await getRTCConfiguration();
+      const pc = new RTCPeerConnection(rtcConfig);
       peerRef.current = pc;
 
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
@@ -859,7 +1046,10 @@ const AIChatWidget: React.FC = () => {
       pc.oniceconnectionstatechange = () => {
         if (pc.iceConnectionState === "connected") {
           setCallActive(true);
-          timerRef.current = setInterval(() => setCallDuration((d) => d + 1), 1000);
+          playCallConnectedSound();
+          if (!timerRef.current) {
+            timerRef.current = setInterval(() => setCallDuration((d) => d + 1), 1000);
+          }
         }
         if (pc.iceConnectionState === "disconnected" || pc.iceConnectionState === "failed") {
           hangupCall();
@@ -877,22 +1067,39 @@ const AIChatWidget: React.FC = () => {
           payload: { type: "answer", sdp: answer.sdp, from: "user" },
         });
       }
-      // Don't set callActive here — wait for ICE connected state
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to accept call:", err);
+      toast.error(err.message || "Microphone access is required for voice calling.");
+      hangupCall();
     }
   };
 
   const rejectCall = () => {
     setIncomingCall(false);
+    stopRingtone();
     callChannelRef.current?.send({
       type: "broadcast",
       event: "call-response",
-      payload: { action: "rejected" },
+      payload: { action: "rejected", from: user?.id },
     });
   };
 
+  const cancelOutgoingCall = () => {
+    setIsCallingOut(false);
+    stopOutgoingDialTone();
+    callChannelRef.current?.send({
+      type: "broadcast",
+      event: "call-response",
+      payload: { action: "rejected", from: user?.id },
+    });
+    toast.info("Call cancelled.");
+  };
+
   const hangupCall = useCallback(() => {
+    stopRingtone();
+    stopOutgoingDialTone();
+    playCallEndedSound();
+
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -907,8 +1114,15 @@ const AIChatWidget: React.FC = () => {
     }
     pendingOfferRef.current = null;
     setCallActive(false);
+    setIsCallingOut(false);
     setCallDuration(0);
     setCallMuted(false);
+
+    callChannelRef.current?.send({
+      type: "broadcast",
+      event: "call-signal",
+      payload: { type: "hangup", from: "user" },
+    });
   }, []);
 
   const toggleCallMute = () => {
@@ -1094,7 +1308,7 @@ const AIChatWidget: React.FC = () => {
           messages: newMessages.filter((m) => m.role !== "system"),
           context: {
             userId: user?.id,
-            locale: (typeof navigator !== "undefined" && navigator.language?.startsWith("bn")) ? "bn" : "en",
+            locale: language || "auto",
             page: buildPageContext(),
           },
         },
@@ -1106,7 +1320,7 @@ const AIChatWidget: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [input, pendingAttachments, messages, loading, user, liveMode, liveConvId, buildPageContext]);
+  }, [input, pendingAttachments, messages, loading, user, liveMode, liveConvId, buildPageContext, language]);
 
   // Send a premade question (used by quick-reply chips).
   const sendPremade = useCallback((q: string) => {
@@ -1122,7 +1336,7 @@ const AIChatWidget: React.FC = () => {
         const { data, error } = await supabase.functions.invoke("ai-chat", {
           body: {
             messages: newMessages.filter((m) => m.role !== "system"),
-            context: { userId: user?.id, locale: "en", page: buildPageContext() },
+            context: { userId: user?.id, locale: language || "auto", page: buildPageContext() },
           },
         });
         if (error) throw error;
@@ -1142,8 +1356,12 @@ const AIChatWidget: React.FC = () => {
     setLoading(true);
     try {
       const { data: conv } = await supabase.from("support_conversations").insert({
-        user_id: user.id, subject: "Live Support Request", is_ai: false, status: "open",
-      }).select().single();
+        user_id: user.id,
+        subject: "Live Support Request",
+        is_ai: false,
+        status: "requested",
+        needs_human: true,
+      } as any).select().single();
       if (conv) {
         await supabase.from("support_messages").insert({ conversation_id: conv.id, sender_id: user.id, sender_type: "user", content: "Requested live support from chat widget." });
         // Best-effort: legacy edge notifier + new handoff flag + Telegram broadcast
@@ -1156,8 +1374,10 @@ const AIChatWidget: React.FC = () => {
           console.warn("[handoff] failed", e);
         }
         setLiveConvId(conv.id);
-        setLiveMode(true);
-        setMessages([{ role: "assistant", content: "🎧 Connecting you to live support... An agent will join shortly." }]);
+        setLiveMode(false); // Stay in ticket view / queue until claimed by an agent!
+        setFabSelectedTicketId(conv.id);
+        setActiveTab("tickets");
+        toast.info("Ticket created! In queue awaiting an available support specialist.");
       }
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Couldn't connect to live support right now." }]);
@@ -1169,20 +1389,93 @@ const AIChatWidget: React.FC = () => {
 
   const requestCall = async () => {
     if (!user || !liveConvId) return;
-    // Send a message requesting a call
+    setIsCallingOut(true);
+    playOutgoingDialTone();
+
+    // Broadcast call-request to support specialist
+    callChannelRef.current?.send({
+      type: "broadcast",
+      event: "call-request",
+      payload: {
+        from: user.id,
+        conversationId: liveConvId,
+        action: "incoming",
+        callerName: userDisplayName || "Customer",
+      },
+    });
+
+    // Send chat log note & admin high-priority notification
     await supabase.from("support_messages").insert({
-      conversation_id: liveConvId, sender_id: user.id, sender_type: "user",
-      content: "📞 I'd like to request a voice call with a support agent.",
+      conversation_id: liveConvId,
+      sender_id: user.id,
+      sender_type: "user",
+      content: "📞 *Customer requested a live voice call with support specialist.*",
     });
-    // Also create a notification for admins
+
     await supabase.from("notifications").insert({
-      title: "📞 Call Request",
-      message: "A customer is requesting a voice call.",
-      type: "support",
+      title: "📞 Voice Call Request",
+      message: `${userDisplayName || "Customer"} is requesting a live voice call.`,
+      type: "call",
       priority: "high",
-      link_url: "/origin/support",
+      link_url: `/sales/support?c=${liveConvId}`,
     });
-    toast.success("Call request sent to support agent");
+
+    toast.info("Calling support specialist... please wait for pickup.");
+
+    // Auto timeout after 30s
+    setTimeout(() => {
+      setIsCallingOut((prev) => {
+        if (prev) {
+          stopOutgoingDialTone();
+          toast.info("Specialist was unable to answer right now. You can continue typing in chat!");
+          return false;
+        }
+        return false;
+      });
+    }, 30000);
+  };
+
+  const closeCurrentTicket = async () => {
+    if (!liveConvId || !user) return;
+    try {
+      await supabase.from("support_conversations").update({
+        status: "closed",
+        updated_at: new Date().toISOString(),
+      }).eq("id", liveConvId);
+
+      await supabase.from("support_messages").insert({
+        conversation_id: liveConvId,
+        sender_id: user.id,
+        sender_type: "user",
+        content: "🔒 *Support ticket was marked closed by the customer.*",
+      });
+
+      toast.success("Support ticket closed. Returned to AI Concierge.");
+      setLiveMode(false);
+      setLiveConvId(null);
+      refetchFabTickets();
+      qc.invalidateQueries({ queryKey: ["user-fab-tickets", user.id] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to close ticket");
+    }
+  };
+
+  const returnToAiAgent = () => {
+    setLiveMode(false);
+    setLiveConvId(null);
+    toast.info("Returned to AI Concierge mode. Your ticket remains active in the Tickets tab.");
+  };
+
+  const handleTicketClick = (t: any) => {
+    const statusInfo = getTicketStatusInfo(t.status, t.assigned_to);
+    if (statusInfo.isLiveChatable) {
+      setLiveMode(true);
+      setLiveConvId(t.id);
+      setActiveTab("chat");
+      toast.success(`Connected to Ticket #TK-${t.id.slice(0, 8).toUpperCase()} in live chat`);
+    } else {
+      setFabSelectedTicketId(t.id);
+    }
   };
 
   const submitComplaint = async () => {
@@ -1193,7 +1486,8 @@ const AIChatWidget: React.FC = () => {
       const { data: conv } = await supabase.from("support_conversations").insert({
         user_id: user.id,
         subject: `[${complaintCategory}] ${complaintSubject}`,
-        status: "open",
+        status: "requested",
+        needs_human: true,
         is_ai: false,
         type: "complaint",
       } as any).select("id").single();
@@ -1204,12 +1498,13 @@ const AIChatWidget: React.FC = () => {
           sender_id: user.id,
           sender_type: "user",
         });
+        setFabSelectedTicketId(conv.id);
+        setActiveTab("tickets");
       }
-      toast.success("Complaint submitted successfully!");
+      toast.success("Complaint submitted successfully! In queue for review.");
       setComplaintSubject("");
       setComplaintDescription("");
       setComplaintCategory("Order Issue");
-      setActiveTab("chat");
     } catch {
       toast.error("Failed to submit complaint");
     }
@@ -1297,7 +1592,8 @@ const AIChatWidget: React.FC = () => {
 
               return (
                 <motion.div
-                  className="relative"
+                  className="relative notranslate skiptranslate"
+                  translate="no"
                   animate={{ width: boxW, height: boxH }}
                   transition={{ type: "spring", stiffness: 260, damping: 28, mass: 0.9 }}
                   style={{ width: boxW, height: boxH }}
@@ -1408,17 +1704,17 @@ const AIChatWidget: React.FC = () => {
                         transition={{ delay: 0.15, duration: 0.35 }}
                       >
                         <div className="relative w-[68px] h-[68px] flex-shrink-0 rounded-2xl bg-white/15 backdrop-blur-sm ring-1 ring-white/25 flex items-center justify-center overflow-hidden">
-                          {avatarType === "image" && avatarUrl ? (
+                          {avatarUrl ? (
                             <motion.img
                               src={avatarUrl}
-                              alt={agentName || "Agent Flow"}
+                              alt={agentName || "Orizino AI"}
                               className="w-full h-full object-cover"
                               initial={{ scale: 0.7, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1, y: [0, -2, 0] }}
                               transition={{ scale: { delay: 0.2, duration: 0.4 }, opacity: { delay: 0.2, duration: 0.4 }, y: { repeat: Infinity, duration: 3.5, ease: "easeInOut" } }}
                             />
                           ) : (
-                            <span className="text-2xl">{avatarEmoji || "🤖"}</span>
+                            <Bot className="w-8 h-8 text-white/90" />
                           )}
 
                         </div>
@@ -1621,7 +1917,10 @@ const AIChatWidget: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 380, damping: 26 }}
+            id="ai-chat-widget"
+            translate="no"
             className={`
+              notranslate skiptranslate
               fixed z-[10001] flex flex-col overflow-hidden
               bg-card/90 dark:bg-card/95 backdrop-blur-2xl
               border border-white/15 dark:border-white/10 ring-1 ring-black/5
@@ -1674,6 +1973,7 @@ const AIChatWidget: React.FC = () => {
             <div className="flex gap-1 px-3 pt-2.5 pb-2">
               {[
                 { id: "chat" as const, label: "Chat", icon: MessageSquare },
+                { id: "tickets" as const, label: "Tickets", icon: LifeBuoy, count: activeFabTicketsCount },
                 { id: "complaint" as const, label: "Complaint", icon: AlertTriangle },
               ].map((tab) => (
                 <button
@@ -1686,10 +1986,18 @@ const AIChatWidget: React.FC = () => {
                   }`}
                 >
                   <tab.icon className="w-3.5 h-3.5" />
-                  {tab.label}
+                  <span>{tab.label}</span>
+                  {tab.id === "tickets" && user && (tab.count ?? 0) > 0 && (
+                    <span className="text-[9px] px-1.5 py-0.2 rounded-full font-mono bg-cherry text-white leading-none font-bold">
+                      {tab.count}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
+
+            {/* Outgoing call (dialing) UI */}
+            <OutgoingCallWidget visible={isCallingOut} onCancel={cancelOutgoingCall} />
 
             {/* Incoming call UI */}
             <IncomingCallWidget visible={incomingCall} onAccept={acceptCall} onReject={rejectCall} />
@@ -1700,14 +2008,49 @@ const AIChatWidget: React.FC = () => {
                 <ActiveCallWidget
                   duration={callDuration}
                   muted={callMuted}
+                  stream={localStreamRef.current}
                   onToggleMute={toggleCallMute}
                   onHangup={hangupCall}
                 />
               )}
             </AnimatePresence>
 
-            {activeTab === "chat" ? (
+            {activeTab === "chat" && (
               <>
+                {/* Live Ticket Active Action Banner (when connected to a ticket) */}
+                {liveMode && liveConvId && (
+                  <div className="px-3.5 py-2 bg-gradient-to-r from-emerald-500/15 via-emerald-500/8 to-cherry/10 border-b border-emerald-500/25 flex items-center justify-between gap-2 shrink-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="relative flex h-2 w-2 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      <div className="truncate">
+                        <p className="text-[11.5px] font-bold text-foreground truncate">
+                          Ticket <span className="font-mono text-emerald-600 dark:text-emerald-400">#TK-{liveConvId.slice(0, 8).toUpperCase()}</span>
+                        </p>
+                        <p className="text-[9.5px] text-muted-foreground">Connected to human specialist</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={closeCurrentTicket}
+                        className="px-2.5 py-1 rounded-lg bg-destructive/15 text-destructive border border-destructive/30 hover:bg-destructive/25 text-[10px] font-bold flex items-center gap-1 transition-all"
+                        title="Close this support ticket and resolve"
+                      >
+                        <Lock className="w-2.5 h-2.5" /> Close Ticket
+                      </button>
+                      <button
+                        onClick={returnToAiAgent}
+                        className="px-2.5 py-1 rounded-lg bg-secondary/90 hover:bg-secondary text-foreground border border-border/60 text-[10px] font-semibold flex items-center gap-1 transition-all"
+                        title="Return to AI Concierge"
+                      >
+                        <Bot className="w-2.5 h-2.5 text-cherry" /> Return to AI
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Messages */}
                 <div ref={scrollRef} className="relative flex-1 overflow-y-auto min-w-0 max-w-full overflow-x-hidden px-4 py-4 space-y-3">
                   <div className="pointer-events-none sticky top-0 -mt-4 -mx-4 h-4 bg-gradient-to-b from-card/85 to-transparent z-10" />
@@ -1748,15 +2091,28 @@ const AIChatWidget: React.FC = () => {
                               <ReactMarkdown
                                 components={{
                                   img: ({ node, ...props }) => (
-                                    <img
-                                      {...props}
-                                      className="rounded-lg border border-border/50 my-1.5 w-28 h-28 object-cover"
-                                      loading="lazy"
-                                    />
+                                    <div className="my-2 block max-w-[240px] overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 shadow-md bg-secondary/30">
+                                      <img
+                                        {...props}
+                                        className="w-full aspect-square object-cover transition-transform duration-300 hover:scale-105 block"
+                                        loading="lazy"
+                                        onError={(e) => {
+                                          (e.target as HTMLElement).style.display = "none";
+                                        }}
+                                      />
+                                    </div>
                                   ),
-                                  a: ({ node, ...props }) => (
-                                    <a {...props} className="text-cherry font-semibold underline underline-offset-2" />
-                                  ),
+                                  a: ({ node, children, href, ...props }) => {
+                                    return (
+                                      <a
+                                        href={href}
+                                        {...props}
+                                        className="text-cherry hover:text-cherry/80 font-semibold underline underline-offset-2 transition-colors inline-flex items-center gap-1"
+                                      >
+                                        {children}
+                                      </a>
+                                    );
+                                  },
                                 }}
                               >
                                 {msg.content}
@@ -1891,10 +2247,231 @@ const AIChatWidget: React.FC = () => {
                   </p>
                 </div>
               </>
+            )}
 
-            ) : (
+            {/* Tickets Tab View */}
+            {activeTab === "tickets" && (
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                {!user ? (
+                  <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                      <LifeBuoy className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-foreground">Support Tickets</h4>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                        Sign in to track your inquiries, view agent replies, and continue open support discussions.
+                      </p>
+                    </div>
+                    <Link to="/auth?redirect=/support">
+                      <button className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors">
+                        Sign In to View
+                      </button>
+                    </Link>
+                  </div>
+                ) : !fabSelectedTicketId ? (
+                  /* Tickets List */
+                  <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                    <div className="px-3.5 py-2.5 border-b border-border/40 bg-secondary/30 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <LifeBuoy className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-xs font-bold text-foreground">My Support Tickets</span>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab("complaint")}
+                        className="text-[11px] font-bold text-cherry hover:underline flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" /> New Ticket
+                      </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                      {userFabTickets.length === 0 ? (
+                        <div className="py-12 text-center space-y-2">
+                          <LifeBuoy className="w-8 h-8 text-muted-foreground mx-auto" />
+                          <p className="text-xs font-semibold text-foreground">No support tickets</p>
+                          <p className="text-[11px] text-muted-foreground">Have an issue? Open a new ticket or complaint.</p>
+                          <button
+                            onClick={() => setActiveTab("complaint")}
+                            className="mt-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
+                          >
+                            + Create Ticket
+                          </button>
+                        </div>
+                      ) : (
+                        userFabTickets.map((t: any) => {
+                          const statusInfo = getTicketStatusInfo(t.status, t.assigned_to);
+                          return (
+                            <div
+                              key={t.id}
+                              onClick={() => handleTicketClick(t)}
+                              className="p-3 rounded-xl bg-secondary/30 hover:bg-secondary/60 border border-border/40 transition-all cursor-pointer group text-left"
+                            >
+                              <div className="flex items-center justify-between gap-2 mb-1.5">
+                                <span className="text-[10px] font-mono font-bold text-muted-foreground">
+                                  #TK-{t.id.slice(0, 8).toUpperCase()}
+                                </span>
+                                <span
+                                  className={`text-[9.5px] font-mono uppercase font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${statusInfo.badgeClass}`}
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
+                                  {statusInfo.label}
+                                </span>
+                              </div>
+                              <h4 className="text-xs font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                                {t.subject || "Support Request"}
+                              </h4>
+                              <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1.5">
+                                <span className="capitalize text-[9.5px] font-mono">{t.type || "Ticket"}</span>
+                                <span className="flex items-center gap-1">
+                                  {statusInfo.isLiveChatable ? (
+                                    <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5">
+                                      <MessageSquare className="w-2.5 h-2.5" /> Click to Chat
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9px] text-muted-foreground">
+                                      {statusInfo.key === "pending" || statusInfo.key === "requested" ? "In Queue · Details" : "View History"}
+                                    </span>
+                                  )}
+                                  <ChevronRight className="w-3 h-3 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  /* Ticket Conversation Thread & History */
+                  (() => {
+                    const statusInfo = getTicketStatusInfo(fabSelectedTicket?.status, fabSelectedTicket?.assigned_to);
+                    return (
+                      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                        {/* Header */}
+                        <div className="px-3 py-2 border-b border-border/40 bg-secondary/40 flex items-center justify-between gap-2">
+                          <button
+                            onClick={() => setFabSelectedTicketId(null)}
+                            className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" /> All Tickets
+                          </button>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-[9.5px] font-mono uppercase font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 shrink-0 ${statusInfo.badgeClass}`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
+                              {statusInfo.label}
+                            </span>
+                            {(statusInfo.isLiveChatable || fabSelectedTicket?.status === "open") && (
+                              <button
+                                onClick={() => {
+                                  if (fabSelectedTicket) {
+                                    setLiveMode(true);
+                                    setLiveConvId(fabSelectedTicket.id);
+                                    setActiveTab("chat");
+                                    toast.success(`Switched to Live Chat for Ticket #TK-${fabSelectedTicket.id.slice(0, 8).toUpperCase()}`);
+                                  }
+                                }}
+                                className="px-2 py-0.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[9.5px] font-bold flex items-center gap-1 shadow-2xs transition-all"
+                              >
+                                <MessageSquare className="w-2.5 h-2.5" /> Open Chat
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Subject and Status Explanation Stripe */}
+                        <div className="px-3 py-1.5 bg-background/50 border-b border-border/30 text-left">
+                          <p className="text-[11.5px] font-bold text-foreground truncate">
+                            {fabSelectedTicket?.subject || "Support Conversation"}
+                          </p>
+                          <p className="text-[9.5px] text-muted-foreground">
+                            {statusInfo.description}
+                          </p>
+                        </div>
+
+                        {/* Messages Container */}
+                        <div ref={fabTicketScrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
+                          {fabSelectedTicketMessages.length === 0 ? (
+                            <div className="text-center text-xs text-muted-foreground py-8">
+                              No messages yet in this ticket.
+                            </div>
+                          ) : (
+                            fabSelectedTicketMessages.map((m: any) => {
+                              const isUser = m.sender_type === "user";
+                              return (
+                                <div key={m.id} className={`flex gap-1.5 ${isUser ? "justify-end" : "justify-start"}`}>
+                                  {!isUser && (
+                                    <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                                      <Headphones className="w-3 h-3" />
+                                    </div>
+                                  )}
+                                  <div
+                                    className={`max-w-[85%] px-3 py-2 text-xs rounded-2xl break-words [overflow-wrap:anywhere] text-left ${
+                                      isUser
+                                        ? "bg-gradient-to-br from-[hsl(var(--cherry))] via-[hsl(345_75%_22%)] to-[hsl(0_70%_12%)] text-white rounded-br-xs font-medium"
+                                        : "bg-secondary/80 border border-border/40 text-foreground rounded-bl-xs [&_p]:leading-relaxed"
+                                    }`}
+                                  >
+                                    {!isUser ? (
+                                      <div className="prose prose-sm dark:prose-invert max-w-none break-words min-w-0 [overflow-wrap:anywhere] [&_p]:mb-1 [&_p]:mt-0 text-xs">
+                                        <ReactMarkdown>{m.content}</ReactMarkdown>
+                                      </div>
+                                    ) : (
+                                      m.content
+                                    )}
+                                    <span className="block text-[9px] opacity-70 text-right mt-0.5 font-mono">
+                                      {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        {/* Bottom Composer / Status Action Bar */}
+                        {fabSelectedTicket?.status === "closed" ? (
+                          <div className="p-3 bg-secondary/40 border-t border-border/40 text-center">
+                            <p className="text-[11px] font-semibold text-muted-foreground flex items-center justify-center gap-1">
+                              <Lock className="w-3 h-3" /> This ticket is closed.
+                            </p>
+                          </div>
+                        ) : fabSelectedTicket?.status === "paused" ? (
+                          <div className="p-3 bg-secondary/40 border-t border-border/40 text-center">
+                            <p className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 flex items-center justify-center gap-1">
+                              ⏸️ This ticket is currently paused.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="p-2 border-t border-border/40 bg-secondary/30 flex items-center gap-1.5">
+                            <input
+                              value={fabTicketReply}
+                              onChange={(e) => setFabTicketReply(e.target.value)}
+                              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendFabTicketReply()}
+                              placeholder="Reply to support specialist..."
+                              className="flex-1 bg-background/80 rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 border border-border/40"
+                            />
+                            <button
+                              onClick={sendFabTicketReply}
+                              disabled={!fabTicketReply.trim() || fabSendingReply}
+                              className="h-8 px-3 rounded-xl bg-gradient-to-r from-[hsl(var(--cherry))] to-[hsl(345_75%_25%)] text-white flex items-center justify-center text-xs font-bold disabled:opacity-40 hover:brightness-110 transition-all"
+                            >
+                              <Send className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()
+                )}
+              </div>
+            )}
+
+            {activeTab === "complaint" && (
               /* Complaint Form */
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 text-left">
                 <div>
                   <p className="text-xs font-medium text-foreground mb-1">Subject</p>
                   <input
@@ -1938,7 +2515,7 @@ const AIChatWidget: React.FC = () => {
                   className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
                 >
                   <AlertTriangle className="w-4 h-4" />
-                  {submittingComplaint ? "Submitting..." : "Submit Complaint"}
+                  {submittingComplaint ? "Submitting..." : "Submit Complaint / Ticket"}
                 </button>
                 {!user && (
                   <p className="text-[11px] text-muted-foreground text-center">Please sign in to submit a complaint</p>

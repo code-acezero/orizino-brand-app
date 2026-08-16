@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import NotificationBell from "@/components/NotificationBell";
+import LanguageMenu from "@/components/footer/LanguageMenu";
 import { PresenceAvatars } from "./PresenceAvatars";
 import StatusDot from "./StatusDot";
 import { cn } from "@/lib/utils";

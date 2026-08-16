@@ -23,7 +23,8 @@ import { Slider } from "@/components/ui/slider";
 import ImageUpload from "@/components/ImageUpload";
 import HomepageAnalytics from "@/components/admin/HomepageAnalytics";
 import { ProductShowcaseTab } from "./AdminShowcase";
-import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
+import { useRegisterUniversalSave, useUndoRedoState } from "@/contexts/UniversalSaveContext";
+import MarqueeStripConfigPanel from "@/components/admin/MarqueeStripConfigPanel";
 
 interface AppearanceConfig {
   hero_overlay_style: string;
@@ -259,11 +260,64 @@ const AdminHome = () => {
     "cinematic-showcase": { hasTitle: false, hasSubtitle: false, hasProductCount: false, hasColumns: false, hasViewAllLink: false },
   };
 
-  const [catSections, setCatSections] = useState<{ category_id: string; sort_order: number; product_count: number }[]>([]);
-  const [sales, setSales] = useState<SaleConfig[]>([]);
+  const [
+    catSections,
+    setCatSections,
+    {
+      undo: undoCatSections,
+      redo: redoCatSections,
+      canUndo: canUndoCatSections,
+      canRedo: canRedoCatSections,
+      reject: rejectCatSections,
+      canReject: canRejectCatSections,
+      setInitial: setInitialCatSections,
+    },
+  ] = useUndoRedoState<{ category_id: string; sort_order: number; product_count: number }[]>([]);
+
+  const [
+    sales,
+    setSales,
+    {
+      undo: undoSales,
+      redo: redoSales,
+      canUndo: canUndoSales,
+      canRedo: canRedoSales,
+      reject: rejectSales,
+      canReject: canRejectSales,
+      setInitial: setInitialSales,
+    },
+  ] = useUndoRedoState<SaleConfig[]>([]);
+
   const [newArrivals, setNewArrivals] = useState({ enabled: true, title: "New Arrivals", subtitle: "Fresh drops just landed", product_count: 8 });
-  const [appearanceConfig, setAppearanceConfig] = useState<AppearanceConfig>({ ...defaultAppearanceConfig });
-  const [sectionOrder, setSectionOrder] = useState(defaultSectionOrder);
+
+  const [
+    appearanceConfig,
+    setAppearanceConfig,
+    {
+      undo: undoAppearance,
+      redo: redoAppearance,
+      canUndo: canUndoAppearance,
+      canRedo: canRedoAppearance,
+      reject: rejectAppearance,
+      canReject: canRejectAppearance,
+      setInitial: setInitialAppearance,
+    },
+  ] = useUndoRedoState<AppearanceConfig>({ ...defaultAppearanceConfig });
+
+  const [
+    sectionOrder,
+    setSectionOrder,
+    {
+      undo: undoSectionOrder,
+      redo: redoSectionOrder,
+      canUndo: canUndoSectionOrder,
+      canRedo: canRedoSectionOrder,
+      reject: rejectSectionOrder,
+      canReject: canRejectSectionOrder,
+      setInitial: setInitialSectionOrder,
+    },
+  ] = useUndoRedoState(defaultSectionOrder);
+
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [sectionSubTab, setSectionSubTab] = useState("order");
   const [activeTab, setActiveTab] = useTabParam("dashboard", "/brand/home");
@@ -316,17 +370,17 @@ const AdminHome = () => {
     if (settingsRow?.value) {
       const val = settingsRow.value as any;
       const sections = val?.value ?? val;
-      if (Array.isArray(sections)) setCatSections(sections);
+      if (Array.isArray(sections)) setInitialCatSections(sections);
     }
-  }, [settingsRow]);
+  }, [settingsRow, setInitialCatSections]);
 
   useEffect(() => {
     if (salesRow?.value) {
       const val = salesRow.value as any;
       const config = val?.value ?? val;
-      if (Array.isArray(config)) setSales(config);
+      if (Array.isArray(config)) setInitialSales(config);
     }
-  }, [salesRow]);
+  }, [salesRow, setInitialSales]);
 
   useEffect(() => {
     if (arrivalsRow?.value) {
@@ -340,9 +394,9 @@ const AdminHome = () => {
     if (layoutRow?.value) {
       const val = layoutRow.value as any;
       const config = val?.value ?? val;
-      if (config && typeof config === "object") setAppearanceConfig((prev) => ({ ...prev, ...config }));
+      if (config && typeof config === "object") setInitialAppearance({ ...defaultAppearanceConfig, ...config });
     }
-  }, [layoutRow]);
+  }, [layoutRow, setInitialAppearance]);
 
   useEffect(() => {
     if (sectionOrderRow?.value) {
@@ -369,10 +423,10 @@ const AdminHome = () => {
         );
 
         const finalOrder = [...validSaved, ...missingDefs];
-        setSectionOrder(finalOrder);
+        setInitialSectionOrder(finalOrder);
       }
     }
-  }, [sectionOrderRow]);
+  }, [sectionOrderRow, setInitialSectionOrder]);
 
   const saveCatSections = useMutation({
     mutationFn: async (sections: typeof catSections) => {
@@ -728,38 +782,152 @@ const AdminHome = () => {
     toast.warning("Changes discarded and reverted to saved state");
   }, [qc]);
 
-  // Dynamic universal save action for the active tab in AdminHome
+  const isSavingHome = saveSectionOrder.isPending || saveSales.isPending || saveLayout.isPending;
+
+  // Dynamic universal save action for all active tabs in AdminHome
   const activeSaveAction = useMemo(() => {
-    if (activeTab === "dashboard" || activeTab === "cinematic-showcase") return null;
-    if (activeTab === "campaigns") {
+    if (activeTab === "dashboard" || activeTab === "cinematic-showcase" || activeTab === "marquee") return null;
+
+    if (activeTab === "section-order") {
       return {
-        label: "Save",
+        label: "Save Section Order",
         onSave: async () => {
           await saveSectionOrder.mutateAsync();
-          await saveSales.mutateAsync();
         },
-        isSaving: saveSectionOrder.isPending || saveSales.isPending,
+        isSaving: saveSectionOrder.isPending,
+        onUndo: undoSectionOrder,
+        canUndo: canUndoSectionOrder,
+        onRedo: redoSectionOrder,
+        canRedo: canRedoSectionOrder,
+        onReject: () => {
+          rejectSectionOrder();
+          toast.warning("Section order reverted");
+        },
+        canReject: canRejectSectionOrder,
+      };
+    }
+
+    if (activeTab === "category-displays") {
+      return {
+        label: "Save Category Sections",
+        onSave: async () => {
+          await saveCatSections.mutateAsync(catSections);
+        },
+        isSaving: saveCatSections.isPending,
+        onUndo: undoCatSections,
+        canUndo: canUndoCatSections,
+        onRedo: redoCatSections,
+        canRedo: canRedoCatSections,
+        onReject: () => {
+          rejectCatSections();
+          toast.warning("Category displays reverted");
+        },
+        canReject: canRejectCatSections,
+      };
+    }
+
+    if (activeTab === "campaigns") {
+      return {
+        label: "Save Campaigns & Sales",
+        onSave: async () => {
+          await saveSales.mutateAsync();
+          await saveNewArrivals.mutateAsync();
+        },
+        isSaving: saveSales.isPending || saveNewArrivals.isPending,
+        onUndo: undoSales,
+        canUndo: canUndoSales,
+        onRedo: redoSales,
+        canRedo: canRedoSales,
+        onReject: () => {
+          rejectSales();
+          toast.warning("Campaigns reverted");
+        },
+        canReject: canRejectSales,
+      };
+    }
+
+    if (activeTab === "editorial") {
+      return {
+        label: "Save Editorial Content",
+        onSave: async () => {
+          await Promise.all([
+            saveSpecs.mutateAsync(),
+            saveLookbook.mutateAsync(),
+            saveInstagram.mutateAsync(),
+            savePressQuote.mutateAsync(),
+            saveMosaic.mutateAsync(),
+          ]);
+        },
+        isSaving:
+          saveSpecs.isPending ||
+          saveLookbook.isPending ||
+          saveInstagram.isPending ||
+          savePressQuote.isPending ||
+          saveMosaic.isPending,
         onReject: handleHomeReject,
         canReject: true,
       };
     }
+
     if (activeTab === "layout") {
       return {
-        label: "Save",
-        onSave: () => saveLayout.mutate(),
+        label: "Save Appearance & Theme",
+        onSave: async () => {
+          await saveLayout.mutateAsync();
+        },
         isSaving: saveLayout.isPending,
-        onReject: handleHomeReject,
-        canReject: true,
+        onUndo: undoAppearance,
+        canUndo: canUndoAppearance,
+        onRedo: redoAppearance,
+        canRedo: canRedoAppearance,
+        onReject: () => {
+          rejectAppearance();
+          toast.warning("Appearance settings reverted");
+        },
+        canReject: canRejectAppearance,
       };
     }
-    return {
-      label: "Save",
-      onSave: () => saveSectionOrder.mutate(),
-      isSaving: saveSectionOrder.isPending,
-      onReject: handleHomeReject,
-      canReject: true,
-    };
-  }, [activeTab, saveSectionOrder, saveSales, saveLayout, handleHomeReject]);
+
+    return null;
+  }, [
+    activeTab,
+    catSections,
+    handleHomeReject,
+    saveSectionOrder,
+    saveCatSections,
+    saveSales,
+    saveNewArrivals,
+    saveSpecs,
+    saveLookbook,
+    saveInstagram,
+    savePressQuote,
+    saveMosaic,
+    saveLayout,
+    undoSectionOrder,
+    canUndoSectionOrder,
+    redoSectionOrder,
+    canRedoSectionOrder,
+    rejectSectionOrder,
+    canRejectSectionOrder,
+    undoCatSections,
+    canUndoCatSections,
+    redoCatSections,
+    canRedoCatSections,
+    rejectCatSections,
+    canRejectCatSections,
+    undoSales,
+    canUndoSales,
+    redoSales,
+    canRedoSales,
+    rejectSales,
+    canRejectSales,
+    undoAppearance,
+    canUndoAppearance,
+    redoAppearance,
+    canRedoAppearance,
+    rejectAppearance,
+    canRejectAppearance,
+  ]);
 
   useRegisterUniversalSave(activeSaveAction, [activeSaveAction]);
 
@@ -771,6 +939,7 @@ const AdminHome = () => {
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="section-order">Section Order</TabsTrigger>
           <TabsTrigger value="category-displays">Category Displays</TabsTrigger>
+          <TabsTrigger value="marquee">Marquee Strip</TabsTrigger>
           <TabsTrigger value="campaigns">Campaigns & Drops</TabsTrigger>
           <TabsTrigger value="editorial">Editorial & Social</TabsTrigger>
           <TabsTrigger value="layout">Appearance</TabsTrigger>
@@ -1861,6 +2030,11 @@ const AdminHome = () => {
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        {/* ── MARQUEE STRIP CONFIG STUDIO ───────────────────────────── */}
+        <TabsContent value="marquee" className="space-y-6">
+          <MarqueeStripConfigPanel />
         </TabsContent>
 
         {/* ── CINEMATIC BENTO SHOWCASE CONFIG ─────────────────────────── */}

@@ -8,7 +8,7 @@ import { useStaffSections } from "@/hooks/use-staff-sections";
 import { motion } from "framer-motion";
 import {
   ShoppingCart, Search, Tag, Palette, Activity, Settings, Users2,
-  LayoutGrid, ShieldCheck, ScanLine, ArrowUpRight,
+  LayoutGrid, ShieldCheck, ScanLine, ArrowUpRight, Package,
 } from "lucide-react";
 import { SectionRow, type SectionRowItem } from "@/components/admin/SectionRow";
 import { useScannerAccess } from "@/hooks/use-scanner-access";
@@ -20,18 +20,18 @@ import { NavLink } from "@/components/NavLink";
  */
 
 const SECTION_META: Record<string, { title: string; sub: string; url: string; icon: any; color: string }> = {
-  admin:        { title: "Sales & Operations", sub: "Products, orders, fulfilment & payments", url: "/sales",       icon: ShoppingCart, color: "#f59e0b" },
-  products:     { title: "Products",         sub: "Catalog & inventory",                     url: "/sales/products-hub", icon: ShoppingCart, color: "#f59e0b" },
-  orders:       { title: "Orders",           sub: "Fulfilment & tracking",                   url: "/sales/orders",       icon: ShoppingCart, color: "#f59e0b" },
-  customers:    { title: "Customers",        sub: "Accounts, notes & tags",                  url: "/sales/customers-hub",icon: Users2,       color: "#a855f7" },
-  analytics:    { title: "Analytics",        sub: "Sales & behavior insights",               url: "/sales/customer-analytics", icon: Activity, color: "#38bdf8" },
+  admin:        { title: "Customer & Sales",   sub: "Dashboard, orders, offline orders & support", url: "/sales",       icon: ShoppingCart, color: "#f59e0b" },
+  products:     { title: "Products, Shipping & Offers",sub: "Catalogue, categories, serials & offers",   url: "/sales/products-management?tab=products", icon: Package, color: "#10b981" },
+  orders:       { title: "Orders",             sub: "Fulfilment & tracking",                   url: "/sales/orders",       icon: ShoppingCart, color: "#f59e0b" },
+  customers:    { title: "Customer Support",   sub: "Accounts, notes & tags",                  url: "/sales/customers-hub",icon: Users2,       color: "#a855f7" },
+  analytics:    { title: "Analytics",          sub: "Sales & behavior insights",               url: "/sales/customer-analytics", icon: Activity, color: "#38bdf8" },
   seo:          { title: "Marketing Management", sub: "Search, tracking, ads & announcements", url: "/marketing",                icon: Search,       color: "#f97316" },
-  affiliate:    { title: "Affiliate Program", sub: "Partners & commissions",                 url: "/affiliate",          icon: Tag,          color: "#84cc16" },
+  affiliate:    { title: "Affiliate Program",  sub: "Partners & commissions",                 url: "/affiliate",          icon: Tag,          color: "#84cc16" },
   storefront_ui:{ title: "Brand & Storefront", sub: "Theme, banners, appearance",            url: "/brand",        icon: Palette,      color: "#ec4899" },
   portfolio:    { title: "Landing / Docs",     sub: "Company site editor",                    url: "/brand/landing",icon: Palette,      color: "#ec4899" },
-  settings:     { title: "Settings & AI",    sub: "Global config",                           url: "/settings-ai",           icon: Settings,     color: "#94a3b8" },
-  ai:           { title: "AI Agent",         sub: "Widget & memory config",                  url: "/settings-ai/ai-settings", icon: Settings,   color: "#94a3b8" },
-  employees:    { title: "Team & Access",    sub: "Roles & access",                          url: "/team/employees",icon: Users2,       color: "#a855f7" },
+  settings:     { title: "Settings & AI",      sub: "Global config",                           url: "/settings-ai",           icon: Settings,     color: "#94a3b8" },
+  ai:           { title: "AI Agent",           sub: "Widget & memory config",                  url: "/settings-ai/ai-settings", icon: Settings,   color: "#94a3b8" },
+  employees:    { title: "Team & Access",      sub: "Roles & access",                          url: "/team/employees",icon: Users2,       color: "#a855f7" },
 };
 
 
@@ -152,7 +152,7 @@ function ScannerShortcut() {
           <ScanLine className="w-4 h-4 text-[#ff5064]" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground">Barcode Scanner</p>
+          <p className="text-sm font-semibold text-foreground">Product Scanner</p>
           <p className="text-[11px] text-muted-foreground">Standalone scanner · installable</p>
         </div>
         <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />

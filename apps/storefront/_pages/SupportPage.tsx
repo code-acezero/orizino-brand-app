@@ -1,26 +1,29 @@
 "use client";
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Bot, Send, User, Headphones, ArrowLeft, Phone, PhoneOff, Mic, MicOff,
-  MessageSquare, History, BellRing, BellOff, Volume2, Speaker, Search,
-  HelpCircle, ShieldCheck, Truck, RefreshCw, FileText, ChevronRight,
-  Zap, LifeBuoy, PackageCheck, AlertCircle, Sparkles, Clock
-} from "lucide-react";
 import { Link } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSeoMeta } from "@/hooks/use-seo-meta";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { playRingtone, stopRingtone } from "@/lib/sounds";
+import { playRingtone, stopRingtone, playOutgoingDialTone, stopOutgoingDialTone, playCallConnectedSound, playCallEndedSound } from "@/lib/sounds";
 import { getRTCConfiguration } from "@/lib/ice-servers";
 import CallHistoryList from "@/components/CallHistoryList";
 import { pushSupported, subscribeToPush } from "@/lib/push";
 import { CallRecorder, uploadCallRecording } from "@/lib/call-recorder";
 import { toast } from "@/lib/app-toast";
+import { getTicketStatusInfo } from "@/lib/ticket-status";
+import { AudioWaveVisualizer } from "@/components/AudioWaveVisualizer";
+import {
+  Bot, Send, User, Headphones, ArrowLeft, Phone, PhoneOff, Mic, MicOff,
+  MessageSquare, History, BellRing, BellOff, Volume2, Speaker, Search,
+  HelpCircle, ShieldCheck, Truck, RefreshCw, FileText, ChevronRight,
+  Zap, LifeBuoy, PackageCheck, AlertCircle, Clock, Ticket, Plus, Lock,
+  CheckCircle2, Filter, AlertTriangle, ChevronLeft
+} from "lucide-react";
 
 interface Msg {
   role: "user" | "assistant";
@@ -197,14 +200,227 @@ const ActiveCallBar: React.FC<{
 const SupportPage: React.FC = () => {
   useSeoMeta("support", "Customer Support & Care | Orizino");
   const { user } = useAuth();
+  const qc = useQueryClient();
   const { t } = useLanguage();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [tab, setTab] = useState<"chat" | "faq" | "history" | "settings">("chat");
+  const [tab, setTab] = useState<"chat" | "tickets" | "faq" | "history" | "settings">("chat");
   const [faqQuery, setFaqQuery] = useState("");
   const [openFaqIndex, setOpenFaqIndex] = useState<string | null>(null);
+
+  /* ── Support Tickets State ── */
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [ticketSearch, setTicketSearch] = useState("");
+  const [ticketFilter, setTicketFilter] = useState<"all" | "open" | "closed">("all");
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false);
+  const [newCategory, setNewCategory] = useState("Order Issue");
+  const [newSubject, setNewSubject] = useState("");
+  const [newMessage, setNewMessage] = useState("");
+  const [submittingNewTicket, setSubmittingNewTicket] = useState(false);
+  const [replyInput, setReplyInput] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+  const ticketScrollContainerRef = useRef<HTMLDivElement>(null);
+
+  /* ── User Tickets Query ── */
+  const { data: userTickets = [], refetch: refetchTickets } = useQuery({
+    queryKey: ["support-user-tickets", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("support_conversations")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
+      if (error) {
+        console.error("Failed to fetch tickets:", error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 10000,
+  });
+
+  const activeTicketsCount = useMemo(() => {
+    return userTickets.filter((t: any) => t.status !== "closed").length;
+  }, [userTickets]);
+
+  const filteredTickets = useMemo(() => {
+    return userTickets.filter((t: any) => {
+      if (ticketFilter === "open" && t.status === "closed") return false;
+      if (ticketFilter === "closed" && t.status !== "closed") return false;
+      if (ticketSearch.trim()) {
+        const query = ticketSearch.toLowerCase();
+        const subject = (t.subject || "").toLowerCase();
+        const id = (t.id || "").toLowerCase();
+        if (!subject.includes(query) && !id.includes(query)) return false;
+      }
+      return true;
+    });
+  }, [userTickets, ticketFilter, ticketSearch]);
+
+  const selectedTicket = useMemo(() => {
+    if (!selectedTicketId) return userTickets[0] || null;
+    return userTickets.find((t: any) => t.id === selectedTicketId) || userTickets[0] || null;
+  }, [userTickets, selectedTicketId]);
+
+  useEffect(() => {
+    if (!selectedTicketId && userTickets.length > 0) {
+      setSelectedTicketId(userTickets[0].id);
+    }
+  }, [userTickets, selectedTicketId]);
+
+  const { data: ticketMessages = [], refetch: refetchTicketMessages } = useQuery({
+    queryKey: ["support-ticket-messages", selectedTicket?.id],
+    queryFn: async () => {
+      if (!selectedTicket?.id) return [];
+      const { data, error } = await supabase
+        .from("support_messages")
+        .select("*")
+        .eq("conversation_id", selectedTicket.id)
+        .order("created_at", { ascending: true });
+      if (error) {
+        console.error("Failed to fetch messages for ticket:", error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!selectedTicket?.id,
+    staleTime: 5000,
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    const channels: any[] = [];
+
+    const convChannel = supabase
+      .channel(`support-page-convs-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_conversations", filter: `user_id=eq.${user.id}` }, () => {
+        refetchTickets();
+        qc.invalidateQueries({ queryKey: ["support-user-tickets", user.id] });
+      })
+      .subscribe();
+    channels.push(convChannel);
+
+    if (selectedTicket?.id) {
+      const msgChannel = supabase
+        .channel(`support-page-msgs-${selectedTicket.id}`)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages", filter: `conversation_id=eq.${selectedTicket.id}` }, () => {
+          refetchTicketMessages();
+          qc.invalidateQueries({ queryKey: ["support-ticket-messages", selectedTicket.id] });
+        })
+        .subscribe();
+      channels.push(msgChannel);
+    }
+
+    return () => {
+      channels.forEach((c) => supabase.removeChannel(c));
+    };
+  }, [user, selectedTicket?.id, refetchTickets, refetchTicketMessages, qc]);
+
+  useEffect(() => {
+    if (ticketScrollContainerRef.current) {
+      ticketScrollContainerRef.current.scrollTop = ticketScrollContainerRef.current.scrollHeight;
+    }
+  }, [ticketMessages]);
+
+  const formatTicketTime = (dateStr?: string) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffSec = Math.floor((now.getTime() - d.getTime()) / 1000);
+    if (diffSec < 60) return "Just now";
+    if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+    if (diffSec < 604800) return `${Math.floor(diffSec / 86400)}d ago`;
+    return d.toLocaleDateString([], { month: "short", day: "numeric" });
+  };
+
+  const handleCreateNewTicket = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!user) {
+      toast({ title: "Sign in required", description: "Please sign in to submit a support ticket.", variant: "destructive" });
+      return;
+    }
+    if (!newSubject.trim() || !newMessage.trim()) {
+      toast({ title: "Missing fields", description: "Please enter both a subject and issue details.", variant: "destructive" });
+      return;
+    }
+    setSubmittingNewTicket(true);
+    try {
+      const fullSubject = `[${newCategory}] ${newSubject.trim()}`;
+      const { data: conv, error: convErr } = await supabase
+        .from("support_conversations")
+        .insert({
+          user_id: user.id,
+          subject: fullSubject,
+          status: "open",
+          is_ai: false,
+          type: "ticket",
+          needs_human: true,
+        })
+        .select()
+        .single();
+
+      if (convErr || !conv) throw convErr || new Error("Failed to create ticket");
+
+      const { error: msgErr } = await supabase.from("support_messages").insert({
+        conversation_id: conv.id,
+        sender_id: user.id,
+        sender_type: "user",
+        content: `**Category:** ${newCategory}\n\n${newMessage.trim()}`,
+      });
+      if (msgErr) throw msgErr;
+
+      supabase.functions.invoke("notify-live-support", { body: { conversation_id: conv.id } }).catch(() => {});
+
+      toast({ title: "Ticket Submitted", description: `Support Ticket #${conv.id.slice(0, 8).toUpperCase()} submitted successfully.` });
+      setNewSubject("");
+      setNewMessage("");
+      setNewCategory("Order Issue");
+      setIsCreatingTicket(false);
+      setSelectedTicketId(conv.id);
+      refetchTickets();
+    } catch (err: any) {
+      toast({ title: "Submission Failed", description: err.message || "Failed to create support ticket", variant: "destructive" });
+    } finally {
+      setSubmittingNewTicket(false);
+    }
+  };
+
+  const handleSendTicketReply = async () => {
+    if (!replyInput.trim() || !selectedTicket?.id || !user) return;
+    if (selectedTicket.status === "closed") {
+      toast({ title: "Ticket Closed", description: "This ticket has been closed by admin. Please create a new ticket if needed.", variant: "destructive" });
+      return;
+    }
+    setSendingReply(true);
+    try {
+      const text = replyInput.trim();
+      const { error: msgErr } = await supabase.from("support_messages").insert({
+        conversation_id: selectedTicket.id,
+        sender_id: user.id,
+        sender_type: "user",
+        content: text,
+      });
+      if (msgErr) throw msgErr;
+
+      await supabase.from("support_conversations").update({
+        updated_at: new Date().toISOString(),
+        needs_human: true,
+      }).eq("id", selectedTicket.id);
+
+      setReplyInput("");
+      refetchTicketMessages();
+      refetchTickets();
+    } catch (err: any) {
+      toast({ title: "Failed to send", description: err.message || "Failed to send message", variant: "destructive" });
+    } finally {
+      setSendingReply(false);
+    }
+  };
 
   const [pushEnabled, setPushEnabled] = useState<boolean>(
     typeof Notification !== "undefined" && Notification.permission === "granted"
@@ -417,7 +633,10 @@ const SupportPage: React.FC = () => {
       pc.oniceconnectionstatechange = () => {
         if (pc.iceConnectionState === "connected") {
           setCallActive(true);
-          timerRef.current = setInterval(() => setCallDuration((d) => d + 1), 1000);
+          playCallConnectedSound();
+          if (!timerRef.current) {
+            timerRef.current = setInterval(() => setCallDuration((d) => d + 1), 1000);
+          }
         }
         if (pc.iceConnectionState === "disconnected" || pc.iceConnectionState === "failed") {
           hangupCall();
@@ -433,6 +652,7 @@ const SupportPage: React.FC = () => {
 
   const rejectCall = () => {
     setIncomingCall(false);
+    stopRingtone();
     callChannelRef.current?.send({
       type: "broadcast",
       event: "call-response",
@@ -441,6 +661,10 @@ const SupportPage: React.FC = () => {
   };
 
   const hangupCall = () => {
+    stopRingtone();
+    stopOutgoingDialTone();
+    playCallEndedSound();
+
     const recorder = recorderRef.current;
     const logId = callLogIdRef.current;
     recorderRef.current = null;
@@ -460,6 +684,28 @@ const SupportPage: React.FC = () => {
     setCallActive(false);
     setCallDuration(0);
     setCallMuted(false);
+  };
+
+  const closeSelectedTicket = async () => {
+    if (!selectedTicket?.id || !user) return;
+    try {
+      await supabase.from("support_conversations").update({
+        status: "closed",
+        updated_at: new Date().toISOString(),
+      }).eq("id", selectedTicket.id);
+
+      await supabase.from("support_messages").insert({
+        conversation_id: selectedTicket.id,
+        sender_id: user.id,
+        sender_type: "user",
+        content: "🔒 *Support ticket was closed by customer.*",
+      });
+
+      toast.success("Support ticket closed successfully.");
+      qc.invalidateQueries({ queryKey: ["user-support-tickets"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to close ticket");
+    }
   };
 
   const toggleCallMute = () => {
@@ -482,6 +728,8 @@ const SupportPage: React.FC = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  const { language } = useLanguage();
+
   const sendMessage = useCallback(async (customText?: string) => {
     const textToSend = (customText ?? input).trim();
     if (!textToSend || loading) return;
@@ -493,7 +741,7 @@ const SupportPage: React.FC = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("ai-chat", {
-        body: { messages: newMessages, context: { userId: user?.id } },
+        body: { messages: newMessages, context: { userId: user?.id, locale: language || "auto" } },
       });
       if (error) throw error;
       setMessages((prev) => [...prev, { role: "assistant", content: data?.reply || "I'm having trouble reaching the AI right now." }]);
@@ -502,7 +750,7 @@ const SupportPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [input, messages, loading, user]);
+  }, [input, messages, loading, user, language]);
 
   const filteredFaqs = useMemo(() => {
     if (!faqQuery.trim()) return FAQ_CATEGORIES;
@@ -579,7 +827,7 @@ const SupportPage: React.FC = () => {
         </AnimatePresence>
 
         {/* Executive Segmented Pill Menu */}
-        <div className="p-1.5 bg-secondary/40 backdrop-blur-md rounded-2xl border border-border/40 shadow-xs grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+        <div className="p-1.5 bg-secondary/40 backdrop-blur-md rounded-2xl border border-border/40 shadow-xs grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5">
           <button
             onClick={() => setTab("chat")}
             className={`flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
@@ -593,6 +841,25 @@ const SupportPage: React.FC = () => {
             <span className="hidden md:inline-block ml-auto text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               24/7
             </span>
+          </button>
+
+          <button
+            onClick={() => setTab("tickets")}
+            className={`flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+              tab === "tickets"
+                ? "bg-card text-foreground shadow-sm ring-1 ring-border/50 font-semibold"
+                : "text-muted-foreground hover:text-foreground hover:bg-card/50"
+            }`}
+          >
+            <LifeBuoy className={`w-3.5 h-3.5 ${tab === "tickets" ? "text-primary" : ""}`} />
+            <span>Support Tickets</span>
+            {user && (
+              <span className={`hidden md:inline-block ml-auto text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded ${
+                activeTicketsCount > 0 ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"
+              }`}>
+                {activeTicketsCount > 0 ? `${activeTicketsCount} Active` : `${userTickets.length}`}
+              </span>
+            )}
           </button>
 
           <button
@@ -680,7 +947,7 @@ const SupportPage: React.FC = () => {
               </div>
 
               {/* Chat Messages Window */}
-              <div ref={scrollRef} className="flex-1 overflow-y-auto min-w-0 max-w-full overflow-x-hidden p-3.5 sm:p-5 space-y-3.5">
+              <div ref={scrollRef} translate="no" className="notranslate skiptranslate flex-1 overflow-y-auto min-w-0 max-w-full overflow-x-hidden p-3.5 sm:p-5 space-y-3.5">
                 {messages.map((msg, i) => {
                   const isUser = msg.role === "user";
                   return (
@@ -709,7 +976,35 @@ const SupportPage: React.FC = () => {
                       >
                         {!isUser ? (
                           <div className="prose prose-sm dark:prose-invert max-w-none break-words min-w-0 [overflow-wrap:anywhere] [&_p]:mb-1 [&_p]:mt-0 text-xs sm:text-sm">
-                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            <ReactMarkdown
+                              components={{
+                                img: ({ node, ...props }) => (
+                                  <div className="my-2 block max-w-[240px] overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 shadow-md bg-secondary/30">
+                                    <img
+                                      {...props}
+                                      className="w-full aspect-square object-cover transition-transform duration-300 hover:scale-105 block"
+                                      loading="lazy"
+                                      onError={(e) => {
+                                        (e.target as HTMLElement).style.display = "none";
+                                      }}
+                                    />
+                                  </div>
+                                ),
+                                a: ({ node, children, href, ...props }) => {
+                                  return (
+                                    <a
+                                      href={href}
+                                      {...props}
+                                      className="text-primary hover:underline font-semibold inline-flex items-center gap-1"
+                                    >
+                                      {children}
+                                    </a>
+                                  );
+                                },
+                              }}
+                            >
+                              {msg.content}
+                            </ReactMarkdown>
                           </div>
                         ) : (
                           <p>{msg.content}</p>
@@ -857,7 +1152,426 @@ const SupportPage: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 2: Knowledge Base & FAQ */}
+        {/* Create Ticket Modal Overlay */}
+        <AnimatePresence>
+          {isCreatingTicket && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[10006] flex items-center justify-center bg-background/80 backdrop-blur-md p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.94, opacity: 0, y: 10 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.94, opacity: 0, y: 10 }}
+                className="relative w-full max-w-lg rounded-2xl bg-card border border-border/60 shadow-2xl p-5 sm:p-6 space-y-4"
+              >
+                <div className="flex items-center justify-between pb-3 border-b border-border/40">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                      <Plus className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-bold text-foreground">Open Support Ticket</h3>
+                      <p className="text-[11px] text-muted-foreground">Our concierge specialist team will attend to you shortly</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsCreatingTicket(false)}
+                    className="w-7 h-7 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleCreateNewTicket} className="space-y-3.5">
+                  <div>
+                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Ticket Category</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                      {[
+                        "Order Issue",
+                        "Product Quality",
+                        "Delivery & Courier",
+                        "Payment & Refund",
+                        "Exchange / Return",
+                        "General Inquiry"
+                      ].map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setNewCategory(cat)}
+                          className={`px-2.5 py-2 rounded-xl text-[11px] font-medium border text-left transition-all ${
+                            newCategory === cat
+                              ? "border-primary bg-primary/10 text-primary font-semibold shadow-xs"
+                              : "border-border/50 text-muted-foreground hover:border-border hover:bg-secondary/40"
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-foreground mb-1 block">Subject Title</label>
+                    <input
+                      type="text"
+                      value={newSubject}
+                      onChange={(e) => setNewSubject(e.target.value)}
+                      placeholder="e.g. Order #ORD-8219 delivery status"
+                      className="w-full bg-secondary/40 border border-border/60 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-foreground mb-1 block">Detailed Description</label>
+                    <textarea
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Please explain the issue or question in detail..."
+                      rows={4}
+                      className="w-full bg-secondary/40 border border-border/60 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsCreatingTicket(false)}
+                      className="rounded-xl text-xs"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={submittingNewTicket || !newSubject.trim() || !newMessage.trim()}
+                      className="rounded-xl text-xs font-semibold gap-1.5"
+                    >
+                      {submittingNewTicket ? "Submitting..." : "Submit Ticket"}
+                    </Button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Tab 2: Support Tickets (Unauthenticated State) */}
+        {tab === "tickets" && !user && (
+          <div className="rounded-2xl bg-card border border-border/40 p-8 sm:p-12 text-center max-w-lg mx-auto space-y-4 shadow-xs">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto shadow-inner">
+              <LifeBuoy className="w-7 h-7" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-base sm:text-lg font-bold font-display text-foreground">Customer Support Portal</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Sign in to your account to view your support tickets, manage active inquiries, and continue conversations with our dedicated specialists.
+              </p>
+            </div>
+            <div className="pt-2">
+              <Link to="/auth?redirect=/support">
+                <Button className="rounded-xl px-6 py-2.5 font-semibold text-xs gap-2">
+                  <User className="w-3.5 h-3.5" /> Sign In to Access Tickets
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 2: Support Tickets (Authenticated State) */}
+        {tab === "tickets" && user && (
+          <div className="space-y-4">
+            {/* Top Toolbar: Filter, Search, and Create Ticket Button */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-card border border-border/40 shadow-xs">
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                {[
+                  { id: "all" as const, label: "All Tickets", count: userTickets.length },
+                  { id: "open" as const, label: "Active", count: activeTicketsCount },
+                  { id: "closed" as const, label: "Closed", count: userTickets.length - activeTicketsCount },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setTicketFilter(f.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                      ticketFilter === f.id
+                        ? "bg-primary text-primary-foreground shadow-xs"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    }`}
+                  >
+                    <span>{f.label}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${ticketFilter === f.id ? "bg-white/20 text-white" : "bg-secondary text-muted-foreground"}`}>
+                      {f.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1 sm:w-56">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={ticketSearch}
+                    onChange={(e) => setTicketSearch(e.target.value)}
+                    placeholder="Filter tickets..."
+                    className="w-full bg-secondary/40 border border-border/50 rounded-xl pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+                <Button
+                  onClick={() => setIsCreatingTicket(true)}
+                  size="sm"
+                  className="rounded-xl text-xs font-bold gap-1.5 h-8 px-3 shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Open Ticket</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Main Split Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-start">
+              
+              {/* Left Column: Tickets List (4 Cols) */}
+              <div className="lg:col-span-4 rounded-2xl bg-card border border-border/40 shadow-xs overflow-hidden flex flex-col h-[520px] sm:h-[580px] lg:h-[620px]">
+                <div className="px-4 py-3 border-b border-border/40 bg-secondary/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <LifeBuoy className="w-4 h-4 text-primary" />
+                    <h3 className="text-xs sm:text-sm font-bold text-foreground">Support Conversations</h3>
+                  </div>
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    {filteredTickets.length} {filteredTickets.length === 1 ? "ticket" : "tickets"}
+                  </span>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-2.5 space-y-2">
+                  {filteredTickets.length === 0 ? (
+                    <div className="p-8 text-center space-y-3">
+                      <div className="w-10 h-10 rounded-xl bg-secondary text-muted-foreground flex items-center justify-center mx-auto">
+                        <LifeBuoy className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-foreground">No tickets found</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {ticketSearch ? "Try adjusting your search keywords." : "You haven't submitted any support tickets yet."}
+                        </p>
+                      </div>
+                      {!ticketSearch && (
+                        <Button
+                          onClick={() => setIsCreatingTicket(true)}
+                          size="sm"
+                          variant="outline"
+                          className="rounded-xl text-xs h-7 px-3"
+                        >
+                          <Plus className="w-3 h-3 mr-1" /> Create Ticket
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    filteredTickets.map((ticket: any) => {
+                      const isSelected = selectedTicket?.id === ticket.id;
+                      const statusInfo = getTicketStatusInfo(ticket.status, ticket.assigned_to);
+                      return (
+                        <div
+                          key={ticket.id}
+                          onClick={() => setSelectedTicketId(ticket.id)}
+                          className={`p-3 rounded-xl border transition-all cursor-pointer text-left ${
+                            isSelected
+                              ? "bg-primary/10 border-primary/50 shadow-xs ring-1 ring-primary/20"
+                              : "bg-secondary/20 hover:bg-secondary/50 border-border/40"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <span className="text-[10px] font-mono font-bold text-muted-foreground">
+                              #TK-{ticket.id.slice(0, 8).toUpperCase()}
+                            </span>
+                            <span
+                              className={`text-[9.5px] font-mono uppercase font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${statusInfo.badgeClass}`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
+                              {statusInfo.label}
+                            </span>
+                          </div>
+
+                          <h4 className="text-xs font-bold text-foreground line-clamp-1 mb-1">
+                            {ticket.subject || "Support Inquiry"}
+                          </h4>
+
+                          <div className="flex items-center justify-between text-[10.5px] text-muted-foreground mt-1">
+                            <span className="capitalize text-[10px] font-mono px-1.5 py-0.2 rounded bg-secondary/70">{ticket.type || "Ticket"}</span>
+                            <span className="flex items-center gap-1">
+                              {statusInfo.isLiveChatable ? (
+                                <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">Live</span>
+                              ) : null}
+                              <span>{formatTicketTime(ticket.updated_at || ticket.created_at)}</span>
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column: Active Ticket Conversation Hub (8 Cols) */}
+              <div className="lg:col-span-8 rounded-2xl bg-card border border-border/40 shadow-xs overflow-hidden flex flex-col h-[520px] sm:h-[580px] lg:h-[620px]">
+                {selectedTicket ? (
+                  <>
+                    {/* Ticket Header Bar */}
+                    {(() => {
+                      const statusInfo = getTicketStatusInfo(selectedTicket.status, selectedTicket.assigned_to);
+                      return (
+                        <div className="px-4 sm:px-5 py-3 border-b border-border/40 bg-secondary/30 flex items-center justify-between gap-3 flex-wrap">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-secondary border border-border/40 text-muted-foreground">
+                                #TK-{selectedTicket.id.slice(0, 8).toUpperCase()}
+                              </span>
+                              <span
+                                className={`text-[9.5px] font-mono uppercase font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${statusInfo.badgeClass}`}
+                              >
+                                <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
+                                {statusInfo.label}
+                              </span>
+                            </div>
+                            <h3 className="text-xs sm:text-sm font-bold text-foreground truncate mt-1">
+                              {selectedTicket.subject || "Support Thread"}
+                            </h3>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {selectedTicket.status !== "closed" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={closeSelectedTicket}
+                                className="h-7 px-2.5 rounded-lg text-xs font-semibold text-destructive border-destructive/30 hover:bg-destructive/10"
+                                title="Close this support ticket"
+                              >
+                                <Lock className="w-3 h-3 mr-1" /> Close Ticket
+                              </Button>
+                            )}
+                            {statusInfo.isLiveChatable && (
+                              <Button
+                                size="sm"
+                                onClick={() => setTab("chat")}
+                                className="h-7 px-2.5 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white"
+                              >
+                                <MessageSquare className="w-3 h-3 mr-1" /> Live Chat
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Messages Window */}
+                    <div
+                      ref={ticketScrollContainerRef}
+                      className="flex-1 overflow-y-auto p-3.5 sm:p-5 space-y-3.5 bg-gradient-to-b from-background/30 to-background/70"
+                    >
+                      {ticketMessages.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground text-xs">
+                          No messages yet in this ticket thread.
+                        </div>
+                      ) : (
+                        ticketMessages.map((msg: any, idx: number) => {
+                          const isUser = msg.sender_type === "user";
+                          return (
+                            <motion.div
+                              key={msg.id || idx}
+                              initial={{ opacity: 0, y: 4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className={`flex gap-2.5 sm:gap-3 min-w-0 max-w-full ${isUser ? "justify-end" : "justify-start"}`}
+                            >
+                              {!isUser && (
+                                <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 font-bold">
+                                  <Headphones className="w-3.5 h-3.5" />
+                                </div>
+                              )}
+
+                              <div className={`space-y-1 max-w-[88%] sm:max-w-[80%] min-w-0 ${isUser ? "items-end text-right" : "items-start text-left"}`}>
+                                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground px-1">
+                                  <span>{isUser ? "You" : "Orizino Support Specialist"}</span>
+                                  <span>•</span>
+                                  <span>{formatTicketTime(msg.created_at)}</span>
+                                </div>
+
+                                <div
+                                  className={`px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm rounded-2xl break-words [overflow-wrap:anywhere] text-left ${
+                                    isUser
+                                      ? "bg-primary text-primary-foreground rounded-br-xs font-medium"
+                                      : "bg-secondary/70 border border-border/40 text-foreground rounded-bl-xs [&_p]:leading-relaxed"
+                                  }`}
+                                >
+                                  <div className="prose prose-sm dark:prose-invert max-w-none break-words min-w-0 [overflow-wrap:anywhere] [&_p]:mb-1 [&_p]:mt-0 text-xs sm:text-sm">
+                                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {isUser && (
+                                <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                                  <User className="w-3.5 h-3.5 text-muted-foreground" />
+                                </div>
+                              )}
+                            </motion.div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Reply Composer or Closed Notice */}
+                    {selectedTicket.status === "closed" ? (
+                      <div className="p-4 bg-secondary/40 border-t border-border/40 text-center space-y-1">
+                        <p className="text-xs font-bold text-muted-foreground flex items-center justify-center gap-1.5">
+                          <Lock className="w-3.5 h-3.5 text-muted-foreground" /> This support ticket was marked closed by the administration.
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          If you require further assistance or have a new question, please click "Open Ticket" above.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-3 border-t border-border/40 bg-card space-y-2">
+                        <div className="flex items-center gap-2 bg-secondary/40 rounded-xl p-1.5 border border-border/40 focus-within:border-primary/50 transition-all">
+                          <input
+                            value={replyInput}
+                            onChange={(e) => setReplyInput(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendTicketReply()}
+                            placeholder="Type your reply to the support team..."
+                            className="flex-1 bg-transparent px-3 py-1.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                          />
+                          <Button
+                            onClick={handleSendTicketReply}
+                            disabled={!replyInput.trim() || sendingReply}
+                            className="rounded-lg px-3.5 h-8 text-xs font-semibold"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground text-center">
+                          Replies are delivered live to our support team. The ticket remains active until resolved.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-3">
+                    <LifeBuoy className="w-10 h-10 text-muted-foreground" />
+                    <p className="text-xs font-semibold text-foreground">Select a support ticket to view conversation</p>
+                  </div>
+                )}
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Knowledge Base & FAQ */}
         {tab === "faq" && (
           <div className="space-y-5">
             <div className="relative max-w-xl mx-auto">

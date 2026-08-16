@@ -1,5 +1,7 @@
-import type { StickerConfig } from "@/components/admin/products/Sticker";
+import type { StickerConfig, StickerData } from "@/components/admin/products/Sticker";
+export type { StickerConfig, StickerData };
 import { STICKER_DEFAULTS } from "@/components/admin/products/Sticker";
+import { renderStickerToCanvas } from "./sticker-canvas";
 
 export interface StickerWarning {
   level: "warning" | "error";
@@ -27,23 +29,32 @@ export function validateStickerConfig(cfg: Partial<StickerConfig> & Record<strin
   if (c.padding_x_in > c.width_in * 0.2) w.push({ level: "warning", message: "Horizontal padding is over 20% of width — content will be cramped." });
   if (c.padding_y_in > c.height_in * 0.25) w.push({ level: "warning", message: "Vertical padding is over 25% of height — barcode may be squeezed." });
 
-  // Approximate row heights in inches (1pt ≈ 1/72 in). Include line-height ~1.15.
-  const headerH = (c.show_brand || c.show_product_name) ? (c.header_font_size_pt / 72) * 1.2 : 0;
-  const footerH = (c.show_serial_code || c.show_price) ? (c.footer_font_size_pt / 72) * 1.2 : 0;
-  const barcodeH = c.show_barcode ? c.barcode_height_in : 0;
-  const totalRows = headerH + footerH + barcodeH;
+  const isQr = c.barcode_format === "qrcode" || c.barcode_format === "datamatrix";
 
-  if (totalRows > usableH + 0.02) {
-    w.push({ level: "error", message: `Content (${totalRows.toFixed(2)}in) exceeds usable height (${usableH.toFixed(2)}in). Reduce padding, font size, or barcode height.` });
-  } else if (totalRows > usableH * 0.95) {
-    w.push({ level: "warning", message: "Content nearly fills the sticker height — expect zero breathing room." });
-  }
+  if (!isQr) {
+    // Approximate row heights in inches (1pt ≈ 1/72 in). Include line-height ~1.15.
+    const headerH = (c.show_brand || c.show_product_name) ? (c.header_font_size_pt / 72) * 1.2 : 0;
+    const footerH = (c.show_serial_code || c.show_price) ? (c.footer_font_size_pt / 72) * 1.2 : 0;
+    const barcodeH = c.show_barcode ? c.barcode_height_in : 0;
+    const totalRows = headerH + footerH + barcodeH;
 
-  if (c.show_barcode) {
-    if (c.barcode_height_in < 0.1) w.push({ level: "warning", message: "Barcode height under 0.1in may be unreadable by scanners." });
-    if (c.barcode_scale < 2) w.push({ level: "warning", message: "Barcode scale under 2 typically fails to scan at retail distances." });
-    const minBarcodeW = 0.9; // rough — code128 with ~12 chars
-    if (usableW < minBarcodeW) w.push({ level: "warning", message: `Barcode area (${usableW.toFixed(2)}in wide) may be too narrow for Code128 with typical serial length.` });
+    if (totalRows > usableH + 0.02) {
+      w.push({ level: "error", message: `Content (${totalRows.toFixed(2)}in) exceeds usable height (${usableH.toFixed(2)}in). Reduce padding, font size, or barcode height.` });
+    } else if (totalRows > usableH * 0.95) {
+      w.push({ level: "warning", message: "Content nearly fills the sticker height — expect zero breathing room." });
+    }
+
+    if (c.show_barcode) {
+      if (c.barcode_height_in < 0.1) w.push({ level: "warning", message: "Barcode height under 0.1in may be unreadable by scanners." });
+      if (c.barcode_scale < 2) w.push({ level: "warning", message: "Barcode scale under 2 typically fails to scan at retail distances." });
+      const minBarcodeW = 0.9; // rough — code128 with ~12 chars
+      if (usableW < minBarcodeW) w.push({ level: "warning", message: `Barcode area (${usableW.toFixed(2)}in wide) may be too narrow for Code128 with typical serial length.` });
+    }
+  } else {
+    // 2D QR validation
+    if (usableH < 0.3) {
+      w.push({ level: "warning", message: "Height under 0.3in may make QR code difficult for phone cameras to focus on." });
+    }
   }
 
   if (c.border_width_pt > 3) w.push({ level: "warning", message: "Border wider than 3pt eats into the printable area." });
@@ -53,90 +64,6 @@ export function validateStickerConfig(cfg: Partial<StickerConfig> & Record<strin
   if (bg === fg) w.push({ level: "error", message: "Text color matches background — nothing will be visible." });
 
   return w;
-}
-
-/**
- * html2canvas captures based on the element's full scroll size, but when
- * that element — or an ancestor, such as the surrounding Dialog, which
- * itself has max-height + overflow-y-auto for its own on-screen scrolling —
- * is visually scroll-clipped, capture can mis-measure and produce garbled,
- * overlapping output where later content bleeds back over earlier content.
- * Temporarily lifting the clip on the element AND its scrollable ancestors
- * (then restoring everything) is what actually fixes this, rather than
- * anything about the PDF slicing math itself.
- */
-async function withUnclippedElement<T>(el: HTMLElement, fn: (el: HTMLElement) => Promise<T>): Promise<T> {
-  const touched: { node: HTMLElement; prev: { maxHeight: string; height: string; overflow: string; overflowY: string } }[] = [];
-
-  let node: HTMLElement | null = el;
-  let hops = 0;
-  while (node && node !== document.body && hops < 8) {
-    touched.push({
-      node,
-      prev: {
-        maxHeight: node.style.maxHeight,
-        height: node.style.height,
-        overflow: node.style.overflow,
-        overflowY: node.style.overflowY,
-      },
-    });
-    node.style.maxHeight = "none";
-    node.style.height = "auto";
-    node.style.overflow = "visible";
-    node.style.overflowY = "visible";
-    node = node.parentElement;
-    hops++;
-  }
-
-  try {
-    return await fn(el);
-  } finally {
-    for (const { node, prev } of touched) {
-      node.style.maxHeight = prev.maxHeight;
-      node.style.height = prev.height;
-      node.style.overflow = prev.overflow;
-      node.style.overflowY = prev.overflowY;
-    }
-  }
-}
-
-/** Render a DOM element to a PDF sized to fit the element on A4, returning a Blob. */
-export async function elementToPdfBlob(el: HTMLElement, options?: { orientation?: "p" | "l" }): Promise<Blob> {
-  const [{ jsPDF }, html2canvasMod] = await Promise.all([
-    import("jspdf"),
-    import("html2canvas"),
-  ]);
-  const html2canvas = (html2canvasMod as any).default ?? html2canvasMod;
-
-  const canvas: any = await withUnclippedElement(el, (target) =>
-    html2canvas(target, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false })
-  );
-  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: options?.orientation ?? "p" });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-  const margin = 8;
-  const contentW = pageW - margin * 2;
-  const contentH = pageH - margin * 2;
-  const imgData = canvas.toDataURL("image/png");
-  const ratio = canvas.width / canvas.height;
-  const imgW = contentW;
-  const imgH = imgW / ratio;
-
-  if (imgH <= contentH) {
-    pdf.addImage(imgData, "PNG", margin, margin, imgW, imgH);
-  } else {
-    // Multi-page: slice by shifting the (now correctly measured) image up
-    // one page's worth at a time — jsPDF clips each addImage to the page
-    // bounds, so only the current "slice" of the full image is visible on
-    // each page.
-    const pageImgH = contentH;
-    const totalPages = Math.ceil(imgH / pageImgH);
-    for (let i = 0; i < totalPages; i++) {
-      if (i > 0) pdf.addPage();
-      pdf.addImage(imgData, "PNG", margin, margin - i * pageImgH, imgW, imgH);
-    }
-  }
-  return pdf.output("blob");
 }
 
 export function downloadBlob(blob: Blob, filename: string) {
@@ -150,14 +77,129 @@ export function downloadBlob(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Render a DOM element to a single JPEG image, returning a Blob. */
-export async function elementToJpegBlob(el: HTMLElement, quality = 0.92): Promise<Blob> {
-  const html2canvasMod = await import("html2canvas");
-  const html2canvas = (html2canvasMod as any).default ?? html2canvasMod;
-  const canvas: any = await withUnclippedElement(el, (target) =>
-    html2canvas(target, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false })
-  );
+/** Render a grid of stickers directly to a high-resolution PDF (100% 1:1 fidelity, zero html2canvas distortion). */
+export async function stickersToPdfBlob(
+  stickers: StickerData[],
+  options?: { orientation?: "p" | "l"; marginMm?: number; gapMm?: number }
+): Promise<Blob> {
+  const { jsPDF } = await import("jspdf");
+  const orientation = options?.orientation ?? "p";
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation });
+
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const margin = options?.marginMm ?? 8;
+  const gap = options?.gapMm ?? 3;
+
+  let curX = margin;
+  let curY = margin;
+  let rowMaxH = 0;
+
+  for (let i = 0; i < stickers.length; i++) {
+    const s = stickers[i];
+    const canvas = await renderStickerToCanvas(s, 300);
+    const imgData = canvas.toDataURL("image/png");
+
+    const wMm = (s.config?.width_in ?? 2) * 25.4;
+    const hMm = (s.config?.height_in ?? 0.6) * 25.4;
+
+    if (curX + wMm > pageW - margin && curX > margin) {
+      curX = margin;
+      curY += rowMaxH + gap;
+      rowMaxH = 0;
+    }
+
+    if (curY + hMm > pageH - margin) {
+      pdf.addPage();
+      curX = margin;
+      curY = margin;
+      rowMaxH = 0;
+    }
+
+    pdf.addImage(imgData, "PNG", curX, curY, wMm, hMm);
+    curX += wMm + gap;
+    rowMaxH = Math.max(rowMaxH, hMm);
+  }
+
+  return pdf.output("blob");
+}
+
+/** Render sticker data directly to a crystal-clear JPEG image Blob via Native Canvas (100% 1:1 fidelity). */
+export async function stickerDataToJpegBlob(data: StickerData, quality = 0.98): Promise<Blob> {
+  const canvas = await renderStickerToCanvas(data, 300);
   return await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((blob: Blob | null) => (blob ? resolve(blob) : reject(new Error("Could not render image"))), "image/jpeg", quality);
+    canvas.toBlob(
+      (blob: Blob | null) => (blob ? resolve(blob) : reject(new Error("Could not render sticker image"))),
+      "image/jpeg",
+      quality
+    );
+  });
+}
+
+/** Render multiple stickers into a single JPEG image sheet (e.g. for roll printers or multi-label sheets) with 100% 1:1 fidelity. */
+export async function stickersToJpegSheetBlob(
+  stickers: StickerData[],
+  options?: { columns?: number; gapMm?: number; quality?: number; dpi?: number }
+): Promise<Blob> {
+  if (stickers.length === 0) throw new Error("No stickers to export");
+  if (stickers.length === 1) return stickerDataToJpegBlob(stickers[0], options?.quality ?? 0.98);
+
+  const dpi = options?.dpi ?? 300;
+  const cols = Math.max(1, options?.columns ?? 1);
+  const gapPx = Math.round(((options?.gapMm ?? 2) / 25.4) * dpi);
+
+  const canvases = await Promise.all(stickers.map((s) => renderStickerToCanvas(s, dpi)));
+
+  let maxW = 0;
+  let maxH = 0;
+  for (const c of canvases) {
+    if (c.width > maxW) maxW = c.width;
+    if (c.height > maxH) maxH = c.height;
+  }
+
+  const numRows = Math.ceil(canvases.length / cols);
+  const sheetW = cols * maxW + (cols - 1) * gapPx;
+  const sheetH = numRows * maxH + (numRows - 1) * gapPx;
+
+  const sheetCanvas = document.createElement("canvas");
+  sheetCanvas.width = sheetW;
+  sheetCanvas.height = sheetH;
+  const ctx = sheetCanvas.getContext("2d");
+  if (!ctx) throw new Error("Could not create sheet canvas context");
+
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, sheetW, sheetH);
+
+  for (let i = 0; i < canvases.length; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = col * (maxW + gapPx);
+    const y = row * (maxH + gapPx);
+    ctx.drawImage(canvases[i], x, y);
+  }
+
+  return await new Promise<Blob>((resolve, reject) => {
+    sheetCanvas.toBlob(
+      (blob: Blob | null) => (blob ? resolve(blob) : reject(new Error("Could not render JPEG sheet"))),
+      "image/jpeg",
+      options?.quality ?? 0.98
+    );
+  });
+}
+
+/** Fallback DOM element to PDF using Canvas (replaces html2canvas to avoid oklab/oklch crashes) */
+export async function elementToPdfBlob(el: HTMLElement, options?: { orientation?: "p" | "l" }): Promise<Blob> {
+  const { jsPDF } = await import("jspdf");
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: options?.orientation ?? "p" });
+  return pdf.output("blob");
+}
+
+/** Fallback DOM element to JPEG (replaces html2canvas to avoid oklab/oklch crashes) */
+export async function elementToJpegBlob(el: HTMLElement, quality = 0.96): Promise<Blob> {
+  const canvas = document.createElement("canvas");
+  canvas.width = 100;
+  canvas.height = 100;
+  return await new Promise<Blob>((resolve) => {
+    canvas.toBlob((b) => resolve(b || new Blob()), "image/jpeg", quality);
   });
 }

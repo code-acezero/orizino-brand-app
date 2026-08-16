@@ -14,7 +14,6 @@ import {
   ShieldAlert,
   ShieldCheck,
   Check,
-  Sparkles,
   ShoppingBag,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -345,7 +344,7 @@ const AuthPage: React.FC = () => {
                 {/* Top Section: Kicker & Headline */}
                 <div className="space-y-2">
                   <span className="inline-flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-widest text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
-                    <Sparkles className="w-2.5 h-2.5" />
+                    <ShieldCheck className="w-2.5 h-2.5" />
                     Member Privileges
                   </span>
                   <h2

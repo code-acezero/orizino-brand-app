@@ -9,7 +9,6 @@ import {
   Maximize2,
   Smartphone,
   Square,
-  Sparkles,
   Sliders,
   Search,
   RefreshCw,
@@ -52,29 +51,28 @@ import {
   type ProfileTypographyPair,
   type TypographyCategory,
 } from "@/lib/storefront-appearance";
-import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
+import { useRegisterUniversalSave, useUndoRedoState } from "@/contexts/UniversalSaveContext";
 import { useQueryClient } from "@tanstack/react-query";
 
 const PRESET_SNIPPETS = [
   { label: "Oversized Drop", head: "HIGH-STRUCTURE 380GSM TERRY", body: "Tailored with dropped shoulders and double-needle french terry for a heavyweight boxy drape." },
   { label: "Dhaka Atelier", head: "CRAFTED IN DHAKA ATELIER", body: "Every seam reinforced with 380 GSM combed cotton and garment-dyed vintage washes." },
-  { label: "Limited Capsule", head: "WINTER CAPSULE 004 / 50 PIECES", body: "Engineered boxy silhouette with custom metal hardware and minimal branding accents." },
+  { label: "Limited Drops", head: "EXCLUSIVE STREETWEAR ARCHITECTURE", body: "Zero mass production. Individually inspected limited editions engineered for longevity." },
 ];
 
-const loadedFonts = new Set<string>();
-function ensureFont(gfUrl: string) {
-  if (typeof document === "undefined" || !gfUrl || gfUrl.trim() === "") return;
-  const href = `https://fonts.googleapis.com/css2?family=${gfUrl}&display=swap`;
-  if (loadedFonts.has(href)) return;
-  loadedFonts.add(href);
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = href;
-  document.head.appendChild(link);
+function ensureFont(url: string) {
+  if (typeof document === "undefined") return;
+  const existing = document.querySelector(`link[href="${url}"]`);
+  if (!existing) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = url;
+    document.head.appendChild(link);
+  }
 }
 
 const CATEGORIES: { id: TypographyCategory; label: string; icon: React.ElementType }[] = [
-  { id: "all", label: "All Fonts", icon: Sparkles },
+  { id: "all", label: "All Fonts", icon: Type },
   { id: "custom", label: "Custom Brand Fonts", icon: Crown },
   { id: "editorial", label: "Editorial & Luxury", icon: BookOpen },
   { id: "classic", label: "Classic & Haute Couture", icon: Layers },
@@ -93,7 +91,8 @@ function extractFontName(fontFamilyStr: string): string {
 const AdminStorefrontAppearance: React.FC = () => {
   useSeoMeta("Storefront Appearance", "Typography and layout for all storefront pages");
   const qc = useQueryClient();
-  const [cfg, setCfg] = useState<StorefrontAppearanceConfig>(defaultStorefrontAppearance);
+  const [cfg, setCfg, { undo, redo, canUndo, canRedo, reject, canReject, setInitial }] =
+    useUndoRedoState<StorefrontAppearanceConfig>(defaultStorefrontAppearance);
   const [saving, setSaving] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<TypographyCategory>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -134,9 +133,9 @@ const AdminStorefrontAppearance: React.FC = () => {
         }
       }
 
-      setCfg({ ...defaultStorefrontAppearance, ...appearanceVal });
+      setInitial({ ...defaultStorefrontAppearance, ...appearanceVal });
     })();
-  }, []);
+  }, [setInitial]);
 
   const save = async () => {
     setSaving(true);
@@ -177,13 +176,17 @@ const AdminStorefrontAppearance: React.FC = () => {
       label: "Save Appearance",
       onSave: save,
       isSaving: saving,
+      onUndo: undo,
+      canUndo: canUndo,
+      onRedo: redo,
+      canRedo: canRedo,
       onReject: () => {
-        setCfg(defaultStorefrontAppearance);
-        toast.warning("Appearance settings reset to default");
+        reject();
+        toast.warning("Appearance settings reverted");
       },
-      canReject: true,
+      canReject: canReject,
     },
-    [cfg, saving]
+    [cfg, saving, canUndo, canRedo, canReject]
   );
 
   const activePair = getStorefrontTypographyPair(cfg.typography_pair);
@@ -233,7 +236,7 @@ const AdminStorefrontAppearance: React.FC = () => {
                 <Filter className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span className="truncate max-w-[140px] flex items-center gap-1.5">
                   {(() => {
-                    const SelectedIcon = CATEGORIES.find((c) => c.id === selectedCategory)?.icon || Sparkles;
+                    const SelectedIcon = CATEGORIES.find((c) => c.id === selectedCategory)?.icon || Type;
                     return <SelectedIcon className="w-3 h-3 text-muted-foreground" />;
                   })()}
                   <span>{CATEGORIES.find((c) => c.id === selectedCategory)?.label || "All Fonts"}</span>
@@ -402,7 +405,7 @@ const AdminStorefrontAppearance: React.FC = () => {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Sparkles className="w-2.5 h-2.5" />
+                <Eye className="w-2.5 h-2.5" />
                 <span>Hero Drop</span>
               </button>
               <button

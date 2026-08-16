@@ -15,7 +15,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="h-screen flex overflow-hidden bg-background">
+      {/* h-screen + overflow-hidden: body never scrolls → Radix gap=0 → no layout shift on dropdowns */}
       {/* macOS-style sidebar — desktop only */}
       <aside className="hidden md:flex md:w-60 md:flex-col md:border-r md:border-border/60 md:bg-sidebar md:shrink-0">
         <div className="px-5 pt-6 pb-4">

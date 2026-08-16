@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "@/lib/router-compat";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ShoppingCart, Heart, User, X, Menu, LogOut, Settings, LayoutGrid, ChevronDown, Bell, Sun, Moon, MoreVertical, Globe } from "lucide-react";
+import { Search, ShoppingCart, Heart, User, X, Menu, LogOut, Settings, LayoutGrid, ChevronDown, Bell, Sun, Moon, MoreVertical, Globe, Monitor } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTheme } from "next-themes";
@@ -13,6 +13,7 @@ import BottomNav, { type BottomNavProductTray } from "@/components/BottomNav";
 import NotificationBell from "@/components/NotificationBell";
 import BrandLogo from "@/components/BrandLogo";
 import ImageWithFallback from "@/components/ImageWithFallback";
+import LanguageMenu from "@/components/footer/LanguageMenu";
 
 interface NavbarProps {
   bottomNavProductTray?: BottomNavProductTray;
@@ -245,6 +246,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
   return (
     <>
       <header
+        suppressHydrationWarning
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled ? "bg-background/95 backdrop-blur-md border-b border-border/80 shadow-sm" : "bg-transparent border-b-0 border-transparent shadow-none"
         }`}
@@ -496,24 +498,40 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                 </AnimatePresence>
               </div>
 
-              {/* Theme Switcher — hidden on mobile top nav, available in side menu */}
+              {/* Theme Switcher — 3-way cycling: Auto (System) -> Light -> Dark -> Auto */}
               <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="hidden lg:flex w-9 h-9 items-center justify-center text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-white/5 shrink-0"
-                aria-label="Toggle theme"
+                onClick={() => {
+                  if (theme === 'system' || !theme) setTheme('light');
+                  else if (theme === 'light') setTheme('dark');
+                  else setTheme('system');
+                }}
+                className="hidden lg:flex w-9 h-9 items-center justify-center text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-black/5 dark:hover:bg-white/5 shrink-0"
+                aria-label="Toggle theme mode"
+                title={
+                  mounted
+                    ? theme === 'dark'
+                      ? 'Theme: Dark (click for Auto/System)'
+                      : theme === 'light'
+                      ? 'Theme: Light (click for Dark)'
+                      : 'Theme: Auto/System (click for Light)'
+                    : 'Theme mode'
+                }
               >
-                {mounted && (theme === 'dark'
-                  ? <Sun className="w-[18px] h-[18px]" strokeWidth={1.5} />
-                  : <Moon className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                {mounted && (
+                  theme === 'dark' ? (
+                    <Moon className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                  ) : theme === 'light' ? (
+                    <Sun className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                  ) : (
+                    <Monitor className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                  )
                 )}
               </button>
 
-              {/* Notifications */}
-              {user && (
-                <div className="hidden lg:block shrink-0">
-                  <NotificationBell />
-                </div>
-              )}
+              {/* Notifications & Dynamic Island — always visible on desktop */}
+              <div className="hidden lg:block shrink-0">
+                <NotificationBell />
+              </div>
 
               {/* Wishlist — hidden on mobile top nav, available in bottom nav */}
               <Link
@@ -609,16 +627,66 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                               key={item.href}
                               href={item.href}
                               onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-sans-brand text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
+                              className="flex items-center gap-2.5 px-4 py-2 text-xs font-sans-brand text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
                             >
                               <item.icon className="w-3.5 h-3.5" strokeWidth={1.5} />
                               {item.label}
                             </Link>
                           ))}
+
+                          {/* Desktop Theme Mode Switcher */}
+                          <div className="px-3 py-2 border-t border-border/40 bg-secondary/20">
+                            <div className="flex items-center justify-between mb-1 px-1">
+                              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Theme</span>
+                              <span className="text-[10px] text-primary capitalize font-medium">{theme || "system"}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1 bg-secondary/50 p-1 rounded-xl border border-border/40">
+                              <button
+                                type="button"
+                                onClick={() => setTheme("system")}
+                                className={`flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer ${
+                                  mounted && (theme === "system" || !theme)
+                                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                                title="Auto (Device theme)"
+                              >
+                                <Monitor className="w-3 h-3" />
+                                <span>Auto</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setTheme("light")}
+                                className={`flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer ${
+                                  mounted && theme === "light"
+                                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                                title="Light Mode"
+                              >
+                                <Sun className="w-3 h-3" />
+                                <span>Light</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setTheme("dark")}
+                                className={`flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer ${
+                                  mounted && theme === "dark"
+                                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                                title="Dark Mode"
+                              >
+                                <Moon className="w-3 h-3" />
+                                <span>Dark</span>
+                              </button>
+                            </div>
+                          </div>
+
                           <div className="border-t border-border/40 pt-1">
                             <button
                               onClick={() => { signOut(); setUserMenuOpen(false); }}
-                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-sans-brand text-primary hover:bg-primary/10 transition-colors text-left font-semibold"
+                              className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-sans-brand text-primary hover:bg-primary/10 transition-colors text-left font-semibold"
                             >
                               <LogOut className="w-3.5 h-3.5" strokeWidth={1.5} />
                               Sign Out
@@ -626,21 +694,66 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                           </div>
                         </>
                       ) : (
-                        <div className="p-3 space-y-2">
+                        <div className="p-3 space-y-2.5">
                           <Link
                             href="/auth"
                             onClick={() => setUserMenuOpen(false)}
-                            className="block w-full text-center py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                            className="block w-full text-center py-2 text-xs font-semibold rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity shadow-xs"
                           >
                             Sign In
                           </Link>
                           <Link
                             href="/auth?tab=signup"
                             onClick={() => setUserMenuOpen(false)}
-                            className="block w-full text-center py-2 text-xs font-semibold rounded-lg border border-border text-foreground hover:bg-secondary/40 transition-colors"
+                            className="block w-full text-center py-2 text-xs font-semibold rounded-xl border border-border text-foreground hover:bg-secondary/40 transition-colors"
                           >
                             Register
                           </Link>
+
+                          {/* Desktop Guest Theme Mode Switcher */}
+                          <div className="pt-2 border-t border-border/40">
+                            <div className="grid grid-cols-3 gap-1 bg-secondary/50 p-1 rounded-xl border border-border/40">
+                              <button
+                                type="button"
+                                onClick={() => setTheme("system")}
+                                className={`flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer ${
+                                  mounted && (theme === "system" || !theme)
+                                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                                title="Auto (Device theme)"
+                              >
+                                <Monitor className="w-3 h-3" />
+                                <span>Auto</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setTheme("light")}
+                                className={`flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer ${
+                                  mounted && theme === "light"
+                                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                                title="Light Mode"
+                              >
+                                <Sun className="w-3 h-3" />
+                                <span>Light</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setTheme("dark")}
+                                className={`flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer ${
+                                  mounted && theme === "dark"
+                                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                                title="Dark Mode"
+                              >
+                                <Moon className="w-3 h-3" />
+                                <span>Dark</span>
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </motion.div>
@@ -689,7 +802,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
         {mobileOpen && (
           <>
             <motion.div
-              className="fixed inset-0 z-[150] bg-black/50 dark:bg-black/65 backdrop-blur-[2px]"
+              className="fixed inset-0 z-[9990] bg-black/50 dark:bg-black/65 backdrop-blur-[2px]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -697,7 +810,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
               onClick={() => setMobileOpen(false)}
             />
             <motion.div
-              className="fixed top-0 right-0 bottom-0 w-[85vw] max-w-xs z-[160] flex flex-col overflow-hidden bg-card/98 dark:bg-[hsl(var(--charcoal-mid)/0.98)] border-l border-border/60 shadow-lg backdrop-blur-xl"
+              className="fixed top-0 right-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom))] lg:bottom-0 w-[85vw] max-w-xs z-[9995] flex flex-col overflow-hidden bg-card/98 dark:bg-[hsl(var(--charcoal-mid)/0.98)] border-l border-b border-border/60 shadow-2xl backdrop-blur-xl rounded-bl-2xl"
               initial={{ x: "100%", opacity: 0.5 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: "100%", opacity: 0.5 }}
@@ -838,59 +951,80 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                 </div>
               </nav>
 
-              {/* Bottom: theme toggle + currency + sign out — exact left margin matching nav items */}
-              <div className="px-3 py-4 border-t border-border/40 shrink-0 bg-card/40">
-                {/* Combined Row: Theme Mode (left) & Currency Menu Button (right with popup) */}
-                <div className="flex items-center justify-between gap-2 mb-3 relative" ref={currencyMenuRef}>
-                  {/* Theme Mode Segmented Switcher — flush left margin matching nav text */}
-                  <div className="flex items-center p-1 rounded-2xl bg-secondary/50 border border-border/40 shrink-0">
+              {/* Bottom: theme toggle + currency + language + sign out in ONE sleek compact row */}
+              <div className="px-3 py-2.5 border-t border-border/40 shrink-0 bg-card/40">
+                <div className="flex items-center justify-between gap-1.5 relative" ref={currencyMenuRef}>
+                  {/* 1. Ultra-Compact Icon-Only Theme Switcher (Light / Dark / Auto) */}
+                  <div className="flex items-center p-0.5 rounded-xl bg-secondary/50 border border-border/40 shrink-0">
                     <button
                       type="button"
                       onClick={() => setTheme('light')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      className={`w-7 h-7 rounded-lg transition-all flex items-center justify-center cursor-pointer ${
                         mounted && theme === 'light'
                           ? 'bg-primary text-primary-foreground shadow-xs'
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                       title="Light Mode"
+                      aria-label="Light Mode"
                     >
-                      <Sun className="w-3.5 h-3.5" /> Light
+                      <Sun className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
                       onClick={() => setTheme('dark')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      className={`w-7 h-7 rounded-lg transition-all flex items-center justify-center cursor-pointer ${
                         mounted && theme === 'dark'
                           ? 'bg-primary text-primary-foreground shadow-xs'
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                       title="Dark Mode"
+                      aria-label="Dark Mode"
                     >
-                      <Moon className="w-3.5 h-3.5" /> Dark
+                      <Moon className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTheme('system')}
+                      className={`w-7 h-7 rounded-lg transition-all flex items-center justify-center cursor-pointer ${
+                        mounted && (theme === 'system' || !theme)
+                          ? 'bg-primary text-primary-foreground shadow-xs'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                      title="System Auto Mode"
+                      aria-label="System Auto Mode"
+                    >
+                      <Monitor className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
-                  {/* Single Currency Sub-Menu Button with Currency List Popover */}
+                  {/* 2. Compact Language Pill */}
+                  <div className="flex-1 min-w-0">
+                    <LanguageMenu variant="compact" align="start" side="top" sideOffset={8} />
+                  </div>
+
+                  {/* 3. Compact Currency Pill */}
                   {enabledCurrencies && enabledCurrencies.length > 0 && (
-                    <div className="relative shrink-0">
+                    <div className="flex-1 min-w-0 relative">
                       <button
                         type="button"
                         onClick={() => setCurrencyMenuOpen((prev) => !prev)}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-secondary/50 border border-border/40 text-xs font-bold text-foreground hover:border-primary/40 transition-all"
-                        title="Click to select currency"
+                        className="w-full h-8 flex items-center justify-between gap-1 px-2.5 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/40 text-[11px] font-semibold text-foreground transition-all truncate cursor-pointer"
+                        title="Select currency"
                       >
-                        <span className="text-xs font-extrabold text-primary leading-none">
-                          {CURRENCY_SYMBOLS[currency] || currency}
+                        <span className="flex items-center gap-1 truncate">
+                          <span className="text-xs font-extrabold text-primary leading-none">
+                            {CURRENCY_SYMBOLS[currency] || currency}
+                          </span>
+                          <span className="truncate text-[11px] font-bold">{currency}</span>
                         </span>
-                        <span>{currency}</span>
-                        <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform duration-200 ${currencyMenuOpen ? "rotate-180" : ""}`} />
+                        <ChevronDown className={`w-2.5 h-2.5 opacity-60 shrink-0 transition-transform duration-200 ${currencyMenuOpen ? "rotate-180" : ""}`} />
                       </button>
 
                       {/* Currency List Dropdown Popover */}
                       <AnimatePresence>
                         {currencyMenuOpen && (
                           <motion.div
-                            className="absolute bottom-full right-0 mb-2 w-44 rounded-2xl border border-border/60 bg-card/98 dark:bg-[hsl(var(--charcoal-mid)/0.98)] p-1.5 shadow-md z-50 backdrop-blur-xl"
+                            className="absolute bottom-full right-0 mb-2 w-48 max-w-[calc(100vw-2.5rem)] rounded-2xl border border-border/60 bg-card/98 dark:bg-[hsl(var(--charcoal-mid)/0.98)] p-1.5 shadow-2xl z-[10010] backdrop-blur-xl"
                             initial={{ opacity: 0, y: 6, scale: 0.96 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 4, scale: 0.96 }}
@@ -899,7 +1033,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                             <div className="text-[10px] font-bold text-muted-foreground uppercase px-3 py-1.5 tracking-wider border-b border-border/40 mb-1">
                               Select Currency
                             </div>
-                            <div className="space-y-0.5 max-h-48 overflow-y-auto">
+                            <div className="space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar">
                               {(enabledCurrencies || []).map((c: any) => (
                                 <button
                                   key={c.code}
@@ -908,7 +1042,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                                     setCurrency(c.code);
                                     setCurrencyMenuOpen(false);
                                   }}
-                                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                     currency === c.code
                                       ? "bg-primary text-primary-foreground shadow-xs"
                                       : "text-foreground hover:bg-secondary/50"
@@ -925,10 +1059,11 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                     </div>
                   )}
                 </div>
+
                 {user && (
                   <button
                     onClick={() => { signOut(); setMobileOpen(false); }}
-                    className="flex items-center gap-2 text-[11px] font-sans-brand text-primary hover:text-primary/80 transition-colors"
+                    className="flex items-center gap-2 pt-2 text-[11px] font-sans-brand text-primary hover:text-primary/80 transition-colors cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" strokeWidth={1.5} />
                     Sign Out

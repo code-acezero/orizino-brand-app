@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 /**
  * Adaptive polling interval for use with react-query's `refetchInterval`.
@@ -23,6 +23,8 @@ export function useAdaptivePolling(
     typeof document !== "undefined" ? document.hidden : false
   );
   const [idle, setIdle] = useState(false);
+  const idleRef = useRef(idle);
+  idleRef.current = idle;
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -34,19 +36,24 @@ export function useAdaptivePolling(
   useEffect(() => {
     if (typeof window === "undefined") return;
     let timer: ReturnType<typeof setTimeout>;
+
     const reset = () => {
-      if (idle) setIdle(false);
+      if (idleRef.current) {
+        setIdle(false);
+      }
       clearTimeout(timer);
       timer = setTimeout(() => setIdle(true), idleAfterMs);
     };
+
     const events = ["mousemove", "keydown", "touchstart", "scroll", "click"];
     events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
-    reset();
+    timer = setTimeout(() => setIdle(true), idleAfterMs);
+
     return () => {
       clearTimeout(timer);
       events.forEach((e) => window.removeEventListener(e, reset));
     };
-  }, [idleAfterMs, idle]);
+  }, [idleAfterMs]);
 
   if (hidden) return false;
   if (idle) return baseMs * idleMultiplier;

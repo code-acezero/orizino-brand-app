@@ -1,4 +1,4 @@
-export type ToastType = "success" | "error" | "warning" | "info";
+export type ToastType = "success" | "error" | "warning" | "info" | "general";
 
 export interface AppToast {
   id: string;
@@ -6,18 +6,21 @@ export interface AppToast {
   description?: string;
   type: ToastType;
   action?: { label: string; onClick: () => void };
+  actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
+  duration?: number;
 }
 
 let listeners: ((toasts: AppToast[]) => void)[] = [];
 let toasts: AppToast[] = [];
 let counter = 0;
 
-function addToast(t: Omit<AppToast, "id">, timeoutMs = 4000) {
+export function addToast(t: Omit<AppToast, "id">, timeoutMs = 4000) {
   const id = String(++counter);
+  const duration = t.duration !== undefined ? t.duration : timeoutMs;
   const item: AppToast = { ...t, id };
   toasts = [item, ...toasts].slice(0, 5);
   listeners.forEach((l) => l([...toasts]));
-  if (timeoutMs > 0) setTimeout(() => removeToast(id), timeoutMs);
+  if (duration > 0) setTimeout(() => removeToast(id), duration);
   return id;
 }
 
@@ -64,14 +67,16 @@ export function subscribe(listener: (toasts: AppToast[]) => void) {
 
 // Unified toast API — supports both sonner-style and useToast-style calls
 export const toast = Object.assign(
-  (opts: string | { title?: string; description?: string; variant?: string }) => {
+  (opts: string | { title?: string; description?: string; variant?: string; type?: ToastType; actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>; duration?: number }) => {
     if (typeof opts === "string") {
       addToast({ title: opts, type: "success" });
     } else {
       addToast({
         title: opts.title || "",
         description: opts.description,
-        type: opts.variant === "destructive" ? "error" : "success",
+        type: opts.type || (opts.variant === "destructive" ? "error" : "success"),
+        actions: opts.actions,
+        duration: opts.duration,
       });
     }
   },
@@ -80,6 +85,7 @@ export const toast = Object.assign(
     error: (msg: string) => addToast({ title: msg, type: "error" }),
     info: (msg: string) => addToast({ title: msg, type: "info" }),
     warning: (msg: string) => addToast({ title: msg, type: "warning" }),
+    general: (msg: string) => addToast({ title: msg, type: "general" }),
   }
 );
 // code:4ce0

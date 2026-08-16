@@ -58,7 +58,7 @@ export default function TrackingPixels() {
     img.height = 1; img.width = 1; img.style.display = "none";
     img.src = `https://www.facebook.com/tr?id=${fb.pixel_id}&ev=PageView&noscript=1`;
     noscript.appendChild(img);
-    document.body.appendChild(noscript);
+    document.head.appendChild(noscript);
   }, [data]);
 
   return null;

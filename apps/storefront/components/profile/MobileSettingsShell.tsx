@@ -55,8 +55,9 @@ const Row: React.FC<{
 
 interface Props {
   user: any;
-  mode: "dark" | "light";
-  toggleMode: () => void;
+  mode: "dark" | "light" | "system";
+  toggleMode?: () => void;
+  selectMode?: (m: "dark" | "light" | "system") => void;
   notifPrefs: any;
   updateNotifPref: (k: any) => void;
   pushSubscribed: boolean;
@@ -169,15 +170,51 @@ const MobileSettingsShell: React.FC<Props> = (p) => {
               {section === "appearance" && (
                 <>
                   <section>
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground px-3 mb-1.5">Display</p>
-                    <div className="rounded-2xl bg-secondary/40 border border-border/40 overflow-hidden">
-                      <Row
-                        icon={p.mode === "dark" ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
-                        label={p.t("settings.darkMode") || "Dark mode"}
-                        desc={p.mode === "dark" ? "Currently dark" : "Currently light"}
-                        onClick={p.toggleMode}
-                        right={<NativeToggle checked={p.mode === "dark"} onChange={p.toggleMode} />}
-                      />
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground px-3 mb-1.5">Theme & Mode</p>
+                    <div className="rounded-2xl bg-secondary/40 border border-border/40 p-3 space-y-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => p.selectMode ? p.selectMode("system") : p.toggleMode?.()}
+                          className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                            p.mode === "system"
+                              ? "border-primary bg-primary/15 text-primary font-bold shadow-xs ring-1 ring-primary/30"
+                              : "border-border/40 text-foreground/80 hover:bg-secondary/60"
+                          }`}
+                        >
+                          <Monitor className="w-4 h-4 mb-1 text-primary" />
+                          <span className="text-xs font-semibold">Auto</span>
+                          <span className="text-[9px] text-muted-foreground">Device</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => p.selectMode ? p.selectMode("light") : p.toggleMode?.()}
+                          className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                            p.mode === "light"
+                              ? "border-primary bg-primary/15 text-primary font-bold shadow-xs ring-1 ring-primary/30"
+                              : "border-border/40 text-foreground/80 hover:bg-secondary/60"
+                          }`}
+                        >
+                          <Sun className="w-4 h-4 mb-1 text-primary" />
+                          <span className="text-xs font-semibold">Light</span>
+                          <span className="text-[9px] text-muted-foreground">Day</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => p.selectMode ? p.selectMode("dark") : p.toggleMode?.()}
+                          className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                            p.mode === "dark"
+                              ? "border-primary bg-primary/15 text-primary font-bold shadow-xs ring-1 ring-primary/30"
+                              : "border-border/40 text-foreground/80 hover:bg-secondary/60"
+                          }`}
+                        >
+                          <Moon className="w-4 h-4 mb-1 text-primary" />
+                          <span className="text-xs font-semibold">Dark</span>
+                          <span className="text-[9px] text-muted-foreground">Night</span>
+                        </button>
+                      </div>
                     </div>
                   </section>
                   <section>

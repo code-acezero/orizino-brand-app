@@ -29,20 +29,20 @@ const AdminFooter: React.FC<Props> = ({ onOpenShortcuts }) => {
         {cfg.show_brand && (
           <>
             <span className="text-border hidden md:inline">·</span>
-            <span className="hidden md:inline truncate">{cfg.brand_label}</span>
+            <span className="hidden md:inline truncate notranslate skiptranslate" translate="no">{cfg.brand_label}</span>
           </>
         )}
         {cfg.show_version && (
           <>
             <span className="hidden xl:inline text-border">·</span>
-            <span className="hidden xl:inline-flex items-center gap-1 px-2 h-5 rounded-full bg-muted/60 font-mono text-[10px]">
+            <span className="hidden xl:inline-flex items-center gap-1 px-2 h-5 rounded-full bg-muted/60 font-mono text-[10px] notranslate skiptranslate" translate="no">
               <GitBranch className="w-2.5 h-2.5" />
               {cfg.version_label}
             </span>
           </>
         )}
         {cfg.show_env && (
-          <span className={`hidden lg:inline-flex items-center gap-1 px-2 h-5 rounded-full font-mono text-[10px] ${isDev ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"}`}>
+          <span className={`hidden lg:inline-flex items-center gap-1 px-2 h-5 rounded-full font-mono text-[10px] notranslate skiptranslate ${isDev ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"}`} translate="no">
             <Activity className="w-2.5 h-2.5" />
             {isDev ? "Preview" : "Production"}
           </span>
@@ -72,7 +72,7 @@ const AdminFooter: React.FC<Props> = ({ onOpenShortcuts }) => {
           </button>
         )}
         {cfg.show_copyright && (
-          <span className="ml-2 text-muted-foreground/70">{copyright}</span>
+          <span className="ml-2 text-muted-foreground/70 notranslate skiptranslate" translate="no">{copyright}</span>
         )}
       </div>
     </footer>

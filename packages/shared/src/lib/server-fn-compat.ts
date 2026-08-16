@@ -1,56 +1,166 @@
 /**
  * server-fn-compat.ts
  *
- * Originally a hand-rolled shim that emulated TanStack Start's createServerFn
- * on top of Next.js (which has no equivalent client→server RPC primitive
- * without rewriting every call site as a Server Action).
- *
- * Now that the app runs on TanStack Start again, this file is a thin
- * re-export of the real primitives. All `.functions.ts` files and the
- * components that call them via `useServerFn` keep working unchanged —
- * they now get genuine server/client code-splitting (secrets and server-only
- * logic are stripped from the client bundle instead of merely running
- * un-isolated in it).
- *
- * IMPORTANT: This module is imported directly by client components (for
- * `useServerFn`), so it must only ever re-export browser-safe primitives.
- * `@tanstack/react-start/server` (getRequest, getCookie, etc.) must NOT be
- * re-exported from here — TanStack's client/server code-splitting only
- * strips server-only code out of `createServerFn(...).handler(...)` call
- * sites, not out of arbitrary barrel re-exports. Putting a server-only
- * export in this file pulls the entire SSR chain (down to Node's
- * `node:stream`) into the client bundle for every component that imports
- * `useServerFn` from here, which fails production builds with:
- *   "Readable" is not exported by "__vite-browser-external"
- * Server-only helpers like `getRequest` live in `server-fn-compat.server.ts`
- * instead, and must only be imported from files that are themselves
- * server-only (e.g. inside a `.functions.ts` server function handler).
+ * Isomorphic server function & middleware compatibility layer.
+ * Works seamlessly across TanStack Start and Next.js App Router Server Actions.
  */
 
+import { createClient } from "@supabase/supabase-js";
+
+function getFallbackSupabaseClient() {
+  const url =
+    (typeof process !== "undefined" &&
+      (process.env?.SUPABASE_URL ||
+        process.env?.NEXT_PUBLIC_SUPABASE_URL ||
+        process.env?.VITE_SUPABASE_URL)) ||
+    "";
+  const key =
+    (typeof process !== "undefined" &&
+      (process.env?.SUPABASE_SERVICE_ROLE_KEY ||
+        process.env?.SUPABASE_PUBLISHABLE_KEY ||
+        process.env?.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+        process.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+        process.env?.VITE_SUPABASE_PUBLISHABLE_KEY)) ||
+    "";
+
+  if (!url || !key) return null;
+
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input: any, init: any) => {
+        const h = new Headers(init?.headers);
+        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) {
+          h.delete("Authorization");
+        }
+        h.set("apikey", key);
+        return fetch(input, { ...init, headers: h });
+      },
+    },
+  });
+}
+
 export function createServerFn(options?: any) {
+  const middlewares: any[] = [];
+  let validatorFn: any = null;
+
   const builder = {
-    validator(fn: any) { return builder; },
-    inputValidator(fn: any) { return builder; },
-    handler(fn: any) { return fn; },
-    middleware(fn: any) { return builder; }
+    validator(fn: any) {
+      validatorFn = fn;
+      return builder;
+    },
+    inputValidator(fn: any) {
+      validatorFn = fn;
+      return builder;
+    },
+    middleware(fns: any[]) {
+      if (Array.isArray(fns)) {
+        middlewares.push(...fns);
+      } else if (fns) {
+        middlewares.push(fns);
+      }
+      return builder;
+    },
+    handler(fn: any) {
+      const serverAction = async (inputArgs?: any) => {
+        // 1. Normalize data argument
+        let rawData = inputArgs;
+        if (
+          inputArgs &&
+          typeof inputArgs === "object" &&
+          "data" in inputArgs &&
+          Object.keys(inputArgs).length === 1
+        ) {
+          rawData = inputArgs.data;
+        }
+
+        // 2. Validate input if validator provided
+        let validatedData = rawData;
+        if (typeof validatorFn === "function") {
+          try {
+            validatedData = validatorFn(rawData);
+          } catch (err: any) {
+            throw new Error(err?.message || "Invalid input parameters");
+          }
+        }
+
+        // 3. Construct default execution context
+        let currentContext: any = {
+          supabase: getFallbackSupabaseClient(),
+          userId: "",
+          claims: null,
+        };
+
+        // 4. Run registered middlewares in order
+        for (const mw of middlewares) {
+          if (typeof mw === "function") {
+            try {
+              await mw({
+                next: async (result?: any) => {
+                  if (result?.context) {
+                    currentContext = { ...currentContext, ...result.context };
+                  }
+                  return result;
+                },
+                data: validatedData,
+                context: currentContext,
+              });
+            } catch (mwErr: any) {
+              console.error("[server-fn-compat] Middleware error:", mwErr);
+              throw mwErr;
+            }
+          }
+        }
+
+        // 5. Ensure supabase client is present
+        if (!currentContext.supabase) {
+          currentContext.supabase = getFallbackSupabaseClient();
+        }
+
+        // 6. Execute user handler
+        return await fn({
+          data: validatedData,
+          context: currentContext,
+          ...currentContext,
+        });
+      };
+
+      return serverAction;
+    },
   };
+
   return builder;
 }
 
 export function createMiddleware(options?: any) {
   const builder = {
-    middleware(fn: any) { return builder; },
-    server(fn: any) { return fn; },
-    client(fn: any) { return fn; }
+    middleware(fn: any) {
+      return builder;
+    },
+    server(fn: any) {
+      return fn;
+    },
+    client(fn: any) {
+      return fn;
+    },
   };
   return builder;
 }
 
 export function useServerFn(fn: any) {
-  return async (args?: any) => {
-    if (typeof fn === "function") return fn(args?.data ?? args);
-    return null;
-  };
+  return typeof window !== "undefined"
+    ? (args?: any) => {
+        if (typeof fn === "function") {
+          return fn(args);
+        }
+        return Promise.resolve(null);
+      }
+    : async (args?: any) => {
+        if (typeof fn === "function") {
+          return await fn(args);
+        }
+        return null;
+      };
 }
 
 export function getCookies(): Record<string, string> {
@@ -66,5 +176,3 @@ export function getRequestHeader(_name: string): string | undefined {
 export function getRequest(): Request | undefined {
   return undefined;
 }
-
-// code:4ce0

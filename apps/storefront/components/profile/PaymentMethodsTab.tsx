@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+import { BkashLogo, NagadLogo, UpayLogo, RocketLogo } from "@orizino/ui";
+
 interface PaymentMethodRow {
   id: string;
   provider: string;
@@ -23,10 +25,10 @@ interface PaymentMethodRow {
 }
 
 const PROVIDERS = [
-  { id: "bkash", label: "bKash", icon: Smartphone, color: "text-pink-500", numericOnly: true, minLen: 11, maxLen: 11 },
-  { id: "nagad", label: "Nagad", icon: Smartphone, color: "text-orange-500", numericOnly: true, minLen: 11, maxLen: 11 },
-  { id: "upay", label: "Upay", icon: Smartphone, color: "text-blue-500", numericOnly: true, minLen: 11, maxLen: 11 },
-  { id: "rocket", label: "Rocket", icon: Smartphone, color: "text-purple-500", numericOnly: true, minLen: 11, maxLen: 12 },
+  { id: "bkash", label: "bKash", icon: BkashLogo, color: "text-pink-500", numericOnly: true, minLen: 11, maxLen: 11 },
+  { id: "nagad", label: "Nagad", icon: NagadLogo, color: "text-orange-500", numericOnly: true, minLen: 11, maxLen: 11 },
+  { id: "upay", label: "Upay", icon: UpayLogo, color: "text-blue-500", numericOnly: true, minLen: 11, maxLen: 11 },
+  { id: "rocket", label: "Rocket", icon: RocketLogo, color: "text-purple-500", numericOnly: true, minLen: 11, maxLen: 12 },
   { id: "card", label: "Card", icon: CreditCard, color: "text-primary", numericOnly: true, minLen: 13, maxLen: 19 },
   { id: "bank", label: "Bank Account", icon: Building2, color: "text-emerald-500", numericOnly: true, minLen: 6, maxLen: 20 },
   { id: "wallet", label: "Wallet", icon: Wallet, color: "text-amber-500", numericOnly: false, minLen: 3, maxLen: 64 },
@@ -165,8 +167,8 @@ const PaymentMethodsTab: React.FC = () => {
             <div key={m.id} className={`rounded-md border bg-card/60 p-5 relative transition-all ${m.is_default ? "border-primary/50" : "border-border/40 hover:border-primary/30"}`}>
               {m.is_default && <Badge className="absolute top-3 right-3 text-[10px]">Default</Badge>}
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
-                  <Icon className={`w-5 h-5 ${def.color}`} />
+                <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+                  <Icon className="w-full h-full" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">{m.account_label}</p>

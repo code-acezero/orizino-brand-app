@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin, CreditCard, Truck, Check, ArrowRight, Gift, Tag, Shield,
   Smartphone, Building2, ChevronRight, Home, MapPinned, Camera, Lock,
-  Award, Sparkles, Package, Clock, School, GraduationCap, Plus, Undo2, Loader2,
+  Award, Package, Clock, School, GraduationCap, Plus, Undo2, Loader2,
   ChevronDown, ChevronUp, ShoppingBag, Pencil, ShieldCheck
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +30,7 @@ import { getGuestCart } from "@/lib/guest-cart";
 import { StickyActionBar } from "@/components/mobile";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { BD_COURIER_LOCATIONS, calculateCourierRate } from "@orizino/shared";
+import { BkashLogo, NagadLogo, UpayLogo, RocketLogo } from "@orizino/ui";
 
 const MFS_METHODS = ["bkash", "nagad", "upay", "rocket"];
 const addressTypeIcons: Record<string, any> = {
@@ -188,16 +189,16 @@ const CheckoutPage: React.FC = () => {
     }
 
     if (paymentConfig?.personal_bkash?.enabled) {
-      gateways.push({ id: "bkash", name: "bKash", desc: "Send money & upload proof", icon: Smartphone });
+      gateways.push({ id: "bkash", name: "bKash", desc: "Send money & upload proof", icon: BkashLogo });
     }
     if (paymentConfig?.personal_nagad?.enabled) {
-      gateways.push({ id: "nagad", name: "Nagad", desc: "Send money & upload proof", icon: Smartphone });
+      gateways.push({ id: "nagad", name: "Nagad", desc: "Send money & upload proof", icon: NagadLogo });
     }
     if (paymentConfig?.personal_upay?.enabled) {
-      gateways.push({ id: "upay", name: "Upay", desc: "Send money & upload proof", icon: Smartphone });
+      gateways.push({ id: "upay", name: "Upay", desc: "Send money & upload proof", icon: UpayLogo });
     }
     if (paymentConfig?.personal_rocket?.enabled) {
-      gateways.push({ id: "rocket", name: "Rocket", desc: "Send money & upload proof", icon: Smartphone });
+      gateways.push({ id: "rocket", name: "Rocket", desc: "Send money & upload proof", icon: RocketLogo });
     }
 
     if (paymentConfig?.stripe?.enabled) {
@@ -539,27 +540,80 @@ const CheckoutPage: React.FC = () => {
     } else couponDiscount = Number(appliedCoupon.discount_value);
   }
 
-  // Fetch default delivery partner from Master Panel settings
-  const { data: partnerConfig } = useQuery({
-    queryKey: ["delivery-partners-config"],
+  // Fetch dynamic logistics & courier configuration from Master Panel
+  const { data: shippingSettings } = useQuery({
+    queryKey: ["site-shipping-settings"],
     queryFn: async () => {
-      const { data } = await supabase.from("site_settings").select("value").eq("key", "delivery_partners_config").maybeSingle();
-      return (data?.value as any) || { default_partner: "steadfast" };
+      const { data } = await supabase
+        .from("site_settings")
+        .select("key, value")
+        .in("key", [
+          "shipping_fee",
+          "shipping_fee_suburbs",
+          "shipping_fee_outside",
+          "shipping_extra_kg_fee",
+          "free_shipping_threshold",
+          "free_shipping_enabled",
+          "cod_fee",
+          "cod_enabled",
+          "delivery_partners_config",
+          "payment_gateways_config",
+        ]);
+      const map: Record<string, any> = {};
+      data?.forEach((s) => {
+        const val = s.value;
+        map[s.key] = typeof val === "object" && val !== null ? (val as any).value ?? val : val;
+      });
+      return map;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
   });
 
-  const defaultPartner = partnerConfig?.default_partner || "steadfast";
+  const defaultPartner = shippingSettings?.delivery_partners_config?.default_partner || "steadfast";
 
-  // Calculate dynamic courier rate & availability based on customer's address
+  // Calculate dynamic courier rate & availability based on customer's address and official Steadfast tariff
   const courierRateInfo = React.useMemo(() => {
+    const insideDhakaRate = Number(shippingSettings?.shipping_fee ?? 70);
+    const sameCityOsdRate = Number(shippingSettings?.shipping_fee_same_city_osd ?? 60);
+    const intraSuburbsRate = Number(shippingSettings?.shipping_fee_intra_suburbs ?? 60);
+    const suburbsRate = Number(shippingSettings?.shipping_fee_suburbs ?? 105);
+    const outsideDhakaSadarRate = Number(shippingSettings?.shipping_fee_outside_sadar ?? 115);
+    const outsideDhakaRate = Number(shippingSettings?.shipping_fee_outside ?? 130);
+    const interDistrictRate = Number(shippingSettings?.shipping_fee_inter_district ?? 135);
+    const sameDayRate = Number(shippingSettings?.shipping_fee_sameday ?? 105);
+    const extraKgFee = Number(shippingSettings?.shipping_extra_kg_fee ?? 20);
+    const freeShippingThreshold = Number(shippingSettings?.free_shipping_threshold ?? 2500);
+    const freeShippingEnabled = shippingSettings?.free_shipping_enabled !== false;
+    const universalCodEnabled =
+      shippingSettings?.cod_enabled !== false &&
+      shippingSettings?.payment_gateways_config?.cod_enabled !== false;
+    const codFee = Number(shippingSettings?.cod_fee ?? shippingSettings?.payment_gateways_config?.cod_extra_fee ?? 0);
+    const codPercentage = Number(shippingSettings?.cod_percentage ?? 1);
+    const originDistrict = String(shippingSettings?.merchant_origin_city ?? "Dhaka");
+
     return calculateCourierRate({
+      originDistrict,
       district: address.city,
       thana: address.state,
       defaultPartner,
       itemSubtotal: subtotal,
+      insideDhakaRate,
+      sameCityOsdRate,
+      intraSuburbsRate,
+      suburbsRate,
+      outsideDhakaSadarRate,
+      outsideDhakaRate,
+      interDistrictRate,
+      sameDayRate,
+      extraKgFee,
+      freeShippingThreshold,
+      freeShippingEnabled,
+      universalCodEnabled,
+      codFee,
+      codPercentage,
+      isCod: paymentMethod === "cod",
     });
-  }, [address.city, address.state, defaultPartner, subtotal]);
+  }, [address.city, address.state, defaultPartner, subtotal, shippingSettings, paymentMethod]);
 
   // Available thanas list dynamically matched to selected district
   const availableThanas = React.useMemo(() => {
@@ -572,31 +626,45 @@ const CheckoutPage: React.FC = () => {
 
   // Real-time Courier Delivery Methods derived dynamically from Courier API & customer address
   const dynamicCourierMethods = React.useMemo(() => {
+    const isInsideDhaka = courierRateInfo.zoneType === "inside_dhaka";
+    const sameDayBase = isInsideDhaka
+      ? Number(shippingSettings?.shipping_fee_sameday ?? 105)
+      : (courierRateInfo.baseZonePrice + courierRateInfo.weightSurcharge + 40);
+
     return [
       {
         id: "courier-standard",
-        name: `${courierRateInfo.courierName} Standard`,
-        price: courierRateInfo.price,
+        name: `${courierRateInfo.courierName} Regular Delivery`,
+        basePrice: courierRateInfo.baseZonePrice + courierRateInfo.weightSurcharge,
+        price: courierRateInfo.baseZonePrice + courierRateInfo.weightSurcharge,
         estimated_days: courierRateInfo.deliveryDays,
-        subtitle: `Live courier API rate for ${address.city || "Dhaka"}`,
+        subtitle: `Official Steadfast rate for ${address.city || "Dhaka"}`,
       },
       {
         id: "courier-priority",
-        name: `${courierRateInfo.courierName} Priority Express`,
-        price: courierRateInfo.price + 40,
-        estimated_days: "Same Day / Next Day Express",
-        subtitle: "Fast-track priority dispatch & handling",
+        name: `${courierRateInfo.courierName} Same Day Express`,
+        basePrice: sameDayBase,
+        price: sameDayBase,
+        estimated_days: isInsideDhaka ? "5–8 Hours (Same Day)" : "Fast-Track Express (24–48h)",
+        subtitle: "Fast-track priority dispatch & express delivery",
       },
     ];
-  }, [courierRateInfo, address.city]);
+  }, [courierRateInfo, address.city, shippingSettings]);
 
   const [activeCourierMethodId, setActiveCourierMethodId] = useState("courier-standard");
   const selectedCourierMethod = dynamicCourierMethods.find((m) => m.id === activeCourierMethodId) || dynamicCourierMethods[0];
 
-  let baseShippingFee = selectedCourierMethod.price;
+  const baseShippingFee = selectedCourierMethod ? selectedCourierMethod.basePrice : 0;
 
   let deliveryDiscount = 0;
   let appliedDeliveryOffer: any = null;
+
+  // Universal threshold-based free delivery
+  if (courierRateInfo.isFreeQualified) {
+    deliveryDiscount = baseShippingFee;
+  }
+
+  // Promotional campaign delivery offers
   if (deliveryOffers) {
     for (const offer of deliveryOffers) {
       if (Number(offer.min_order_amount) > 0 && subtotal < Number(offer.min_order_amount)) continue;
@@ -606,16 +674,15 @@ const CheckoutPage: React.FC = () => {
         if (!areas.some((a: string) => cityLower.includes(a.toLowerCase()))) continue;
       }
       let disc = 0;
-      if (offer.offer_type === "free_delivery") disc = Math.max(baseShippingFee, 1);
+      if (offer.offer_type === "free_delivery") disc = baseShippingFee;
       else if (offer.offer_type === "reduced_delivery") disc = Math.min(Number(offer.discount_value), baseShippingFee);
       else if (offer.offer_type === "flat_rate") disc = Math.max(0, baseShippingFee - Number(offer.discount_value));
       if (disc >= deliveryDiscount) { deliveryDiscount = disc; appliedDeliveryOffer = offer; }
     }
   }
 
-  const shippingFee = appliedDeliveryOffer?.offer_type === "free_delivery"
-    ? 0
-    : Math.max(0, baseShippingFee - deliveryDiscount);
+  const isFreeDelivery = appliedDeliveryOffer?.offer_type === "free_delivery" || (courierRateInfo.isFreeQualified && !appliedDeliveryOffer);
+  const shippingFee = isFreeDelivery ? 0 : Math.max(0, baseShippingFee - deliveryDiscount);
   const giftWrapFee = giftWrap ? 50 : 0;
 
   // Loyalty tier auto-discount
@@ -626,7 +693,9 @@ const CheckoutPage: React.FC = () => {
   const tierDiscount = tierDiscountPct > 0 ? (subtotal - couponDiscount) * (tierDiscountPct / 100) : 0;
   const loyaltyDiscount = tierDiscount;
 
-  const codExtraFee = paymentMethod === "cod" ? Number(paymentConfig?.cod_extra_fee || 0) : 0;
+  // COD fee: Extra cash handling surcharge charged when payment method is Cash on Delivery
+  // (Maintained even when delivery fee is free)
+  const codExtraFee = paymentMethod === "cod" ? courierRateInfo.appliedCodFee : 0;
   const codMode = paymentConfig?.cod_mode || "normal"; // "normal" | "advance_delivery_charge"
   const isAdvanceCodMode = paymentMethod === "cod" && codMode === "advance_delivery_charge";
 
@@ -1300,8 +1369,8 @@ const CheckoutPage: React.FC = () => {
                               : "border-border/60 hover:border-foreground/30 bg-background"
                           }`}
                         >
-                          <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                            <gw.icon className="w-4 h-4 text-foreground" />
+                          <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center shrink-0 ring-1 ring-border/40 shadow-xs">
+                            <gw.icon className="w-full h-full object-cover scale-105" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-xs font-semibold text-foreground">{gw.name}</p>
@@ -1319,7 +1388,7 @@ const CheckoutPage: React.FC = () => {
                       {isAdvanceCodMode ? (
                         <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-3">
                           <div className="flex items-start gap-2 text-amber-600 font-semibold">
-                            <Sparkles className="w-4 h-4 shrink-0 mt-0.5" />
+                            <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
                             <div>
                               <p className="text-sm font-bold">Advance Delivery Payment Required</p>
                               <p className="text-xs text-muted-foreground mt-0.5">
@@ -1573,8 +1642,10 @@ const CheckoutPage: React.FC = () => {
 
                 {paymentMethod === "cod" && codExtraFee > 0 && (
                   <div className="flex justify-between text-foreground font-medium">
-                    <span>COD Fee</span>
-                    <span>+{formatPrice(codExtraFee)}</span>
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <CreditCard className="w-3.5 h-3.5" /> COD Handling Fee
+                    </span>
+                    <span className="text-foreground font-medium tabular-nums">+{formatPrice(codExtraFee)}</span>
                   </div>
                 )}
 

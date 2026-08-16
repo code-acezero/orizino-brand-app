@@ -14,6 +14,18 @@ type Mode = "signin" | "forgot" | "forgot_sent";
 const fontDisplay = "'Cinzel', 'Cormorant Garamond', ui-serif, Georgia, serif";
 const fontMono = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace";
 
+// Horizon line with soft feathered gradient edges for smooth celestial blending
+const HorizonLine = ({ className = "" }: { className?: string }) => (
+  <div
+    className={`w-full h-px pointer-events-none ${className}`}
+    style={{
+      background:
+        "linear-gradient(90deg, transparent 0%, hsl(var(--foreground) / 0.03) 4%, hsl(var(--foreground) / 0.16) 18%, hsl(var(--foreground) / 0.16) 82%, hsl(var(--foreground) / 0.03) 96%, transparent 100%)",
+    }}
+    aria-hidden
+  />
+);
+
 // Themed hairline input — theme-aware monochrome, no colored accents.
 const inputBase =
   "w-full bg-transparent border-b border-foreground/15 py-2.5 text-[11px] tracking-[0.18em] focus:outline-none focus:border-foreground/70 transition-colors placeholder:text-foreground/20";
@@ -226,7 +238,7 @@ export default function AdminAuthPage() {
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.9, ease: [0.23, 1, 0.32, 1] }}
-        className="relative z-10 w-[92vw] max-w-[420px] py-12 rounded-sm sm:rounded-full sm:w-[min(86vw,580px)] sm:max-w-none sm:aspect-square sm:py-0 flex items-center justify-center border border-foreground/15 backdrop-blur-[2px] overflow-hidden"
+        className="relative z-10 w-[92vw] max-w-[440px] py-12 rounded-2xl sm:rounded-full sm:w-[min(88vw,600px)] sm:max-w-none sm:aspect-square sm:py-0 flex items-center justify-center border border-foreground/15 backdrop-blur-[2px] overflow-hidden"
       >
         {/* Accretion glow inside horizon */}
         <div
@@ -238,25 +250,31 @@ export default function AdminAuthPage() {
           aria-hidden
         />
 
-        <div className="relative z-20 w-full max-w-[340px] px-6 flex flex-col items-center text-center">
+        <div className="relative z-20 w-full flex flex-col items-center text-center">
           {/* Header */}
-          <header className="mb-8 w-full">
+          <header className="mb-6 w-full">
             <p
-              className="text-[9px] tracking-[0.45em] uppercase opacity-50 mb-3"
+              className="text-[9px] tracking-[0.45em] uppercase opacity-50 mb-3 px-6"
               style={{ fontFamily: fontMono }}
             >
               {mode === "forgot_sent" ? "Check Your Email" : "Admin Sign In"}
             </p>
-            <h1
-              className="text-[22px] leading-tight tracking-[0.22em] uppercase border-y border-foreground/15 py-4 w-full"
-              style={{ fontFamily: fontDisplay, fontWeight: 500 }}
-            >
-              Orizino
-              <br />
-              <span className="text-[13px] tracking-[0.35em] opacity-70 block mt-1">
-                Admin Panel
-              </span>
-            </h1>
+            {/* Top full-width line slicing the circle */}
+            <HorizonLine />
+            <div className="py-3 px-6 max-w-[360px] mx-auto">
+              <h1
+                className="text-[22px] leading-tight tracking-[0.22em] uppercase"
+                style={{ fontFamily: fontDisplay, fontWeight: 500 }}
+              >
+                Orizino
+                <br />
+                <span className="text-[13px] tracking-[0.35em] opacity-70 block mt-1">
+                  Admin Panel
+                </span>
+              </h1>
+            </div>
+            {/* Bottom full-width line slicing the circle */}
+            <HorizonLine />
           </header>
 
           {/* Body */}
@@ -270,73 +288,86 @@ export default function AdminAuthPage() {
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.35 }}
                   onSubmit={handleSignIn}
-                  className="space-y-6"
+                  className="space-y-4 w-full"
                   noValidate
                 >
-                  {errorBlock}
+                  {errorBlock && (
+                    <div className="max-w-[360px] mx-auto px-6 w-full mb-3">
+                      {errorBlock}
+                    </div>
+                  )}
 
-                  <div className="space-y-5 text-left">
-                    <div className="relative">
-                      <label
-                        htmlFor={emailId}
-                        className="block text-[8px] tracking-[0.28em] uppercase opacity-40 mb-1"
-                        style={{ fontFamily: fontMono }}
-                      >
-                        Email
-                      </label>
-                      <input
-                        id={emailId}
-                        type="email"
-                        placeholder="you@company.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        autoComplete="username"
-                        aria-invalid={!!error}
-                        aria-describedby={error ? errorId : undefined}
-                        className={inputBase}
-                        style={{ fontFamily: fontMono }}
-                      />
+                  <div className="space-y-4 w-full">
+                    {/* Email field with full-width underline */}
+                    <div className="w-full">
+                      <div className="max-w-[360px] mx-auto px-6 text-left">
+                        <label
+                          htmlFor={emailId}
+                          className="block text-[8px] tracking-[0.28em] uppercase opacity-40 mb-1 px-1"
+                          style={{ fontFamily: fontMono }}
+                        >
+                          Email
+                        </label>
+                        <input
+                          id={emailId}
+                          type="email"
+                          placeholder="you@company.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                          autoComplete="username"
+                          aria-invalid={!!error}
+                          aria-describedby={error ? errorId : undefined}
+                          className="w-full bg-transparent py-2 px-2.5 text-[11px] tracking-[0.18em] focus:outline-none placeholder:text-foreground/20 border-none rounded-lg !bg-transparent"
+                          style={{ fontFamily: fontMono, borderRadius: "8px" }}
+                        />
+                      </div>
+                      <HorizonLine />
                     </div>
 
-                    <div className="relative">
-                      <div className="flex items-end justify-between mb-1">
-                        <label
-                          htmlFor={pwId}
-                          className="block text-[8px] tracking-[0.28em] uppercase opacity-40"
-                          style={{ fontFamily: fontMono }}
-                        >
-                          Password
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          aria-label={showPassword ? "Hide password" : "Show password"}
-                          aria-pressed={showPassword}
-                          className="text-[8px] tracking-[0.22em] uppercase opacity-40 hover:opacity-100 transition-opacity inline-flex items-center gap-1 focus:outline-none focus-visible:opacity-100"
-                          style={{ fontFamily: fontMono }}
-                        >
-                          {showPassword ? <EyeOff className="w-3 h-3" aria-hidden /> : <Eye className="w-3 h-3" aria-hidden />}
-                          {showPassword ? "Hide" : "Show"}
-                        </button>
+                    {/* Password field with full-width underline */}
+                    <div className="w-full">
+                      <div className="max-w-[360px] mx-auto px-6 text-left">
+                        <div className="flex items-end justify-between mb-1 px-1">
+                          <label
+                            htmlFor={pwId}
+                            className="block text-[8px] tracking-[0.28em] uppercase opacity-40"
+                            style={{ fontFamily: fontMono }}
+                          >
+                            Password
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                            aria-pressed={showPassword}
+                            className="text-[8px] tracking-[0.22em] uppercase opacity-40 hover:opacity-100 transition-opacity inline-flex items-center gap-1 focus:outline-none focus-visible:opacity-100 cursor-pointer"
+                            style={{ fontFamily: fontMono }}
+                          >
+                            {showPassword ? <EyeOff className="w-3 h-3" aria-hidden /> : <Eye className="w-3 h-3" aria-hidden />}
+                            {showPassword ? "Hide" : "Show"}
+                          </button>
+                        </div>
+                        <input
+                          id={pwId}
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          autoComplete="current-password"
+                          aria-invalid={!!error}
+                          aria-describedby={error ? errorId : undefined}
+                          className="w-full bg-transparent py-2 px-2.5 text-[11px] tracking-[0.18em] focus:outline-none placeholder:text-foreground/20 border-none rounded-lg !bg-transparent"
+                          style={{ fontFamily: fontMono, borderRadius: "8px" }}
+                        />
                       </div>
-                      <input
-                        id={pwId}
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        autoComplete="current-password"
-                        aria-invalid={!!error}
-                        aria-describedby={error ? errorId : undefined}
-                        className={inputBase}
-                        style={{ fontFamily: fontMono }}
-                      />
+                      <HorizonLine />
                     </div>
                   </div>
 
-                  <div className="space-y-3 pt-1">
+                  {/* Compressed centered Sign In button and Forgot Password link */}
+                  <div className="max-w-[360px] mx-auto w-full px-6 pt-3 space-y-3">
                     <motion.button
                       whileTap={{ scale: 0.98 }}
                       type="submit"
@@ -350,7 +381,7 @@ export default function AdminAuthPage() {
                     <button
                       type="button"
                       onClick={() => { setMode("forgot"); setError(null); }}
-                      className="block mx-auto text-[8px] tracking-[0.28em] uppercase opacity-40 hover:opacity-100 transition-opacity focus:outline-none focus-visible:opacity-100"
+                      className="block mx-auto text-[8px] tracking-[0.28em] uppercase opacity-40 hover:opacity-100 transition-opacity focus:outline-none focus-visible:opacity-100 cursor-pointer"
                       style={{ fontFamily: fontMono }}
                     >
                       Forgot password?
@@ -367,42 +398,49 @@ export default function AdminAuthPage() {
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.35 }}
                   onSubmit={handleForgot}
-                  className="space-y-6"
+                  className="space-y-4 w-full"
                   noValidate
                 >
-                  {errorBlock}
+                  {errorBlock && (
+                    <div className="max-w-[360px] mx-auto px-6 w-full mb-3">
+                      {errorBlock}
+                    </div>
+                  )}
 
                   <p
-                    className="text-[9px] tracking-[0.28em] uppercase opacity-50 leading-relaxed"
+                    className="text-[9px] tracking-[0.28em] uppercase opacity-50 leading-relaxed max-w-[360px] mx-auto px-6"
                     style={{ fontFamily: fontMono }}
                   >
                     Enter your email address and we'll send you a link to reset your password.
                   </p>
 
-                  <div className="relative text-left">
-                    <label
-                      htmlFor={forgotEmailId}
-                      className="block text-[8px] tracking-[0.28em] uppercase opacity-40 mb-1"
-                      style={{ fontFamily: fontMono }}
-                    >
-                      Email
-                    </label>
-                    <input
-                      id={forgotEmailId}
-                      type="email"
-                      placeholder="you@company.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      autoComplete="email"
-                      aria-invalid={!!error}
-                      aria-describedby={error ? errorId : undefined}
-                      className={inputBase}
-                      style={{ fontFamily: fontMono }}
-                    />
+                  <div className="w-full mt-3">
+                    <div className="max-w-[360px] mx-auto px-6 text-left">
+                      <label
+                        htmlFor={forgotEmailId}
+                        className="block text-[8px] tracking-[0.28em] uppercase opacity-40 mb-1 px-1"
+                        style={{ fontFamily: fontMono }}
+                      >
+                        Email
+                      </label>
+                      <input
+                        id={forgotEmailId}
+                        type="email"
+                        placeholder="you@company.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        autoComplete="email"
+                        aria-invalid={!!error}
+                        aria-describedby={error ? errorId : undefined}
+                        className="w-full bg-transparent py-2 px-2.5 text-[11px] tracking-[0.18em] focus:outline-none placeholder:text-foreground/20 border-none rounded-lg !bg-transparent"
+                        style={{ fontFamily: fontMono, borderRadius: "8px" }}
+                      />
+                    </div>
+                    <HorizonLine />
                   </div>
 
-                  <div className="space-y-3 pt-1">
+                  <div className="max-w-[360px] mx-auto w-full px-6 pt-3 space-y-3">
                     <motion.button
                       whileTap={{ scale: 0.98 }}
                       type="submit"
@@ -416,7 +454,7 @@ export default function AdminAuthPage() {
                     <button
                       type="button"
                       onClick={() => { setMode("signin"); setError(null); }}
-                      className="mx-auto flex items-center gap-1.5 text-[8px] tracking-[0.28em] uppercase opacity-40 hover:opacity-100 transition-opacity focus:outline-none focus-visible:opacity-100"
+                      className="mx-auto flex items-center gap-1.5 text-[8px] tracking-[0.28em] uppercase opacity-40 hover:opacity-100 transition-opacity focus:outline-none focus-visible:opacity-100 cursor-pointer"
                       style={{ fontFamily: fontMono }}
                     >
                       <ArrowLeft className="w-3 h-3" aria-hidden /> Back to Sign In
@@ -430,7 +468,7 @@ export default function AdminAuthPage() {
                   key="sent"
                   initial={{ opacity: 0, scale: 0.97 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="space-y-5 text-center"
+                  className="space-y-4 text-center max-w-[360px] mx-auto px-6"
                 >
                   <div className="flex items-center justify-center w-11 h-11 rounded-full border border-foreground/25 mx-auto">
                     <CheckCircle2 className="w-5 h-5" aria-hidden />
@@ -445,7 +483,7 @@ export default function AdminAuthPage() {
                   </p>
                   <button
                     onClick={() => { setMode("signin"); setError(null); }}
-                    className="mx-auto flex items-center gap-1.5 text-[8px] tracking-[0.28em] uppercase opacity-40 hover:opacity-100 transition-opacity focus:outline-none focus-visible:opacity-100"
+                    className="mx-auto flex items-center gap-1.5 text-[8px] tracking-[0.28em] uppercase opacity-40 hover:opacity-100 transition-opacity focus:outline-none focus-visible:opacity-100 cursor-pointer"
                     style={{ fontFamily: fontMono }}
                   >
                     <ArrowLeft className="w-3 h-3" aria-hidden /> Back to Sign In

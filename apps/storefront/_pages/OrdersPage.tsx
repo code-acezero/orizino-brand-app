@@ -20,7 +20,6 @@ import {
   Filter,
   ArrowRight,
   ShoppingBag,
-  Sparkles,
   ShieldCheck,
   CreditCard,
   MapPin,

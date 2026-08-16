@@ -1,4 +1,4 @@
-@import "tailwindcss" source(none);
+@import "tailwindcss";
 @source "../";
 @source "../../../../packages/ui/src";
 @import "tw-animate-css";
@@ -12,11 +12,10 @@
  * stack, iOS blues, and generous corner radii — deliberately different from
  * masterpanel's dark editorial theme, since this app's brief is "mac and
  * iOS style" specifically.
+ *
+ * Note: Body never scrolls (AppShell is h-screen overflow-hidden) — no
+ * scrollbar-gutter: stable needed.
  */
-
-html {
-  scrollbar-gutter: stable;
-}
 
 @theme inline {
   --font-display: "SF Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;

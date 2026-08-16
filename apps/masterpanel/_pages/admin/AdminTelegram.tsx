@@ -41,8 +41,8 @@ export default function AdminTelegram() {
 
   const syncMut = useMutation({
     mutationFn: () => sync(),
-    onSuccess: (r) => {
-      toast({ title: "Synced", description: `Fetched ${r.fetched} updates, ${r.upserted} chats updated.` });
+    onSuccess: (r: any) => {
+      toast({ title: "Synced", description: `Fetched ${r?.fetched || 0} updates, ${r?.upserted || 0} chats updated.` });
       qc.invalidateQueries({ queryKey: ["telegram-chats"] });
     },
     onError: (e: any) => toast({ title: "Sync failed", description: e.message, variant: "destructive" }),

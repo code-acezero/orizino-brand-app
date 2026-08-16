@@ -4,8 +4,10 @@ import { motion, useInView } from "framer-motion";
 import { ArrowRight, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/lib/app-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const NewsletterBlock: React.FC = () => {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -23,7 +25,7 @@ const NewsletterBlock: React.FC = () => {
       if (error) throw error;
       setDone(true);
       setEmail("");
-      toast.success("You're on the list.");
+      toast.success(t("newsletter.success") || "You're on the list.");
     } catch {
       toast.error("Something went wrong. Try again.");
     } finally {
@@ -44,18 +46,22 @@ const NewsletterBlock: React.FC = () => {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         >
           <span className="section-label text-primary font-sans-brand text-xs uppercase tracking-[0.2em] font-semibold">
-            Stay in the loop
+            {t("newsletter.tagline") || "Stay in the loop"}
           </span>
 
           <h2 className="heading-editorial text-3xl sm:text-4xl lg:text-5xl leading-[1.05] text-foreground">
-            Be the first to know
-            <br />
-            about every drop.
+            {t("newsletter.title") || (
+              <>
+                Be the first to know
+                <br />
+                about every drop.
+              </>
+            )}
           </h2>
 
           <p className="font-sans-brand text-sm leading-relaxed max-w-sm text-muted-foreground">
-            No noise. No spam. Just the latest releases, restocks, and exclusive
-            access — straight to your inbox.
+            {t("newsletter.desc") ||
+              "No noise. No spam. Just the latest releases, restocks, and exclusive access — straight to your inbox."}
           </p>
 
           {done ? (
@@ -98,7 +104,7 @@ const NewsletterBlock: React.FC = () => {
           )}
 
           <p className="font-sans-brand text-xs text-muted-foreground/70">
-            Unsubscribe anytime. No hard feelings.
+            {t("newsletter.disclaimer") || "Unsubscribe anytime. No hard feelings."}
           </p>
         </motion.div>
       </div>

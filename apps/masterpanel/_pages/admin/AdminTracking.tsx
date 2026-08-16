@@ -17,7 +17,7 @@ import { Globe, BarChart3, Search, Megaphone, Eye, Code, CheckCircle2, AlertCirc
 import { SearchConsoleLivePanel } from "@/components/admin/SearchConsoleLivePanel";
 import { FacebookGlyph, GoogleGlyph, GoogleSearchConsoleGlyph, MetaGlyph, TikTokGlyph } from "@/components/admin/BrandGlyph";
 import { upsertSiteSettings } from "@/lib/admin-data.functions";
-import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
+import { useRegisterUniversalSave, useUndoRedoState } from "@/contexts/UniversalSaveContext";
 
 interface FacebookPixelConfig {
   enabled: boolean;
@@ -86,6 +86,20 @@ const defaultAdSetup: AdSetupConfig = {
   tiktok_pixel_enabled: false, tiktok_pixel_id: "",
 };
 
+interface TrackingState {
+  fbPixel: FacebookPixelConfig;
+  googleAds: GoogleAdsConfig;
+  searchConsole: SearchConsoleConfig;
+  adSetup: AdSetupConfig;
+}
+
+const defaultTrackingState: TrackingState = {
+  fbPixel: defaultFBPixel,
+  googleAds: defaultGoogleAds,
+  searchConsole: defaultSearchConsole,
+  adSetup: defaultAdSetup,
+};
+
 const AdminTracking: React.FC = () => {
   const queryClient = useQueryClient();
   const saveSiteSettings = useServerFn(upsertSiteSettings);
@@ -98,10 +112,38 @@ const AdminTracking: React.FC = () => {
     setTab(v);
     navigate(`/marketing/tracking?tab=${v}`);
   };
-  const [fbPixel, setFbPixel] = useState<FacebookPixelConfig>(defaultFBPixel);
-  const [googleAds, setGoogleAds] = useState<GoogleAdsConfig>(defaultGoogleAds);
-  const [searchConsole, setSearchConsole] = useState<SearchConsoleConfig>(defaultSearchConsole);
-  const [adSetup, setAdSetup] = useState<AdSetupConfig>(defaultAdSetup);
+
+  const [
+    trackingState,
+    setTrackingState,
+    { undo, redo, canUndo, canRedo, reject, canReject, setInitial },
+  ] = useUndoRedoState<TrackingState>(defaultTrackingState);
+
+  const { fbPixel, googleAds, searchConsole, adSetup } = trackingState;
+
+  const setFbPixel = (action: React.SetStateAction<FacebookPixelConfig>) =>
+    setTrackingState((prev) => ({
+      ...prev,
+      fbPixel: typeof action === "function" ? action(prev.fbPixel) : action,
+    }));
+
+  const setGoogleAds = (action: React.SetStateAction<GoogleAdsConfig>) =>
+    setTrackingState((prev) => ({
+      ...prev,
+      googleAds: typeof action === "function" ? action(prev.googleAds) : action,
+    }));
+
+  const setSearchConsole = (action: React.SetStateAction<SearchConsoleConfig>) =>
+    setTrackingState((prev) => ({
+      ...prev,
+      searchConsole: typeof action === "function" ? action(prev.searchConsole) : action,
+    }));
+
+  const setAdSetup = (action: React.SetStateAction<AdSetupConfig>) =>
+    setTrackingState((prev) => ({
+      ...prev,
+      adSetup: typeof action === "function" ? action(prev.adSetup) : action,
+    }));
 
   const { isLoading } = useQuery({
     queryKey: ["admin-tracking-config"],
@@ -112,13 +154,26 @@ const AdminTracking: React.FC = () => {
 
       if (error) throw error;
 
+      let newFbPixel = { ...defaultFBPixel };
+      let newGoogleAds = { ...defaultGoogleAds };
+      let newSearchConsole = { ...defaultSearchConsole };
+      let newAdSetup = { ...defaultAdSetup };
+
       (data || []).forEach((row: any) => {
         const val = typeof row.value === "object" && row.value !== null ? (row.value.value ?? row.value) : row.value;
-        if (row.key === "facebook_pixel_config") setFbPixel({ ...defaultFBPixel, ...val });
-        if (row.key === "google_ads_config") setGoogleAds({ ...defaultGoogleAds, ...val });
-        if (row.key === "search_console_config") setSearchConsole({ ...defaultSearchConsole, ...val });
-        if (row.key === "ad_setup_config") setAdSetup({ ...defaultAdSetup, ...val });
+        if (row.key === "facebook_pixel_config") newFbPixel = { ...defaultFBPixel, ...val };
+        if (row.key === "google_ads_config") newGoogleAds = { ...defaultGoogleAds, ...val };
+        if (row.key === "search_console_config") newSearchConsole = { ...defaultSearchConsole, ...val };
+        if (row.key === "ad_setup_config") newAdSetup = { ...defaultAdSetup, ...val };
       });
+
+      setInitial({
+        fbPixel: newFbPixel,
+        googleAds: newGoogleAds,
+        searchConsole: newSearchConsole,
+        adSetup: newAdSetup,
+      });
+
       return data;
     },
   });
@@ -151,13 +206,17 @@ const AdminTracking: React.FC = () => {
       label: "Save",
       onSave: saveAll,
       isSaving: saveMutation.isPending,
+      onUndo: undo,
+      canUndo: canUndo,
+      onRedo: redo,
+      canRedo: canRedo,
       onReject: () => {
-        queryClient.invalidateQueries({ queryKey: ["admin-tracking-configs"] });
+        reject();
         toast.warning("Tracking settings reverted");
       },
-      canReject: true,
+      canReject: canReject,
     },
-    [fbPixel, googleAds, searchConsole, adSetup, saveMutation.isPending, queryClient]
+    [fbPixel, googleAds, searchConsole, adSetup, saveMutation.isPending, canUndo, canRedo, canReject]
   );
 
   const copySnippet = (text: string) => {

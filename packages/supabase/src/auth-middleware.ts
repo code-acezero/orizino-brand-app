@@ -17,17 +17,33 @@ import type { Database } from "./types";
 
 export const requireSupabaseAuth = createMiddleware().server(
   async ({ next }: any) => {
-    const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const SUPABASE_PUBLISHABLE_KEY =
+    const SUPABASE_URL =
+      process.env.SUPABASE_URL ||
+      process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      process.env.VITE_SUPABASE_URL ||
+      "";
+    const key =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
       process.env.SUPABASE_PUBLISHABLE_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      "";
 
-    if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+    if (!SUPABASE_URL || !key) {
       throw new Error("Missing Supabase environment variables");
     }
 
-    const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    const supabase = createClient<Database>(SUPABASE_URL, key, {
       auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+      global: {
+        fetch: (input: any, init: any) => {
+          const h = new Headers(init?.headers);
+          if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+          h.set("apikey", key);
+          return fetch(input, { ...init, headers: h });
+        },
+      },
     });
 
     return next({ context: { supabase, userId: "", claims: null } });

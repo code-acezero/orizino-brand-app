@@ -1,10 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@/lib/server-fn-compat";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/lib/app-toast";
 import { upsertSiteSettings } from "@/lib/admin-data.functions";
+import { useUndoRedoState } from "@/contexts/UniversalSaveContext";
 
 /**
  * Small shared hook for reading/writing key→value rows in the `site_settings`
@@ -13,7 +14,8 @@ import { upsertSiteSettings } from "@/lib/admin-data.functions";
 export function useSiteSettings<T extends Record<string, any>>(defaults: T) {
   const qc = useQueryClient();
   const saveSiteSettings = useServerFn(upsertSiteSettings);
-  const [form, setForm] = useState<T>(defaults);
+  const [form, setForm, { undo, redo, canUndo, canRedo, reject, canReject, setInitial, isDirty, reset }] =
+    useUndoRedoState<T>(defaults);
 
   const { data: settings } = useQuery({
     queryKey: ["admin-settings"],
@@ -33,8 +35,8 @@ export function useSiteSettings<T extends Record<string, any>>(defaults: T) {
           ? (s.value as any).value ?? s.value
           : s.value;
     });
-    setForm((prev) => ({ ...prev, ...map }));
-  }, [settings]);
+    setInitial((prev) => ({ ...defaults, ...prev, ...map }));
+  }, [settings, setInitial, defaults]);
 
   const save = useMutation({
     mutationFn: async (keys?: (keyof T)[]) => {
@@ -46,7 +48,7 @@ export function useSiteSettings<T extends Record<string, any>>(defaults: T) {
         const { error } = await supabase
           .from("site_settings")
           .upsert(
-            { key, value: { value }, updated_at: updatedAt },
+            { key, value: { value } as any, updated_at: updatedAt },
             { onConflict: "key" }
           );
         if (error) throw error;
@@ -61,6 +63,19 @@ export function useSiteSettings<T extends Record<string, any>>(defaults: T) {
     onError: (e: any) => toast.error(e?.message ?? "Save failed"),
   });
 
-  return { form, setForm, save };
+  return {
+    form,
+    setForm,
+    save,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    reject,
+    canReject,
+    isDirty,
+    setInitial,
+    reset,
+  };
 }
 // code:4ce0

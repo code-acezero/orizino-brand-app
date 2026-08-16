@@ -99,9 +99,10 @@ const MasterPanelLayout: React.FC<{ children?: React.ReactNode }> = ({ children 
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-muted/40">
+      {/* h-screen + overflow-hidden: body never scrolls → Radix gap=0 → no layout shift on dropdowns */}
+      <div className="admin-layout-root h-screen flex w-full overflow-hidden bg-gradient-to-br from-background via-background to-muted/40">
         <AdminSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
           <AdminTopBar
             showCommand
             onOpenPalette={() => setPaletteOpen(true)}
@@ -109,7 +110,7 @@ const MasterPanelLayout: React.FC<{ children?: React.ReactNode }> = ({ children 
             showPresence={false}
           />
 
-          <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
+          <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto min-h-0">
             <div className="max-w-[1400px] mx-auto">
               <React.Suspense fallback={<AutoSkeleton />}>
                 {children}

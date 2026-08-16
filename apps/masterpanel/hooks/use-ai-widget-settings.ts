@@ -23,19 +23,19 @@ export interface AiWidgetSettings {
 export const DEFAULT_AI_WIDGET_SETTINGS: AiWidgetSettings = {
   id: "",
   fab_floating_texts: [
-    "Ask Agent Flow",
-    "Find your style",
+    "MR. Slime",
+    "Find your fit",
     "Track an order",
-    "Need a recommendation?",
-    "We're here 24/7",
+    "240+ GSM Cotton",
+    "Dhaka Atelier",
   ],
   fab_animation_style: "drift",
   fab_animation_intensity: 5,
   fab_show_avatar_inline: true,
   chat_greeting_logged_in:
-    "Hi {name}, I'm Agent Flow — your personal shopping assistant. How can I help you today?",
+    "Hi {name}, I'm MR. Slime—your personal concierge & style companion. How can I help you today?",
   chat_greeting_guest:
-    "Welcome to Orizino. I'm Agent Flow, your shopping concierge. What brings you in today?",
+    "Hey! Welcome to Orizino. I'm MR. Slime—your official AI concierge & luxury fit companion. How can I help you today?",
   chat_premade_questions: [
     "Track my order",
     "What's your return policy?",

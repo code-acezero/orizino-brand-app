@@ -13,9 +13,7 @@
   pointer-events: auto;
 }
 .ldr-backdrop {
-  background:
-    radial-gradient(120% 80% at 50% 40%, rgba(176, 0, 6, 0.12) 0%, transparent 60%),
-    rgba(6, 4, 6, 0.86);
+  background: rgba(6, 4, 6, 0.92);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
@@ -37,7 +35,7 @@
   position: absolute;
   inset: -25%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 26, 46, 0.18), transparent 60%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 60%);
   filter: blur(28px);
   animation: ldr-halo-pulse 3.6s ease-in-out infinite;
   pointer-events: none;

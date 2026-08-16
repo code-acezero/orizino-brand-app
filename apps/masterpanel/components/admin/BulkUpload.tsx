@@ -12,6 +12,7 @@ import { toast } from "@/lib/app-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { syncStockFromSerials } from "@/lib/serials.functions";
 
 type BulkUploadMode = "categories" | "products" | "variants";
 
@@ -244,6 +245,9 @@ export default function BulkUpload({ mode, onComplete, categories, products }: B
         const { error } = await supabase.from("product_variants").upsert(inserts, { onConflict: "product_id,size,color", ignoreDuplicates: false } as any);
         if (error) throw error;
       }
+      try {
+        await syncStockFromSerials({});
+      } catch {}
       toast.success(`${validRows.length} ${mode} imported/updated successfully!`);
       reset();
       setOpen(false);

@@ -347,7 +347,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ onSearchClick, onAuthClick, produ
   // ══════════════════════════════════════════════
   const renderLiquid = () => {
     return (
-      <nav id={mobileBottomNavId} className="fixed bottom-0 left-0 right-0 z-[10000] lg:hidden">
+      <nav id={mobileBottomNavId} suppressHydrationWarning className="fixed bottom-0 left-0 right-0 z-[10000] lg:hidden">
         {renderProductTray("border-x-0 rounded-none")}
         <div className="bg-card border-t border-border relative" style={{ overflow: "visible" }}>
           <div className="flex w-full relative" style={{ overflow: "visible" }}>
@@ -411,7 +411,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ onSearchClick, onAuthClick, produ
   // ══════════════════════════════════════════════
   const renderNotch = () => {
     return (
-      <nav id={mobileBottomNavId} className="fixed bottom-0 left-0 right-0 z-[10000] lg:hidden flex flex-col justify-end pb-[env(safe-area-inset-bottom)]">
+      <nav id={mobileBottomNavId} suppressHydrationWarning className="fixed bottom-0 left-0 right-0 z-[10000] lg:hidden flex flex-col justify-end pb-[env(safe-area-inset-bottom)]">
         {renderProductTray("mx-2 rounded-t-2xl border-x border-border/50")}
         <div className="bg-card border-t border-border w-full relative" style={{ overflow: "visible" }}>
           <div className="flex items-center w-full px-2 py-2 relative">
@@ -469,11 +469,11 @@ const BottomNav: React.FC<BottomNavProps> = ({ onSearchClick, onAuthClick, produ
   };
 
   // ══════════════════════════════════════════════
-  // STYLE 3: Pill / Capsule (floating)
+  // STYLE 3: Pill / Capsule
   // ══════════════════════════════════════════════
   const renderPill = () => (
-    <nav id={mobileBottomNavId} className="fixed bottom-0 left-0 right-0 z-[10000] lg:hidden px-3 pb-[env(safe-area-inset-bottom)] pt-2 bg-background/80 backdrop-blur-md border-t border-border/40">
-      {renderProductTray("rounded-t-[1.75rem] border-x border-border/50")}
+    <nav id={mobileBottomNavId} suppressHydrationWarning className="fixed bottom-0 left-0 right-0 z-[10000] lg:hidden bg-card/95 backdrop-blur-xl border-t border-border/60 pb-[env(safe-area-inset-bottom)]">
+      {renderProductTray("border-x-0 rounded-none")}
       <div className="pill-nav-bar">
         {items.map((item, index) => {
           const isActive = index === activeIndex;
@@ -508,7 +508,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ onSearchClick, onAuthClick, produ
   // STYLE 4: Glow Dock
   // ══════════════════════════════════════════════
   const renderGlow = () => (
-    <nav id={mobileBottomNavId} className="fixed bottom-0 left-0 right-0 z-[10000] lg:hidden">
+    <nav id={mobileBottomNavId} suppressHydrationWarning className="fixed bottom-0 left-0 right-0 z-[10000] lg:hidden">
       {renderProductTray("border-x-0 rounded-none")}
       <div className="glow-nav-bar">
         {items.map((item, index) => {
@@ -552,7 +552,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ onSearchClick, onAuthClick, produ
     const cx = activeIndex >= 0 ? (activeIndex + 0.5) * (400 / itemCount) : -100;
 
     return (
-      <nav id={mobileBottomNavId} className="fixed bottom-0 left-0 right-0 z-[10000] lg:hidden">
+      <nav id={mobileBottomNavId} suppressHydrationWarning className="fixed bottom-0 left-0 right-0 z-[10000] lg:hidden">
         {renderProductTray("border-x-0 rounded-none")}
         <div className="wave-nav-bar">
           <svg className="wave-nav-svg" viewBox="0 0 400 62" preserveAspectRatio="none">
@@ -598,7 +598,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ onSearchClick, onAuthClick, produ
   };
 
   const renderSkeleton = () => (
-    <nav id={mobileBottomNavId} className="fixed bottom-0 left-0 right-0 z-[10000] lg:hidden">
+    <nav id={mobileBottomNavId} suppressHydrationWarning className="fixed bottom-0 left-0 right-0 z-[10000] lg:hidden">
       <div className="bg-card border-t border-border">
         <div className="flex w-full">
           {items.map((item) => (

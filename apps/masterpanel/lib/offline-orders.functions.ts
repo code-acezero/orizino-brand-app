@@ -3,6 +3,7 @@
 import { createServerFn } from "@/lib/server-fn-compat";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { runTwoWayStockSync } from "./serials.functions";
 
 /**
  * Offline / manual-channel order creation + serial reassignment.
@@ -29,11 +30,6 @@ async function assertStaff(supabase: any, userId: string) {
   if (!data) throw new Error("Forbidden");
 }
 
-// Same check as assertStaff — kept as a distinct name at call sites so the
-// intent ("this mutates orders/serials") reads clearly, but it must stay
-// aligned with the `orders`/`order_items`/`product_serials` RLS policies,
-// which all gate on has_section_access(uid, 'sales') (itself inclusive of
-// full admins — see the has_section_access() SQL definition).
 const assertAdminOrMod = assertStaff;
 
 async function recomputeOrderTotals(sb: any, orderId: string) {
@@ -69,10 +65,6 @@ export const createOfflineOrder = createServerFn({ method: "POST" })
         address: z.string().trim().max(500).optional(),
         source: z.enum(SOURCES).default("offline"),
         notes: z.string().max(1000).optional(),
-        // .min removed on purpose: an empty array creates a bare "pending"
-        // order shell with no items yet — the "skip scan" flow. Staff can
-        // scan/attach serials to it afterwards from the Serials list's
-        // reassign-to-order action (reassignSerial, below).
         serialIds: z.array(z.string().uuid()).max(300).default([]),
       })
       .parse(d),
@@ -139,9 +131,6 @@ export const createOfflineOrder = createServerFn({ method: "POST" })
         guest_email: data.email || null,
         guest_phone: data.phone || null,
         customer_name: data.customerName,
-        // No items scanned yet ("skip scan") -> pending fulfillment, not
-        // confirmed. Once serials get attached via reassignSerial the staff
-        // can move it to confirmed themselves.
         status: groups.size > 0 ? "confirmed" : "pending",
         payment_status: groups.size > 0 ? "paid" : "unpaid",
         payment_method: "cod",
@@ -190,7 +179,7 @@ export const createOfflineOrder = createServerFn({ method: "POST" })
         metadata: { source: data.source, order_number: orderNumber },
       }));
       await sb.from("product_serial_events").insert(eventRows);
-      await sb.rpc("sync_stock_from_serials");
+      await runTwoWayStockSync(sb);
     }
 
     return { order, items };
@@ -225,7 +214,6 @@ export const reassignSerial = createServerFn({ method: "POST" })
       .object({
         serialId: z.string().uuid(),
         newStatus: z.enum(STATUSES),
-        // Only meaningful when newStatus === "sold". `null` unassigns.
         orderId: z.string().uuid().nullable().optional(),
       })
       .parse(d),
@@ -261,7 +249,6 @@ export const reassignSerial = createServerFn({ method: "POST" })
         }
       }
       await recomputeOrderTotals(sb, prevOrderId);
-      // If that order has no line items left, it's a phantom sale — cancel it.
       const { count } = await sb.from("order_items").select("id", { count: "exact", head: true }).eq("order_id", prevOrderId);
       if ((count ?? 0) === 0) {
         await sb.from("orders").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", prevOrderId);
@@ -297,8 +284,6 @@ export const reassignSerial = createServerFn({ method: "POST" })
     if (data.newStatus === "sold" && (serial.status !== "sold" || prevOrderId !== nextOrderId)) {
       update.sold_at = new Date().toISOString();
     }
-    // Note: sold_at is left untouched when moving off "sold" (returned/defective/
-    // cancelled/available) so the historical sale timestamp stays on record.
 
     const { data: updated, error: ue } = await sb
       .from("product_serials")
@@ -318,6 +303,6 @@ export const reassignSerial = createServerFn({ method: "POST" })
       metadata: { prevOrderId, nextOrderId },
     });
 
-    await sb.rpc("sync_stock_from_serials");
+    await runTwoWayStockSync(sb);
     return updated;
   });

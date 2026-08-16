@@ -2,27 +2,11 @@ import { createSign } from "node:crypto";
 
 /**
  * Minimal Google service-account auth (JWT-bearer flow), used to call
- * Google Sheets and Search Console directly instead of going through the
- * Lovable connector gateway. Deliberately dependency-free — it only needs
- * Node's built-in `crypto` to sign the assertion, so we don't have to add
- * `googleapis`/`google-auth-library` just for two REST integrations.
+ * Google Sheets and Search Console directly.
  *
- * Required env vars (set in Netlify → Site settings → Environment variables,
- * NOT in a committed .env file — the private key is a secret):
- *   GOOGLE_SERVICE_ACCOUNT_EMAIL        the service account's client_email
- *   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY  the service account's private_key
- *                                        (paste exactly as it appears in the
- *                                        downloaded JSON key, including the
- *                                        BEGIN/END lines; literal "\n"
- *                                        sequences are unescaped below)
- *
- * Setup, once per API:
- *   Sheets           share the target spreadsheet with the service account's
- *                    email (Editor access), same as sharing with a person.
- *   Search Console   in Search Console → Settings → Users and permissions,
- *                    add the service account's email as a user (Full is
- *                    required to submit sitemaps; Restricted is enough for
- *                    read-only stats).
+ * Supports credentials from:
+ * 1. Environment variables (`GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`)
+ * 2. Supabase `site_settings.google_service_account` (configured via Masterpanel UI)
  */
 
 interface TokenCacheEntry {
@@ -32,18 +16,47 @@ interface TokenCacheEntry {
 
 const tokenCache = new Map<string, TokenCacheEntry>();
 
-function loadCredentials() {
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
-  if (!email || !rawKey) {
-    throw new Error(
-      "Google isn't connected yet. Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY in Netlify's environment variables."
-    );
+export async function loadCredentials(): Promise<{ email: string; privateKey: string; source: "env" | "db" }> {
+  // 1. Check environment variables
+  let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  let rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+
+  if (email && rawKey) {
+    const privateKey = rawKey.includes("\\n") ? rawKey.replace(/\\n/g, "\n") : rawKey;
+    return { email: email.trim(), privateKey: privateKey.trim(), source: "env" };
   }
-  // Most env-var UIs (including Netlify) store multiline secrets with
-  // literal "\n" escapes rather than real newlines.
-  const privateKey = rawKey.includes("\\n") ? rawKey.replace(/\\n/g, "\n") : rawKey;
-  return { email, privateKey };
+
+  // 2. Check site_settings in Supabase
+  const sbUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+  if (sbUrl && sbKey) {
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const sb = createClient(sbUrl, sbKey);
+      const { data } = await sb
+        .from("site_settings")
+        .select("value")
+        .eq("key", "google_service_account")
+        .maybeSingle();
+
+      const val = data?.value;
+      if (val && typeof val === "object") {
+        email = val.client_email || val.email;
+        rawKey = val.private_key || val.privateKey;
+        if (email && rawKey) {
+          const privateKey = rawKey.includes("\\n") ? rawKey.replace(/\\n/g, "\n") : rawKey;
+          return { email: email.trim(), privateKey: privateKey.trim(), source: "db" };
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to load Google credentials from DB:", err);
+    }
+  }
+
+  throw new Error(
+    "Google Service Account is not connected yet. Paste your Service Account JSON key in Google Sheets Settings or configure GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY."
+  );
 }
 
 function base64url(input: Buffer | string): string {
@@ -55,7 +68,7 @@ function base64url(input: Buffer | string): string {
 }
 
 async function requestAccessToken(scopes: readonly string[] | string[]): Promise<TokenCacheEntry> {
-  const { email, privateKey } = loadCredentials();
+  const { email, privateKey } = await loadCredentials();
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT" };
   const claims = {
@@ -95,6 +108,22 @@ export async function googleAccessToken(scopes: readonly string[] | string[]): P
   const fresh = await requestAccessToken(scopes);
   tokenCache.set(cacheKey, fresh);
   return fresh.token;
+}
+
+/** Returns active Google Service Account information for UI display */
+export async function getGoogleServiceAccountInfo(): Promise<{
+  configured: boolean;
+  email?: string;
+  source?: "env" | "db";
+  error?: string;
+}> {
+  const DEFAULT_SERVICE_EMAIL = "sheets-orz@orizino-integrations.iam.gserviceaccount.com";
+  try {
+    const { email, source } = await loadCredentials();
+    return { configured: true, email: email || DEFAULT_SERVICE_EMAIL, source };
+  } catch (err: any) {
+    return { configured: false, email: DEFAULT_SERVICE_EMAIL, error: err?.message };
+  }
 }
 
 export const GOOGLE_SCOPES = {

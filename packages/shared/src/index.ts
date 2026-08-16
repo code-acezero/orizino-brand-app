@@ -18,4 +18,6 @@ export * from "./types/verify";
 export * from "./lib/courier-locations";
 export * from "./lib/app-urls";
 export * from "./lib/cross-app-urls";
+export * from "./lib/scanner-utils";
+export * from "./lib/router-compat";
 // code:4ce0

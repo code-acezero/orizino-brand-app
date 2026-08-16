@@ -421,15 +421,13 @@ const AIChatWidget: React.FC = () => {
         : raw;
     },
     staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
   });
 
   const isEnabled = aiConfig?.is_enabled !== false;
-  const agentName = aiConfig?.name || "";
-  const welcomeMessage = aiConfig?.welcome_message || "Hi! How can I help you?";
-  const avatarType = aiConfig?.avatar_type || "emoji";
-  const avatarUrl = aiConfig?.avatar_url || "";
-  const avatarEmoji = aiConfig?.avatar_emoji || "";
+  const agentName = aiConfig?.name || "MR. Slime";
+  const welcomeMessage = aiConfig?.welcome_message || "Hey! Welcome to Orizino. I'm MR. Slime—your official AI concierge & luxury fit companion.";
+  const avatarUrl = aiConfig?.avatar_url || "https://oectjdngvrqnxwhnwfrt.supabase.co/storage/v1/object/public/site-assets/ai-agent/mr-slime.jpg";
+  const avatarType = "image";
 
   // Floating bubble (FAB) admin-driven look & feel
   const fabBubbleColor: string = aiConfig?.fab_bubble_color || "hsl(var(--primary))";
@@ -454,20 +452,20 @@ const AIChatWidget: React.FC = () => {
   const fabEnergyEnabled: boolean = aiConfig?.fab_enable_energy !== false;
   const fabEnergyInterval: number = Math.max(2, Number(aiConfig?.fab_energy_interval ?? 5));
   const fabShowHoverLabel: boolean = aiConfig?.fab_show_hover_label !== false;
-  const fabHoverLabel: string = aiConfig?.fab_hover_label_text || "Chat with us";
+  const fabHoverLabel: string = aiConfig?.fab_hover_label_text || "Chat with MR. Slime";
   const fabSize: number = Math.max(44, Math.min(96, Number(aiConfig?.fab_size ?? 56)));
-  // Floating texts now come from the admin-managed widget settings table.
+  // Floating texts now come from the admin-managed widget settings table or site_settings
   const fabUnderwaterTexts: string[] = widgetSettings?.fab_floating_texts?.length
     ? widgetSettings.fab_floating_texts
-    : ["Ask Agent Flow", "Find your style", "Track an order", "Need a recommendation?"];
+    : aiConfig?.fab_underwater_texts?.length
+    ? aiConfig.fab_underwater_texts
+    : ["MR. Slime", "Find your fit", "Track an order", "240+ GSM Cotton", "Dhaka Atelier"];
   const fabAnimationIntensity = Math.max(1, Math.min(10, widgetSettings?.fab_animation_intensity ?? 5));
-  const fabShowAvatarInline = widgetSettings?.fab_show_avatar_inline ?? true;
+  const fabShowAvatarInline = false;
 
   // Rotate underwater label
   const [underwaterIdx, setUnderwaterIdx] = useState(0);
-  // Sometimes (every ~3rd cycle) we show the avatar inline instead of a text.
-  const showAvatarInlineNow =
-    fabShowAvatarInline && underwaterIdx % 3 === 2 && avatarType === "image" && !!avatarUrl;
+  const showAvatarInlineNow = false;
   useEffect(() => {
     if (!fabUnderwaterTexts.length) return;
     const id = setInterval(() => setUnderwaterIdx((i) => (i + 1) % fabUnderwaterTexts.length), 2600);
@@ -475,11 +473,11 @@ const AIChatWidget: React.FC = () => {
   }, [fabUnderwaterTexts.length]);
 
   const AgentAvatar = React.memo(({ size = "w-8 h-8", iconSize = "w-4 h-4" }: { size?: string; iconSize?: string }) =>
-    avatarType === "image" && avatarUrl ? (
-      <img src={avatarUrl} alt={agentName} className={`${size} object-contain`} loading="eager" decoding="async" style={{ background: "transparent" }} />
+    avatarUrl ? (
+      <img src={avatarUrl} alt={agentName || "Orizino AI"} className={`${size} object-cover rounded-full`} loading="eager" decoding="async" style={{ background: "transparent" }} />
     ) : (
-      <div className={`${size} flex items-center justify-center bg-transparent`}>
-        {avatarEmoji ? <span className={iconSize === "w-4 h-4" ? "text-base" : "text-sm"}>{avatarEmoji}</span> : <Bot className={`${iconSize} text-primary`} />}
+      <div className={`${size} flex items-center justify-center rounded-full bg-primary/15 text-primary`}>
+        <Bot className={`${iconSize} text-primary`} />
       </div>
     )
   );
@@ -967,8 +965,12 @@ const AIChatWidget: React.FC = () => {
     setLoading(true);
     try {
       const { data: conv } = await supabase.from("support_conversations").insert({
-        user_id: user.id, subject: "Live Support Request", is_ai: false, status: "open",
-      }).select().single();
+        user_id: user.id,
+        subject: "Live Support Request",
+        is_ai: false,
+        status: "requested",
+        needs_human: true,
+      } as any).select().single();
       if (conv) {
         await supabase.from("support_messages").insert({ conversation_id: conv.id, sender_id: user.id, sender_type: "user", content: "Requested live support from chat widget." });
         // Best-effort: legacy edge notifier + new handoff flag + Telegram broadcast
@@ -981,8 +983,8 @@ const AIChatWidget: React.FC = () => {
           console.warn("[handoff] failed", e);
         }
         setLiveConvId(conv.id);
-        setLiveMode(true);
-        setMessages([{ role: "assistant", content: "🎧 Connecting you to live support... An agent will join shortly." }]);
+        setLiveMode(false);
+        setMessages([{ role: "assistant", content: "⏳ Support ticket requested. In queue for specialist assignment." }]);
       }
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Couldn't connect to live support right now." }]);
@@ -1018,7 +1020,8 @@ const AIChatWidget: React.FC = () => {
       const { data: conv } = await supabase.from("support_conversations").insert({
         user_id: user.id,
         subject: `[${complaintCategory}] ${complaintSubject}`,
-        status: "open",
+        status: "requested",
+        needs_human: true,
         is_ai: false,
         type: "complaint",
       } as any).select("id").single();
@@ -1234,17 +1237,17 @@ const AIChatWidget: React.FC = () => {
                         transition={{ delay: 0.15, duration: 0.35 }}
                       >
                         <div className="relative w-[68px] h-[68px] flex-shrink-0 rounded-2xl bg-white/15 backdrop-blur-sm ring-1 ring-white/25 flex items-center justify-center overflow-hidden">
-                          {avatarType === "image" && avatarUrl ? (
+                          {avatarUrl ? (
                             <motion.img
                               src={avatarUrl}
-                              alt={agentName || "Agent Flow"}
+                              alt={agentName || "Orizino AI"}
                               className="w-full h-full object-cover"
                               initial={{ scale: 0.7, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1, y: [0, -2, 0] }}
                               transition={{ scale: { delay: 0.2, duration: 0.4 }, opacity: { delay: 0.2, duration: 0.4 }, y: { repeat: Infinity, duration: 3.5, ease: "easeInOut" } }}
                             />
                           ) : (
-                            <span className="text-2xl">{avatarEmoji || "🤖"}</span>
+                            <Bot className="w-8 h-8 text-white/90" />
                           )}
                           <span className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white/80" />
                         </div>
@@ -1255,7 +1258,7 @@ const AIChatWidget: React.FC = () => {
                           className="min-w-0 flex-1"
                         >
                           <p className="text-[11px] uppercase tracking-wider text-white/75 font-semibold mb-0.5 truncate">
-                            {agentName || "Agent Flow"}
+                            {agentName || "MR. Slime"}
                           </p>
                           <p className="text-white text-[13.5px] leading-snug font-medium line-clamp-2 [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]">
                             {welcomeText}
@@ -1449,7 +1452,10 @@ const AIChatWidget: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 380, damping: 26 }}
+            id="ai-chat-widget"
+            translate="no"
             className={`
+              notranslate skiptranslate
               fixed z-[10001] flex flex-col overflow-hidden
               bg-card/85 backdrop-blur-2xl
               border border-white/10 ring-1 ring-black/5
@@ -1476,7 +1482,7 @@ const AIChatWidget: React.FC = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">
-                    {agentName || "Agent Flow"}
+                    {agentName || "MR. Slime"}
                   </p>
                   <p className="text-[11px] text-foreground/75 tracking-wide font-medium">
                     {callActive ? "Voice call active" : liveMode ? "Live agent · typically replies in minutes" : "AI assistant · always online"}
@@ -1577,14 +1583,21 @@ const AIChatWidget: React.FC = () => {
                               <ReactMarkdown
                                 components={{
                                   img: ({ node, ...props }) => (
-                                    <img
-                                      {...props}
-                                      className="rounded-lg border border-border/50 my-1.5 w-28 h-28 object-cover"
-                                      loading="lazy"
-                                    />
+                                    <div className="my-2 block max-w-[240px] overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 shadow-md bg-secondary/30">
+                                      <img
+                                        {...props}
+                                        className="w-full aspect-square object-cover transition-transform duration-300 hover:scale-105 block"
+                                        loading="lazy"
+                                        onError={(e) => {
+                                          (e.target as HTMLElement).style.display = "none";
+                                        }}
+                                      />
+                                    </div>
                                   ),
-                                  a: ({ node, ...props }) => (
-                                    <a {...props} className="text-primary underline underline-offset-2" />
+                                  a: ({ node, children, href, ...props }) => (
+                                    <a {...props} href={href} className="text-white hover:text-white/80 font-bold underline underline-offset-2 inline-flex items-center gap-1">
+                                      {children}
+                                    </a>
                                   ),
                                 }}
                               >

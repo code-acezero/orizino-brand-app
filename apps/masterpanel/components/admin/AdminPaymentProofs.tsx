@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { MFSLogo } from "@/components/admin/PaymentLogos";
 import { toast } from "@/lib/app-toast";
 import { Check, X, Eye, Image as ImageIcon, Phone, Clock, FileText, Smartphone, ExternalLink } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -154,7 +155,9 @@ const AdminPaymentProofs: React.FC = () => {
                       <Badge className={`text-xs border ${statusColors[proof.status]}`}>{proof.status}</Badge>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Smartphone className={`w-3 h-3 ${methodColors[proof.payment_method]}`} />
+                      <div className="w-4 h-4 rounded-full overflow-hidden flex items-center justify-center shrink-0 ring-1 ring-border/40">
+                        <MFSLogo method={proof.payment_method} className="w-full h-full object-cover scale-105" />
+                      </div>
                       <span className="capitalize">{proof.payment_method}</span>
                       <span>•</span>
                       <span>{formatPrice(proof.amount)}</span>
@@ -177,7 +180,9 @@ const AdminPaymentProofs: React.FC = () => {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Smartphone className={`w-5 h-5 ${methodColors[selectedProof?.payment_method || "bkash"]}`} />
+              <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center shrink-0 ring-1 ring-border/40">
+                <MFSLogo method={selectedProof?.payment_method || "bkash"} className="w-full h-full object-cover scale-105" />
+              </div>
               Payment Proof — {selectedProof?.orders?.order_number}
             </DialogTitle>
           </DialogHeader>

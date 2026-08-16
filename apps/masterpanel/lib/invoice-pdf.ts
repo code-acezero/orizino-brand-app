@@ -102,12 +102,19 @@ function header(doc: jsPDF, brand: PdfBrand, M: number, W: number, headline: str
 export function buildInvoicePdf(order: any, items: any[], brand: PdfBrand): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
   const M = 18;
   const symbol = safeCurrency(brand.currency);
   const addr = getAddr(order);
   const prefix = brand.prefix || "INV";
   const invoiceNumber = `${prefix}-${order.order_number}`;
   const isPaid = String(order.payment_status || "").toLowerCase() === "paid" || ["paid", "delivered"].includes(String(order.status || "").toLowerCase());
+
+  // Subtle luxury background watermark
+  doc.setFont(SERIF, "bold");
+  doc.setFontSize(56);
+  doc.setTextColor(243, 240, 234);
+  doc.text((brand.name || "ORIZINO").toUpperCase(), W / 2, H / 2 + 10, { align: "center", angle: 30 });
 
   header(
     doc, brand, M, W,
@@ -218,7 +225,6 @@ export function buildInvoicePdf(order: any, items: any[], brand: PdfBrand): jsPD
   doc.text(money(order.total, symbol), valX, y + 1.5, { align: "right" });
 
   // Footer
-  const H = doc.internal.pageSize.getHeight();
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.6);
   doc.line(M, H - 30, W - M, H - 30);

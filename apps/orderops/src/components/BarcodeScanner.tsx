@@ -3,6 +3,7 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 import { DecodeHintType, BarcodeFormat } from "@zxing/library";
 import { Camera, X, Flashlight, Keyboard, Aperture, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@ui/components/ui/button";
+import { extractSerialCode } from "@orizino/shared";
 
 export type ScanMode = "camera" | "manual";
 
@@ -92,7 +93,9 @@ export function BarcodeScanner({ active, onToggle, onScan, overlayContent }: Pro
   const manualInputRef = useRef<HTMLInputElement>(null);
 
   const emit = useCallback(
-    (code: string) => {
+    (rawInput: string) => {
+      const code = extractSerialCode(rawInput);
+      if (!code) return;
       const now = Date.now();
       if (code === lastCodeRef.current.code && now - lastCodeRef.current.ts < 1200) return;
       lastCodeRef.current = { code, ts: now };

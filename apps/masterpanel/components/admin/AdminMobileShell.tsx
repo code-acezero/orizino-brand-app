@@ -160,10 +160,20 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
     return pathMatches(path);
   };
 
-  const isChildActive = (childUrl: string) => {
+  const isChildActive = (childUrl: string, siblings?: Array<{ url: string }>) => {
     const { path, query } = splitNavUrl(childUrl);
     if (!pathMatches(path, !!query)) return false;
-    return searchMatches(query);
+    if (query) return searchMatches(query);
+
+    if (siblings?.length) {
+      const anySiblingMatches = siblings.some((sib) => {
+        if (sib.url === childUrl) return false;
+        const { path: sPath, query: sQuery } = splitNavUrl(sib.url);
+        return pathMatches(sPath, true) && sQuery && searchMatches(sQuery);
+      });
+      if (anySiblingMatches) return false;
+    }
+    return true;
   };
 
   const isDefaultChild = (childUrl: string, idx: number) => {
@@ -181,7 +191,7 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
   const hasActiveDescendant = (item: AdminNavItem): boolean => {
     if (!item.children?.length) return false;
     return item.children.some(
-      (child, idx) => isChildActive(child.url) || isDefaultChild(child.url, idx) || hasActiveDescendant(child as AdminNavItem),
+      (child, idx) => isChildActive(child.url, item.children) || isDefaultChild(child.url, idx) || hasActiveDescendant(child as AdminNavItem),
     );
   };
 
@@ -200,10 +210,40 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
   const canSeeMasterControl =
     !!staff?.isAdmin || role === "admin" || (staff?.accessible?.length ?? 0) >= 2;
 
+  const isProductShippingPaymentsRoute = useMemo(() => {
+    const clean = location.pathname.replace(/\/+$/, "");
+    const search = location.search;
+    return (
+      clean.startsWith("/sales/products") ||
+      clean.startsWith("/sales/categories") ||
+      clean.startsWith("/sales/stock") ||
+      clean.startsWith("/sales/invoice-stickers") ||
+      clean.startsWith("/sales/coupons") ||
+      clean.startsWith("/sales/reviews") ||
+      clean.startsWith("/sales/requests") ||
+      clean.startsWith("/sales/user-promos") ||
+      clean.startsWith("/sales/showcase") ||
+      clean.startsWith("/sales/shipping") ||
+      clean.startsWith("/sales/couriers") ||
+      clean.startsWith("/sales/courier-management") ||
+      clean.startsWith("/sales/delivery-offers") ||
+      clean.startsWith("/sales/payments-couriers") ||
+      clean.startsWith("/products") ||
+      (clean === "/sales/products-management" && !search.includes("tab=scanner"))
+    );
+  }, [location.pathname, location.search]);
+
   const visibleNavLabels = useMemo(() => {
-    const seg = location.pathname.replace(/\/+$/, "").split("/")[1] ?? "";
-    return SEGMENT_TO_NAV_LABELS[seg] ?? ["Overview", "Sales & Operations"];
-  }, [location.pathname]);
+    if (query.trim()) return null;
+    const clean = location.pathname.replace(/\/+$/, "");
+    if (clean === "/settings-ai" || clean.startsWith("/settings-ai") || clean === "/settings" || clean.startsWith("/settings") || clean.startsWith("/sales/payment-gateways")) {
+      return ["Settings & AI"];
+    }
+    if (isProductShippingPaymentsRoute) return ["Products, Shipping & Offers"];
+    const seg = clean.split("/")[1] ?? "";
+    if (seg === "sales") return ["Customer & Sales"];
+    return SEGMENT_TO_NAV_LABELS[seg] ?? ["Overview"];
+  }, [location.pathname, isProductShippingPaymentsRoute, query]);
 
   const isMasterPanelHome = location.pathname === "/";
 
@@ -259,8 +299,8 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
 
   return (
     <div
-      className="relative h-[100dvh] flex flex-col w-full bg-background overflow-hidden"
-      style={{ paddingTop: "env(safe-area-inset-top)" }}
+      className="admin-layout-root relative h-[100dvh] flex flex-col w-full bg-background overflow-clip"
+      style={{ paddingTop: "env(safe-area-inset-top)", width: "100dvw" }}
     >
       {/* Ambient gradient backdrop */}
       <div
@@ -486,13 +526,13 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
           </SheetContent>
         </Sheet>
 
-        <div className="flex-1 min-w-0 px-1 overflow-hidden">
-          <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/70 leading-none truncate">
+        <div className="flex-1 min-w-0 px-1.5 flex flex-col justify-center overflow-hidden">
+          <p className="text-[9px] uppercase font-semibold tracking-[0.14em] text-muted-foreground/75 leading-none truncate mb-0.5">
             {isRoot ? greeting : mobileSectionLabel}
           </p>
-          <p className="text-[15px] font-semibold text-foreground truncate leading-tight mt-0.5">
+          <h1 className="text-[13.5px] font-bold text-foreground truncate tracking-tight leading-tight">
             {isRoot ? `Hi, ${firstName}` : pageMeta.title}
-          </p>
+          </h1>
         </div>
 
         <button

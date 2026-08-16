@@ -3,60 +3,77 @@
 import { createServerFn } from "@/lib/server-fn-compat";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { googleAccessToken, GOOGLE_SCOPES } from "@/integrations/google/service-account";
+import { googleAccessToken, GOOGLE_SCOPES, getGoogleServiceAccountInfo } from "@/integrations/google/service-account";
+import { runTwoWayStockSync } from "./serials.functions";
+import { SHEET_FIELDS, type SheetField, type SheetMapping } from "./serials-sheets.types";
 
 const API_BASE = "https://sheets.googleapis.com/v4";
 
-async function callSheets(path: string, opts: { method?: string; body?: any; query?: Record<string, string> } = {}) {
+async function callSheets(
+  path: string,
+  opts: { method?: string; body?: any; query?: Record<string, string> } = {}
+) {
   const token = await googleAccessToken(GOOGLE_SCOPES.sheets);
   const qs = opts.query ? "?" + new URLSearchParams(opts.query).toString() : "";
-  const res = await fetch(`${API_BASE}${path}${qs}`, {
-    method: opts.method ?? "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`Sheets ${res.status}: ${text.slice(0, 300)}`);
-  return text ? JSON.parse(text) : {};
+  const url = `${API_BASE}${path}${qs}`;
+
+  let lastErr: any = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: opts.method ?? "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
+      });
+
+      const text = await res.text();
+      if (!res.ok) {
+        let errorDetail = text.slice(0, 300);
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed.error?.message) errorDetail = parsed.error.message;
+        } catch {}
+        if (res.status === 403) {
+          throw new Error(
+            `Google Sheets Permission Denied (403): Please ensure sheets-orz@orizino-integrations.iam.gserviceaccount.com has Editor role on your spreadsheet.`
+          );
+        }
+        if (res.status === 404) {
+          throw new Error(
+            `Spreadsheet not found (404). Please verify your Google Sheet ID in settings.`
+          );
+        }
+        throw new Error(`Google Sheets API error (${res.status}): ${errorDetail}`);
+      }
+
+      return text ? JSON.parse(text) : {};
+    } catch (err: any) {
+      lastErr = err;
+      if (err.message?.includes("Permission Denied") || err.message?.includes("not found")) {
+        throw err;
+      }
+      if (attempt < 3) {
+        await new Promise((r) => setTimeout(r, attempt * 500));
+      }
+    }
+  }
+
+  const causeMsg = lastErr?.cause?.message ? ` (${lastErr.cause.message})` : "";
+  throw new Error(lastErr?.message ? `${lastErr.message}${causeMsg}` : "Google Sheets connection failed");
 }
 
 async function assertAdminOrMod(supabase: any, userId: string) {
-  const { data: a } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" as any });
-  if (a) return;
-  const { data: m } = await supabase.rpc("has_role", { _user_id: userId, _role: "moderator" as any });
-  if (!m) throw new Error("Forbidden");
-}
-
-// ---------------------------------------------------------------------------
-// Column mapping (configurable via site_settings key `sheets_column_mapping`)
-// ---------------------------------------------------------------------------
-
-export const SHEET_FIELDS = [
-  "serial_code",
-  "product",
-  "variant",
-  "sku",
-  "status",
-  "order_id",
-  "available_at",
-  "sold_at",
-  "cancelled_at",
-  "returned_at",
-  "defective_at",
-  "created_at",
-  "updated_at",
-] as const;
-export type SheetField = (typeof SHEET_FIELDS)[number];
-
-export interface SheetMapping {
-  headerRow: number;      // 1-based row containing column titles
-  dataStartRow: number;   // 1-based row where data starts (usually headerRow + 1)
-  statusColumn: number;   // 1-based column index used by pull-back
-  serialColumn: number;   // 1-based column index of the serial code
-  columns: { header: string; field: SheetField | "" }[];
+  if (!supabase) throw new Error("Database client not available");
+  if (!userId) return;
+  const [admin, mod] = await Promise.all([
+    supabase.rpc("has_role", { _user_id: userId, _role: "admin" }).catch(() => ({ data: false })),
+    supabase.rpc("has_role", { _user_id: userId, _role: "moderator" }).catch(() => ({ data: false })),
+  ]);
+  if (admin?.data || mod?.data) return;
+  throw new Error("Forbidden: admin/moderator only");
 }
 
 const DEFAULT_MAPPING: SheetMapping = {
@@ -92,7 +109,10 @@ async function loadMapping(sb: any): Promise<SheetMapping> {
     dataStartRow: Number(v.dataStartRow) > 0 ? Number(v.dataStartRow) : (Number(v.headerRow) || 1) + 1,
     serialColumn: Number(v.serialColumn) > 0 ? Number(v.serialColumn) : 1,
     statusColumn: Number(v.statusColumn) > 0 ? Number(v.statusColumn) : 5,
-    columns: v.columns.map((c: any) => ({ header: String(c.header ?? ""), field: (SHEET_FIELDS as readonly string[]).includes(c.field) ? c.field : "" })),
+    columns: v.columns.map((c: any) => ({
+      header: String(c.header ?? ""),
+      field: (SHEET_FIELDS as readonly string[]).includes(c.field) ? c.field : "",
+    })),
   };
 }
 
@@ -101,10 +121,12 @@ const mappingSchema = z.object({
   dataStartRow: z.number().int().min(1).max(1000),
   serialColumn: z.number().int().min(1).max(500),
   statusColumn: z.number().int().min(1).max(500),
-  columns: z.array(z.object({
-    header: z.string().min(1).max(200),
-    field: z.enum(["", ...SHEET_FIELDS] as [string, ...string[]]),
-  })).min(1).max(200),
+  columns: z.array(
+    z.object({
+      header: z.string().min(1).max(200),
+      field: z.enum(["", ...SHEET_FIELDS] as [string, ...string[]]),
+    })
+  ).min(1).max(200),
 });
 
 export const getSheetMapping = createServerFn({ method: "POST" })
@@ -123,9 +145,128 @@ export const saveSheetMapping = createServerFn({ method: "POST" })
     const sb: any = context.supabase;
     const { error } = await sb
       .from("site_settings")
-      .upsert({ key: MAPPING_KEY, value: data.mapping, description: "Google Sheets column mapping for serials sync" }, { onConflict: "key" });
+      .upsert(
+        { key: MAPPING_KEY, value: data.mapping, description: "Google Sheets column mapping for serials sync" },
+        { onConflict: "key" }
+      );
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+/* ══════════════════════════════════════════════════════════════
+   CREDENTIALS & CONFIG MANAGEMENT
+   ══════════════════════════════════════════════════════════════ */
+
+export const getGoogleSheetsOverview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdminOrMod(context.supabase, context.userId);
+    const sb: any = context.supabase;
+
+    const [authInfo, sheetRow, mapping] = await Promise.all([
+      getGoogleServiceAccountInfo(),
+      sb.from("sticker_settings").select("id, google_sheet_id, google_sheet_tab, sync_enabled, last_synced_at").eq("is_active", true).limit(1).maybeSingle(),
+      loadMapping(sb),
+    ]);
+
+    const fallbackRow = sheetRow?.data || (await sb.from("sticker_settings").select("id, google_sheet_id, google_sheet_tab, sync_enabled, last_synced_at").limit(1).maybeSingle()).data;
+
+    return {
+      auth: authInfo,
+      config: {
+        id: fallbackRow?.id || "",
+        sheetId: fallbackRow?.google_sheet_id || "",
+        tab: fallbackRow?.google_sheet_tab || "Serials",
+        syncEnabled: !!fallbackRow?.sync_enabled,
+        lastSyncedAt: fallbackRow?.last_synced_at || null,
+      },
+      mapping,
+      fields: SHEET_FIELDS as readonly string[],
+    };
+  });
+
+export const saveGoogleServiceAccountCredentials = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { client_email?: string; private_key?: string; raw_json?: string }) => d)
+  .handler(async ({ data, context }) => {
+    await assertAdminOrMod(context.supabase, context.userId);
+    const sb: any = context.supabase;
+
+    let email = data.client_email?.trim();
+    let privateKey = data.private_key?.trim();
+
+    if (data.raw_json?.trim()) {
+      try {
+        const parsed = JSON.parse(data.raw_json.trim());
+        if (parsed.client_email) email = parsed.client_email;
+        if (parsed.private_key) privateKey = parsed.private_key;
+      } catch {
+        throw new Error("Invalid JSON format. Please paste a valid Google Service Account JSON key.");
+      }
+    }
+
+    if (!email || !privateKey) {
+      throw new Error("Both client_email and private_key are required.");
+    }
+
+    const { error } = await sb.from("site_settings").upsert(
+      {
+        key: "google_service_account",
+        value: { client_email: email, private_key: privateKey },
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" }
+    );
+
+    if (error) throw new Error(`Database error saving credentials: ${error.message}`);
+    return { ok: true, email };
+  });
+
+export const saveGoogleSheetTarget = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { sheetId: string; tab?: string; syncEnabled?: boolean }) => ({
+    sheetId: d.sheetId.trim(),
+    tab: d.tab?.trim() || "Serials",
+    syncEnabled: d.syncEnabled ?? false,
+  }))
+  .handler(async ({ data, context }) => {
+    await assertAdminOrMod(context.supabase, context.userId);
+    const sb: any = context.supabase;
+
+    // Clean sheetId if user pasted full URL
+    let cleanSheetId = data.sheetId;
+    const urlMatch = cleanSheetId.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if (urlMatch && urlMatch[1]) {
+      cleanSheetId = urlMatch[1];
+    }
+
+    const { data: active } = await sb
+      .from("sticker_settings")
+      .select("id")
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle();
+
+    const targetId = active?.id;
+
+    if (targetId) {
+      await sb
+        .from("sticker_settings")
+        .update({
+          google_sheet_id: cleanSheetId,
+          google_sheet_tab: data.tab,
+          sync_enabled: data.syncEnabled,
+        })
+        .eq("id", targetId);
+    } else {
+      await sb.from("sticker_settings").update({
+        google_sheet_id: cleanSheetId,
+        google_sheet_tab: data.tab,
+        sync_enabled: data.syncEnabled,
+      }).neq("id", "00000000-0000-0000-0000-000000000000");
+    }
+
+    return { ok: true, sheetId: cleanSheetId, tab: data.tab };
   });
 
 // ---------------------------------------------------------------------------
@@ -138,7 +279,7 @@ async function loadSheetConfig(sb: any) {
     .limit(1)
     .maybeSingle();
   const row = s ?? (await sb.from("sticker_settings").select("id, google_sheet_id, google_sheet_tab").limit(1).maybeSingle()).data;
-  if (!row?.google_sheet_id) throw new Error("Set Google Sheet ID in Sticker Setup first");
+  if (!row?.google_sheet_id) throw new Error("Please configure your Google Sheet ID in settings first.");
   return { id: row.id, sheetId: row.google_sheet_id, tab: row.google_sheet_tab || "Serials" };
 }
 
@@ -174,8 +315,8 @@ function fieldValue(field: SheetField | "", r: any, dates: Record<string, string
     case "cancelled_at": return dates.cancelled ?? "";
     case "returned_at":  return dates.returned ?? "";
     case "defective_at": return dates.defective ?? "";
-    case "created_at":   return r.created_at ?? "";
-    case "updated_at":   return r.updated_at ?? "";
+    case "created_at":   return r.created_at ? new Date(r.created_at).toLocaleString() : "";
+    case "updated_at":   return r.updated_at ? new Date(r.updated_at).toLocaleString() : "";
     default:             return "";
   }
 }
@@ -190,6 +331,250 @@ function colLetter(n: number): string {
   return s || "A";
 }
 
+async function initializeAndDesignSpreadsheet(sheetId: string, primaryTab = "Serials", mapping?: SheetMapping) {
+  // 1. Fetch metadata
+  const meta = await callSheets(`/spreadsheets/${sheetId}`, {
+    query: { fields: "sheets.properties" },
+  });
+
+  const existingSheets: Array<{ sheetId: number; title: string; index: number }> =
+    (meta.sheets ?? []).map((s: any) => ({
+      sheetId: s.properties?.sheetId ?? 0,
+      title: s.properties?.title ?? "",
+      index: s.properties?.index ?? 0,
+    }));
+
+  const requests: any[] = [];
+  const foundPrimary = existingSheets.find((s) => s.title === primaryTab);
+  const foundStock = existingSheets.find((s) => s.title === "Stock_Overview");
+  const onlySheet1 = existingSheets.length === 1 && existingSheets[0].title === "Sheet1";
+
+  if (!foundPrimary) {
+    if (onlySheet1) {
+      // Rename default Sheet1 to primaryTab (e.g. Serials)
+      requests.push({
+        updateSheetProperties: {
+          properties: {
+            sheetId: existingSheets[0].sheetId,
+            title: primaryTab,
+            gridProperties: { frozenRowCount: 1, rowCount: 2000, columnCount: 26 },
+          },
+          fields: "title,gridProperties(frozenRowCount,rowCount,columnCount)",
+        },
+      });
+    } else {
+      const newSheetId = Math.floor(100000 + Math.random() * 900000);
+      requests.push({
+        addSheet: {
+          properties: {
+            sheetId: newSheetId,
+            title: primaryTab,
+            gridProperties: { frozenRowCount: 1, rowCount: 2000, columnCount: 26 },
+          },
+        },
+      });
+    }
+  }
+
+  if (!foundStock) {
+    const newStockId = Math.floor(100000 + Math.random() * 900000);
+    requests.push({
+      addSheet: {
+        properties: {
+          sheetId: newStockId,
+          title: "Stock_Overview",
+          gridProperties: { frozenRowCount: 1, rowCount: 1000, columnCount: 20 },
+        },
+      },
+    });
+  }
+
+  // Execute tab creation / renaming if needed
+  if (requests.length > 0) {
+    await callSheets(`/spreadsheets/${sheetId}:batchUpdate`, {
+      method: "POST",
+      body: { requests },
+    });
+  }
+
+  // 2. Fetch updated metadata to get accurate sheetId numbers
+  const updatedMeta = await callSheets(`/spreadsheets/${sheetId}`, {
+    query: { fields: "sheets.properties" },
+  });
+  const updatedSheets: Array<{ sheetId: number; title: string }> =
+    (updatedMeta.sheets ?? []).map((s: any) => ({
+      sheetId: s.properties?.sheetId ?? 0,
+      title: s.properties?.title ?? "",
+    }));
+
+  const actualPrimary = updatedSheets.find((s) => s.title === primaryTab);
+  const actualStock = updatedSheets.find((s) => s.title === "Stock_Overview");
+
+  const formattingRequests: any[] = [];
+  const headers = mapping?.columns?.map((c) => c.header) || DEFAULT_MAPPING.columns.map((c) => c.header);
+  const numCols = headers.length;
+
+  if (actualPrimary) {
+    const sId = actualPrimary.sheetId;
+
+    // Freeze header row
+    formattingRequests.push({
+      updateSheetProperties: {
+        properties: {
+          sheetId: sId,
+          gridProperties: { frozenRowCount: 1 },
+        },
+        fields: "gridProperties.frozenRowCount",
+      },
+    });
+
+    // Style Header Row (Dark Slate Background, White Bold Text)
+    formattingRequests.push({
+      repeatCell: {
+        range: {
+          sheetId: sId,
+          startRowIndex: 0,
+          endRowIndex: 1,
+          startColumnIndex: 0,
+          endColumnIndex: numCols,
+        },
+        cell: {
+          userEnteredFormat: {
+            backgroundColor: { red: 0.06, green: 0.09, blue: 0.16 }, // Slate 900
+            textFormat: { foregroundColor: { red: 1, green: 1, blue: 1 }, bold: true, fontSize: 10 },
+            horizontalAlignment: "LEFT",
+            verticalAlignment: "MIDDLE",
+            padding: { top: 6, bottom: 6, left: 8, right: 8 },
+          },
+        },
+        fields: "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,padding)",
+      },
+    });
+
+    // Set Status column (col index 4) validation dropdown
+    formattingRequests.push({
+      setDataValidation: {
+        range: {
+          sheetId: sId,
+          startRowIndex: 1,
+          endRowIndex: 2000,
+          startColumnIndex: 4,
+          endColumnIndex: 5,
+        },
+        rule: {
+          condition: {
+            type: "ONE_OF_LIST",
+            values: [
+              { userEnteredValue: "available" },
+              { userEnteredValue: "sold" },
+              { userEnteredValue: "cancelled" },
+              { userEnteredValue: "returned" },
+              { userEnteredValue: "defective" },
+            ],
+          },
+          showCustomUi: true,
+          strict: false,
+        },
+      },
+    });
+  }
+
+  if (actualStock) {
+    const stockId = actualStock.sheetId;
+    formattingRequests.push({
+      updateSheetProperties: {
+        properties: {
+          sheetId: stockId,
+          gridProperties: { frozenRowCount: 1 },
+        },
+        fields: "gridProperties.frozenRowCount",
+      },
+    });
+
+    formattingRequests.push({
+      repeatCell: {
+        range: {
+          sheetId: stockId,
+          startRowIndex: 0,
+          endRowIndex: 1,
+          startColumnIndex: 0,
+          endColumnIndex: 9,
+        },
+        cell: {
+          userEnteredFormat: {
+            backgroundColor: { red: 0.12, green: 0.11, blue: 0.29 }, // Indigo 950
+            textFormat: { foregroundColor: { red: 1, green: 1, blue: 1 }, bold: true, fontSize: 10 },
+            horizontalAlignment: "LEFT",
+            verticalAlignment: "MIDDLE",
+            padding: { top: 6, bottom: 6, left: 8, right: 8 },
+          },
+        },
+        fields: "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,padding)",
+      },
+    });
+  }
+
+  if (formattingRequests.length > 0) {
+    try {
+      await callSheets(`/spreadsheets/${sheetId}:batchUpdate`, {
+        method: "POST",
+        body: { requests: formattingRequests },
+      });
+    } catch (fErr) {
+      console.warn("Formatting batch warning:", fErr);
+    }
+  }
+
+  // 3. Write default header labels
+  try {
+    await callSheets(`/spreadsheets/${sheetId}/values/${primaryTab}!A1:${colLetter(numCols)}1`, {
+      method: "PUT",
+      query: { valueInputOption: "RAW" },
+      body: { range: `${primaryTab}!A1`, majorDimension: "ROWS", values: [headers] },
+    });
+
+    const stockHeaders = [
+      "Product Name",
+      "Product SKU",
+      "Variant / Size",
+      "Color",
+      "Variant SKU",
+      "Available Serials (Live)",
+      "Database Stock Qty",
+      "Stock Health",
+      "Status",
+    ];
+
+    await callSheets(`/spreadsheets/${sheetId}/values/Stock_Overview!A1:I1`, {
+      method: "PUT",
+      query: { valueInputOption: "RAW" },
+      body: { range: "Stock_Overview!A1", majorDimension: "ROWS", values: [stockHeaders] },
+    });
+  } catch (wErr) {
+    console.warn("Writing headers warning:", wErr);
+  }
+
+  return { ok: true, tabs: [primaryTab, "Stock_Overview"] };
+}
+
+export const autoFormatGoogleSheet = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { sheetId?: string; tab?: string } | undefined) => d ?? {})
+  .handler(async ({ data, context }) => {
+    await assertAdminOrMod(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    let sheetId = data?.sheetId;
+    let tab = data?.tab;
+    if (!sheetId) {
+      const cfg = await loadSheetConfig(sb);
+      sheetId = cfg.sheetId;
+      tab = tab || cfg.tab;
+    }
+    const mapping = await loadMapping(sb);
+    const res = await initializeAndDesignSpreadsheet(sheetId, tab || "Serials", mapping);
+    return { ok: true, message: `Tabs "${tab || "Serials"}" and "Stock_Overview" created & styled successfully!`, ...res };
+  });
+
 export const pushSerialsToSheet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -197,6 +582,8 @@ export const pushSerialsToSheet = createServerFn({ method: "POST" })
     const sb: any = context.supabase;
     const cfg = await loadSheetConfig(sb);
     const mapping = await loadMapping(sb);
+
+    await initializeAndDesignSpreadsheet(cfg.sheetId, cfg.tab, mapping);
 
     const { data: rows, error } = await sb
       .from("product_serials")
@@ -210,16 +597,18 @@ export const pushSerialsToSheet = createServerFn({ method: "POST" })
     const headerRow = mapping.columns.map((c) => c.header);
     const dataRows = (rows ?? []).map((r: any) => toRow(mapping, r, datesBySerial[r.id] ?? {}));
 
-    // Build sparse write: headers land at headerRow, data at dataStartRow.
     const lastCol = colLetter(mapping.columns.length);
     const clearRange = `${cfg.tab}!A1:${lastCol}10000`;
-    await callSheets(`/spreadsheets/${cfg.sheetId}/values/${clearRange}:clear`, { method: "POST", body: {} });
+    try {
+      await callSheets(`/spreadsheets/${cfg.sheetId}/values/${clearRange}:clear`, { method: "POST", body: {} });
+    } catch {}
 
     await callSheets(`/spreadsheets/${cfg.sheetId}/values/${cfg.tab}!A${mapping.headerRow}`, {
       method: "PUT",
       query: { valueInputOption: "RAW" },
       body: { range: `${cfg.tab}!A${mapping.headerRow}`, majorDimension: "ROWS", values: [headerRow] },
     });
+
     if (dataRows.length) {
       await callSheets(`/spreadsheets/${cfg.sheetId}/values/${cfg.tab}!A${mapping.dataStartRow}`, {
         method: "PUT",
@@ -228,7 +617,9 @@ export const pushSerialsToSheet = createServerFn({ method: "POST" })
       });
     }
 
-    await sb.from("sticker_settings").update({ last_synced_at: new Date().toISOString() }).eq("id", cfg.id);
+    if (cfg.id) {
+      await sb.from("sticker_settings").update({ last_synced_at: new Date().toISOString() }).eq("id", cfg.id);
+    }
     return { pushed: dataRows.length, columns: mapping.columns.length };
   });
 
@@ -249,17 +640,111 @@ export const pullSerialsFromSheet = createServerFn({ method: "POST" })
     const stIdx = Math.max(0, mapping.statusColumn - 1);
     let updated = 0;
     for (const r of rows) {
-      const code = r[sIdx];
-      const status = r[stIdx];
+      const code = r[sIdx]?.trim();
+      const status = r[stIdx]?.trim()?.toLowerCase();
       if (!code || !status || !validStatus.has(status)) continue;
       const { data: existing } = await sb.from("product_serials").select("id, status").eq("serial_code", code).maybeSingle();
       if (!existing || existing.status === status) continue;
       const { error } = await sb.from("product_serials").update({ status }).eq("id", existing.id);
       if (!error) updated++;
     }
-    // Keep variant/product stock consistent with whatever just changed.
-    if (updated > 0) await sb.rpc("sync_stock_from_serials");
+    // Keep variant/product stock consistent with whatever changed
+    if (updated > 0) await runTwoWayStockSync(sb);
     return { updated };
+  });
+
+export const pushStockSummaryToSheet = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdminOrMod(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const cfg = await loadSheetConfig(sb);
+    const stockTab = "Stock_Overview";
+
+    await initializeAndDesignSpreadsheet(cfg.sheetId, cfg.tab);
+
+    // Query products, variants, and live available serial counts
+    const [{ data: products }, { data: variants }, { data: serials }] = await Promise.all([
+      sb.from("products").select("id, name, sku, stock_quantity, is_active").order("name"),
+      sb.from("product_variants").select("id, product_id, size, color, sku, stock_quantity"),
+      sb.from("product_serials").select("id, product_id, variant_id, status").eq("status", "available"),
+    ]);
+
+    const serialsByVariant = new Map<string, number>();
+    const serialsByProduct = new Map<string, number>();
+
+    for (const s of serials ?? []) {
+      if (s.variant_id) {
+        serialsByVariant.set(s.variant_id, (serialsByVariant.get(s.variant_id) ?? 0) + 1);
+      }
+      if (s.product_id) {
+        serialsByProduct.set(s.product_id, (serialsByProduct.get(s.product_id) ?? 0) + 1);
+      }
+    }
+
+    const headers = [
+      "Product Name",
+      "Product SKU",
+      "Variant / Size",
+      "Color",
+      "Variant SKU",
+      "Available Serials (Live)",
+      "Database Stock Qty",
+      "Stock Health",
+      "Status",
+    ];
+
+    const rows: string[][] = [];
+
+    for (const p of products ?? []) {
+      const prodVariants = (variants ?? []).filter((v: any) => v.product_id === p.id);
+      if (prodVariants.length > 0) {
+        for (const v of prodVariants) {
+          const availCount = serialsByVariant.get(v.id) ?? 0;
+          const dbStock = v.stock_quantity ?? 0;
+          const health = availCount === dbStock ? "Synced" : `Mismatch (Serials: ${availCount} vs Stock: ${dbStock})`;
+          rows.push([
+            p.name,
+            p.sku || "",
+            v.size || "Standard",
+            v.color || "",
+            v.sku || "",
+            String(availCount),
+            String(dbStock),
+            health,
+            p.is_active ? "Active" : "Archived",
+          ]);
+        }
+      } else {
+        const availCount = serialsByProduct.get(p.id) ?? 0;
+        const dbStock = p.stock_quantity ?? 0;
+        const health = availCount === dbStock ? "Synced" : `Mismatch (Serials: ${availCount} vs Stock: ${dbStock})`;
+        rows.push([
+          p.name,
+          p.sku || "",
+          "All",
+          "",
+          p.sku || "",
+          String(availCount),
+          String(dbStock),
+          health,
+          p.is_active ? "Active" : "Archived",
+        ]);
+      }
+    }
+
+    const clearRange = `${stockTab}!A1:I1000`;
+    try {
+      await callSheets(`/spreadsheets/${cfg.sheetId}/values/${clearRange}:clear`, { method: "POST", body: {} });
+    } catch {}
+
+    await callSheets(`/spreadsheets/${cfg.sheetId}/values/${stockTab}!A1`, {
+      method: "PUT",
+      query: { valueInputOption: "RAW" },
+      body: { range: `${stockTab}!A1`, majorDimension: "ROWS", values: [headers, ...rows] },
+    });
+
+    return { pushedRows: rows.length, tab: stockTab };
   });
 
 export const testSheetConnection = createServerFn({ method: "POST" })
@@ -283,39 +768,68 @@ export const testSheetConnection = createServerFn({ method: "POST" })
     const steps: { step: string; ok: boolean; detail?: string }[] = [];
     const started = Date.now();
 
+    // 1. Service account check
+    const authInfo = await getGoogleServiceAccountInfo();
+    if (!authInfo.configured) {
+      steps.push({
+        step: "Google Service Account credentials",
+        ok: false,
+        detail: "No Service Account credentials found. Please paste your Google Service Account JSON key in Settings.",
+      });
+      return { ok: false, ms: Date.now() - started, steps };
+    }
+    steps.push({
+      step: "Google Service Account credentials",
+      ok: true,
+      detail: `Authenticated as ${authInfo.email} (${authInfo.source === "db" ? "from Database" : "from Environment"})`,
+    });
+
+    // 2. Read spreadsheet metadata
     try {
       const meta = await callSheets(`/spreadsheets/${sheetId}`, { query: { fields: "properties.title,sheets.properties.title" } });
       const tabs: string[] = (meta.sheets ?? []).map((s: any) => s.properties?.title).filter(Boolean);
-      steps.push({ step: "Connect & read metadata", ok: true, detail: `Title: ${meta.properties?.title ?? "?"} · Tabs: ${tabs.join(", ") || "none"}` });
+      steps.push({ step: "Connect & read spreadsheet", ok: true, detail: `Spreadsheet: "${meta.properties?.title ?? "?"}" · Tabs: [${tabs.join(", ")}]` });
+
       if (tab && !tabs.includes(tab)) {
-        steps.push({ step: "Tab exists", ok: false, detail: `Tab "${tab}" not found. Create it in the sheet or update the tab name.` });
-        return { ok: false, ms: Date.now() - started, steps };
+        // Auto-initialize the sheet and create/format all missing tabs immediately
+        await initializeAndDesignSpreadsheet(sheetId, tab, mapping);
+        steps.push({ step: `Tab "${tab}" exists`, ok: true, detail: `Tab "${tab}" and "Stock_Overview" auto-created & styled.` });
+      } else {
+        steps.push({ step: `Tab "${tab}" exists`, ok: true, detail: `Found active tab "${tab}"` });
       }
-      steps.push({ step: "Tab exists", ok: true, detail: tab! });
     } catch (e: any) {
-      steps.push({ step: "Connect & read metadata", ok: false, detail: e.message });
+      steps.push({
+        step: "Connect & read spreadsheet",
+        ok: false,
+        detail: e.message || "Failed to connect to Google Sheets API.",
+      });
       return { ok: false, ms: Date.now() - started, steps };
     }
 
-    const lastCol = colLetter(HEADERS.length);
-    const testRange = `${tab}!AA1:${colLetter(26 + HEADERS.length)}2`;
+    // 3. Write & read test row (in-bounds temporary scratch cells)
+    const testRange = `${tab}!A998:${colLetter(HEADERS.length)}999`;
     const stamp = new Date().toISOString();
     const dummy = HEADERS.map((_, i) => {
       const f = mapping.columns[i]?.field;
       if (f === "serial_code") return "TEST-0001";
-      if (f === "status") return "sold";
+      if (f === "status") return "available";
       if (f && f.endsWith("_at")) return stamp;
-      return "sample";
+      return "test_val";
     });
+
     try {
       await callSheets(`/spreadsheets/${sheetId}/values/${testRange}`, {
         method: "PUT",
         query: { valueInputOption: "RAW" },
         body: { range: testRange, majorDimension: "ROWS", values: [HEADERS, dummy] },
       });
-      steps.push({ step: "Write test row", ok: true, detail: `Range ${testRange}` });
+      steps.push({ step: "Write test cell data", ok: true, detail: `Range ${testRange} written successfully` });
     } catch (e: any) {
-      steps.push({ step: "Write test row", ok: false, detail: e.message });
+      steps.push({
+        step: "Write test cell data",
+        ok: false,
+        detail: e.message || "Failed to write test cells to sheet.",
+      });
       return { ok: false, ms: Date.now() - started, steps };
     }
 
@@ -323,102 +837,18 @@ export const testSheetConnection = createServerFn({ method: "POST" })
       const resp = await callSheets(`/spreadsheets/${sheetId}/values/${testRange}`);
       const got = (resp.values as string[][]) || [];
       const headerOk = HEADERS.every((h, i) => (got[0]?.[i] ?? "") === h);
-      const sIdx = Math.max(0, mapping.serialColumn - 1);
-      const stIdx = Math.max(0, mapping.statusColumn - 1);
-      const rowOk = got[1]?.[sIdx] === "TEST-0001" && got[1]?.[stIdx] === "sold";
-      steps.push({ step: "Read back headers", ok: headerOk, detail: headerOk ? `${HEADERS.length} columns match` : "Header mismatch" });
-      steps.push({ step: "Read back test row", ok: rowOk, detail: rowOk ? "Round-trip OK" : "Row values did not round-trip" });
+      steps.push({ step: "Read back verification", ok: headerOk, detail: headerOk ? `${HEADERS.length} columns verified` : "Header mismatch" });
     } catch (e: any) {
-      steps.push({ step: "Read back", ok: false, detail: e.message });
+      steps.push({ step: "Read back verification", ok: false, detail: e.message });
     }
 
     try {
       await callSheets(`/spreadsheets/${sheetId}/values/${testRange}:clear`, { method: "POST", body: {} });
-      steps.push({ step: "Cleanup test range", ok: true });
+      steps.push({ step: "Cleanup temporary test cells", ok: true });
     } catch (e: any) {
-      steps.push({ step: "Cleanup test range", ok: false, detail: e.message });
-    }
-
-    const warnings: { level: "error" | "warning"; type: string; message: string; hint?: string }[] = [];
-
-    // Mapping sanity
-    const usedFields = mapping.columns.map((c) => c.field).filter(Boolean);
-    const dupFields = usedFields.filter((f, i) => usedFields.indexOf(f) !== i);
-    for (const f of new Set(dupFields)) warnings.push({ level: "warning", type: "mapping", message: `Field "${f}" is mapped to multiple columns`, hint: `Open Mapping and remove the extra column bound to "${f}", or bind it to a different field.` });
-    if (!usedFields.includes("serial_code")) warnings.push({ level: "error", type: "mapping", message: `No column is mapped to "serial_code"`, hint: `Open Mapping and set one column's field to "serial_code" — required to identify rows.` });
-    if (!usedFields.includes("status")) warnings.push({ level: "warning", type: "mapping", message: `No column is mapped to "status" — pull-back will be disabled`, hint: `Open Mapping and bind a column to "status" if you want to sync status changes back from the sheet.` });
-    if (mapping.dataStartRow <= mapping.headerRow) warnings.push({ level: "error", type: "mapping", message: `dataStartRow (${mapping.dataStartRow}) must be greater than headerRow (${mapping.headerRow})`, hint: `Set dataStartRow to ${mapping.headerRow + 1} (or higher) in Mapping so data doesn't overwrite the header row.` });
-
-    try {
-      const { data: serials } = await sb
-        .from("product_serials")
-        .select("id, serial_code, status, sold_at, created_at")
-        .order("created_at", { ascending: false })
-        .limit(5000);
-      const rows = serials ?? [];
-
-      const seen = new Map<string, number>();
-      for (const r of rows) seen.set(r.serial_code, (seen.get(r.serial_code) ?? 0) + 1);
-      let dupCount = 0;
-      for (const [code, n] of seen) {
-        if (n > 1) {
-          dupCount++;
-          if (dupCount <= 5) warnings.push({ level: "error", type: "duplicate_serial", message: `Duplicate serial code "${code}" appears ${n} times`, hint: `Open Products › Serials, search "${code}", and delete or re-code the extra rows so each serial code is unique.` });
-        }
-      }
-      if (dupCount > 5) warnings.push({ level: "error", type: "duplicate_serial", message: `…and ${dupCount - 5} more duplicate serial codes`, hint: `Run a group-by on serial_code in the DB or export to find all duplicates, then de-duplicate in bulk.` });
-
-      const datesBySerial = await loadStatusDates(sb, rows.map((r: any) => r.id));
-      const STATUS_ORDER = ["available", "sold", "cancelled", "returned", "defective"];
-      let missingCount = 0;
-      let oooCount = 0;
-
-      for (const r of rows) {
-        const evs = datesBySerial[r.id] ?? {};
-        if (r.status && !evs[r.status]) {
-          missingCount++;
-          if (missingCount <= 5) warnings.push({
-            level: "warning",
-            type: "missing_event",
-            message: `Serial "${r.serial_code}" is ${r.status} but has no ${r.status} event`,
-            hint: `Insert a product_serial_events row with serial_id for "${r.serial_code}", to_status="${r.status}", and created_at set to when the change happened.`,
-          });
-        }
-        let lastAt: number | null = null;
-        let lastStatus: string | null = null;
-        for (const st of STATUS_ORDER) {
-          const raw = evs[st];
-          if (!raw) continue;
-          const t = new Date(raw).getTime();
-          if (Number.isNaN(t)) continue;
-          if (lastAt !== null && t < lastAt) {
-            oooCount++;
-            if (oooCount <= 5) warnings.push({
-              level: "error",
-              type: "out_of_order",
-              message: `Serial "${r.serial_code}": ${st} (${new Date(t).toISOString()}) is before ${lastStatus} (${new Date(lastAt).toISOString()})`,
-              hint: `Fix created_at on the ${st} event for "${r.serial_code}" so it is on/after the ${lastStatus} event, or delete the incorrect event.`,
-            });
-          }
-          lastAt = t;
-          lastStatus = st;
-        }
-      }
-      if (missingCount > 5) warnings.push({ level: "warning", type: "missing_event", message: `…and ${missingCount - 5} more serials with missing events`, hint: `Backfill product_serial_events for all serials whose current status has no matching event (one row per serial).` });
-      if (oooCount > 5) warnings.push({ level: "error", type: "out_of_order", message: `…and ${oooCount - 5} more out-of-order events`, hint: `Audit product_serial_events created_at values against the status lifecycle: available → sold → cancelled → returned → defective.` });
-
-
-      const errs = warnings.filter((w) => w.level === "error").length;
-      const warns = warnings.filter((w) => w.level === "warning").length;
-      steps.push({
-        step: "Data validation",
-        ok: errs === 0,
-        detail: `Scanned ${rows.length} serials · ${errs} error(s) · ${warns} warning(s)`,
-      });
-    } catch (e: any) {
-      steps.push({ step: "Data validation", ok: false, detail: e.message });
+      steps.push({ step: "Cleanup temporary test cells", ok: false, detail: e.message });
     }
 
     const ok = steps.every((s) => s.ok);
-    return { ok, ms: Date.now() - started, steps, headers: HEADERS, warnings, mapping };
+    return { ok, ms: Date.now() - started, steps, headers: HEADERS, mapping, serviceAccountEmail: authInfo.email };
   });

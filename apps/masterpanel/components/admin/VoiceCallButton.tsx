@@ -7,6 +7,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { getRTCConfiguration } from "@/lib/ice-servers";
 import { CallRecorder, uploadCallRecording } from "@/lib/call-recorder";
+import { playRingtone, stopRingtone, playOutgoingDialTone, stopOutgoingDialTone, playCallConnectedSound, playCallEndedSound } from "@/lib/sounds";
+import { AudioWaveVisualizer } from "@/components/admin/AudioWaveVisualizer";
+
 // drive-backup is server-only; loaded dynamically to avoid SSR evaluation
 const syncRecordingToDrive = async (...args: Parameters<typeof import("@/lib/drive-backup.functions")["syncRecordingToDrive"]>) => {
   const mod = await import("@/lib/drive-backup.functions");
@@ -21,8 +24,8 @@ interface VoiceCallButtonProps {
 }
 
 /**
- * WebRTC voice call button for admin support.
- * Uses Supabase Realtime broadcast for signaling.
+ * WebRTC voice call button & live calling hub for admin support.
+ * Uses Supabase Realtime broadcast for two-way signaling.
  */
 const VoiceCallButton: React.FC<VoiceCallButtonProps> = ({
   conversationId,
@@ -30,7 +33,7 @@ const VoiceCallButton: React.FC<VoiceCallButtonProps> = ({
   adminId,
   disabled = false,
 }) => {
-  const [callState, setCallState] = useState<"idle" | "requesting" | "calling" | "connected" | "rejected">("idle");
+  const [callState, setCallState] = useState<"idle" | "incoming" | "requesting" | "calling" | "connected" | "rejected">("idle");
   const callStateRef = useRef(callState);
   callStateRef.current = callState;
   const [muted, setMuted] = useState(false);
@@ -56,11 +59,28 @@ const VoiceCallButton: React.FC<VoiceCallButtonProps> = ({
       config: { broadcast: { self: false } },
     });
 
+    channel.on("broadcast", { event: "call-request" }, ({ payload }) => {
+      if (payload.action === "incoming" && payload.from === userId) {
+        setCallState("incoming");
+        playRingtone();
+        setTimeout(() => {
+          if (callStateRef.current === "incoming") {
+            stopRingtone();
+            setCallState("idle");
+          }
+        }, 30000);
+      }
+    });
+
     channel.on("broadcast", { event: "call-response" }, async ({ payload }) => {
       if (payload.action === "accepted") {
-        // User accepted, start WebRTC
+        stopOutgoingDialTone();
+        stopRingtone();
         await initiateWebRTC();
       } else if (payload.action === "rejected") {
+        stopOutgoingDialTone();
+        stopRingtone();
+        playCallEndedSound();
         setCallState("rejected");
         if (callLogIdRef.current) {
           supabase.from("call_logs").update({ status: "rejected", ended_at: new Date().toISOString() }).eq("id", callLogIdRef.current).then(() => {});
@@ -90,6 +110,8 @@ const VoiceCallButton: React.FC<VoiceCallButtonProps> = ({
         } else {
           pendingCandidatesRef.current.push(payload.candidate);
         }
+      } else if (payload.type === "hangup") {
+        endCall();
       }
     });
 
@@ -97,10 +119,12 @@ const VoiceCallButton: React.FC<VoiceCallButtonProps> = ({
     channelRef.current = channel;
 
     return () => {
+      stopRingtone();
+      stopOutgoingDialTone();
       supabase.removeChannel(channel);
       endCall();
     };
-  }, [conversationId]);
+  }, [conversationId, userId]);
 
   const initiateWebRTC = async () => {
     try {
@@ -114,8 +138,6 @@ const VoiceCallButton: React.FC<VoiceCallButtonProps> = ({
       } catch (e) { console.warn("[admin call] recorder start failed", e); }
 
       const rtcConfig = await getRTCConfiguration();
-      console.log("[Admin Call] RTC config:", rtcConfig);
-
       const pc = new RTCPeerConnection(rtcConfig);
       peerRef.current = pc;
 
@@ -140,9 +162,13 @@ const VoiceCallButton: React.FC<VoiceCallButtonProps> = ({
 
       pc.oniceconnectionstatechange = () => {
         if (pc.iceConnectionState === "connected") {
+          stopOutgoingDialTone();
+          stopRingtone();
+          playCallConnectedSound();
           setCallState("connected");
-          timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
-          // Update call log to connected
+          if (!timerRef.current) {
+            timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
+          }
           if (callLogIdRef.current) {
             supabase.from("call_logs").update({ status: "connected" }).eq("id", callLogIdRef.current).then(() => {});
           }
@@ -164,12 +190,14 @@ const VoiceCallButton: React.FC<VoiceCallButtonProps> = ({
       setCallState("calling");
     } catch (err) {
       console.error("Failed to start WebRTC:", err);
+      stopOutgoingDialTone();
       setCallState("idle");
     }
   };
 
   const startCall = useCallback(async () => {
     setCallState("requesting");
+    playOutgoingDialTone();
 
     // Create call log entry
     const { data: logData } = await supabase.from("call_logs").insert({
@@ -180,7 +208,7 @@ const VoiceCallButton: React.FC<VoiceCallButtonProps> = ({
     }).select("id").single();
     if (logData) callLogIdRef.current = logData.id;
 
-    // Send call request to customer via broadcast (include log id so user can record + tag uploads)
+    // Send call request to customer via broadcast
     channelRef.current?.send({
       type: "broadcast",
       event: "call-request",
@@ -219,21 +247,44 @@ const VoiceCallButton: React.FC<VoiceCallButtonProps> = ({
     // Timeout after 30s
     setTimeout(() => {
       if (callStateRef.current === "requesting") {
+        stopOutgoingDialTone();
         setCallState("idle");
-        // Update log as missed
         if (callLogIdRef.current) {
           supabase.from("call_logs").update({ status: "missed", ended_at: new Date().toISOString() }).eq("id", callLogIdRef.current).then(() => {});
           callLogIdRef.current = null;
         }
       }
     }, 30000);
-  }, [conversationId, adminId, userId, callState]);
+  }, [conversationId, adminId, userId]);
+
+  const acceptIncomingCall = async () => {
+    stopRingtone();
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "call-response",
+      payload: { action: "accepted", from: adminId },
+    });
+    await initiateWebRTC();
+  };
+
+  const declineIncomingCall = () => {
+    stopRingtone();
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "call-response",
+      payload: { action: "rejected", from: adminId },
+    });
+    setCallState("idle");
+  };
 
   const endCall = useCallback(() => {
+    stopOutgoingDialTone();
+    stopRingtone();
+    playCallEndedSound();
+
     const logId = callLogIdRef.current;
     const finalStatus = callState === "connected" ? "completed" : callState === "rejected" ? "rejected" : "missed";
 
-    // Stop & upload recording (admin side), then trigger Drive sync
     const recorder = recorderRef.current;
     recorderRef.current = null;
     if (recorder && logId) {
@@ -288,12 +339,29 @@ const VoiceCallButton: React.FC<VoiceCallButtonProps> = ({
       <Button
         size="sm"
         variant="outline"
-        className="rounded-xl gap-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/20"
+        className="rounded-xl gap-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 font-semibold"
         onClick={startCall}
         disabled={disabled}
       >
-        <Phone className="w-4 h-4" /> Call
+        <Phone className="w-4 h-4" /> Call Customer
       </Button>
+    );
+  }
+
+  if (callState === "incoming") {
+    return (
+      <div className="flex items-center gap-2 p-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30">
+        <Badge variant="outline" className="text-xs text-emerald-600 dark:text-emerald-400 border-emerald-500/30 animate-pulse font-bold">
+          Customer Calling...
+        </Badge>
+        <AudioWaveVisualizer active color="bg-emerald-500" height={16} barCount={4} />
+        <Button size="sm" className="h-7 px-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs" onClick={acceptIncomingCall}>
+          <Phone className="w-3.5 h-3.5 mr-1" /> Answer
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10" onClick={declineIncomingCall}>
+          <PhoneOff className="w-3.5 h-3.5" />
+        </Button>
+      </div>
     );
   }
 
@@ -305,34 +373,43 @@ const VoiceCallButton: React.FC<VoiceCallButtonProps> = ({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-green-500/10 border border-green-500/20"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25"
         >
           {callState === "requesting" && (
-            <Badge variant="outline" className="text-xs text-amber-500 border-amber-500/30 animate-pulse">
-              Requesting...
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs text-amber-500 border-amber-500/30 animate-pulse font-bold">
+                Dialing...
+              </Badge>
+              <AudioWaveVisualizer active color="bg-amber-500" height={14} barCount={4} />
+            </div>
           )}
           {callState === "calling" && (
-            <Badge variant="outline" className="text-xs text-amber-500 border-amber-500/30 animate-pulse">
-              Ringing...
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs text-amber-500 border-amber-500/30 animate-pulse font-bold">
+                Ringing...
+              </Badge>
+              <AudioWaveVisualizer active color="bg-amber-500" height={14} barCount={4} />
+            </div>
           )}
           {callState === "rejected" && (
-            <Badge variant="outline" className="text-xs text-destructive border-destructive/30">
+            <Badge variant="outline" className="text-xs text-destructive border-destructive/30 font-bold">
               Declined
             </Badge>
           )}
           {callState === "connected" && (
-            <Badge variant="outline" className="text-xs text-green-500 border-green-500/30">
-              {formatDuration(duration)}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-mono font-bold">
+                {formatDuration(duration)}
+              </Badge>
+              <AudioWaveVisualizer stream={localStreamRef.current} active={!muted} color="bg-emerald-500" height={16} barCount={5} />
+            </div>
           )}
           {(callState === "calling" || callState === "connected") && (
-            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={toggleMute}>
-              {muted ? <MicOff className="w-3.5 h-3.5 text-destructive" /> : <Mic className="w-3.5 h-3.5 text-green-500" />}
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={toggleMute} title={muted ? "Unmute" : "Mute"}>
+              {muted ? <MicOff className="w-3.5 h-3.5 text-destructive" /> : <Mic className="w-3.5 h-3.5 text-emerald-600" />}
             </Button>
           )}
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={endCall}>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10" onClick={endCall} title="End Call">
             <PhoneOff className="w-3.5 h-3.5" />
           </Button>
         </motion.div>

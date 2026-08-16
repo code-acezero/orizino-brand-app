@@ -53,7 +53,7 @@ export default function AdminEmailCampaignEditor() {
   });
   const sendMut = useMutation({
     mutationFn: () => send({ data: { id } }),
-    onSuccess: (r) => { toast.success(`Sent to ${r.total}: ${r.sent} delivered, ${r.failed} failed`); qc.invalidateQueries({ queryKey: ["campaign", id] }); },
+    onSuccess: (r: any) => { toast.success(`Sent to ${r?.total || 0}: ${r?.sent || 0} delivered, ${r?.failed || 0} failed`); qc.invalidateQueries({ queryKey: ["campaign", id] }); },
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
 

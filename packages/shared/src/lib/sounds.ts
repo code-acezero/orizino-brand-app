@@ -77,6 +77,65 @@ export function stopRingtone() {
   if (ringtoneTimeout) { clearTimeout(ringtoneTimeout); ringtoneTimeout = null; }
 }
 
+let dialToneInterval: ReturnType<typeof setInterval> | null = null;
+
+/** Play outgoing call dial tone (dual-tone 440Hz + 480Hz beep for 1.2s every 3s) */
+export function playOutgoingDialTone() {
+  stopOutgoingDialTone();
+  const ctx = getCtx();
+
+  const playPulse = () => {
+    try {
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 1.1);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.2);
+      gain.connect(ctx.destination);
+
+      playTone(440, 1.2, ctx.currentTime, ctx, gain, "sine");
+      playTone(480, 1.2, ctx.currentTime, ctx, gain, "sine");
+    } catch {}
+  };
+
+  playPulse();
+  dialToneInterval = setInterval(playPulse, 3000);
+}
+
+export function stopOutgoingDialTone() {
+  if (dialToneInterval) {
+    clearInterval(dialToneInterval);
+    dialToneInterval = null;
+  }
+}
+
+/** Play a crisp ascending chime when a call connects */
+export function playCallConnectedSound() {
+  try {
+    const ctx = getCtx();
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.35);
+    gain.connect(ctx.destination);
+
+    playTone(587.33, 0.12, ctx.currentTime, ctx, gain, "sine"); // D5
+    playTone(880, 0.2, ctx.currentTime + 0.1, ctx, gain, "sine"); // A5
+  } catch {}
+}
+
+/** Play a subtle descending chime when a call ends */
+export function playCallEndedSound() {
+  try {
+    const ctx = getCtx();
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+    gain.connect(ctx.destination);
+
+    playTone(659.25, 0.12, ctx.currentTime, ctx, gain, "sine"); // E5
+    playTone(440, 0.22, ctx.currentTime + 0.12, ctx, gain, "sine"); // A4
+  } catch {}
+}
+
 /** Preview a sound style — respects user volume but bypasses enabled flag */
 export function previewNotificationSound(style?: NotificationSoundStyle) {
   playNotificationSoundRaw(style ?? getNotificationSoundStyle(), getNotificationSoundVolume());

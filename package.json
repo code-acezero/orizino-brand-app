@@ -7,6 +7,7 @@
     "packages/*"
   ],
   "scripts": {
+    "dev": "npx --yes concurrently -k -n \"brandhome,storefront,masterpanel,orderops\" -c \"cyan,green,yellow,magenta\" \"npm run dev:brandhome\" \"npm run dev:storefront\" \"npm run dev:masterpanel\" \"npm run dev:orderops\"",
     "dev:brandhome": "npm run dev --workspace=apps/brandhome",
     "dev:storefront": "npm run dev --workspace=apps/storefront",
     "dev:masterpanel": "npm run dev --workspace=apps/masterpanel",

@@ -47,7 +47,7 @@ import {
 } from "lucide-react";
 import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
 import { toast } from "@/lib/app-toast";
-import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
+import { useRegisterUniversalSave, useUndoRedoState } from "@/contexts/UniversalSaveContext";
 
 export type LayoutStyle = "dark-luxury" | "glass" | "neon" | "minimal" | "magazine" | "glass-minimal";
 export type GalleryStyle =
@@ -1198,7 +1198,8 @@ export default function ProductDetailLayoutPanel() {
     },
   });
 
-  const [cfg, setCfg] = useState<ProductPageConfig>(DEFAULT_CONFIG);
+  const [cfg, setCfg, { undo, redo, canUndo, canRedo, reject, canReject, setInitial }] =
+    useUndoRedoState<ProductPageConfig>(DEFAULT_CONFIG);
 
   useEffect(() => {
     if (layoutSettingsRow?.value) {
@@ -1211,7 +1212,7 @@ export default function ProductDetailLayoutPanel() {
         }
       }
       if (typeof val === "object" && val !== null) {
-        setCfg({
+        setInitial({
           layout: (val.layout || "glass") as LayoutStyle,
           gallery: (val.gallery || "default") as GalleryStyle,
           show_sticky_tray: val.show_sticky_tray ?? true,
@@ -1222,7 +1223,7 @@ export default function ProductDetailLayoutPanel() {
         });
       }
     }
-  }, [layoutSettingsRow]);
+  }, [layoutSettingsRow, setInitial]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -1256,13 +1257,17 @@ export default function ProductDetailLayoutPanel() {
         await saveMutation.mutateAsync();
       },
       isSaving: saveMutation.isPending,
+      onUndo: undo,
+      canUndo: canUndo,
+      onRedo: redo,
+      canRedo: canRedo,
       onReject: () => {
-        setCfg(DEFAULT_CONFIG);
-        toast.warning("Product layout reset to default");
+        reject();
+        toast.warning("Product layout changes reverted");
       },
-      canReject: true,
+      canReject: canReject,
     },
-    [cfg, saveMutation.isPending]
+    [cfg, saveMutation.isPending, canUndo, canRedo, canReject]
   );
 
   const activeLayoutObj = LAYOUT_STYLES.find((l) => l.id === cfg.layout) || LAYOUT_STYLES[1];

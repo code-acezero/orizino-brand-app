@@ -153,7 +153,7 @@ const HomePage: React.FC = () => {
   }, [activeCategory, newArrivals]);
 
   return (
-    <div className="min-h-screen relative w-full overflow-x-hidden m-0 p-0">
+    <div suppressHydrationWarning className="min-h-screen relative w-full overflow-x-hidden m-0 p-0">
       {/* Pull-to-refresh indicator */}
       {(pullDistance > 0 || refreshing) && (
         <div

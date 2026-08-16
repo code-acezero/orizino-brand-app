@@ -6,7 +6,7 @@ import {
   User, Phone, MapPin, Save, LogOut, ShoppingCart, Package, Star, Bell,
   Settings, ChevronRight, Camera, Home, Building2, MapPinned,
   CreditCard, CheckCircle2, Shield, Mail, Calendar, Award, Heart, PhoneCall,
-  Sparkles, ArrowUpRight, Trash2, ExternalLink
+  ArrowUpRight, Trash2, ExternalLink
 } from "lucide-react";
 import CallHistoryList from "@/components/CallHistoryList";
 import { supabase } from "@/integrations/supabase/client";
@@ -386,7 +386,7 @@ const ProfilePage: React.FC = () => {
                         <h2 className="text-lg font-bold text-foreground">Personal Information</h2>
                         <p className="text-xs text-muted-foreground mt-0.5">Keep your profile details up to date</p>
                       </div>
-                      <Sparkles className="w-4 h-4 text-primary/60" />
+                      <User className="w-4 h-4 text-muted-foreground" />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

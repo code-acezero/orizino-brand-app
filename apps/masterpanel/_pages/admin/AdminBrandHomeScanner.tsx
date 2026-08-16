@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/lib/app-toast";
-import { QrCode, Save, Sparkles, ShieldCheck, ScanLine, KeyRound, Cpu, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { QrCode, Save, ShieldCheck, ScanLine, KeyRound, Cpu, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { BrandHomeSubNav } from "@/components/admin/BrandHomeSubNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -95,7 +95,7 @@ export default function AdminBrandHomeScanner() {
         {/* Global Scanner Headers */}
         <div className="bg-card/60 border border-border/60 rounded-2xl p-6 mb-8 space-y-4">
           <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-500" /> Scanner Interface Header
+            <ScanLine className="w-4 h-4 text-amber-500" /> Scanner Interface Header
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>

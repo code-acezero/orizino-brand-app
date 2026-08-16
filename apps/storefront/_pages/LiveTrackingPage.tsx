@@ -20,7 +20,6 @@ import {
   User,
   Phone,
   FileText,
-  Sparkles,
   Calendar,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";

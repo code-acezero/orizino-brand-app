@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "@/lib/router-compat";
 import AdminRoute from "@/components/AdminRoute";
 import MasterPanelLayout from "@/components/admin/MasterPanelLayout";
@@ -96,12 +97,15 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/master-control": AdminMasterControl,
   "/master/profile": AdminProfile,
 
-  // Sales
+  // Sales & Products/Payments
   "/sales": SalesDashboard,
   "/sales/products-management": AdminProductsManagement,
+  "/sales/scanner": AdminProductsManagement,
   "/sales/products-hub": AdminProductsHub,
   "/sales/products": AdminProducts,
   "/sales/categories": AdminCategories,
+  "/products": AdminProductsManagement,
+  "/products-payments": AdminProductsManagement,
   "/sales/offline-orders": AdminOfflineOrders,
   "/sales/invoice-stickers": AdminInvoiceStickers,
   "/sales/coupons": AdminCoupons,
@@ -137,8 +141,9 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/affiliate": AffiliateDashboard,
   "/affiliate/overview": AffiliateHub,
 
-  // Brand
-  "/brand": SettingsAiDashboard,
+  // Brand (Public Contents & UI)
+  "/brand": BrandDashboard,
+  "/brand/home": AdminHome,
   "/brand/branding": AdminBranding,
   "/brand/appearance": AdminAppearance,
   "/brand/banners": AdminBanners,
@@ -150,7 +155,6 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/brand/track": AdminBrandHomeTrack,
   "/brand/scanner": AdminBrandHomeScanner,
   "/brand/scanner-info": AdminBrandHomeScanner,
-  "/brand/home": AdminHome,
   "/brand/showcase": AdminShowcase,
   "/brand/cms-pages": AdminCmsPages,
 
@@ -159,7 +163,7 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/system/db-health": AdminDbHealth,
   "/system/debug": AdminDebug,
   "/settings-ai": SettingsAiDashboard,
-  "/settings-ai/brand": SettingsAiDashboard,
+  "/settings-ai/brand": BrandDashboard,
   "/settings-ai/branding": AdminBranding,
   "/settings-ai/appearance": AdminAppearance,
   "/settings-ai/general": AdminSettings,
@@ -168,6 +172,9 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/settings-ai/call-settings": AdminCallSettings,
   "/settings-ai/telegram": AdminTelegram,
   "/settings-ai/redirects": AdminRedirects,
+  "/settings-ai/payment-gateways": AdminPaymentGateways,
+  "/settings-ai/payments": AdminPaymentGateways,
+  "/settings/payment-gateways": AdminPaymentGateways,
 
   // Team
   "/team": TeamDashboard,
@@ -197,10 +204,21 @@ export default function MasterPanelShell({ children }: { children?: React.ReactN
       <AdminRoute>
         <MasterPanelLayout>
           <React.Suspense fallback={null}>
-            {children ?? <PageComponent />}
+            {children ?? (
+              <motion.div
+                key={path}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.16, ease: "easeOut" }}
+                className="w-full"
+              >
+                <PageComponent />
+              </motion.div>
+            )}
           </React.Suspense>
         </MasterPanelLayout>
       </AdminRoute>
     </React.Suspense>
   );
 }
+// code:4ce0

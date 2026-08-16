@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "@/lib/router-compat";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -112,6 +112,21 @@ const CartPage: React.FC = () => {
 
   const [showCoupons, setShowCoupons] = useState(false);
   const [selectedShipping, setSelectedShipping] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("orizino_applied_coupon") || sessionStorage.getItem("orizino_applied_coupon");
+      if (stored && !couponCode && !appliedCoupon) {
+        setCouponCode(stored);
+      }
+    } catch {}
+
+    const handleCouponApplied = (e: any) => {
+      if (e?.detail) setCouponCode(e.detail);
+    };
+    window.addEventListener("coupon-applied", handleCouponApplied);
+    return () => window.removeEventListener("coupon-applied", handleCouponApplied);
+  }, []);
 
   const updateQty = useMutation({
     mutationFn: async ({ id, quantity }: { id: string; quantity: number }) => {

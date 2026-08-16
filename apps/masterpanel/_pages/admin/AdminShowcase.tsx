@@ -22,7 +22,8 @@ import { toast } from "@/lib/app-toast";
 import { Plus, Pencil, Trash2, Settings2, Layers, GripVertical, Copy, Link2, Palette, Wand2, Eye, Monitor, Smartphone, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Play, Pause, Image, FileText, LayoutGrid, Type, ArrowUp, ArrowDown, ArrowLeft, RotateCcw, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDragReorder } from "@/hooks/use-drag-reorder";
-import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
+import { useRegisterUniversalSave, useUndoRedoState } from "@/contexts/UniversalSaveContext";
+import MarqueeStripConfigPanel from "@/components/admin/MarqueeStripConfigPanel";
 
 function ColorPicker({
   label,
@@ -323,7 +324,8 @@ const AdminShowcase = () => {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const [config, setConfig] = useState<ShowcaseConfig>({ ...defaultConfig });
+  const [config, setConfig, { undo: undoConfig, redo: redoConfig, canUndo: canUndoConfig, canRedo: canRedoConfig, reject: rejectConfig, canReject: canRejectConfig, setInitial: setInitialConfig }] =
+    useUndoRedoState<ShowcaseConfig>({ ...defaultConfig });
 
   const { data: slides = [] } = useQuery({
     queryKey: ["admin-showcase"],
@@ -356,9 +358,9 @@ const AdminShowcase = () => {
     if (configRow?.value) {
       const val = configRow.value as any;
       const c = val?.value ?? val;
-      if (c && typeof c === "object") setConfig((prev) => ({ ...prev, ...c }));
+      if (c && typeof c === "object") setInitialConfig({ ...defaultConfig, ...c });
     }
-  }, [configRow]);
+  }, [configRow, setInitialConfig]);
 
   const saveMutation = useMutation({
     mutationFn: async (slide: any) => {
@@ -448,14 +450,18 @@ const AdminShowcase = () => {
           label: "Save",
           onSave: () => saveConfig.mutate(),
           isSaving: saveConfig.isPending,
+          onUndo: undoConfig,
+          canUndo: canUndoConfig,
+          onRedo: redoConfig,
+          canRedo: canRedoConfig,
           onReject: () => {
-            qc.invalidateQueries({ queryKey: ["admin-showcase-config"] });
-            toast.warning("Changes discarded");
+            rejectConfig();
+            toast.warning("Showcase settings reverted");
           },
-          canReject: true,
+          canReject: canRejectConfig,
         }
       : null,
-    [currentShowcaseTab, config, saveConfig.isPending, qc]
+    [currentShowcaseTab, config, saveConfig.isPending, canUndoConfig, canRedoConfig, canRejectConfig]
   );
 
   return (
@@ -2552,309 +2558,6 @@ export function CollectionShowcaseTab() {
    Saves to site_settings.marquee_config
    ══════════════════════════════════════════════════════════════ */
 
-const DEFAULT_MARQUEE_WORDS = [
-  "DROP SHOULDER PERFECTION",
-  "CRAFTED IN BANGLADESH",
-  "SINCE 2026",
-  "PREMIUM COTTON",
-  "ENGINEERED FIT",
-  "QUIET LUXURY",
-  "LIMITED DROPS",
-  "WEAR YOUR INTENTION",
-];
-
 export function MarqueeStripTab() {
-  const qc = useQueryClient();
-  const [words, setWords] = useState<string[]>(DEFAULT_MARQUEE_WORDS);
-  const [separator, setSeparator] = useState("✦");
-  const [newWord, setNewWord] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const { data: savedConfig, isLoading } = useQuery({
-    queryKey: ["marquee-config-admin"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("site_settings")
-        .select("value")
-        .eq("key", "marquee_config")
-        .maybeSingle();
-      if (!data?.value) return null;
-      const val = data.value as any;
-      return val?.value ?? val;
-    },
-  });
-
-  useEffect(() => {
-    if (savedConfig) {
-      if (Array.isArray(savedConfig.words) && savedConfig.words.length > 0) {
-        setWords(savedConfig.words);
-      }
-      if (savedConfig.separator) {
-        setSeparator(savedConfig.separator);
-      }
-    }
-  }, [savedConfig]);
-
-  const handleAddWord = () => {
-    if (!newWord.trim()) return;
-    setWords((prev) => [...prev, newWord.trim().toUpperCase()]);
-    setNewWord("");
-  };
-
-  const handleWordChange = (idx: number, val: string) => {
-    setWords((prev) => prev.map((w, i) => (i === idx ? val.toUpperCase() : w)));
-  };
-
-  const handleRemoveWord = (idx: number) => {
-    setWords((prev) => prev.filter((_, i) => i !== idx));
-  };
-
-  const handleMoveWord = (from: number, to: number) => {
-    if (to < 0 || to >= words.length) return;
-    setWords((prev) => {
-      const next = [...prev];
-      const [item] = next.splice(from, 1);
-      next.splice(to, 0, item);
-      return next;
-    });
-  };
-
-  const handleResetDefaults = () => {
-    setWords(DEFAULT_MARQUEE_WORDS);
-    setSeparator("✦");
-    toast.info("Reset to brand defaults");
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from("site_settings")
-        .upsert(
-          {
-            key: "marquee_config",
-            value: { 
-              words: words.filter((w) => w.trim().length > 0),
-              separator: separator.trim() || "✦"
-            },
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "key" }
-        );
-      if (error) throw error;
-      qc.invalidateQueries({ queryKey: ["marquee-config"] });
-      qc.invalidateQueries({ queryKey: ["marquee-config-admin"] });
-      toast.success("Marquee words saved successfully");
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to save marquee settings");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const { data: logoUrl } = useQuery({
-    queryKey: ["site-logo-url-admin"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("site_settings")
-        .select("key, value")
-        .in("key", ["logo_url", "site_icon_url"]);
-      const logoRow = data?.find((d: any) => d.key === "logo_url") || data?.find((d: any) => d.key === "site_icon_url");
-      if (!logoRow?.value) return null;
-      const val = logoRow.value as any;
-      return val?.value ?? val;
-    },
-  });
-
-  const wordsList = words.flatMap((w) => [w, "__LOGO__"]);
-  const previewRepeated = wordsList.length > 0 ? [...wordsList, ...wordsList, ...wordsList, ...wordsList] : [];
-  // Register universal floating save button for Marquee Strip
-  useRegisterUniversalSave(
-    {
-      label: "Save",
-      onSave: handleSave,
-      isSaving: saving,
-      onReject: () => {
-        qc.invalidateQueries({ queryKey: ["marquee-config-admin"] });
-        toast.warning("Changes discarded");
-      },
-      canReject: true,
-    },
-    [words, separator, saving, qc]
-  );
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="text-lg font-display font-bold flex items-center gap-2">
-            <Type className="w-5 h-5 text-primary" /> Marquee Ticker Words
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Manage the scrolling promotional brand phrases displayed across the homepage.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleResetDefaults} className="gap-1.5 text-xs">
-            <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
-          </Button>
-        </div>
-      </div>
-
-      {/* Live Preview Strip */}
-      <Card className="glass border-primary/20 overflow-hidden">
-        <CardHeader className="py-3 px-4 border-b border-border/40 bg-secondary/20">
-          <CardTitle className="text-xs font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-            <Eye className="w-3.5 h-3.5 text-primary" /> Storefront Live Preview
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="relative overflow-hidden py-3 select-none bg-primary">
-            <div className="marquee-track flex items-center whitespace-nowrap">
-              {previewRepeated.map((item, i) => {
-                if (item === "__LOGO__") {
-                  return logoUrl ? (
-                    <span key={i} className="inline-flex items-center px-4 shrink-0">
-                      <span
-                        className="h-3.5 w-3.5 bg-cream inline-block shrink-0 opacity-80"
-                        style={{
-                          maskImage: `url("${logoUrl}")`,
-                          WebkitMaskImage: `url("${logoUrl}")`,
-                          maskSize: "contain",
-                          WebkitMaskSize: "contain",
-                          maskRepeat: "no-repeat",
-                          WebkitMaskRepeat: "no-repeat",
-                          maskPosition: "center",
-                          WebkitMaskPosition: "center",
-                        }}
-                        role="img"
-                      />
-                    </span>
-                  ) : (
-                    <span key={i} className="inline-block px-4 opacity-50 text-xs">
-                      ✦
-                    </span>
-                  );
-                }
-
-                return (
-                  <span
-                    key={i}
-                    className="inline-block px-5 font-sans-brand text-[0.65rem] font-medium tracking-[0.2em] uppercase text-cream"
-                  >
-                    {item}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Phrases List */}
-        <Card className="glass lg:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center justify-between">
-              <span>Marquee Phrases ({words.length})</span>
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Reorder or edit individual brand slogans. Words are automatically capitalized on the storefront.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Add new word input */}
-            <div className="flex gap-2">
-              <Input
-                value={newWord}
-                onChange={(e) => setNewWord(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddWord()}
-                placeholder="e.g. CRAFTED IN BANGLADESH"
-                className="text-xs font-mono"
-              />
-              <Button onClick={handleAddWord} size="sm" className="gap-1.5 shrink-0">
-                <Plus className="w-3.5 h-3.5" /> Add Phrase
-              </Button>
-            </div>
-
-            {/* List */}
-            {isLoading ? (
-              <div className="py-8 text-center text-xs text-muted-foreground animate-pulse">Loading marquee settings...</div>
-            ) : words.length === 0 ? (
-              <div className="py-8 text-center text-xs text-muted-foreground border border-dashed rounded-lg">
-                No marquee phrases configured. Click "Reset Defaults" or add a new phrase above.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {words.map((w, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-secondary/20">
-                    <span className="text-xs font-mono text-muted-foreground w-6 text-center">{idx + 1}.</span>
-                    <Input
-                      value={w}
-                      onChange={(e) => handleWordChange(idx, e.target.value)}
-                      className="h-8 text-xs font-mono font-semibold uppercase tracking-wider flex-1"
-                    />
-                    <div className="flex items-center gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        disabled={idx === 0}
-                        onClick={() => handleMoveWord(idx, idx - 1)}
-                        title="Move Up"
-                      >
-                        <ArrowUp className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        disabled={idx === words.length - 1}
-                        onClick={() => handleMoveWord(idx, idx + 1)}
-                        title="Move Down"
-                      >
-                        <ArrowDown className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={() => handleRemoveWord(idx)}
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Separator & Settings */}
-        <Card className="glass">
-          <CardHeader>
-            <CardTitle className="text-base">Style Settings</CardTitle>
-            <CardDescription className="text-xs">Configure separator symbol and marquee appearance.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs">Separator Icon / Symbol</Label>
-              <Input
-                value={separator}
-                onChange={(e) => setSeparator(e.target.value)}
-                placeholder="✦"
-                className="font-mono text-center text-lg h-10"
-              />
-              <p className="text-[11px] text-muted-foreground">
-                Character rendered between each phrase. Recommended: <code className="text-foreground">✦</code>, <code className="text-foreground">•</code>, <code className="text-foreground">★</code>, or <code className="text-foreground font-mono">|</code>.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+  return <MarqueeStripConfigPanel />;
 }

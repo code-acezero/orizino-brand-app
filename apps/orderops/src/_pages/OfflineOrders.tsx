@@ -28,6 +28,8 @@ import {
   PackageX,
 } from "lucide-react";
 
+import { extractSerialCode } from "@orizino/shared";
+
 const SOURCE_OPTIONS: { value: OfflineSource; label: string; short: string; icon: any }[] = [
   { value: "offline", label: "Offline (walk-in / counter)", short: "Offline", icon: Store },
   { value: "page", label: "Facebook Page", short: "Page", icon: Share2 },
@@ -96,9 +98,11 @@ export function OfflineOrders() {
   const canStartOrder = customerName.trim().length > 0 && (phone.trim() || email.trim());
   const selectedSource = SOURCE_OPTIONS.find((s) => s.value === source)!;
 
-  const handleScan = async (code: string) => {
+  const handleScan = async (rawCode: string) => {
+    const code = extractSerialCode(rawCode);
+    if (!code) return;
     if (units.some((u) => u.serialCode === code)) {
-      toast.message("Already scanned", { description: code });
+      toast.info(`Already scanned: ${code}`);
       return;
     }
     try {

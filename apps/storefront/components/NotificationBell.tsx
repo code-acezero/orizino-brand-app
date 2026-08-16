@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { Bell, X, CheckCheck, Info, AlertTriangle, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { Bell, X, CheckCheck, Info, AlertTriangle, CheckCircle, XCircle, Trash2, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,7 +27,7 @@ const typeConfig: Record<string, { icon: React.ComponentType<React.SVGProps<SVGS
   success: { icon: CheckCircle, color: "text-green-400" },
   error: { icon: XCircle, color: "text-destructive" },
   warning: { icon: AlertTriangle, color: "text-yellow-400" },
-  general: { icon: Info, color: "text-primary" },
+  general: { icon: Globe, color: "text-primary" },
   info: { icon: Info, color: "text-blue-400" },
 };
 
@@ -37,6 +37,8 @@ interface IslandItem {
   message?: string;
   type: string;
   source: "notification" | "toast";
+  actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
+  duration?: number;
 }
 
 interface NotificationBellProps {
@@ -92,17 +94,18 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ adminMode = false }
   const { data: rawNotifications = [] } = useQuery({
     queryKey: ["bell-notifications", user?.id, adminMode ? "admin" : "user"],
     queryFn: async () => {
+      if (!user) return [];
       let query = supabase.from("notifications").select("*");
       if (adminMode) {
-        query = query.or(`user_id.is.null,user_id.eq.${user!.id}`);
+        query = query.or(`user_id.is.null,user_id.eq.${user.id}`);
       } else {
         query = query
-          .or(`user_id.eq.${user!.id},user_id.is.null`)
+          .or(`user_id.eq.${user.id},user_id.is.null`)
           .not("type", "in", '("support","call","admin","order_status","low_stock")');
       }
       const { data, error } = await query.order("created_at", { ascending: false }).limit(20);
       if (error) throw error;
-      return data as Notification[];
+      return (data || []) as Notification[];
     },
     enabled: !!user,
     refetchInterval: pollInterval,
@@ -111,7 +114,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ adminMode = false }
   });
 
   const notifications = rawNotifications.filter((n) => !dismissedIds.has(n.id));
-
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const dismissIsland = () => {
@@ -130,7 +132,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ adminMode = false }
     setIslandItem(item);
     setBellRing(true);
     setTimeout(() => setBellRing(false), 600);
-    islandTimerRef.current = setTimeout(() => dismissIsland(), 4000);
+    const timeout = item.duration || (item.actions && item.actions.length > 0 ? 12000 : 4000);
+    islandTimerRef.current = setTimeout(() => dismissIsland(), timeout);
   };
 
   useEffect(() => {
@@ -160,6 +163,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ adminMode = false }
           message: t.description,
           type: t.type,
           source: "toast",
+          actions: t.actions,
+          duration: t.duration,
         });
       }
     });
@@ -201,15 +206,14 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ adminMode = false }
     mutationFn: async () => {
       const visible = notifications;
       if (visible.length === 0) return { cleared: 0 };
-      const ownIds = visible.filter((n) => n.user_id === user!.id).map((n) => n.id);
-      const broadcastIds = visible.filter((n) => n.user_id !== user!.id).map((n) => n.id);
+      const ownIds = visible.filter((n) => n.user_id === user?.id).map((n) => n.id);
+      const broadcastIds = visible.filter((n) => n.user_id !== user?.id).map((n) => n.id);
 
       if (ownIds.length > 0) {
         const { error } = await supabase.from("notifications").delete().in("id", ownIds);
         if (error) throw error;
       }
 
-      // Locally dismiss broadcasts (can't delete globally for other users)
       if (broadcastIds.length > 0) {
         const next = new Set(dismissedIds);
         broadcastIds.forEach((id) => next.add(id));
@@ -239,16 +243,14 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ adminMode = false }
     return `${Math.floor(hrs / 24)}d ago`;
   };
 
-  if (!user) return null;
-
   const isExpanded = !!islandItem && !islandDismissing && !open;
   const desktopIsland = !isMobile && isExpanded && islandItem;
   const mobileIsland = isMobile && isExpanded && islandItem;
 
   // Responsive expanded width — never exceed viewport
   const expandedWidth = typeof window !== "undefined"
-    ? Math.min(window.innerWidth - 32, 280)
-    : 280;
+    ? Math.min(window.innerWidth - 32, islandItem?.actions?.length ? 460 : 290)
+    : 290;
 
   return (
     <motion.div
@@ -290,13 +292,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ adminMode = false }
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
                 transition={{ duration: 0.2 }}
-                className="flex items-center gap-2 pl-3 pr-1 min-w-0 flex-1"
+                className="flex items-center gap-2.5 pl-3.5 pr-1 min-w-0 flex-1"
               >
                 {React.createElement(getConfig(islandItem!.type).icon, {
-                  className: `w-3.5 h-3.5 shrink-0 ${getConfig(islandItem!.type).color}`,
+                  className: `w-4 h-4 shrink-0 ${getConfig(islandItem!.type).color}`,
                 })}
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-foreground truncate leading-tight">
+                  <p className="text-xs font-semibold text-foreground truncate leading-tight">
                     {islandItem!.title}
                   </p>
                   {islandItem!.message && (
@@ -305,12 +307,38 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ adminMode = false }
                     </p>
                   )}
                 </div>
+
+                {/* Optional action buttons inside Island */}
+                {islandItem!.actions && islandItem!.actions.length > 0 && (
+                  <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {islandItem!.actions.map((act, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          act.onClick();
+                          dismissIsland();
+                        }}
+                        className={`px-2.5 py-1 rounded-xl text-[10px] font-semibold transition-all cursor-pointer ${
+                          act.primary
+                            ? "bg-primary text-primary-foreground hover:opacity-90 shadow-xs active:scale-95"
+                            : "bg-secondary text-foreground hover:bg-secondary/80 border border-border/40 active:scale-95"
+                        }`}
+                      >
+                        {act.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     dismissIsland();
                   }}
                   className="shrink-0 p-1 rounded-full hover:bg-secondary/50"
+                  aria-label="Close notification"
                 >
                   <X className="w-3 h-3 text-muted-foreground" />
                 </button>
@@ -343,8 +371,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ adminMode = false }
         )}
       </div>
 
-
-
       {/* Mobile dropdown island */}
       <AnimatePresence>
         {mobileIsland && (
@@ -356,38 +382,67 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ adminMode = false }
             className="fixed top-[4.25rem] z-[100]"
             style={{
               transformOrigin: "top center",
-              left: "max(0.75rem, calc((100vw - 20rem) / 2))",
-              right: "max(0.75rem, calc((100vw - 20rem) / 2))",
+              left: "max(0.75rem, calc((100vw - 22rem) / 2))",
+              right: "max(0.75rem, calc((100vw - 22rem) / 2))",
             }}
-
             onClick={() => {
-              dismissIsland();
-              setOpen(true);
+              if (!islandItem!.actions?.length) {
+                dismissIsland();
+                setOpen(true);
+              }
             }}
           >
-            <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-secondary/90 backdrop-blur-xl border border-border/50 shadow-lg cursor-pointer">
-              {React.createElement(getConfig(islandItem!.type).icon, {
-                className: `w-4 h-4 shrink-0 ${getConfig(islandItem!.type).color}`,
-              })}
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-foreground truncate leading-tight">
-                  {islandItem!.title}
-                </p>
-                {islandItem!.message && (
-                  <p className="text-[10px] text-muted-foreground truncate leading-tight">
-                    {islandItem!.message}
+            <div className="flex flex-col gap-2 p-3 rounded-2xl bg-card/95 backdrop-blur-2xl border border-border/60 shadow-2xl">
+              <div className="flex items-center gap-2.5">
+                {React.createElement(getConfig(islandItem!.type).icon, {
+                  className: `w-4 h-4 shrink-0 ${getConfig(islandItem!.type).color}`,
+                })}
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-foreground truncate leading-tight">
+                    {islandItem!.title}
                   </p>
-                )}
+                  {islandItem!.message && (
+                    <p className="text-[10px] text-muted-foreground truncate leading-tight mt-0.5">
+                      {islandItem!.message}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    dismissIsland();
+                  }}
+                  className="shrink-0 p-1 rounded-full hover:bg-secondary/50"
+                  aria-label="Close notification"
+                >
+                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
               </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  dismissIsland();
-                }}
-                className="shrink-0 p-0.5 rounded-full hover:bg-secondary/50"
-              >
-                <X className="w-3 h-3 text-muted-foreground" />
-              </button>
+
+              {/* Action Buttons in Mobile Island */}
+              {islandItem!.actions && islandItem!.actions.length > 0 && (
+                <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/40">
+                  {islandItem!.actions.map((act, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        act.onClick();
+                        dismissIsland();
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                        act.primary
+                          ? "bg-primary text-primary-foreground shadow-xs active:scale-95"
+                          : "bg-secondary text-foreground hover:bg-secondary/80 border border-border/40 active:scale-95"
+                      }`}
+                    >
+                      {act.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -410,7 +465,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ adminMode = false }
                   {unreadCount > 0 && (
                     <button
                       onClick={() => markAllRead.mutate()}
-                      className="text-xs text-primary hover:underline flex items-center gap-1"
+                      className="text-xs text-primary hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       <CheckCheck className="w-3 h-3" /> Mark all read
                     </button>
@@ -418,7 +473,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ adminMode = false }
                   {notifications.length > 0 && (
                     <button
                       onClick={() => clearAll.mutate()}
-                      className="text-xs text-destructive hover:underline flex items-center gap-1"
+                      className="text-xs text-destructive hover:underline flex items-center gap-1 cursor-pointer"
                       title="Delete all notifications"
                     >
                       <Trash2 className="w-3 h-3" /> Clear
@@ -428,7 +483,9 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ adminMode = false }
               </div>
               <div className="overflow-y-auto max-h-[350px] divide-y divide-border/30">
                 {notifications.length === 0 ? (
-                  <div className="py-10 text-center text-muted-foreground text-sm">No notifications yet</div>
+                  <div className="py-10 text-center text-muted-foreground text-sm">
+                    {user ? "No notifications yet" : "Sign in to see personalized updates"}
+                  </div>
                 ) : (
                   notifications.map((notif) => {
                     const cfg = getConfig(notif.type);

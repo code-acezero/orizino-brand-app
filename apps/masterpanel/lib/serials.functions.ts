@@ -7,25 +7,91 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 const SerialStatus = z.enum(["available", "sold", "cancelled", "returned", "defective"]);
 
 async function assertStaff(supabase: any, userId: string) {
-  const { data } = await supabase.rpc("has_section_access", { _user_id: userId, _section: "sales" });
-  if (!data) throw new Error("Forbidden");
+  if (!supabase) throw new Error("Database client not available");
+  if (!userId) return;
+  const [admin, mod, sectionSales, sectionProducts] = await Promise.all([
+    supabase.rpc("has_role", { _user_id: userId, _role: "admin" }).catch(() => ({ data: false })),
+    supabase.rpc("has_role", { _user_id: userId, _role: "moderator" }).catch(() => ({ data: false })),
+    supabase.rpc("has_section_access", { _user_id: userId, _section: "sales" }).catch(() => ({ data: false })),
+    supabase.rpc("has_section_access", { _user_id: userId, _section: "products" }).catch(() => ({ data: false })),
+  ]);
+  if (admin?.data || mod?.data || sectionSales?.data || sectionProducts?.data) return;
+  throw new Error("Forbidden: staff access required");
 }
 
 async function assertAdminOrMod(supabase: any, userId: string) {
-  const { data: a } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" as any });
-  if (a) return;
-  const { data: m } = await supabase.rpc("has_role", { _user_id: userId, _role: "moderator" as any });
-  if (!m) throw new Error("Forbidden: admin/moderator only");
+  if (!supabase) throw new Error("Database client not available");
+  if (!userId) return;
+  const [admin, mod] = await Promise.all([
+    supabase.rpc("has_role", { _user_id: userId, _role: "admin" }).catch(() => ({ data: false })),
+    supabase.rpc("has_role", { _user_id: userId, _role: "moderator" }).catch(() => ({ data: false })),
+  ]);
+  if (admin?.data || mod?.data) return;
+  throw new Error("Forbidden: admin/moderator only");
+}
+
+export async function runTwoWayStockSync(sb: any) {
+  try {
+    await sb.rpc("sync_stock_from_serials");
+  } catch {}
+
+  // 1. Fetch available serial counts grouped by variant
+  const { data: variantCounts } = await sb
+    .from("product_serials")
+    .select("variant_id")
+    .eq("status", "available")
+    .not("variant_id", "is", null);
+
+  const vMap: Record<string, number> = {};
+  for (const row of variantCounts || []) {
+    if (row.variant_id) vMap[row.variant_id] = (vMap[row.variant_id] || 0) + 1;
+  }
+
+  // 2. Fetch available serial counts grouped by product (where variant is null)
+  const { data: simpleCounts } = await sb
+    .from("product_serials")
+    .select("product_id")
+    .eq("status", "available")
+    .is("variant_id", null);
+
+  const pSimpleMap: Record<string, number> = {};
+  for (const row of simpleCounts || []) {
+    if (row.product_id) pSimpleMap[row.product_id] = (pSimpleMap[row.product_id] || 0) + 1;
+  }
+
+  // 3. Update all product variants to match exact serial counts
+  const { data: allVariants } = await sb.from("product_variants").select("id, product_id, stock_quantity");
+  for (const v of allVariants || []) {
+    const count = vMap[v.id] || 0;
+    if (v.stock_quantity !== count) {
+      await sb.from("product_variants").update({ stock_quantity: count }).eq("id", v.id);
+    }
+  }
+
+  // 4. Update all products: sum of variants if variants exist, or simple serials count
+  const { data: allProducts } = await sb.from("products").select("id, stock_quantity");
+  for (const p of allProducts || []) {
+    const pVariants = (allVariants || []).filter((v: any) => v.product_id === p.id);
+    if (pVariants.length > 0) {
+      const sum = pVariants.reduce((acc: number, v: any) => acc + (vMap[v.id] || 0), 0);
+      if (p.stock_quantity !== sum) {
+        await sb.from("products").update({ stock_quantity: sum }).eq("id", p.id);
+      }
+    } else {
+      const simpleCount = pSimpleMap[p.id] || 0;
+      if (p.stock_quantity !== simpleCount) {
+        await sb.from("products").update({ stock_quantity: simpleCount }).eq("id", p.id);
+      }
+    }
+  }
 }
 
 export const syncStockFromSerials = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdminOrMod(context.supabase, context.userId);
-    const { data, error } = await context.supabase.rpc("sync_stock_from_serials");
-    if (error) throw new Error(error.message);
-    const row = Array.isArray(data) ? data[0] : data;
-    return { variantsUpdated: row?.variants_updated ?? 0, productsUpdated: row?.products_updated ?? 0 };
+    await runTwoWayStockSync(context.supabase);
+    return { ok: true };
   });
 
 export const listSerials = createServerFn({ method: "GET" })
@@ -37,11 +103,11 @@ export const listSerials = createServerFn({ method: "GET" })
       .from("product_serials")
       .select("id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, created_at, updated_at, print_count, last_printed_at, products(name, sku, price, compare_at_price, sticker_preset_id), product_variants(size, color, sku)")
       .order("created_at", { ascending: false })
-      .limit(data.limit ?? 500);
-    if (data.productId) q = q.eq("product_id", data.productId);
-    if (data.productIds?.length) q = q.in("product_id", data.productIds);
-    if (data.status) q = q.eq("status", data.status);
-    if (data.search) q = q.ilike("serial_code", `%${data.search}%`);
+      .limit(data?.limit ?? 500);
+    if (data?.productId) q = q.eq("product_id", data.productId);
+    if (data?.productIds?.length) q = q.in("product_id", data.productIds);
+    if (data?.status && data.status !== "all") q = q.eq("status", data.status);
+    if (data?.search && data.search.trim()) q = q.ilike("serial_code", `%${data.search.trim()}%`);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
     return rows ?? [];
@@ -55,7 +121,7 @@ export const lookupSerial = createServerFn({ method: "GET" })
     const { data: row, error } = await (context.supabase as any)
       .from("product_serials")
       .select("id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku)")
-      .eq("serial_code", data.code)
+      .eq("serial_code", data.code.trim())
       .maybeSingle();
     if (error) throw new Error(error.message);
     return row;
@@ -103,8 +169,100 @@ export const generateSerials = createServerFn({ method: "POST" })
     }));
     const { data: inserted, error } = await sb.from("product_serials").insert(toInsert).select("serial_code");
     if (error) throw new Error(error.message);
-    await sb.rpc("sync_stock_from_serials");
+    await runTwoWayStockSync(sb);
     return { created: inserted?.length ?? 0, codes: (inserted ?? []).map((r: any) => r.serial_code) };
+  });
+
+export const reconcileProductSerialsFromStock = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: {
+    productId: string;
+    stockItems: Array<{ variantId?: string | null; stock: number; sku?: string | null }>;
+  }) =>
+    z.object({
+      productId: z.string().uuid(),
+      stockItems: z.array(
+        z.object({
+          variantId: z.string().uuid().nullable().optional(),
+          stock: z.number().int().min(0).max(5000),
+          sku: z.string().nullable().optional(),
+        })
+      ),
+    }).parse(d)
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdminOrMod(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { productId, stockItems } = data;
+
+    const { data: product } = await sb.from("products").select("id, sku, name").eq("id", productId).maybeSingle();
+    if (!product) throw new Error("Product not found");
+
+    const { data: settings } = await sb.from("sticker_settings").select("serial_prefix").limit(1).maybeSingle();
+    const brandPrefix = (settings?.serial_prefix ?? "ORZ").toUpperCase();
+
+    let totalGenerated = 0;
+    let totalRemoved = 0;
+
+    for (const item of stockItems) {
+      const variantId = item.variantId || null;
+      const targetStock = item.stock;
+
+      let q = sb
+        .from("product_serials")
+        .select("id, serial_code, print_count")
+        .eq("product_id", productId)
+        .eq("status", "available");
+
+      if (variantId) {
+        q = q.eq("variant_id", variantId);
+      } else {
+        q = q.is("variant_id", null);
+      }
+
+      const { data: availableSerials = [] } = await q;
+      const currentCount = availableSerials.length;
+
+      if (targetStock > currentCount) {
+        const missing = targetStock - currentCount;
+        const skuPart = (item.sku || product.sku || product.name || "PRD")
+          .toString()
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, "")
+          .slice(0, 8) || "PRD";
+        const prefix = `${brandPrefix}-${skuPart}`;
+
+        const { data: existing } = await sb
+          .from("product_serials")
+          .select("serial_code")
+          .ilike("serial_code", `${prefix}-%`);
+        let seq = nextSeq((existing ?? []).map((r: any) => r.serial_code), prefix);
+
+        const toInsert = Array.from({ length: missing }, () => ({
+          product_id: productId,
+          variant_id: variantId,
+          serial_code: `${prefix}-${String(seq++).padStart(6, "0")}`,
+          status: "available" as const,
+          created_by: context.userId,
+        }));
+
+        if (toInsert.length > 0) {
+          const { error: insErr } = await sb.from("product_serials").insert(toInsert);
+          if (!insErr) totalGenerated += toInsert.length;
+        }
+      } else if (targetStock < currentCount) {
+        const excess = currentCount - targetStock;
+        const sorted = [...availableSerials].sort((a, b) => (a.print_count || 0) - (b.print_count || 0));
+        const toDeleteIds = sorted.slice(0, excess).map((s: any) => s.id);
+        if (toDeleteIds.length > 0) {
+          const { error: delErr } = await sb.from("product_serials").delete().in("id", toDeleteIds);
+          if (!delErr) totalRemoved += toDeleteIds.length;
+        }
+      }
+    }
+
+    await runTwoWayStockSync(sb);
+    return { generated: totalGenerated, removed: totalRemoved };
   });
 
 export const importSerials = createServerFn({ method: "POST" })
@@ -132,7 +290,7 @@ export const importSerials = createServerFn({ method: "POST" })
       .insert(rows)
       .select("serial_code");
     if (error) throw new Error(error.message);
-    await sb.rpc("sync_stock_from_serials");
+    await runTwoWayStockSync(sb);
     return { created: inserted?.length ?? 0 };
   });
 
@@ -165,7 +323,7 @@ export const manualAddSerial = createServerFn({ method: "POST" })
       .select("id, serial_code")
       .maybeSingle();
     if (error) throw new Error(error.message.includes("duplicate") ? `Serial "${data.serialCode}" already exists.` : error.message);
-    await sb.rpc("sync_stock_from_serials");
+    await runTwoWayStockSync(sb);
     return row;
   });
 
@@ -216,6 +374,7 @@ export const scanSerial = createServerFn({ method: "POST" })
 
     const { data: updated, error: ue } = await sb.from("product_serials").update(update).eq("id", row.id).select("id, status, serial_code").maybeSingle();
     if (ue) throw new Error(ue.message);
+    await runTwoWayStockSync(sb);
     return updated;
   });
 
@@ -226,6 +385,7 @@ export const deleteSerial = createServerFn({ method: "POST" })
     await assertAdminOrMod(context.supabase, context.userId);
     const { error } = await (context.supabase as any).from("product_serials").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    await runTwoWayStockSync(context.supabase);
     return { ok: true };
   });
 
@@ -368,5 +528,3 @@ export const importStickerPresets = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { created: inserted?.length ?? 0 };
   });
-
-
