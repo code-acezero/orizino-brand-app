@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { themeMap, allThemeVars, themePalettes } from "@/lib/theme-palettes";
+import { getStorefrontTypographyPair } from "@orizino/shared/lib/storefront-appearance";
 
 /* Map old theme IDs to new ones for backward compat */
 const legacyMap: Record<string, string> = {
@@ -31,10 +32,42 @@ const legacyMap: Record<string, string> = {
 };
 
 const customizerVars = [
-  "--font-display", "--font-body",
+  "--font-display", "--font-body", "--font-title",
+  "--storefront-font-heading", "--storefront-font-body",
   "--navbar-height", "--section-gap", "--container-max",
   "--content-padding", "--card-padding",
 ];
+
+const customFonts = [
+  "Agraham", "Bilderberg", "Nevera", "OrangeAvenue", "PrimorStylish",
+  "ProdesStencil", "Rostex", "SingleGrinch", "Transcity", "Zaslia",
+  "Goca", "Logofontik", "Fear", "Monoo", "Monolite",
+];
+
+const loadedFonts = new Set<string>();
+
+function loadGoogleFont(family: string, weights: string = "400,500,600,700") {
+  if (typeof document === "undefined" || !family) return;
+  if (customFonts.includes(family)) return;
+  const key = `${family}-${weights}`;
+  if (loadedFonts.has(key)) return;
+  loadedFonts.add(key);
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, "+")}:wght@${weights.split(",").concat(["300","400","500","600","700"]).filter((v, i, a) => a.indexOf(v) === i).join(";")}&display=swap`;
+  document.head.appendChild(link);
+}
+
+function loadGoogleFontPair(gfUrl: string) {
+  if (typeof document === "undefined" || !gfUrl) return;
+  const href = gfUrl.startsWith("http") ? gfUrl : `https://fonts.googleapis.com/css2?family=${gfUrl}&display=swap`;
+  if (loadedFonts.has(href)) return;
+  loadedFonts.add(href);
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  document.head.appendChild(link);
+}
 
 const SiteThemeProvider = () => {
   const qc = useQueryClient();
@@ -42,10 +75,24 @@ const SiteThemeProvider = () => {
   const { data: siteSettings, isLoading } = useQuery({
     queryKey: ["site-settings"],
     queryFn: async () => {
+      try {
+        const res = await fetch("/api/site-settings?keys=site_theme,site_mode,site_customizer,title_font,storefront_appearance,external_redirects", {
+          headers: { "Accept": "application/json" },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json && typeof json === "object" && !json.error) {
+            return json;
+          }
+        }
+      } catch {
+        // fallback
+      }
+
       const { data } = await supabase
         .from("site_settings")
         .select("key, value")
-        .in("key", ["site_theme", "site_mode", "site_customizer", "title_font", "external_redirects"]);
+        .in("key", ["site_theme", "site_mode", "site_customizer", "title_font", "storefront_appearance", "external_redirects"]);
       const map: Record<string, any> = {};
       data?.forEach((s) => {
         const val = s.value;
@@ -113,16 +160,35 @@ const SiteThemeProvider = () => {
       cleanupMedia = () => mediaQuery.removeEventListener("change", handler);
     }
 
-    // Customizer overrides
+    // 1. Storefront Appearance (Typography pairs)
+    const appearance = siteSettings.storefront_appearance;
+    if (appearance && typeof appearance === "object") {
+      const appObj = (appearance as any).value ?? appearance;
+      const pairId = appObj.typography_pair || "space-grotesk-dm-sans";
+      const pair = getStorefrontTypographyPair(pairId);
+      if (pair) {
+        html.style.setProperty("--storefront-font-heading", pair.heading);
+        html.style.setProperty("--storefront-font-body", pair.body);
+        html.style.setProperty("--font-display", pair.heading);
+        html.style.setProperty("--font-body", pair.body);
+        if (pair.gfUrl) {
+          loadGoogleFontPair(pair.gfUrl);
+        }
+      }
+    }
+
+    // 2. Customizer overrides
     const customizer = siteSettings.site_customizer;
     if (customizer && typeof customizer === "object") {
-      const c = customizer as any;
+      const c = (customizer as any).value ?? customizer;
       if (c.heading_font) {
         html.style.setProperty("--font-display", `'${c.heading_font}', sans-serif`);
+        html.style.setProperty("--storefront-font-heading", `'${c.heading_font}', sans-serif`);
         loadGoogleFont(c.heading_font, c.heading_weight || "700");
       }
       if (c.body_font) {
         html.style.setProperty("--font-body", `'${c.body_font}', sans-serif`);
+        html.style.setProperty("--storefront-font-body", `'${c.body_font}', sans-serif`);
         loadGoogleFont(c.body_font, c.body_weight || "400");
       }
       if (c.border_radius != null) html.style.setProperty("--radius", `${c.border_radius}px`);
@@ -135,15 +201,13 @@ const SiteThemeProvider = () => {
       html.dataset.customizer = JSON.stringify(c);
     }
 
-    // Title font
-    const titleFont = siteSettings.title_font;
-    if (titleFont && typeof titleFont === "string") {
+    // 3. Title font
+    const rawTitleFont = siteSettings.title_font;
+    const titleFont = typeof rawTitleFont === "object" && rawTitleFont !== null ? (rawTitleFont as any).value ?? "" : rawTitleFont;
+    if (titleFont && typeof titleFont === "string" && titleFont.trim() !== "") {
       html.style.setProperty("--font-title", `'${titleFont}', var(--font-display)`);
-      // Only load Google font if not a custom local font
-      const customFonts = ["Agraham","Bilderberg","Nevera","OrangeAvenue","PrimorStylish","ProdesStencil","Rostex","SingleGrinch","Transcity","Zaslia","Goca","Logofontik","Fear","Monoo","Monolite"];
-      if (!customFonts.includes(titleFont)) {
-        loadGoogleFont(titleFont);
-      }
+      html.style.setProperty("--storefront-font-heading", `'${titleFont}', var(--font-display)`);
+      loadGoogleFont(titleFont);
     } else {
       html.style.removeProperty("--font-title");
     }
@@ -174,22 +238,8 @@ const SiteThemeProvider = () => {
     return () => { supabase.removeChannel(channel); };
   }, [qc]);
 
-  // Don't block the UI while settings load — theme applies on hydrate.
   void isLoading;
   return null;
 };
 
-/* ── Google Fonts loader ── */
-const loadedFonts = new Set<string>();
-function loadGoogleFont(family: string, weights: string = "400,500,600,700") {
-  const key = `${family}-${weights}`;
-  if (loadedFonts.has(key)) return;
-  loadedFonts.add(key);
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, "+")}:wght@${weights.split(",").concat(["300","400","500","600","700"]).filter((v, i, a) => a.indexOf(v) === i).join(";")}&display=swap`;
-  document.head.appendChild(link);
-}
-
 export default SiteThemeProvider;
-// code:4ce0

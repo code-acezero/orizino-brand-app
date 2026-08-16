@@ -109,16 +109,31 @@ const AdminStorefrontAppearance: React.FC = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("site_settings")
-        .select("key, value")
-        .in("key", ["storefront_appearance", "title_font"]);
-
       const map: Record<string, any> = {};
-      data?.forEach((s) => {
-        const val: any = s.value;
-        map[s.key] = typeof val === "object" && val !== null ? val.value ?? val : val;
-      });
+
+      try {
+        const res = await fetch("/api/site-settings?keys=storefront_appearance,title_font");
+        if (res.ok) {
+          const json = await res.json();
+          if (json && typeof json === "object") {
+            Object.assign(map, json);
+          }
+        }
+      } catch {
+        // fallback
+      }
+
+      if (Object.keys(map).length === 0) {
+        const { data } = await supabase
+          .from("site_settings")
+          .select("key, value")
+          .in("key", ["storefront_appearance", "title_font"]);
+
+        data?.forEach((s) => {
+          const val: any = s.value;
+          map[s.key] = typeof val === "object" && val !== null ? val.value ?? val : val;
+        });
+      }
 
       let appearanceVal = (map.storefront_appearance as Partial<StorefrontAppearanceConfig>) || {};
       const currentTitleFont = map.title_font as string | undefined;
@@ -141,6 +156,31 @@ const AdminStorefrontAppearance: React.FC = () => {
     setSaving(true);
     const activeP = getStorefrontTypographyPair(cfg.typography_pair);
     const headingFontFamily = extractFontName(activeP.heading);
+
+    try {
+      const apiRes = await fetch("/api/site-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [
+            { key: "storefront_appearance", value: cfg },
+            ...(headingFontFamily ? [{ key: "title_font", value: headingFontFamily }] : []),
+          ],
+        }),
+      });
+      if (apiRes.ok) {
+        setSaving(false);
+        setInitial(cfg);
+        qc.invalidateQueries({ queryKey: ["site-settings"] });
+        qc.invalidateQueries({ queryKey: ["admin-settings"] });
+        qc.invalidateQueries({ queryKey: ["brand-identity"] });
+        qc.invalidateQueries({ queryKey: ["admin-branding"] });
+        toast({ title: "Storefront appearance saved & published" });
+        return;
+      }
+    } catch {
+      // fallback to direct supabase
+    }
 
     const [resApp, resTitle] = await Promise.all([
       supabase.from("site_settings").upsert(
@@ -165,9 +205,12 @@ const AdminStorefrontAppearance: React.FC = () => {
       return;
     }
 
+    setInitial(cfg);
     qc.invalidateQueries({ queryKey: ["site-settings"] });
     qc.invalidateQueries({ queryKey: ["admin-settings"] });
     qc.invalidateQueries({ queryKey: ["brand-identity"] });
+    qc.invalidateQueries({ queryKey: ["admin-branding"] });
+    toast({ title: "Storefront appearance saved & published" });
     toast({ title: "Saved", description: "Storefront typography & appearance synchronized globally." });
   };
 

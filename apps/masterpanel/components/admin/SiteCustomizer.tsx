@@ -239,6 +239,18 @@ const SiteCustomizer = () => {
   const { data: settings } = useQuery({
     queryKey: ["site-customizer"],
     queryFn: async () => {
+      try {
+        const res = await fetch("/api/site-settings?keys=site_customizer");
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.site_customizer) {
+            return { value: json.site_customizer };
+          }
+        }
+      } catch {
+        // fallback
+      }
+
       const { data } = await supabase
         .from("site_settings")
         .select("*")
@@ -264,12 +276,24 @@ const SiteCustomizer = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const jsonValue = { value: config } as any;
-      if (settings) {
-        await supabase.from("site_settings").update({ value: jsonValue }).eq("id", settings.id);
-      } else {
-        await supabase.from("site_settings").insert({ key: "site_customizer", value: jsonValue });
+      try {
+        const res = await fetch("/api/site-settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: "site_customizer", value: config }),
+        });
+        if (res.ok) return;
+      } catch {
+        // fallback
       }
+
+      const { error } = await supabase
+        .from("site_settings")
+        .upsert(
+          { key: "site_customizer", value: config as any, updated_at: new Date().toISOString() },
+          { onConflict: "key" }
+        );
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["site-customizer"] });

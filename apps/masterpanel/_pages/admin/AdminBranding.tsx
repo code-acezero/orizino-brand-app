@@ -401,22 +401,38 @@ const AdminBranding = () => {
   const { data: settings } = useQuery({
     queryKey: ["admin-branding"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("site_settings")
-        .select("key, value")
-        .in("key", [
-          "logo_url", "site_icon_url", "logo_display_style", "logo_effect",
-          "logo_color_filter", "logo_tint_color", "icon_color_filter", "icon_tint_color",
-          "site_name", "site_description", "brand_suffix", "brand_prefix", "contact_email", "contact_phone",
-          "support_url", "address", "title_letter_colors", "title_font",
-          "title_source", "title_image_url", "title_group_mode", "title_group_custom",
-          "title_color_filter", "title_tint_color",
-        ]);
+      const keys = [
+        "logo_url", "site_icon_url", "logo_display_style", "logo_effect",
+        "logo_color_filter", "logo_tint_color", "icon_color_filter", "icon_tint_color",
+        "site_name", "site_description", "brand_suffix", "brand_prefix", "contact_email", "contact_phone",
+        "support_url", "address", "title_letter_colors", "title_font",
+        "title_source", "title_image_url", "title_group_mode", "title_group_custom",
+        "title_color_filter", "title_tint_color",
+      ];
       const map: Record<string, any> = {};
-      data?.forEach((s) => {
-        const val = s.value;
-        map[s.key] = typeof val === "object" && val !== null ? (val as any).value ?? val : val;
-      });
+
+      try {
+        const res = await fetch(`/api/site-settings?keys=${keys.join(",")}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json && typeof json === "object") {
+            Object.assign(map, json);
+          }
+        }
+      } catch {
+        // fallback
+      }
+
+      if (Object.keys(map).length === 0) {
+        const { data } = await supabase
+          .from("site_settings")
+          .select("key, value")
+          .in("key", keys);
+        data?.forEach((s) => {
+          const val = s.value;
+          map[s.key] = typeof val === "object" && val !== null ? (val as any).value ?? val : val;
+        });
+      }
       return map;
     },
   });
@@ -538,13 +554,26 @@ const AdminBranding = () => {
         { key: "title_color_filter", value: titleFilter },
         { key: "title_tint_color", value: titleTint },
       ];
+
+      try {
+        const res = await fetch("/api/site-settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items }),
+        });
+        if (res.ok) return;
+      } catch {
+        // fallback
+      }
+
       for (const item of items) {
-        await supabase
+        const { error } = await supabase
           .from("site_settings")
           .upsert(
             { key: item.key, value: item.value as any, updated_at: new Date().toISOString() },
             { onConflict: "key" }
           );
+        if (error) throw error;
       }
     },
     onSuccess: () => {

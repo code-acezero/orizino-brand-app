@@ -88,6 +88,11 @@
 @font-face { font-family: 'SingleGrinch'; src: url('/fonts/SingleGrinch.otf') format('opentype'); font-display: swap; }
 @font-face { font-family: 'Transcity'; src: url('/fonts/Transcity.otf') format('opentype'); font-display: swap; }
 @font-face { font-family: 'Zaslia'; src: url('/fonts/Zaslia.otf') format('opentype'); font-display: swap; }
+@font-face { font-family: 'Goca'; src: url('/fonts/Goca.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Logofontik'; src: url('/fonts/Logofontik.otf') format('opentype'); font-display: swap; }
+@font-face { font-family: 'Fear'; src: url('/fonts/Fear.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Monoo'; src: url('/fonts/Monoo.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Monolite'; src: url('/fonts/Monolite.otf') format('opentype'); font-display: swap; }
 
 @custom-variant dark (&:is(.dark *));
 
@@ -213,6 +218,11 @@
 @font-face { font-family: 'SingleGrinch'; src: url('/fonts/SingleGrinch.otf') format('opentype'); font-display: swap; }
 @font-face { font-family: 'Transcity'; src: url('/fonts/Transcity.otf') format('opentype'); font-display: swap; }
 @font-face { font-family: 'Zaslia'; src: url('/fonts/Zaslia.otf') format('opentype'); font-display: swap; }
+@font-face { font-family: 'Goca'; src: url('/fonts/Goca.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Logofontik'; src: url('/fonts/Logofontik.otf') format('opentype'); font-display: swap; }
+@font-face { font-family: 'Fear'; src: url('/fonts/Fear.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Monoo'; src: url('/fonts/Monoo.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Monolite'; src: url('/fonts/Monolite.otf') format('opentype'); font-display: swap; }
 
 @layer base {
   :root {

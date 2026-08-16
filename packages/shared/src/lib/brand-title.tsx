@@ -43,12 +43,30 @@ export function useBrandIdentity(app?: BrandApp) {
       const keys = app
         ? [...BRAND_KEYS, ...BRAND_KEYS.map((k) => `${k}:${app}`)]
         : [...BRAND_KEYS];
-      const { data } = await supabase
-        .from("site_settings")
-        .select("key, value")
-        .in("key", keys);
       const raw: Record<string, any> = {};
-      data?.forEach((s) => { raw[s.key] = readVal(s.value); });
+
+      try {
+        const res = await fetch(`/api/site-settings?keys=${keys.join(",")}`, {
+          headers: { "Accept": "application/json" },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json && typeof json === "object" && !json.error) {
+            Object.assign(raw, json);
+          }
+        }
+      } catch {
+        // fallback
+      }
+
+      if (Object.keys(raw).length === 0) {
+        const { data } = await supabase
+          .from("site_settings")
+          .select("key, value")
+          .in("key", keys);
+        data?.forEach((s) => { raw[s.key] = readVal(s.value); });
+      }
+
       // Resolve each key: app-scoped override wins, else global
       const m: Record<string, any> = {};
       BRAND_KEYS.forEach((k) => {

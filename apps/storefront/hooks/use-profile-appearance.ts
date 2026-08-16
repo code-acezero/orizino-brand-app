@@ -26,12 +26,28 @@ export function useProfileAppearance() {
   const { data } = useQuery({
     queryKey: ["site-settings", "profile_appearance"],
     queryFn: async (): Promise<ProfileAppearanceConfig> => {
+      try {
+        const res = await fetch("/api/site-settings?keys=profile_appearance", {
+          headers: { "Accept": "application/json" },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.profile_appearance) {
+            const v = (json.profile_appearance as Partial<ProfileAppearanceConfig>) || null;
+            return { ...defaultProfileAppearance, ...(v || {}) };
+          }
+        }
+      } catch {
+        // fallback
+      }
+
       const { data } = await supabase
         .from("site_settings")
         .select("value")
         .eq("key", "profile_appearance")
         .maybeSingle();
-      const v = (data?.value as unknown as Partial<ProfileAppearanceConfig>) || null;
+      const valObj: any = data?.value;
+      const v = (typeof valObj === "object" && valObj !== null ? valObj.value ?? valObj : null) as Partial<ProfileAppearanceConfig> | null;
       return { ...defaultProfileAppearance, ...(v || {}) };
     },
     staleTime: 0,
