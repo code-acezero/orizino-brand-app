@@ -20,9 +20,8 @@ export interface SubscriptionResponse {
 }
 
 function getAdminClient() {
-  const url = "https://oectjdngvrqnxwhnwfrt.supabase.co";
-  const key =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lY3RqZG5ndnJxbnh3aG53ZnJ0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Mjg5MTM1NCwiZXhwIjoyMDg4NDY3MzU0fQ.tTGgSv0_6aSRjekzCFB7VlA0jC-vUn8FECt21PiDPwk";
+  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/^["']|["']$/g, "").trim();
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY || "").replace(/^["']|["']$/g, "").trim();
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });

@@ -705,9 +705,7 @@ const AIChatWidget: React.FC = () => {
   const { language } = useLanguage();
   const isEnabled = aiConfig?.is_enabled !== false;
   const agentName = aiConfig?.name || "MR. Slime";
-  const welcomeMessage = aiConfig?.welcome_message || "Hey! Welcome to Orizino. I'm MR. Slime—your official AI concierge & luxury fit companion.";
-  const avatarUrl = aiConfig?.avatar_url || "https://oectjdngvrqnxwhnwfrt.supabase.co/storage/v1/object/public/site-assets/ai-agent/mr-slime.jpg";
-  const avatarType = "image";
+  const avatarUrl = aiConfig?.avatar_url || ((process.env.NEXT_PUBLIC_SUPABASE_URL || "") + "/storage/v1/object/public/site-assets/ai-agent/mr-slime.jpg");
 
   // Floating bubble (FAB) admin-driven look & feel
   const fabBubbleColor: string = aiConfig?.fab_bubble_color || "hsl(var(--primary))";

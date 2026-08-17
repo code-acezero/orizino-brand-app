@@ -42,12 +42,14 @@ import BubbleLivePreview from "@/components/admin/BubbleLivePreview";
 import GeminiFallbackPanel from "@/components/admin/GeminiFallbackPanel";
 import { GeminiModelSelector } from "@/components/admin/GeminiModelSelector";
 
+const DEFAULT_SLIME_AVATAR = (process.env.NEXT_PUBLIC_SUPABASE_URL || "") + "/storage/v1/object/public/site-assets/ai-agent/mr-slime.jpg";
+
 const AVATAR_PRESETS = [
   {
     id: "mr-slime",
     name: "MR. Slime (Official)",
     tag: "Luxury Water-Slime Concierge",
-    url: "https://oectjdngvrqnxwhnwfrt.supabase.co/storage/v1/object/public/site-assets/ai-agent/mr-slime.jpg",
+    url: DEFAULT_SLIME_AVATAR,
   },
   {
     id: "atelier-stylist",
@@ -79,7 +81,7 @@ const PERSONA_PRESETS = [
       temperature: 0.75,
       response_style: "balanced" as "concise" | "balanced" | "detailed",
       primary_language: "auto",
-      avatar_url: "https://oectjdngvrqnxwhnwfrt.supabase.co/storage/v1/object/public/site-assets/ai-agent/mr-slime.jpg",
+      avatar_url: DEFAULT_SLIME_AVATAR,
     },
   },
   {
@@ -88,31 +90,31 @@ const PERSONA_PRESETS = [
     badge: "HIGH FASHION",
     tagline: "Elegant, sophisticated fashion consultant focusing on silhouette, draping, and fabric texture.",
     config: {
-      name: "Orizino Atelier",
-      personality: "Sophisticated, artistic, polite luxury consultant with impeccable taste in high-end streetwear.",
-      welcome_message: "Welcome to Orizino. I am your personal wardrobe consultant. How may I refine your look today?",
-      brand_voice: "Speak with calm, refined vocabulary. Emphasize French terry construction, boxy drape, minimalist typography, and exclusive Dhaka craftsmanship.",
-      tone: "luxury-concierge",
+      name: "Atelier Stylist",
+      personality: "High-end bespoke tailoring and streetwear consultant. Refined, articulate, knowledgeable about drape, GSM, premium cotton, and minimalist color palettes.",
+      welcome_message: "Good day. I am your Atelier Stylist. Allow me to assist you in selecting the ideal silhouette and fit.",
+      brand_voice: "Sophisticated, concise, sartorial precision.",
+      tone: "luxury-refined",
       model: "google/gemini-2.5-flash",
-      temperature: 0.65,
-      response_style: "balanced" as "concise" | "balanced" | "detailed",
+      temperature: 0.6,
+      response_style: "concise" as "concise" | "balanced" | "detailed",
       primary_language: "auto",
       avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=face",
     },
   },
   {
-    id: "streetwear_specialist",
-    title: "Streetwear Specialist",
-    badge: "HYPE STREET",
-    tagline: "Energetic, trend-focused Tokyo & London streetwear fashionista.",
+    id: "hype_specialist",
+    title: "Street Hype Specialist",
+    badge: "STREETWEAR",
+    tagline: "Bold, fast-paced streetwear guru with deep insights into drop dates, limited editions, and oversized styling.",
     config: {
-      name: "Orizino Hype Agent",
-      personality: "High-energy, knowledgeable streetwear guru who knows every drop, fit, and colorway inside out.",
-      welcome_message: "Yo! Ready to upgrade your daily rotation? Let's get you into the freshest oversized drop shoulder tee right now.",
-      brand_voice: "High energy, concise, confident. Highlight oversized boxy cuts, limited batches, and signature graphics.",
-      tone: "playful",
+      name: "Hype Specialist",
+      personality: "Streetwear fanatic, sneakerhead and drop-culture enthusiast. Energetic, punchy, on-point with modern style trends.",
+      welcome_message: "Yo! Ready to elevate your fit? Ask me about upcoming drops, sizing, or styling tips.",
+      brand_voice: "Energetic, urban, direct.",
+      tone: "street-casual",
       model: "google/gemini-2.5-flash",
-      temperature: 0.85,
+      temperature: 0.8,
       response_style: "concise" as "concise" | "balanced" | "detailed",
       primary_language: "auto",
       avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
@@ -128,7 +130,7 @@ const DEFAULT_CONFIG = {
   is_enabled: true,
   show_on_all_pages: true,
   primary_color: "",
-  avatar_url: "https://oectjdngvrqnxwhnwfrt.supabase.co/storage/v1/object/public/site-assets/ai-agent/mr-slime.jpg",
+  avatar_url: DEFAULT_SLIME_AVATAR,
   avatar_type: "image" as const,
   fab_bubble_style: "water" as "solid" | "transparent" | "glass" | "water",
   fab_bubble_color: "#3b82f6",

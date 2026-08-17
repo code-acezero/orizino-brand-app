@@ -100,6 +100,13 @@ function EntryView(props: VerifyScannerPageProps) {
   // Default to QR mode as requested
   const [mode, setMode] = useState<ScannerMode>("qr");
 
+  // Auto-activate camera scanner in mobile
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth <= 768) {
+      setScannerActive(true);
+    }
+  }, []);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const zxingReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -315,7 +322,7 @@ function EntryView(props: VerifyScannerPageProps) {
                 }`}
               >
                 <QrCode className="w-3.5 h-3.5" />
-                Royal QR Mode
+                QR
               </button>
               <button
                 type="button"
@@ -348,7 +355,7 @@ function EntryView(props: VerifyScannerPageProps) {
 
           {/* Interactive Camera Viewport */}
           {scannerActive && (
-            <div className="relative rounded-2xl overflow-hidden bg-black aspect-video max-h-[380px] flex items-center justify-center border border-border/80">
+            <div className="relative rounded-2xl overflow-hidden bg-black aspect-[3/4] sm:aspect-video min-h-[360px] sm:min-h-[320px] max-h-[500px] flex items-center justify-center border border-border/80">
               <video ref={videoRef} playsInline muted className="w-full h-full object-cover" />
 
               {/* Viewport Frame with Dynamic Status Ring */}

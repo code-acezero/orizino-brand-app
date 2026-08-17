@@ -684,105 +684,6 @@ export default function AdminOfflineOrders() {
       ───────────────────────────────────────────────────────────── */}
       {step === "form" && (
         <div className="space-y-4 min-w-0">
-          {/* Smart Chat / WhatsApp / Social Auto-Extractor Card */}
-          <div className="rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/10 via-card/70 to-secondary/30 backdrop-blur-md p-4 sm:p-5 space-y-3.5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center text-primary shrink-0">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-2">
-                    Quick Chat / Message Auto-Extractor
-                    <Badge variant="outline" className="text-[10px] bg-primary/15 text-primary border-primary/30 font-mono">
-                      SMART PARSER
-                    </Badge>
-                  </h3>
-                  <p className="text-[11px] text-muted-foreground">
-                    Paste any raw conversation from WhatsApp, Facebook Page, TikTok, Instagram or SMS.
-                  </p>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsChatBoxOpen((o) => !o)}
-                className="text-xs h-8 text-primary hover:bg-primary/10 rounded-xl"
-              >
-                {isChatBoxOpen ? "Collapse" : "Open Chat Box"}
-              </Button>
-            </div>
-
-            {isChatBoxOpen && (
-              <div className="space-y-3 pt-1">
-                <Textarea
-                  value={chatPasteText}
-                  onChange={(e) => handleChatTextChange(e.target.value)}
-                  placeholder="Paste WhatsApp, Messenger, TikTok, or Instagram chat here...&#10;e.g. 'নাম: মো: রহিম, মোবাইল: 01712345678, ঠিকানা: বাসা ১২, রোড ৫, সেক্টর ৩, উত্তরা, ঢাকা ১২৩০, নোট: বিকেলে ডেলিভারি করবেন'"
-                  rows={3}
-                  className="rounded-xl text-xs sm:text-sm bg-background/90 border-primary/30 focus:border-primary resize-none font-mono"
-                />
-
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                    {parsedChatInfo?.name && (
-                      <Badge variant="secondary" className="text-[10px] gap-1 bg-secondary/80">
-                        👤 {parsedChatInfo.name}
-                      </Badge>
-                    )}
-                    {parsedChatInfo?.phone && (
-                      <Badge variant="secondary" className="text-[10px] gap-1 bg-secondary/80 font-mono">
-                        📱 {parsedChatInfo.phone}
-                      </Badge>
-                    )}
-                    {parsedChatInfo?.email && (
-                      <Badge variant="secondary" className="text-[10px] gap-1 bg-secondary/80">
-                        📧 {parsedChatInfo.email}
-                      </Badge>
-                    )}
-                    {parsedChatInfo?.district && (
-                      <Badge variant="secondary" className="text-[10px] gap-1 bg-primary/15 text-primary border-primary/20">
-                        📍 {parsedChatInfo.district} → {parsedChatInfo.thana}
-                      </Badge>
-                    )}
-                    {parsedChatInfo && (
-                      <span className="text-[10px] text-muted-foreground ml-1">
-                        ({parsedChatInfo.confidenceScore}% confidence)
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {chatPasteText.trim() && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setChatPasteText("");
-                          setParsedChatInfo(null);
-                        }}
-                        className="text-xs h-8 text-muted-foreground"
-                      >
-                        Clear
-                      </Button>
-                    )}
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => applyParsedChatInfo()}
-                      disabled={!chatPasteText.trim()}
-                      className="text-xs h-8 gap-1.5 rounded-xl bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs"
-                    >
-                      <ClipboardPaste className="w-3.5 h-3.5" /> Auto-Fill Customer Form
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
             {/* Customer Information Card */}
             <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-4 sm:p-5 space-y-4 flex flex-col justify-between">
@@ -971,6 +872,105 @@ export default function AdminOfflineOrders() {
                 </Badge>
               </div>
             </div>
+          </div>
+
+          {/* Smart Chat / WhatsApp / Social Auto-Extractor Card (Positioned at Bottom) */}
+          <div className="rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/10 via-card/70 to-secondary/30 backdrop-blur-md p-4 sm:p-5 space-y-3.5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-2">
+                    Quick Chat / Message Auto-Extractor
+                    <Badge variant="outline" className="text-[10px] bg-primary/15 text-primary border-primary/30 font-mono">
+                      SMART PARSER
+                    </Badge>
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    Paste any raw conversation from WhatsApp, Facebook Page, TikTok, Instagram or SMS.
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsChatBoxOpen((o) => !o)}
+                className="text-xs h-8 text-primary hover:bg-primary/10 rounded-xl cursor-pointer"
+              >
+                {isChatBoxOpen ? "Collapse" : "Open Chat Box"}
+              </Button>
+            </div>
+
+            {isChatBoxOpen && (
+              <div className="space-y-3 pt-1">
+                <Textarea
+                  value={chatPasteText}
+                  onChange={(e) => handleChatTextChange(e.target.value)}
+                  placeholder="Paste WhatsApp, Messenger, TikTok, or Instagram chat here...&#10;e.g. 'নাম: মো: রহিম, মোবাইল: 01712345678, ঠিকানা: বাসা ১২, রোড ৫, সেক্টর ৩, উত্তরা, ঢাকা ১২৩০, নোট: বিকেলে ডেলিভারি করবেন'"
+                  rows={3}
+                  className="rounded-xl text-xs sm:text-sm bg-background/90 border-primary/30 focus:border-primary resize-none font-mono"
+                />
+
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                    {parsedChatInfo?.name && (
+                      <Badge variant="secondary" className="text-[10px] gap-1 bg-secondary/80">
+                        👤 {parsedChatInfo.name}
+                      </Badge>
+                    )}
+                    {parsedChatInfo?.phone && (
+                      <Badge variant="secondary" className="text-[10px] gap-1 bg-secondary/80 font-mono">
+                        📱 {parsedChatInfo.phone}
+                      </Badge>
+                    )}
+                    {parsedChatInfo?.email && (
+                      <Badge variant="secondary" className="text-[10px] gap-1 bg-secondary/80">
+                        📧 {parsedChatInfo.email}
+                      </Badge>
+                    )}
+                    {parsedChatInfo?.district && (
+                      <Badge variant="secondary" className="text-[10px] gap-1 bg-primary/15 text-primary border-primary/20">
+                        📍 {parsedChatInfo.district} → {parsedChatInfo.thana}
+                      </Badge>
+                    )}
+                    {parsedChatInfo && (
+                      <span className="text-[10px] text-muted-foreground ml-1">
+                        ({parsedChatInfo.confidenceScore}% confidence)
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {chatPasteText.trim() && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setChatPasteText("");
+                          setParsedChatInfo(null);
+                        }}
+                        className="text-xs h-8 text-muted-foreground cursor-pointer"
+                      >
+                        Clear
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => applyParsedChatInfo()}
+                      disabled={!chatPasteText.trim()}
+                      className="text-xs h-8 gap-1.5 rounded-xl bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs"
+                    >
+                      <ClipboardPaste className="w-3.5 h-3.5" /> Auto-Fill Customer Form
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <BottomBar>

@@ -158,6 +158,15 @@ export function BarcodeScanner({ onScan, active, onToggle, hidWedge = true, over
     show: false,
   });
 
+  // Auto-activate camera scanner on mobile devices
+  const autoActivatedRef = useRef(false);
+  useEffect(() => {
+    if (!autoActivatedRef.current && typeof window !== "undefined" && window.innerWidth <= 768 && !active) {
+      autoActivatedRef.current = true;
+      onToggle();
+    }
+  }, [active, onToggle]);
+
   const emit = useCallback(
     (inputCode: string, mode: ScanMode, raw: string) => {
       const code = extractSerialCode(inputCode);
@@ -539,10 +548,10 @@ export function BarcodeScanner({ onScan, active, onToggle, hidWedge = true, over
         </div>
       </div>
 
-      {/* ── Viewfinder Window (Fixed clean aspect ratio for mobile & desktop) ── */}
+      {/* ── Viewfinder Window (Portrait in mobile with expanded height & width) ── */}
       <div
         onClick={handleViewfinderTap}
-        className="relative w-full h-[230px] sm:h-[280px] bg-black flex items-center justify-center overflow-hidden cursor-crosshair select-none"
+        className="relative w-full aspect-[3/4] sm:aspect-auto h-auto min-h-[350px] sm:min-h-[280px] max-h-[480px] sm:max-h-[320px] bg-black flex items-center justify-center overflow-hidden cursor-crosshair select-none"
       >
         {active ? (
           <video ref={videoRef} className="w-full h-full object-cover" muted playsInline autoPlay />
