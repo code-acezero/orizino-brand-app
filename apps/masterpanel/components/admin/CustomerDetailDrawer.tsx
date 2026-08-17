@@ -60,7 +60,8 @@ export default function CustomerDetailDrawer({ customerId, open, onOpenChange }:
           <TabsList className="w-full">
             <TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger>
             <TabsTrigger value="email" className="flex-1">Email</TabsTrigger>
-            <TabsTrigger value="orders" className="flex-1">Orders</TabsTrigger>
+            <TabsTrigger value="orders" className="flex-1">Orders ({detail?.orders?.length ?? 0})</TabsTrigger>
+            <TabsTrigger value="returns" className="flex-1">Returns ({detail?.returns?.length ?? 0})</TabsTrigger>
             <TabsTrigger value="notes" className="flex-1">Notes</TabsTrigger>
           </TabsList>
 
@@ -119,14 +120,64 @@ export default function CustomerDetailDrawer({ customerId, open, onOpenChange }:
             <div className="space-y-2 max-h-[60vh] overflow-auto">
               {(detail?.orders ?? []).length === 0 && <p className="text-sm text-muted-foreground py-6 text-center">No orders yet</p>}
               {(detail?.orders ?? []).map((o: any) => (
-                <div key={o.id} className="rounded border border-border p-3 text-sm bg-card flex justify-between">
+                <div key={o.id} className="rounded-xl border border-border/70 p-3.5 text-sm bg-card/80 flex items-center justify-between hover:border-border transition-colors">
                   <div>
-                    <div className="font-medium">#{o.order_number}</div>
-                    <div className="text-xs text-muted-foreground">{format(new Date(o.created_at), "MMM d, yyyy")}</div>
+                    <div className="font-semibold text-foreground">#{o.order_number}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{format(new Date(o.created_at), "MMM d, yyyy · HH:mm")}</div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-medium">{Number(o.total).toFixed(2)}</div>
-                    <Badge variant="outline" className="text-[10px]">{o.status}</Badge>
+                  <div className="text-right space-y-1">
+                    <div className="font-bold text-foreground">৳{Number(o.total).toFixed(2)}</div>
+                    <Badge variant="outline" className="text-[10px] capitalize font-medium">{o.status}</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="returns" className="pt-3">
+            <div className="space-y-2.5 max-h-[60vh] overflow-auto">
+              {(detail?.returns ?? []).length === 0 && <p className="text-sm text-muted-foreground py-6 text-center">No return or refund requests recorded</p>}
+              {(detail?.returns ?? []).map((r: any) => (
+                <div key={r.id} className="rounded-xl border border-border/70 p-3.5 text-xs bg-card/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-foreground">Order #{r.orders?.order_number || r.order_id?.slice(0, 8)}</span>
+                      <span className="text-muted-foreground ml-2">({r.type || "return"})</span>
+                    </div>
+                    <Badge variant="outline" className={`text-[10px] uppercase font-bold ${
+                      r.status === "approved" ? "border-emerald-500/40 text-emerald-500 bg-emerald-500/10" :
+                      r.status === "rejected" ? "border-rose-500/40 text-rose-500 bg-rose-500/10" :
+                      "border-amber-500/40 text-amber-500 bg-amber-500/10"
+                    }`}>
+                      {r.status}
+                    </Badge>
+                  </div>
+                  <p className="text-muted-foreground"><span className="text-foreground font-medium">Reason:</span> {r.reason || "Not specified"}</p>
+                  {r.refund_status && (
+                    <div className="p-2.5 rounded-lg bg-secondary/30 border border-border/50 flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <span className="text-muted-foreground">Refund Status: </span>
+                        <span className="font-semibold text-foreground uppercase">{r.refund_status}</span>
+                        {r.refund_method && <span className="text-muted-foreground"> · via {r.refund_method}</span>}
+                        {r.refund_reference && <span className="text-muted-foreground"> (Trx: {r.refund_reference})</span>}
+                      </div>
+                      <div className="font-bold text-foreground">
+                        ৳{Number(r.refund_amount || 0).toFixed(2)}
+                        {r.refund_delivery_charge ? (
+                          <span className="text-[10px] text-rose-400 font-normal ml-1">(inc. delivery loss)</span>
+                        ) : (
+                          <span className="text-[10px] text-emerald-400 font-normal ml-1">(delivery retained)</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {r.return_tracking && (
+                    <div className="text-[11px] text-muted-foreground">
+                      Courier Tracking: <span className="font-mono font-medium text-foreground">{r.return_tracking}</span>
+                    </div>
+                  )}
+                  <div className="text-[10px] text-muted-foreground">
+                    Requested: {format(new Date(r.created_at), "MMM d, yyyy HH:mm")}
                   </div>
                 </div>
               ))}

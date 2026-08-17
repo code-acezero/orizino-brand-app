@@ -218,7 +218,10 @@ export const decideReturn = createServerFn({ method: "POST" })
         resolution: z.string().max(500).optional(),
         return_tracking: z.string().max(200).optional(),
         refund_amount: z.number().nonnegative().optional(),
-        refund_status: z.enum(["pending", "approved", "refunded", "not_required"]).optional(),
+        refund_delivery_charge: z.boolean().optional(),
+        refund_method: z.string().max(100).optional(),
+        refund_reference: z.string().max(200).optional(),
+        refund_status: z.enum(["pending", "approved", "processing", "refunded", "rejected", "not_required"]).optional(),
       })
       .parse(d),
   )
@@ -247,18 +250,26 @@ export const decideReturn = createServerFn({ method: "POST" })
       decided_at: now,
       updated_at: now,
     };
+
     if (typeof data.refund_amount === "number") patch.refund_amount = data.refund_amount;
+    if (typeof data.refund_delivery_charge === "boolean") patch.refund_delivery_charge = data.refund_delivery_charge;
+    if (data.refund_method) patch.refund_method = data.refund_method;
+    if (data.refund_reference) patch.refund_reference = data.refund_reference;
     if (data.refund_status) patch.refund_status = data.refund_status;
 
     let orderStatus: string | null = null;
     if (data.decision === "approve") {
       patch.status = "approved";
+      if (!patch.refund_status) patch.refund_status = "approved";
     } else if (data.decision === "reject") {
       patch.status = "rejected";
+      patch.refund_status = "rejected";
+      patch.resolved_at = now;
       orderStatus = "delivered"; // revert
     } else if (data.decision === "complete") {
       patch.status = "completed";
       patch.refund_status = data.refund_status ?? "refunded";
+      patch.resolved_at = now;
       orderStatus = "returned";
     }
 

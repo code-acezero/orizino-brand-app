@@ -2665,9 +2665,21 @@ export type Database = {
         Row: {
           admin_notes: string | null
           created_at: string
+          decided_at: string | null
+          decided_by: string | null
           id: string
+          images: string[] | null
+          items: Json | null
           order_id: string
           reason: string
+          refund_amount: number | null
+          refund_delivery_charge: boolean | null
+          refund_method: string | null
+          refund_reference: string | null
+          refund_status: string | null
+          resolution: string | null
+          resolved_at: string | null
+          return_tracking: string | null
           status: string
           updated_at: string
           user_id: string
@@ -2675,9 +2687,21 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
           id?: string
+          images?: string[] | null
+          items?: Json | null
           order_id: string
           reason: string
+          refund_amount?: number | null
+          refund_delivery_charge?: boolean | null
+          refund_method?: string | null
+          refund_reference?: string | null
+          refund_status?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          return_tracking?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -2685,9 +2709,21 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
           id?: string
+          images?: string[] | null
+          items?: Json | null
           order_id?: string
           reason?: string
+          refund_amount?: number | null
+          refund_delivery_charge?: boolean | null
+          refund_method?: string | null
+          refund_reference?: string | null
+          refund_status?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          return_tracking?: string | null
           status?: string
           updated_at?: string
           user_id?: string

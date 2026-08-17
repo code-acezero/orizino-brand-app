@@ -53,7 +53,7 @@ export const listCustomers = createServerFn({ method: "POST" })
     const { data: rows, count, error } = await q;
     if (error) throw new Error(error.message);
 
-    const ids = (rows ?? []).map((r) => r.id);
+    const ids = (rows ?? []).map((r: any) => r.id);
     // Roles per user (so staff are visible but clearly tagged)
     const { data: roleRows } = ids.length
       ? await sb.from("user_roles").select("user_id, role").in("user_id", ids)
@@ -70,16 +70,16 @@ export const listCustomers = createServerFn({ method: "POST" })
     const emailMap: Record<string, string> = {};
     if (ids.length && hasSupabaseAdminCredentials()) {
       const { data: authList } = await (adminClient() as any).auth.admin.listUsers({ page: 1, perPage: 1000 });
-      authList?.users?.forEach((u) => { if (ids.includes(u.id)) emailMap[u.id] = u.email ?? ""; });
+      authList?.users?.forEach((u: any) => { if (ids.includes(u.id)) emailMap[u.id] = u.email ?? ""; });
     }
     // Tags
     const { data: tagRows } = ids.length
       ? await sb.from("customer_tag_assignments").select("customer_id, tag_id, customer_tags(id, name, color)").in("customer_id", ids)
       : { data: [] as any[] };
 
-    const items = (rows ?? []).map((r) => {
-      const userOrders = (orderRows ?? []).filter((o) => o.user_id === r.id);
-      const lifetime = userOrders.reduce((s, o) => s + Number(o.total ?? 0), 0);
+    const items = (rows ?? []).map((r: any) => {
+      const userOrders = (orderRows ?? []).filter((o: any) => o.user_id === r.id);
+      const lifetime = userOrders.reduce((s: number, o: any) => s + Number(o.total ?? 0), 0);
       const lastOrder = userOrders.reduce((acc: string | null, o: any) => acc && acc > o.created_at ? acc : o.created_at, null as string | null);
       const tags = (tagRows ?? []).filter((t: any) => t.customer_id === r.id).map((t: any) => t.customer_tags).filter(Boolean);
       const roles = rolesByUser[r.id] ?? [];
@@ -91,14 +91,14 @@ export const listCustomers = createServerFn({ method: "POST" })
         last_order_at: lastOrder,
         tags,
         roles,
-        is_staff: roles.some((x) => x === "admin" || x === "moderator"),
+        is_staff: roles.some((x: string) => x === "admin" || x === "moderator"),
       };
     });
 
     let filtered = items;
-    if (data.hasOrders === true) filtered = filtered.filter((i) => i.order_count > 0);
-    if (data.hasOrders === false) filtered = filtered.filter((i) => i.order_count === 0);
-    if (data.tag) filtered = filtered.filter((i) => i.tags.some((t: any) => t.id === data.tag));
+    if (data.hasOrders === true) filtered = filtered.filter((i: any) => i.order_count > 0);
+    if (data.hasOrders === false) filtered = filtered.filter((i: any) => i.order_count === 0);
+    if (data.tag) filtered = filtered.filter((i: any) => i.tags.some((t: any) => t.id === data.tag));
 
     return { items: filtered, total: count ?? filtered.length };
   });
@@ -109,18 +109,20 @@ export const getCustomerDetail = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertStaff(context.supabase as any, context.userId);
     const sb: any = adminClient();
-    const [{ data: profile }, { data: orders }, { data: notes }, { data: addresses }, { data: tagAssign }] = await Promise.all([
+    const [{ data: profile }, { data: orders }, { data: notes }, { data: addresses }, { data: tagAssign }, { data: returns }] = await Promise.all([
       sb.from("profiles").select("*").eq("id", data.customerId).maybeSingle(),
       sb.from("orders").select("*").eq("user_id", data.customerId).order("created_at", { ascending: false }).limit(50),
       sb.from("customer_notes").select("*").eq("customer_id", data.customerId).order("created_at", { ascending: false }),
-      sb.from("user_addresses").select("*").eq("user_id", data.customerId).then((r) => r, () => ({ data: [] as any[] })),
+      sb.from("user_addresses").select("*").eq("user_id", data.customerId).then((r: any) => r, () => ({ data: [] as any[] })),
       sb.from("customer_tag_assignments").select("tag_id, customer_tags(id, name, color)").eq("customer_id", data.customerId),
+      sb.from("return_requests").select("*, orders(order_number, total)").eq("user_id", data.customerId).order("created_at", { ascending: false }),
     ]);
     const { data: u } = await sb.auth.admin.getUserById(data.customerId);
     return {
       profile,
       email: u?.user?.email ?? null,
       orders: orders ?? [],
+      returns: returns ?? [],
       notes: notes ?? [],
       addresses: addresses ?? [],
       tags: (tagAssign ?? []).map((t: any) => t.customer_tags).filter(Boolean),
@@ -141,24 +143,24 @@ export const exportCustomers = createServerFn({ method: "POST" })
     let q = sb.from("profiles").select("id, full_name, phone, created_at");
     if (data.customerIds && data.customerIds.length > 0) q = q.in("id", data.customerIds);
     const { data: rows } = await q;
-    const ids = (rows ?? []).map((r) => r.id);
+    const ids = (rows ?? []).map((r: any) => r.id);
     const emailMap: Record<string, string> = {};
     if (ids.length) {
       const { data: list } = await sb.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      list?.users?.forEach((u) => { if (ids.includes(u.id)) emailMap[u.id] = u.email ?? ""; });
+      list?.users?.forEach((u: any) => { if (ids.includes(u.id)) emailMap[u.id] = u.email ?? ""; });
     }
-    const items = (rows ?? []).map((r) => ({ id: r.id, name: r.full_name ?? "", phone: r.phone ?? "", email: emailMap[r.id] ?? "", joined: r.created_at }));
+    const items = (rows ?? []).map((r: any) => ({ id: r.id, name: r.full_name ?? "", phone: r.phone ?? "", email: emailMap[r.id] ?? "", joined: r.created_at }));
     await audit(context.userId, "export_customers", "customers", undefined, { count: items.length, format: data.format });
 
     if (data.format === "json") {
       return { mime: "application/json", filename: `customers-${Date.now()}.json`, body: JSON.stringify(items, null, 2) };
     }
     if (data.format === "vcard") {
-      const body = items.map((c) => `BEGIN:VCARD\nVERSION:3.0\nFN:${c.name || c.phone || c.email}\nTEL:${c.phone}\nEMAIL:${c.email}\nEND:VCARD`).join("\n");
+      const body = items.map((c: any) => `BEGIN:VCARD\nVERSION:3.0\nFN:${c.name || c.phone || c.email}\nTEL:${c.phone}\nEMAIL:${c.email}\nEND:VCARD`).join("\n");
       return { mime: "text/vcard", filename: `customers-${Date.now()}.vcf`, body };
     }
     const header = "id,name,phone,email,joined";
-    const body = [header, ...items.map((c) => [c.id, c.name, c.phone, c.email, c.joined].map(csv).join(","))].join("\n");
+    const body = [header, ...items.map((c: any) => [c.id, c.name, c.phone, c.email, c.joined].map(csv).join(","))].join("\n");
     return { mime: "text/csv", filename: `customers-${Date.now()}.csv`, body };
   });
 
@@ -389,4 +391,3 @@ export const previewCampaignAudience = createServerFn({ method: "POST" })
     const { data: suppressed } = await sb.from("email_suppressions").select("email");
     return { recipients, sample, suppressed: suppressed?.length ?? 0 };
   });
-// code:4ce0

@@ -22,6 +22,9 @@ export interface OrderFinancialRecord {
   loyalty_discount?: number | string | null;
   is_delivery_prepaid?: boolean | null;
   delivery_prepaid_amount?: number | string | null;
+  refund_delivery_charge?: boolean | null;
+  refund_amount?: number | string | null;
+  refund_status?: string | null;
   created_at?: string | null;
   order_source?: string | null;
 }
@@ -41,8 +44,12 @@ export interface FinancialSummary {
   shippingFeesCollected: number;
   /** Delivery charges that were pre-paid in advance */
   prepaidShippingFees: number;
-  /** Lost delivery charges on returned / failed delivery orders */
+  /** Lost delivery charges on returned orders where delivery fee was refunded */
   shippingLossOnReturns: number;
+  /** Delivery charges retained by merchant on returned orders (not refunded = no loss) */
+  shippingFeesRetainedOnReturns: number;
+  /** Total refunds processed (product refund + refunded shipping if marked) */
+  totalRefundsProcessed: number;
   /** Total Gross Cash Inflow (Recognized Product Revenue + Collected Shipping Fees) */
   grossCashInflow: number;
   /** Order status counts */
@@ -108,6 +115,8 @@ export function calculateOrderFinancials(orders: OrderFinancialRecord[]): Financ
   let shippingFeesCollected = 0;
   let prepaidShippingFees = 0;
   let shippingLossOnReturns = 0;
+  let shippingFeesRetainedOnReturns = 0;
+  let totalRefundsProcessed = 0;
 
   let totalOrdersCount = 0;
   let confirmedOrdersCount = 0;
@@ -137,9 +146,21 @@ export function calculateOrderFinancials(orders: OrderFinancialRecord[]): Financ
 
     if (isOrderReturned(status)) {
       returnedOrdersCount++;
-      returnedProductsValue += productAmount;
-      // Shipping cost incurred for returned item is counted as loss
-      shippingLossOnReturns += shippingFee;
+      const actualProductRefund = order.refund_amount != null && Number(order.refund_amount) > 0
+        ? Number(order.refund_amount)
+        : productAmount;
+
+      returnedProductsValue += actualProductRefund;
+
+      // Delivery charge is only counted as a loss IF admin approved refunding the delivery charge
+      if (order.refund_delivery_charge === true) {
+        shippingLossOnReturns += shippingFee;
+        totalRefundsProcessed += actualProductRefund + shippingFee;
+      } else {
+        // Delivery fee was retained by store (not refunded) -> NOT a loss
+        shippingFeesRetainedOnReturns += shippingFee;
+        totalRefundsProcessed += actualProductRefund;
+      }
       continue;
     }
 
@@ -184,6 +205,8 @@ export function calculateOrderFinancials(orders: OrderFinancialRecord[]): Financ
     shippingFeesCollected,
     prepaidShippingFees,
     shippingLossOnReturns,
+    shippingFeesRetainedOnReturns,
+    totalRefundsProcessed,
     grossCashInflow,
     totalOrdersCount,
     confirmedOrdersCount,

@@ -137,6 +137,10 @@ export default function AdminOrders() {
   const [adminNotes, setAdminNotes] = useState("");
   const [refundAmount, setRefundAmount] = useState<string>("");
   const [returnTracking, setReturnTracking] = useState<string>("");
+  const [refundDeliveryCharge, setRefundDeliveryCharge] = useState<boolean>(false);
+  const [refundMethod, setRefundMethod] = useState<string>("bkash");
+  const [refundReference, setRefundReference] = useState<string>("");
+  const [refundStatus, setRefundStatus] = useState<string>("pending");
 
   // 1. Fetch Orders
   const { data: orders = [], isLoading, refetch: refetchOrders } = useQuery({
@@ -173,7 +177,7 @@ export default function AdminOrders() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("return_requests")
-        .select("*, orders(order_number, total, shipping_address)")
+        .select("*, orders(order_number, total, subtotal, shipping_fee, payment_method, shipping_address)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];
@@ -283,22 +287,38 @@ export default function AdminOrders() {
   });
 
   const returnMutation = useMutation({
-    mutationFn: (input: { id: string; decision: "approve" | "reject" | "complete" }) =>
+    mutationFn: (input: {
+      id: string;
+      decision: "approve" | "reject" | "complete";
+      refund_delivery_charge?: boolean;
+      refund_method?: string;
+      refund_reference?: string;
+      refund_status?: string;
+      refund_amount?: number;
+      return_tracking?: string;
+      admin_notes?: string;
+    }) =>
       decideReturn({
         data: {
           id: input.id,
           decision: input.decision,
-          admin_notes: adminNotes || undefined,
-          return_tracking: returnTracking || undefined,
-          refund_amount: refundAmount ? Number(refundAmount) : undefined,
+          admin_notes: input.admin_notes ?? (adminNotes || undefined),
+          return_tracking: input.return_tracking ?? (returnTracking || undefined),
+          refund_amount: input.refund_amount ?? (refundAmount ? Number(refundAmount) : undefined),
+          refund_delivery_charge: input.refund_delivery_charge ?? refundDeliveryCharge,
+          refund_method: input.refund_method ?? refundMethod,
+          refund_reference: input.refund_reference ?? (refundReference || undefined),
+          refund_status: (input.refund_status ?? refundStatus) as any,
         },
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-returns"] });
+      qc.invalidateQueries({ queryKey: ["admin-orders"] });
       setReturnSel(null);
       setAdminNotes("");
       setReturnTracking("");
       setRefundAmount("");
+      setRefundReference("");
       toast.success("Return request updated");
     },
     onError: (e: any) => toast.error(e?.message || "Failed to update return"),
@@ -1097,42 +1117,76 @@ export default function AdminOrders() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {returns.map((r: any) => (
-                <Card
-                  key={r.id}
-                  onClick={() => {
-                    setReturnSel(r);
-                    setAdminNotes(r.admin_notes || "");
-                    setRefundAmount(String(r.refund_amount ?? ""));
-                    setReturnTracking(r.return_tracking || "");
-                  }}
-                  className="rounded-2xl border-border/70 hover:border-primary/50 transition-all cursor-pointer bg-card/60 hover:shadow-xs"
-                >
-                  <CardContent className="p-4 space-y-2.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs font-bold text-foreground">
-                        Order #{r.orders?.order_number ?? r.order_id.slice(0, 8)}
-                      </span>
-                      <Badge className={`text-[10px] uppercase font-mono ${returnStatusColors[r.status] || ""}`}>
-                        {r.status}
-                      </Badge>
-                    </div>
+              {returns.map((r: any) => {
+                const orderTotal = Number(r.orders?.total || 0);
+                const shippingFee = Number(r.orders?.shipping_fee || 0);
+                const productAmount = Math.max(0, orderTotal - shippingFee);
+                const hasDeliveryLoss = r.refund_delivery_charge === true;
 
-                    <p className="text-xs text-foreground/90 font-medium line-clamp-2">
-                      {r.reason}
-                    </p>
+                return (
+                  <Card
+                    key={r.id}
+                    onClick={() => {
+                      setReturnSel(r);
+                      setAdminNotes(r.admin_notes || "");
+                      const initialDeliveryChargeRefund = r.refund_delivery_charge ?? false;
+                      setRefundDeliveryCharge(initialDeliveryChargeRefund);
 
-                    <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-2 border-t border-border/40">
-                      <span className="flex items-center gap-1 font-mono">
-                        <Clock className="w-3 h-3" /> {format(new Date(r.created_at), "MMM d, yyyy")}
-                      </span>
-                      {r.refund_status && r.refund_status !== "not_required" && (
-                        <span className="font-semibold text-primary">Refund: {r.refund_status}</span>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      const initialAmount = r.refund_amount != null && Number(r.refund_amount) > 0
+                        ? String(r.refund_amount)
+                        : String(initialDeliveryChargeRefund ? orderTotal : productAmount);
+
+                      setRefundAmount(initialAmount);
+                      setReturnTracking(r.return_tracking || "");
+                      setRefundMethod(r.refund_method || r.orders?.payment_method || "bkash");
+                      setRefundReference(r.refund_reference || "");
+                      setRefundStatus(r.refund_status || "pending");
+                    }}
+                    className="rounded-2xl border-border/70 hover:border-primary/50 transition-all cursor-pointer bg-card/60 hover:shadow-xs group"
+                  >
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                          Order #{r.orders?.order_number ?? r.order_id.slice(0, 8)}
+                        </span>
+                        <Badge className={`text-[10px] uppercase font-mono ${returnStatusColors[r.status] || ""}`}>
+                          {r.status}
+                        </Badge>
+                      </div>
+
+                      <p className="text-xs text-foreground/90 font-medium line-clamp-2">
+                        {r.reason}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2 text-[11px] bg-secondary/30 p-2.5 rounded-xl border border-border/40 font-mono">
+                        <div>
+                          <span className="text-muted-foreground block text-[10px] uppercase">Refund Amount</span>
+                          <span className="font-bold text-foreground">
+                            ৳{Number(r.refund_amount || productAmount).toLocaleString()}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground block text-[10px] uppercase">Delivery Fee</span>
+                          <span className={`font-semibold ${hasDeliveryLoss ? "text-rose-500 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                            {hasDeliveryLoss ? `Refunded (-৳${shippingFee} loss)` : `Retained (৳${shippingFee})`}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/40">
+                        <span className="flex items-center gap-1 font-mono">
+                          <Clock className="w-3 h-3" /> {format(new Date(r.created_at), "MMM d, yyyy")}
+                        </span>
+                        {r.refund_status && (
+                          <Badge variant="outline" className="text-[10px] font-mono capitalize">
+                            Refund: {r.refund_status}
+                          </Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
@@ -1503,92 +1557,239 @@ export default function AdminOrders() {
 
       {/* ── RETURN REVIEW MODAL ── */}
       <Dialog open={!!returnSel} onOpenChange={(v) => !v && setReturnSel(null)}>
-        <DialogContent className="max-w-lg rounded-3xl p-6">
+        <DialogContent className="max-w-xl rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold">
-              Return Request — Order #{returnSel?.orders?.order_number}
+            <DialogTitle className="text-base font-bold flex items-center justify-between">
+              <span>Return &amp; Refund Review — Order #{returnSel?.orders?.order_number}</span>
+              {returnSel?.status && (
+                <Badge className={`text-[10px] uppercase font-mono ${returnStatusColors[returnSel.status] || ""}`}>
+                  {returnSel.status}
+                </Badge>
+              )}
             </DialogTitle>
           </DialogHeader>
-          {returnSel && (
-            <div className="space-y-3.5 pt-2">
-              <div className="p-3 rounded-2xl bg-secondary/30 text-xs space-y-1">
-                <span className="text-[10px] text-muted-foreground uppercase font-bold">Customer Reason</span>
-                <p className="text-foreground">{returnSel.reason}</p>
-              </div>
+          {returnSel && (() => {
+            const orderTotal = Number(returnSel.orders?.total || 0);
+            const shippingFee = Number(returnSel.orders?.shipping_fee || 0);
+            const productAmount = Math.max(0, orderTotal - shippingFee);
 
-              {returnSel.images?.length > 0 && (
-                <div className="space-y-1">
-                  <span className="text-xs font-bold text-foreground">Attached Photos</span>
-                  <div className="flex gap-2 flex-wrap">
-                    {returnSel.images.map((u: string) => (
-                      <a key={u} href={u} target="_blank" rel="noreferrer">
-                        <img src={u} className="w-16 h-16 rounded-xl object-cover border" alt="return proof" />
-                      </a>
-                    ))}
+            return (
+              <div className="space-y-4 pt-2">
+                {/* 1. Financial Context Banner */}
+                <div className="grid grid-cols-3 gap-2 bg-secondary/30 p-3 rounded-2xl border border-border/50 text-xs font-mono">
+                  <div>
+                    <span className="text-muted-foreground block text-[10px] uppercase">Product Total</span>
+                    <span className="font-bold text-foreground">৳{productAmount.toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block text-[10px] uppercase">Delivery Fee</span>
+                    <span className="font-bold text-foreground">৳{shippingFee.toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block text-[10px] uppercase">Order Grand Total</span>
+                    <span className="font-bold text-primary">৳{orderTotal.toLocaleString()}</span>
                   </div>
                 </div>
-              )}
 
-              <div className="grid grid-cols-2 gap-2.5">
+                {/* 2. Customer Reason & Proof */}
+                <div className="p-3 rounded-2xl bg-secondary/20 text-xs space-y-1 border border-border/40">
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Customer Return Reason</span>
+                  <p className="text-foreground">{returnSel.reason}</p>
+                </div>
+
+                {returnSel.images?.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-bold text-foreground">Customer Attached Proof Photos</span>
+                    <div className="flex gap-2 flex-wrap">
+                      {returnSel.images.map((u: string, idx: number) => (
+                        <a key={u + idx} href={u} target="_blank" rel="noreferrer" className="group relative">
+                          <img
+                            src={u}
+                            className="w-16 h-16 rounded-xl object-cover border border-border/60 hover:opacity-80 transition-opacity"
+                            alt="return proof"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Delivery Charge Refund Control (Core Business Rule) */}
+                <div className={`p-3.5 rounded-2xl border transition-colors ${refundDeliveryCharge ? "bg-amber-500/10 border-amber-500/30" : "bg-card border-border/70"}`}>
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="refund_delivery_charge"
+                      checked={refundDeliveryCharge}
+                      onCheckedChange={(checked) => {
+                        const isChecked = Boolean(checked);
+                        setRefundDeliveryCharge(isChecked);
+                        setRefundAmount(String(isChecked ? orderTotal : productAmount));
+                      }}
+                      className="mt-0.5"
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="refund_delivery_charge" className="text-xs font-bold cursor-pointer text-foreground flex items-center gap-1.5">
+                        Include delivery charge in refund (৳{shippingFee.toLocaleString()})
+                      </Label>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        {refundDeliveryCharge ? (
+                          <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                            ⚠️ Marked: Delivery charge will be refunded to customer and calculated as business loss in financial reports.
+                          </span>
+                        ) : (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                            ✅ Unmarked: Delivery fee is retained by the store and is NOT considered a financial loss.
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Refund Payout Details */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold">Refund Amount (৳)</Label>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRefundDeliveryCharge(false);
+                            setRefundAmount(String(productAmount));
+                          }}
+                          className="text-[10px] text-primary hover:underline"
+                        >
+                          Product Only
+                        </button>
+                        <span className="text-[10px] text-muted-foreground">|</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRefundDeliveryCharge(true);
+                            setRefundAmount(String(orderTotal));
+                          }}
+                          className="text-[10px] text-primary hover:underline"
+                        >
+                          Full
+                        </button>
+                      </div>
+                    </div>
+                    <Input
+                      type="number"
+                      value={refundAmount}
+                      onChange={(e) => setRefundAmount(e.target.value)}
+                      className="h-8 text-xs rounded-xl mt-1"
+                      placeholder={`e.g. ${refundDeliveryCharge ? orderTotal : productAmount}`}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs font-semibold">Refund Method / Channel</Label>
+                    <Select value={refundMethod} onValueChange={setRefundMethod}>
+                      <SelectTrigger className="h-8 text-xs rounded-xl mt-1">
+                        <SelectValue placeholder="Select payout channel" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bkash">bKash (MFS)</SelectItem>
+                        <SelectItem value="nagad">Nagad (MFS)</SelectItem>
+                        <SelectItem value="rocket">Rocket (MFS)</SelectItem>
+                        <SelectItem value="upay">Upay (MFS)</SelectItem>
+                        <SelectItem value="bank">Bank Transfer</SelectItem>
+                        <SelectItem value="original">Original Payment Method</SelectItem>
+                        <SelectItem value="store_credit">Store Credit / Wallet</SelectItem>
+                        <SelectItem value="cash">Cash on Hand</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs font-semibold">Refund Reference / Trx ID</Label>
+                    <Input
+                      value={refundReference}
+                      onChange={(e) => setRefundReference(e.target.value)}
+                      placeholder="e.g. bKash TrxID or Bank Ref"
+                      className="h-8 text-xs rounded-xl mt-1 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold">Return Courier Tracking #</Label>
+                    <Input
+                      value={returnTracking}
+                      onChange={(e) => setReturnTracking(e.target.value)}
+                      placeholder="e.g. Return parcel tracking ID"
+                      className="h-8 text-xs rounded-xl mt-1 font-mono"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <Label className="text-xs">Refund Amount (৳)</Label>
-                  <Input
-                    type="number"
-                    value={refundAmount}
-                    onChange={(e) => setRefundAmount(e.target.value)}
-                    className="h-8 text-xs rounded-xl mt-1"
+                  <Label className="text-xs font-semibold">Admin Notes &amp; Return Memo</Label>
+                  <Textarea
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    rows={2}
+                    placeholder="Internal audit notes regarding returned condition or refund payout..."
+                    className="text-xs rounded-xl mt-1"
                   />
                 </div>
-                <div>
-                  <Label className="text-xs">Return Tracking #</Label>
-                  <Input
-                    value={returnTracking}
-                    onChange={(e) => setReturnTracking(e.target.value)}
-                    className="h-8 text-xs rounded-xl mt-1"
-                  />
+
+                {/* 5. Action Buttons */}
+                <div className="flex flex-wrap gap-2 pt-3 border-t border-border/50 justify-end">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      returnMutation.mutate({
+                        id: returnSel.id,
+                        decision: "approve",
+                        refund_status: "approved",
+                      })
+                    }
+                    disabled={returnMutation.isPending}
+                    className="h-9 text-xs rounded-xl font-bold border-blue-500/40 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
+                  >
+                    Approve Return
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      returnMutation.mutate({
+                        id: returnSel.id,
+                        decision: "complete",
+                        refund_status: "refunded",
+                      })
+                    }
+                    disabled={returnMutation.isPending}
+                    className="h-9 text-xs rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                    Confirm &amp; Issue Refund
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() =>
+                      returnMutation.mutate({
+                        id: returnSel.id,
+                        decision: "reject",
+                        refund_status: "rejected",
+                      })
+                    }
+                    disabled={returnMutation.isPending}
+                    className="h-9 text-xs rounded-xl font-bold"
+                  >
+                    <XCircle className="w-3.5 h-3.5 mr-1" />
+                    Reject Return
+                  </Button>
                 </div>
               </div>
-
-              <div>
-                <Label className="text-xs">Admin Notes</Label>
-                <Textarea
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  rows={2}
-                  className="text-xs rounded-xl mt-1"
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-border/50">
-                <Button
-                  size="sm"
-                  onClick={() => returnMutation.mutate({ id: returnSel.id, decision: "approve" })}
-                  disabled={returnMutation.isPending}
-                  className="h-8 text-xs rounded-xl font-bold bg-primary"
-                >
-                  Approve Return
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => returnMutation.mutate({ id: returnSel.id, decision: "complete" })}
-                  disabled={returnMutation.isPending}
-                  className="h-8 text-xs rounded-xl font-bold"
-                >
-                  Mark Refunded
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => returnMutation.mutate({ id: returnSel.id, decision: "reject" })}
-                  disabled={returnMutation.isPending}
-                  className="h-8 text-xs rounded-xl font-bold"
-                >
-                  Reject
-                </Button>
-              </div>
-            </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

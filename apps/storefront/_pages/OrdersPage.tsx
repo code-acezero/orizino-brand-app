@@ -161,6 +161,34 @@ const OrdersPage: React.FC = () => {
     enabled: !!user || localPlacedOrderNumbers.length > 0 || !!urlTrackingToken || !!urlOrderNum,
   });
 
+  const orderIds = useMemo(() => rawOrders.map((o: any) => o.id), [rawOrders]);
+
+  // Fetch Return Requests for all customer orders to display live return tracking
+  const { data: returnRequestsMap = {} } = useQuery({
+    queryKey: ["customer_return_requests", orderIds],
+    queryFn: async () => {
+      if (orderIds.length === 0) return {};
+      const { data, error } = await (supabase as any)
+        .from("return_requests")
+        .select("*")
+        .in("order_id", orderIds)
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.warn("[OrdersPage] Return requests load note:", error);
+        return {};
+      }
+      const map: Record<string, any> = {};
+      for (const item of (data || [])) {
+        if (!map[item.order_id]) {
+          map[item.order_id] = item;
+        }
+      }
+      return map;
+    },
+    enabled: orderIds.length > 0,
+    staleTime: 10000,
+  });
+
   // Filtered orders list
   const filteredOrders = useMemo(() => {
     return rawOrders.filter((order: any) => {
@@ -449,6 +477,115 @@ const OrdersPage: React.FC = () => {
                           </div>
                         </div>
 
+                        {/* Live Return & Refund Lifecycle Tracker Card */}
+                        {returnRequestsMap[order.id] && (() => {
+                          const ret = returnRequestsMap[order.id];
+                          const isRefunded = ret.refund_status === "refunded" || ret.status === "completed";
+                          const isApproved = ret.status === "approved" || isRefunded;
+                          const isRejected = ret.status === "rejected" || ret.refund_status === "rejected";
+
+                          return (
+                            <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border/70 space-y-3.5 shadow-xs">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-3">
+                                <div className="flex items-center gap-2">
+                                  <RotateCcw className="w-4 h-4 text-primary" />
+                                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                                    Return &amp; Refund Status
+                                  </h4>
+                                </div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <Badge className={`text-[10px] uppercase font-mono ${STATUS_STYLES[ret.status] || "bg-secondary"}`}>
+                                    Request: {ret.status}
+                                  </Badge>
+                                  {ret.refund_status && (
+                                    <Badge variant="outline" className={`text-[10px] uppercase font-mono ${isRefunded ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 font-bold" : "border-border"}`}>
+                                      Refund: {ret.refund_status}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Visual Stage Progression */}
+                              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
+                                <div className="p-2.5 rounded-xl bg-secondary/30 border border-border/40 space-y-1">
+                                  <div className="flex items-center gap-1.5 font-bold text-foreground">
+                                    <span className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px]">1</span>
+                                    <span>Requested</span>
+                                  </div>
+                                  <p className="text-[10px] text-muted-foreground line-clamp-2">{ret.reason}</p>
+                                </div>
+
+                                <div className={`p-2.5 rounded-xl border space-y-1 ${isApproved ? "bg-blue-500/10 border-blue-500/30" : isRejected ? "bg-rose-500/10 border-rose-500/30" : "bg-secondary/20 border-border/40"}`}>
+                                  <div className="flex items-center gap-1.5 font-bold text-foreground">
+                                    <span className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px]">2</span>
+                                    <span>{isRejected ? "Declined" : isApproved ? "Authorized" : "In Review"}</span>
+                                  </div>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {isRejected ? "Request not accepted" : isApproved ? "Return approved" : "Under review"}
+                                  </p>
+                                </div>
+
+                                <div className={`p-2.5 rounded-xl border space-y-1 ${ret.return_tracking ? "bg-purple-500/10 border-purple-500/30" : "bg-secondary/20 border-border/40"}`}>
+                                  <div className="flex items-center gap-1.5 font-bold text-foreground">
+                                    <span className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px]">3</span>
+                                    <span>Shipment</span>
+                                  </div>
+                                  {ret.return_tracking ? (
+                                    <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 truncate">
+                                      Track: #{ret.return_tracking}
+                                    </p>
+                                  ) : (
+                                    <p className="text-[10px] text-muted-foreground">Drop-off / Inbound</p>
+                                  )}
+                                </div>
+
+                                <div className={`p-2.5 rounded-xl border space-y-1 ${isRefunded ? "bg-emerald-500/15 border-emerald-500/40" : "bg-secondary/20 border-border/40"}`}>
+                                  <div className="flex items-center gap-1.5 font-bold text-foreground">
+                                    <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center text-[10px]">4</span>
+                                    <span>Payout</span>
+                                  </div>
+                                  <p className={`text-[10px] font-bold ${isRefunded ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>
+                                    {isRefunded ? "Refund Issued" : "Pending Inspection"}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Payout Details & TrxID when available */}
+                              {(ret.refund_amount || ret.refund_reference || ret.refund_method) && (
+                                <div className="bg-secondary/30 p-3 rounded-xl border border-border/50 grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
+                                  <div>
+                                    <span className="text-muted-foreground block text-[10px] uppercase">Approved Refund</span>
+                                    <span className="font-bold text-foreground text-sm">
+                                      ৳{Number(ret.refund_amount || order.total).toLocaleString()}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground block">
+                                      {ret.refund_delivery_charge ? "Includes delivery charge" : "Delivery fee retained"}
+                                    </span>
+                                  </div>
+
+                                  <div>
+                                    <span className="text-muted-foreground block text-[10px] uppercase">Payout Method</span>
+                                    <span className="font-semibold text-foreground uppercase">
+                                      {ret.refund_method || "Original Payment"}
+                                    </span>
+                                  </div>
+
+                                  <div>
+                                    <span className="text-muted-foreground block text-[10px] uppercase">Refund Trx / Ref ID</span>
+                                    {ret.refund_reference ? (
+                                      <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-background px-2 py-0.5 rounded border border-border/60 inline-block mt-0.5">
+                                        {ret.refund_reference}
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground italic text-[11px]">Processing payout...</span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+
                         {/* Order Summary & Address Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-border/40 text-xs">
                           <div className="space-y-1.5 p-3.5 rounded-xl bg-card border border-border/40">
@@ -510,7 +647,7 @@ const OrdersPage: React.FC = () => {
                                 <XCircle className="w-3.5 h-3.5 mr-1.5" /> Cancel Order
                               </Button>
                             )}
-                            {RETURNABLE.has(order.status) && (
+                            {RETURNABLE.has(order.status) && !returnRequestsMap[order.id] && (
                               <Button
                                 variant="outline"
                                 size="sm"

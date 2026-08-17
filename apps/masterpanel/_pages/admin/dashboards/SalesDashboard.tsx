@@ -10,7 +10,7 @@ import {
   Star, ArrowRight, Clock, CheckCircle2, XCircle, Truck, Eye,
   BarChart3, Activity, Layers, Filter, AlertTriangle, Globe, ExternalLink,
   Phone, Key, Headphones, ChevronRight, Zap, Target, DollarSign,
-  ArrowUpRight, PieChart as PieChartIcon, RefreshCw, Box
+  ArrowUpRight, PieChart as PieChartIcon, RefreshCw, Box, RotateCcw
 } from "lucide-react";
 import CurrencyIcon from "@/components/CurrencyIcon";
 import { useNavigate } from "@/lib/router-compat";
@@ -133,24 +133,44 @@ const SalesDashboard = () => {
   const { data: stats, isLoading, refetch } = useQuery({
     queryKey: ["admin-dashboard-stats", dateRange.from, dateRange.to],
     queryFn: async () => {
-      const [products, orders, profiles, reviews, recentOrders, previousOrders] = await Promise.all([
+      const [products, orders, profiles, reviews, recentOrders, previousOrders, returnRequests] = await Promise.all([
         supabase.from("products").select("id", { count: "exact", head: true }),
         supabase.from("orders" as any).select("id, total, subtotal, shipping_fee, coupon_discount, loyalty_discount, status, payment_method, is_delivery_prepaid, created_at"),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("reviews").select("id", { count: "exact", head: true }),
         supabase.from("orders" as any).select("id, total, subtotal, shipping_fee, coupon_discount, loyalty_discount, status, payment_method, is_delivery_prepaid, created_at").gte("created_at", dateRange.from).lte("created_at", dateRange.to),
         supabase.from("orders" as any).select("id, total, subtotal, shipping_fee, coupon_discount, loyalty_discount, status, payment_method, is_delivery_prepaid, created_at").gte("created_at", prevRange.from).lt("created_at", prevRange.to),
+        supabase.from("return_requests" as any).select("order_id, refund_amount, refund_delivery_charge, refund_status, status, created_at"),
       ]);
 
-      const allOrders = orders.data ?? [];
+      const returnsByOrderId = new Map<string, any>();
+      (returnRequests.data || []).forEach((r: any) => {
+        if (r.order_id && !returnsByOrderId.has(r.order_id)) {
+          returnsByOrderId.set(r.order_id, r);
+        }
+      });
+
+      const enrichOrder = (o: any) => {
+        const ret = returnsByOrderId.get(o.id);
+        return {
+          ...o,
+          refund_delivery_charge: ret?.refund_delivery_charge ?? false,
+          refund_amount: ret?.refund_amount ?? null,
+          refund_status: ret?.refund_status ?? null,
+        };
+      };
+
+      const allOrders = (orders.data ?? []).map(enrichOrder);
       const financialSummary = calculateOrderFinancials(allOrders as any[]);
       const totalRevenue = financialSummary.recognizedRevenue;
       const netRevenue = financialSummary.netProductRevenue;
       const pendingOrders = financialSummary.pendingOrdersCount;
       const deliveredOrders = financialSummary.deliveredOrdersCount;
 
-      const recentFin = calculateOrderFinancials((recentOrders.data ?? []) as any[]);
-      const prevFin = calculateOrderFinancials((previousOrders.data ?? []) as any[]);
+      const recentEnriched = (recentOrders.data ?? []).map(enrichOrder);
+      const prevEnriched = (previousOrders.data ?? []).map(enrichOrder);
+      const recentFin = calculateOrderFinancials(recentEnriched as any[]);
+      const prevFin = calculateOrderFinancials(prevEnriched as any[]);
       const recentRevenue = recentFin.recognizedRevenue;
       const prevRevenue = prevFin.recognizedRevenue;
       const revenueTrend = prevRevenue > 0 ? Math.round(((recentRevenue - prevRevenue) / prevRevenue) * 100) : 0;
@@ -183,7 +203,10 @@ const SalesDashboard = () => {
         netRevenue,
         shippingCollected: financialSummary.shippingFeesCollected,
         shippingLoss: financialSummary.shippingLossOnReturns,
+        shippingRetained: financialSummary.shippingFeesRetainedOnReturns,
         returnedValue: financialSummary.returnedProductsValue,
+        totalRefunds: financialSummary.totalRefundsProcessed,
+        returnedOrdersCount: financialSummary.returnedOrdersCount,
         pendingCodRevenue: financialSummary.pendingCodRevenue,
         pendingOrders,
         deliveredOrders,
@@ -518,6 +541,45 @@ const SalesDashboard = () => {
           color="text-accent"
           bgGlow="bg-amber-500"
         />
+      </div>
+
+      {/* Financial Accounting & Returns Reconciliation Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-4 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-xs space-y-1.5 hover:border-border transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Net Product Revenue</span>
+            <CurrencyIcon code={currency} className="w-4 h-4 text-emerald-500" />
+          </div>
+          <p className="text-xl font-bold font-display text-foreground">{formatPrice(stats?.netRevenue ?? 0)}</p>
+          <p className="text-[10px] text-muted-foreground">Excludes returned product values</p>
+        </div>
+
+        <div className="p-4 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-xs space-y-1.5 hover:border-amber-500/40 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Returned Merchandise</span>
+            <RotateCcw className="w-4 h-4 text-amber-500" />
+          </div>
+          <p className="text-xl font-bold font-display text-amber-500">{formatPrice(stats?.returnedValue ?? 0)}</p>
+          <p className="text-[10px] text-muted-foreground">{stats?.returnedOrdersCount ?? 0} returned orders recorded</p>
+        </div>
+
+        <div className="p-4 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-xs space-y-1.5 hover:border-rose-500/40 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Realized Logistics Loss</span>
+            <Truck className="w-4 h-4 text-rose-500" />
+          </div>
+          <p className="text-xl font-bold font-display text-rose-500">{formatPrice(stats?.shippingLoss ?? 0)}</p>
+          <p className="text-[10px] text-muted-foreground">Refunded delivery fees only</p>
+        </div>
+
+        <div className="p-4 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-xs space-y-1.5 hover:border-primary/40 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Retained Delivery Fees</span>
+            <CheckCircle2 className="w-4 h-4 text-primary" />
+          </div>
+          <p className="text-xl font-bold font-display text-primary">{formatPrice(stats?.shippingRetained ?? 0)}</p>
+          <p className="text-[10px] text-muted-foreground">Kept on returns (saved from loss)</p>
+        </div>
       </div>
 
       {/* Interactive Multi-Tab Analytics Chart & Order Status Panel */}
