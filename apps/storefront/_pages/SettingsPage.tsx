@@ -709,25 +709,26 @@ const SettingsPage: React.FC = () => {
                     </div>
 
                     {enabledCurrencies.length > 1 && (
-                      <div className="rounded-md border border-border/40 bg-card/60 backdrop-blur-md p-5 sm:p-6 space-y-4">
+                      <div className="rounded-md border border-border/40 bg-card/60 backdrop-blur-md p-5 sm:p-6 space-y-4 notranslate skiptranslate" translate="no">
                         <div className="flex items-center gap-2 pb-2 border-b border-border/30">
                           <Coins className="w-4 h-4 text-primary" />
-                          <h2 className="text-base font-bold text-foreground">{t("settings.currency") || "Currency"}</h2>
+                          <h2 className="text-base font-bold text-foreground">Currency</h2>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 notranslate" translate="no">
                           {enabledCurrencies.map((c) => (
                             <button
                               key={c.code}
                               type="button"
+                              translate="no"
                               onClick={() => setCurrency(c.code)}
-                              className={`flex items-center gap-3 p-3 rounded-md border text-left transition-colors ${
+                              className={`notranslate skiptranslate flex items-center gap-3 p-3 rounded-md border text-left transition-colors ${
                                 currency === c.code ? "border-primary bg-primary/10 text-foreground font-bold" : "border-border/40 hover:border-primary/30 text-muted-foreground"
                               }`}
                             >
-                              <span className="text-lg font-bold font-display">{c.symbol}</span>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-xs font-bold">{c.code}</p>
-                                <p className="text-[10px] text-muted-foreground truncate">{c.name}</p>
+                              <span className="text-lg font-bold font-display notranslate">{c.symbol}</span>
+                              <div className="min-w-0 flex-1 notranslate">
+                                <p className="text-xs font-bold notranslate">{c.code}</p>
+                                <p className="text-[10px] text-muted-foreground truncate notranslate">{c.name}</p>
                               </div>
                               {currency === c.code && <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />}
                             </button>

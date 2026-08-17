@@ -907,72 +907,108 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
               </div>
 
               {/* Nav links */}
-              <nav className="flex-1 overflow-y-auto py-4">
-                <div className="px-3 mb-2">
-                  <p className="section-label px-2 mb-1">Shop</p>
-                  {[
-                    { label: "All Products", href: "/inventory" },
-                    { label: "New Arrivals", href: "/inventory?sort=newest" },
-                    { label: "Featured", href: "/inventory?featured=true" },
-                    ...topCategories.map((c) => ({ label: c.name, href: `/categories/${c.slug}` })),
-                    { label: "Sale", href: "/inventory?sale=true" },
-                  ].map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      className={`flex items-center px-2 py-2.5 rounded-lg font-sans-brand text-sm transition-colors ${
-                        isActive(item.href) ? "text-primary bg-primary/8" : "text-foreground/80 hover:text-foreground hover:bg-white/5"
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+              {/* Nav links */}
+              <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-4">
+                {/* 1. Shop & Collections */}
+                <div>
+                  <p className="text-[10px] font-sans-brand font-bold uppercase tracking-[0.2em] text-primary px-2 mb-1.5">
+                    Shop & Collections
+                  </p>
+                  <div className="space-y-0.5">
+                    {[
+                      { label: "All Silhouettes", href: "/inventory" },
+                      { label: "New Arrivals", href: "/inventory?sort=newest" },
+                      { label: "Featured Drops", href: "/inventory?featured=true" },
+                      ...topCategories.map((c) => ({ label: c.name, href: `/categories/${c.slug}` })),
+                      { label: "Archive Sale", href: "/inventory?sale=true" },
+                    ].map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`flex items-center justify-between px-3 py-2 rounded-xl font-sans-brand text-xs font-semibold tracking-wide transition-colors ${
+                          isActive(item.href) ? "text-primary bg-primary/10" : "text-foreground/80 hover:text-foreground hover:bg-secondary/50"
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="px-3 mt-4 pt-4 border-t border-border">
-                  <p className="section-label px-2 mb-1">Account</p>
-                  {[
-                    { label: "My Orders", href: "/orders" },
-                    { label: "Wishlist", href: "/wishlist" },
-                    { label: "Cart", href: "/cart" },
-                    { label: "Track Order", href: "/support#track" },
-                    ...(user
-                      ? [
-                          { label: "My Profile", href: "/profile" },
-                          { label: "Settings", href: "/settings" },
-                        ]
-                      : []),
-                  ].map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center px-2 py-2.5 rounded-lg font-sans-brand text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+                {/* 2. Customer Services & Tracking */}
+                <div className="pt-3 border-t border-border/40">
+                  <p className="text-[10px] font-sans-brand font-bold uppercase tracking-[0.2em] text-muted-foreground px-2 mb-1.5">
+                    Services & Tracking
+                  </p>
+                  <div className="space-y-0.5">
+                    {[
+                      { label: "Live Order Tracking", href: "/track" },
+                      { label: "Product Authenticity Scanner", href: "/verify" },
+                      { label: "Concierge & Support", href: "/support" },
+                      { label: "Scanner Mobile App Info", href: "/scanner-info" },
+                    ].map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center justify-between px-3 py-2 rounded-xl font-sans-brand text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                      >
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="px-3 mt-4 pt-4 border-t border-border">
-                  <p className="section-label px-2 mb-1">Brand</p>
-                  {[
-                    { label: "Our Story", href: "/about" },
-                    { label: "Order Tracking", href: "/track" },
-                    { label: "Product Authenticity", href: "/verify" },
-                    { label: "FAQ", href: "/support" },
-                    { label: "Contact", href: "/support" },
-                  ].map((item) => (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center px-2 py-2.5 rounded-lg font-sans-brand text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+                {/* 3. Account & Personal */}
+                <div className="pt-3 border-t border-border/40">
+                  <p className="text-[10px] font-sans-brand font-bold uppercase tracking-[0.2em] text-muted-foreground px-2 mb-1.5">
+                    Account & Wardrobe
+                  </p>
+                  <div className="space-y-0.5">
+                    {[
+                      { label: "My Orders", href: "/orders" },
+                      { label: "Saved Wishlist", href: "/wishlist" },
+                      { label: "Shopping Bag", href: "/cart" },
+                      ...(user
+                        ? [
+                            { label: "My Profile & Rewards", href: "/profile" },
+                            { label: "Preferences & Settings", href: "/settings" },
+                          ]
+                        : []),
+                    ].map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center justify-between px-3 py-2 rounded-xl font-sans-brand text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                      >
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. Atelier & Brand */}
+                <div className="pt-3 border-t border-border/40">
+                  <p className="text-[10px] font-sans-brand font-bold uppercase tracking-[0.2em] text-muted-foreground px-2 mb-1.5">
+                    Atelier & Story
+                  </p>
+                  <div className="space-y-0.5">
+                    {[
+                      { label: "Our Story & Craft", href: "/about" },
+                      { label: "Affiliate & Creator Program", href: "/affiliate" },
+                    ].map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center justify-between px-3 py-2 rounded-xl font-sans-brand text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                      >
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </nav>
 
@@ -1027,20 +1063,21 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                     <LanguageMenu variant="compact" align="start" side="top" sideOffset={8} />
                   </div>
 
-                  {/* 3. Compact Currency Pill */}
+                  {/* 3. Compact Currency Pill (Protected from automated translation) */}
                   {enabledCurrencies && enabledCurrencies.length > 0 && (
-                    <div className="flex-1 min-w-0 relative">
+                    <div className="flex-1 min-w-0 relative notranslate skiptranslate" translate="no">
                       <button
                         type="button"
+                        translate="no"
                         onClick={() => setCurrencyMenuOpen((prev) => !prev)}
-                        className="w-full h-8 flex items-center justify-between gap-1 px-2.5 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/40 text-[11px] font-semibold text-foreground transition-all truncate cursor-pointer"
+                        className="notranslate skiptranslate w-full h-8 flex items-center justify-between gap-1 px-2.5 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/40 text-[11px] font-semibold text-foreground transition-all truncate cursor-pointer"
                         title="Select currency"
                       >
-                        <span className="flex items-center gap-1 truncate">
-                          <span className="text-xs font-extrabold text-primary leading-none">
+                        <span className="flex items-center gap-1 truncate notranslate" translate="no">
+                          <span className="text-xs font-extrabold text-primary leading-none notranslate">
                             {CURRENCY_SYMBOLS[currency] || currency}
                           </span>
-                          <span className="truncate text-[11px] font-bold">{currency}</span>
+                          <span className="truncate text-[11px] font-bold notranslate">{currency}</span>
                         </span>
                         <ChevronDown className={`w-2.5 h-2.5 opacity-60 shrink-0 transition-transform duration-200 ${currencyMenuOpen ? "rotate-180" : ""}`} />
                       </button>
@@ -1049,32 +1086,34 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                       <AnimatePresence>
                         {currencyMenuOpen && (
                           <motion.div
-                            className="absolute bottom-full right-0 mb-2 w-48 max-w-[calc(100vw-2.5rem)] rounded-2xl border border-border/60 bg-card/98 dark:bg-[hsl(var(--charcoal-mid)/0.98)] p-1.5 shadow-2xl z-[10010] backdrop-blur-xl"
+                            className="notranslate skiptranslate absolute bottom-full right-0 mb-2 w-48 max-w-[calc(100vw-2.5rem)] rounded-2xl border border-border/60 bg-card/98 dark:bg-[hsl(var(--charcoal-mid)/0.98)] p-1.5 shadow-2xl z-[10010] backdrop-blur-xl"
+                            translate="no"
                             initial={{ opacity: 0, y: 6, scale: 0.96 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 4, scale: 0.96 }}
                             transition={{ duration: 0.15 }}
                           >
-                            <div className="text-[10px] font-bold text-muted-foreground uppercase px-3 py-1.5 tracking-wider border-b border-border/40 mb-1">
+                            <div className="notranslate text-[10px] font-bold text-muted-foreground uppercase px-3 py-1.5 tracking-wider border-b border-border/40 mb-1" translate="no">
                               Select Currency
                             </div>
-                            <div className="space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar">
+                            <div className="space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar notranslate" translate="no">
                               {(enabledCurrencies || []).map((c: any) => (
                                 <button
                                   key={c.code}
                                   type="button"
+                                  translate="no"
                                   onClick={() => {
                                     setCurrency(c.code);
                                     setCurrencyMenuOpen(false);
                                   }}
-                                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                  className={`notranslate skiptranslate w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                     currency === c.code
                                       ? "bg-primary text-primary-foreground shadow-xs"
                                       : "text-foreground hover:bg-secondary/50"
                                   }`}
                                 >
-                                  <span>{c.name || c.code}</span>
-                                  <span className="font-extrabold">{CURRENCY_SYMBOLS[c.code] || c.symbol || c.code}</span>
+                                  <span className="notranslate">{c.name || c.code}</span>
+                                  <span className="font-extrabold notranslate">{CURRENCY_SYMBOLS[c.code] || c.symbol || c.code}</span>
                                 </button>
                               ))}
                             </div>

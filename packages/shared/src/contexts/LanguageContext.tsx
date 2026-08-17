@@ -1631,6 +1631,20 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     document.documentElement.lang = language;
     loadFontForLanguage(language);
 
+    // Global CSS rule to ensure browser translation engines never translate currency tokens or notranslate classes
+    const styleId = "orizino-notranslate-rules";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.innerHTML = `
+        .notranslate, .skiptranslate, [translate="no"], [data-notranslate="true"], [data-currency] {
+          -webkit-translate: no !important;
+          translate: no !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
     // When on English, enforce notranslate meta tag and html attribute to stop automatic browser translations
     const metaId = "orizino-meta-notranslate";
     let metaTag = document.getElementById(metaId) as HTMLMetaElement | null;

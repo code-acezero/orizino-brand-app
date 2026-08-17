@@ -438,14 +438,14 @@ const CinematicHero: React.FC = () => {
 
       {/* ── Content Area: Top title tag center-aligned with the navigation arrow (top-1/2) ── */}
       <div
-        className={`absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-start pointer-events-none z-10 ${textPosition === "center"
+        className={`absolute inset-x-0 top-1/2 -translate-y-2.5 sm:-translate-y-3.5 flex items-start pointer-events-none z-10 ${textPosition === "center"
             ? "justify-center text-center"
             : textPosition === "right"
               ? "justify-end text-right"
               : ""
           }`}
       >
-        <div className="w-full px-4 sm:px-10 lg:px-12 xl:px-14">
+        <div className="w-full pl-9 pr-4 sm:pl-14 sm:pr-10 lg:px-14">
           <AnimatePresence mode="wait" initial={false}>
             {/* CONTENT BOX — Top Counter pill & Subtitle sits directly aligned with the center navigation arrow */}
             <motion.div
@@ -465,7 +465,7 @@ const CinematicHero: React.FC = () => {
                 {slide.subtitle && (
                   <>
                     <span className="text-foreground/30 text-[9px] sm:text-[10px]">•</span>
-                    <span className="font-sans-brand text-[8px] sm:text-[0.7rem] font-semibold tracking-[0.14em] sm:tracking-[0.22em] uppercase text-foreground/90 drop-shadow-xs truncate max-w-[200px] sm:max-w-none">
+                    <span className="font-sans-brand text-[8px] sm:text-[0.7rem] font-semibold tracking-[0.14em] sm:tracking-[0.22em] uppercase text-foreground/90 drop-shadow-xs truncate max-w-[180px] sm:max-w-none">
                       {slide.subtitle}
                     </span>
                   </>
