@@ -45,6 +45,25 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   const hovering = useRef(false);
   const [lensVisible, setLensVisible] = useState(false);
 
+  // 5-second inactivity auto-hide for gallery arrows (reappears on screen tap / hover / interaction)
+  const [arrowsVisible, setArrowsVisible] = useState(true);
+  const arrowTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showArrowsTemporarily = useCallback(() => {
+    setArrowsVisible(true);
+    if (arrowTimerRef.current) clearTimeout(arrowTimerRef.current);
+    arrowTimerRef.current = setTimeout(() => {
+      setArrowsVisible(false);
+    }, 5000);
+  }, []);
+
+  useEffect(() => {
+    showArrowsTemporarily();
+    return () => {
+      if (arrowTimerRef.current) clearTimeout(arrowTimerRef.current);
+    };
+  }, [showArrowsTemporarily]);
+
   // Loupe Configuration
   const [lensSize, setLensSize] = useState(300);
   const [zoomPower, setZoomPower] = useState(2.5);
@@ -296,59 +315,77 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
             </div>
           )}
 
-          {/* Navigation Arrows — Clean circle-less icons, hidden on idle, revealed on group hover/focus */}
+          {/* Navigation Arrows — Smoothly visible on interaction/tap, auto-hides after 5s of inactivity */}
           {images.length > 1 && (
             <>
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
+                  showArrowsTemporarily();
                   navigate(-1);
                 }}
-                className="absolute left-1 sm:left-3 top-1/2 -translate-y-1/2 z-20 p-2 text-foreground/75 hover:text-primary focus:text-primary transition-opacity duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer bg-transparent border-0 outline-none"
+                className={`absolute left-1.5 sm:left-3 top-1/2 -translate-y-1/2 z-20 p-2 text-foreground/85 hover:text-primary transition-all duration-300 ${
+                  arrowsVisible ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
+                } cursor-pointer bg-background/50 sm:bg-background/40 hover:bg-background/80 backdrop-blur-md rounded-full border border-border/40 shadow-sm outline-none`}
                 aria-label="Previous image"
               >
-                <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-md" strokeWidth={1.75} />
+                <ChevronLeft className="w-5 h-5 sm:w-7 sm:h-7 drop-shadow-sm" strokeWidth={2} />
               </button>
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
+                  showArrowsTemporarily();
                   navigate(1);
                 }}
-                className="absolute right-1 sm:right-3 top-1/2 -translate-y-1/2 z-20 p-2 text-foreground/75 hover:text-primary focus:text-primary transition-opacity duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer bg-transparent border-0 outline-none"
+                className={`absolute right-1.5 sm:right-3 top-1/2 -translate-y-1/2 z-20 p-2 text-foreground/85 hover:text-primary transition-all duration-300 ${
+                  arrowsVisible ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
+                } cursor-pointer bg-background/50 sm:bg-background/40 hover:bg-background/80 backdrop-blur-md rounded-full border border-border/40 shadow-sm outline-none`}
                 aria-label="Next image"
               >
-                <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-md" strokeWidth={1.75} />
+                <ChevronRight className="w-5 h-5 sm:w-7 sm:h-7 drop-shadow-sm" strokeWidth={2} />
               </button>
             </>
           )}
 
           {/* Discount Badge */}
           {discount > 0 && (
-            <span className="absolute top-3.5 left-3.5 z-10 text-[11px] font-bold py-0.5 px-2.5 rounded-full bg-rose-500 text-white font-mono tracking-tight">
+            <span className="absolute top-3.5 left-3.5 z-10 text-[11px] font-bold py-0.5 px-2.5 rounded-full bg-rose-500 text-white font-mono tracking-tight shadow-sm">
               -{discount}%
             </span>
           )}
 
-          {/* Image Counter & Fullscreen Icon — Sleek micro indicators */}
+          {/* Image Counter & Fullscreen Icon — Guaranteed Tiny Micro Dots */}
           <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
             {images.length > 1 && (
-              <div className="flex items-center gap-1 bg-background/80 backdrop-blur-md rounded-full px-2 py-1 border border-border/50">
-                {images.map((_, i) => (
-                  <span
-                    key={i}
-                    className={`block rounded-full transition-all duration-300 ${
-                      i === selected ? "w-2.5 h-1 bg-primary" : "w-1 h-1 bg-foreground/30"
-                    }`}
-                  />
-                ))}
-                <span className="text-[9px] font-mono font-semibold text-foreground ml-1">
+              <div className="flex items-center gap-1.5 bg-background/85 backdrop-blur-md rounded-full px-2.5 py-1 border border-border/50 shadow-xs pointer-events-auto">
+                <div className="flex items-center gap-1">
+                  {images.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelected(i);
+                      }}
+                      className="p-0.5 !min-w-0 !min-h-0 bg-transparent border-0 outline-none flex items-center justify-center cursor-pointer"
+                      aria-label={`Go to image ${i + 1}`}
+                    >
+                      <span
+                        className={`block rounded-full transition-all duration-300 pointer-events-none ${
+                          i === selected ? "w-3.5 h-1 bg-primary" : "w-1.5 h-1 bg-foreground/30"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <span className="text-[9.5px] font-mono font-bold text-foreground/90 pl-1 border-l border-border/50 leading-none">
                   {selected + 1}/{images.length}
                 </span>
               </div>
             )}
-            <span className="ml-auto bg-background/80 backdrop-blur-md rounded-full p-1.5 text-foreground border border-border/50 opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="ml-auto bg-background/85 backdrop-blur-md rounded-full p-2 text-foreground border border-border/50 transition-opacity pointer-events-auto cursor-pointer hover:bg-background shadow-xs">
               <Maximize2 className="w-3.5 h-3.5" />
             </span>
           </div>

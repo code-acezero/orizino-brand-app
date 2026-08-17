@@ -137,38 +137,40 @@ export const ProductLightboxModal: React.FC<ProductLightboxModalProps> = ({
           onClick={onClose}
           style={{ isolation: "isolate" }}
         >
-          {/* Top Bar Controls */}
+          {/* Top Bar Controls — Perfectly fitted for mobile and desktop viewports */}
           <div
-            className="flex items-center justify-between w-full max-w-6xl mx-auto z-50 pointer-events-auto"
+            className="flex items-center justify-between w-full max-w-6xl mx-auto z-50 pointer-events-auto gap-2 px-1"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-2">
-              <span className="text-xs sm:text-sm font-bold text-white tracking-wide truncate max-w-xs sm:max-w-md">
-                {productName}
+            {/* Left: Image Counter (and Product Title only on desktop) */}
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs font-mono font-bold text-zinc-200 bg-white/10 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15 shrink-0">
+                {selected + 1} / {images.length}
               </span>
-              <span className="text-[10.5px] font-mono text-zinc-400">
-                ({selected + 1} of {images.length})
+              <span className="hidden sm:inline-block text-xs sm:text-sm font-bold text-white tracking-wide truncate max-w-xs sm:max-w-md">
+                {productName}
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Right: Zoom Controls & Close Button */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               {/* Zoom pill */}
-              <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-xl p-1 border border-white/15">
+              <div className="flex items-center gap-0.5 sm:gap-1 bg-white/10 backdrop-blur-md rounded-xl p-0.5 sm:p-1 border border-white/15">
                 <button
                   type="button"
                   onClick={() => setZoom((z) => Math.max(1, z - 0.5))}
                   disabled={zoom <= 1}
-                  className="p-1.5 text-white/80 hover:text-white disabled:opacity-30 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                  className="p-1 sm:p-1.5 text-white/80 hover:text-white disabled:opacity-30 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                   title="Zoom Out (-)"
                   aria-label="Zoom out"
                 >
-                  <ZoomOut className="w-4 h-4" />
+                  <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
 
                 <button
                   type="button"
                   onClick={toggleZoom}
-                  className="px-2 py-1 text-[11px] font-mono font-bold text-white hover:text-primary rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                  className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-mono font-bold text-white hover:text-primary rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                   title="Toggle Zoom / Fit"
                 >
                   {Math.round(zoom * 100)}%
@@ -178,11 +180,11 @@ export const ProductLightboxModal: React.FC<ProductLightboxModalProps> = ({
                   type="button"
                   onClick={() => setZoom((z) => Math.min(4, z + 0.5))}
                   disabled={zoom >= 4}
-                  className="p-1.5 text-white/80 hover:text-white disabled:opacity-30 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                  className="p-1 sm:p-1.5 text-white/80 hover:text-white disabled:opacity-30 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                   title="Zoom In (+)"
                   aria-label="Zoom in"
                 >
-                  <ZoomIn className="w-4 h-4" />
+                  <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
 
                 {zoom > 1 && (
@@ -192,11 +194,11 @@ export const ProductLightboxModal: React.FC<ProductLightboxModalProps> = ({
                       setZoom(1);
                       setPan({ x: 0, y: 0 });
                     }}
-                    className="p-1.5 text-white/80 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                    className="p-1 sm:p-1.5 text-white/80 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                     title="Reset Zoom"
                     aria-label="Reset zoom"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
+                    <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </button>
                 )}
               </div>
@@ -208,11 +210,11 @@ export const ProductLightboxModal: React.FC<ProductLightboxModalProps> = ({
                   e.stopPropagation();
                   onClose();
                 }}
-                className="p-2 text-white hover:text-white bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl transition-all cursor-pointer shadow-lg"
+                className="p-1.5 sm:p-2 text-white hover:text-white bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl transition-all cursor-pointer shadow-lg"
                 title="Close (Esc)"
                 aria-label="Close image modal"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>

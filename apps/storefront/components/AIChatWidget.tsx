@@ -602,7 +602,7 @@ const AIChatWidget: React.FC = () => {
   const callChannelRef = useRef<any>(null);
   const pendingOfferRef = useRef<string | null>(null);
 
-  // Smart positioning — default well above mobile bottom nav (~60px bar + safe area)
+  // Smart positioning — stable 115px default on mobile (above bottom nav), smoothly rises to 180px only when product buy/cart tray is active
   const [mascotBottomPx, setMascotBottomPx] = useState(115);
   useEffect(() => {
     let ticking = false;
@@ -613,13 +613,19 @@ const AIChatWidget: React.FC = () => {
         if (last !== 24) { last = 24; setMascotBottomPx(24); }
         return;
       }
+      // Check if mobile product buy/cart tray is physically rendered and active
       const bottomNavTray = document.getElementById("mobile-bottom-nav-tray");
       const stickyBar = document.getElementById("sticky-add-to-cart");
-      let highestTop = window.innerHeight - 64;
-      if (bottomNavTray) highestTop = Math.min(highestTop, bottomNavTray.getBoundingClientRect().top);
-      if (stickyBar) highestTop = Math.min(highestTop, stickyBar.getBoundingClientRect().top);
-      const offset = Math.max(window.innerHeight - highestTop + 24, 115);
-      if (Math.abs(offset - last) > 1) { last = offset; setMascotBottomPx(offset); }
+      const isTrayActive = !!(
+        (bottomNavTray && bottomNavTray.clientHeight > 0) ||
+        (stickyBar && stickyBar.clientHeight > 0)
+      );
+      const targetOffset = isTrayActive ? 180 : 115;
+
+      if (last !== targetOffset) {
+        last = targetOffset;
+        setMascotBottomPx(targetOffset);
+      }
     };
     const schedule = () => {
       if (ticking) return;
@@ -629,7 +635,7 @@ const AIChatWidget: React.FC = () => {
     compute();
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule, { passive: true });
-    const interval = setInterval(schedule, 2000);
+    const interval = setInterval(schedule, 600);
     return () => {
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);

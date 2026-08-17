@@ -436,9 +436,9 @@ const CinematicHero: React.FC = () => {
         </motion.div>
       </AnimatePresence>
 
-      {/* ── Content Area: Anchored towards the bottom on mobile, center-aligned with arrows on desktop ── */}
+      {/* ── Content Area: Anchored towards the bottom on mobile (safely above dot indicators), center-aligned on desktop ── */}
       <div
-        className={`absolute inset-x-0 bottom-4 sm:bottom-auto sm:top-1/2 sm:-translate-y-3.5 flex items-start pointer-events-none z-10 ${textPosition === "center"
+        className={`absolute inset-x-0 bottom-8 sm:bottom-auto sm:top-1/2 sm:-translate-y-3.5 flex items-start pointer-events-none z-10 ${textPosition === "center"
             ? "justify-center text-center"
             : textPosition === "right"
               ? "justify-end text-right"
@@ -566,7 +566,7 @@ const CinematicHero: React.FC = () => {
 
       {/* Dot navigation — Small, sleek micro-pills with guaranteed zero CSS button enlargement */}
       {showDots && total > 1 && (
-        <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-2 z-20 pointer-events-auto">
+        <div className="absolute bottom-2.5 sm:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-2 z-20 pointer-events-auto">
           {slides.map((_, i) => (
             <button
               key={i}
