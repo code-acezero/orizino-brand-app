@@ -98,7 +98,9 @@ export default function BubbleLivePreview({ form, widgetForm }: Props) {
     ? widgetForm.fab_floating_texts
     : form.fab_underwater_texts) || ["MR. Slime", "Find your fit", "Track an order", "240+ GSM Cotton"];
   const greeting: string = widgetForm?.chat_greeting_guest || form.welcome_message || "Hey! Welcome to Orizino. I'm MR. Slime.";
+  const agentName: string = form.name || "MR. Slime";
   const avatar = form.avatar_url ? form.avatar_url : ((process.env.NEXT_PUBLIC_SUPABASE_URL || "") + "/storage/v1/object/public/site-assets/ai-agent/mr-slime.jpg");
+  const hoverLabel = form.fab_hover_label_text || "Chat with MR. Slime";
   const showHover = !!form.fab_show_hover_label;
 
   const [textIdx, setTextIdx] = useState(0);
