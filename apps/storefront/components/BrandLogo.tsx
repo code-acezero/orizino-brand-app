@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { BrandImage } from "@orizino/shared";
 
 interface BrandLogoProps {
   logoUrl?: string;
@@ -19,11 +20,20 @@ const BrandLogo: React.FC<BrandLogoProps> = ({
   if (logoUrl && !imgError) {
     return (
       <div className={`relative inline-flex items-center justify-center shrink-0 ${className}`} style={style}>
-        <img
+        <BrandImage
           src={logoUrl}
           alt={alt}
-          onError={() => setImgError(true)}
-          className="w-auto h-full object-contain max-h-full"
+          filter="foreground"
+          className="w-full h-full object-contain max-h-full"
+          style={{ width: "100%", height: "100%" }}
+          fallback={
+            <img
+              src={logoUrl}
+              alt={alt}
+              onError={() => setImgError(true)}
+              className="w-auto h-full object-contain max-h-full dark:invert dark:hue-rotate-180"
+            />
+          }
         />
       </div>
     );

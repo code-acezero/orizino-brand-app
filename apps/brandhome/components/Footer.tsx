@@ -122,7 +122,7 @@ const Footer: React.FC<FooterProps> = ({ variantOverride }) => {
     { label: "About & Docs", to: "/docs", external: false },
     { label: "Highlights", to: "/products", external: false },
     { label: "Press & News", to: "/news", external: false },
-    { label: "Verification", to: "/scanner-info", external: false },
+    { label: "Check Product", to: "/scanner-info", external: false },
   ];
   const legalLinks = [
     { label: "Privacy Policy", to: "/privacy", external: false },

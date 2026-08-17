@@ -283,16 +283,21 @@ export default function HorizonCarouselGallery({
 
       {/* ── FOOTER TELEMETRY & PROGRESS — Sleek Micro Dots ── */}
       <div className="z-20 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 bg-background/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-border/50 shadow-xs">
           {images.map((_, i) => (
             <button
               key={i}
               type="button"
               onClick={() => setActiveIdx(i)}
-              className={`h-1 rounded-full transition-all cursor-pointer ${
-                i === activeIdx ? "w-4 bg-primary" : "w-1 bg-foreground/25 hover:bg-foreground/50"
-              }`}
-            />
+              aria-label={`Go to slide ${i + 1}`}
+              className="p-0.5 !min-w-0 !min-h-0 bg-transparent border-0 outline-none flex items-center justify-center cursor-pointer"
+            >
+              <span
+                className={`block rounded-full transition-all duration-300 pointer-events-none ${
+                  i === activeIdx ? "w-3.5 h-1 bg-primary" : "w-1.5 h-1 bg-foreground/30 hover:bg-foreground/50"
+                }`}
+              />
+            </button>
           ))}
         </div>
 

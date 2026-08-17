@@ -1,3 +1,5 @@
+"use server";
+
 // Recommendations engine — heuristic blend of affinity + trending + new arrivals
 "use client";
 import { createServerFn } from "@/lib/server-fn-compat";

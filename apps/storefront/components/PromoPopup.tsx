@@ -7,6 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/lib/app-toast";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { isRouteMatched } from "./HomePopup";
 
 interface EligiblePromo {
   id: string;
@@ -20,11 +22,13 @@ interface EligiblePromo {
   popup_bg_color: string;
   popup_text_color: string;
   min_order_amount?: number;
+  target_routes?: string[];
 }
 
 const LOCAL_DISMISSED_KEY = "orizino_dismissed_promos";
 
 const PromoPopup: React.FC = () => {
+  const pathname = usePathname();
   const { user } = useAuth();
   const [activePromo, setActivePromo] = useState<EligiblePromo | null>(null);
   const [copied, setCopied] = useState(false);
@@ -81,6 +85,9 @@ const PromoPopup: React.FC = () => {
 
   // Check eligibility and select best active promo
   useEffect(() => {
+    // Reset active promo when navigating
+    setActivePromo(null);
+
     if (!promos || promos.length === 0) return;
 
     let dismissedIds = new Set<string>();
@@ -100,6 +107,11 @@ const PromoPopup: React.FC = () => {
 
     for (const promo of promos) {
       if (dismissedIds.has(promo.id)) continue;
+
+      // Check if current route matches promo target routes (default to "/" home page only)
+      if (!isRouteMatched(pathname, (promo as any).target_routes)) {
+        continue;
+      }
 
       const cond = (promo as any).condition_value || {};
       let eligible = false;
@@ -139,7 +151,7 @@ const PromoPopup: React.FC = () => {
         return () => clearTimeout(timer);
       }
     }
-  }, [promos, userClaims, userStats, user]);
+  }, [promos, userClaims, userStats, user, pathname]);
 
   const handleDismiss = async () => {
     if (!activePromo) return;

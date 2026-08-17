@@ -210,9 +210,24 @@ export async function upsertAdminPopup(input: any) {
       cleaned[k] = v === "" ? null : v;
     } else if (k === "trigger_value" || k === "max_views" || k === "duration_hours") {
       cleaned[k] = v === "" || v === null ? null : Number(v);
+    } else if (k === "target_routes") {
+      if (Array.isArray(v)) {
+        const arr = v.map((r: any) => String(r).trim()).filter(Boolean);
+        cleaned[k] = arr.length > 0 ? arr : ["/"];
+      } else if (typeof v === "string" && v.trim()) {
+        const arr = v.split(",").map((r: any) => r.trim()).filter(Boolean);
+        cleaned[k] = arr.length > 0 ? arr : ["/"];
+      } else {
+        cleaned[k] = ["/"];
+      }
     } else {
       cleaned[k] = v;
     }
+  }
+
+  // Ensure default target_routes is set to ["/"] if omitted
+  if (!cleaned.target_routes || !Array.isArray(cleaned.target_routes) || cleaned.target_routes.length === 0) {
+    cleaned.target_routes = ["/"];
   }
 
   const result = id

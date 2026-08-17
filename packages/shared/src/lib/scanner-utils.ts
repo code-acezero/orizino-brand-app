@@ -10,23 +10,37 @@ import { getStorefrontUrl } from "./cross-app-urls";
  */
 export function extractSerialCode(raw: string | undefined | null): string {
   if (!raw) return "";
-  const trimmed = String(raw).trim();
+  let trimmed = String(raw).trim();
   if (!trimmed) return "";
 
   try {
-    // 1. Check for query parameters: ?code=, ?sn=, ?serial=, ?c=
-    const queryMatch = trimmed.match(/[?&](?:code|sn|serial|c)=([^&#]+)/i);
+    // 1. Check for query parameters: ?code=, ?sn=, ?serial=, ?c=, ?order=
+    const queryMatch = trimmed.match(/[?&](?:code|sn|serial|c|order)=([^&#]+)/i);
     if (queryMatch && queryMatch[1]) {
-      return decodeURIComponent(queryMatch[1]).trim();
-    }
-
-    // 2. Check for path patterns: /v/CODE, /verify/CODE
-    const pathMatch = trimmed.match(/(?:\/v\/|\/verify\/)([^/?&#]+)/i);
-    if (pathMatch && pathMatch[1]) {
-      return decodeURIComponent(pathMatch[1]).trim();
+      trimmed = decodeURIComponent(queryMatch[1].replace(/\+/g, " ")).trim();
+    } else {
+      // 2. Check for path patterns: /v/CODE, /verify/CODE
+      const pathMatch = trimmed.match(/(?:\/v\/|\/verify\/)([^/?&#]+)/i);
+      if (pathMatch && pathMatch[1]) {
+        trimmed = decodeURIComponent(pathMatch[1].replace(/\+/g, " ")).trim();
+      }
     }
   } catch {
     // Fall back to trimmed string on URL decode error
+  }
+
+  // 3. Strip common prefixes like "SN:", "S/N:", "Serial:", "#"
+  trimmed = trimmed
+    .replace(/^SN:?\s*/i, "")
+    .replace(/^S\/N:?\s*/i, "")
+    .replace(/^SERIAL:?\s*/i, "")
+    .replace(/^CODE:?\s*/i, "")
+    .replace(/^#/, "")
+    .trim();
+
+  // 4. If formatted with spaces like "ORZ ORZGAC 000005" or "ORZ_ORZGAC_000005", normalize to standard dash format
+  if (/^[A-Za-z0-9]+[\s_]+[A-Za-z0-9]+[\s_]+[A-Za-z0-9]+$/i.test(trimmed)) {
+    trimmed = trimmed.replace(/[\s_]+/g, "-");
   }
 
   return trimmed;

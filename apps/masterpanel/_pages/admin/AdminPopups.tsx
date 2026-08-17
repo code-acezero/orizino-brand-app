@@ -26,7 +26,8 @@ import {
   Plus, Pencil, Trash2, X, Eye, Copy, RefreshCw,
   Clock, MousePointerClick, ScrollText, Maximize, PanelBottom,
   ArrowDown, Search, Filter, Layers, Check, ChevronDown,
-  Monitor, Tablet, Smartphone, AppWindow, ArrowRight
+  Monitor, Tablet, Smartphone, AppWindow, ArrowRight,
+  MapPin, Globe, Compass
 } from "lucide-react";
 import {
   AlertDialog,
@@ -46,6 +47,14 @@ import {
 } from "@/lib/admin-data.functions";
 
 /* ── Constants & Visual Configs ── */
+const routePresets = [
+  { label: "🏠 Home Page Only (/)", value: "/" },
+  { label: "🛍️ All Products (/products, /product/*)", values: ["/products", "/product/*"] },
+  { label: "🏷️ Categories (/categories/*)", value: "/categories/*" },
+  { label: "✨ Product Verification (/verify)", value: "/verify" },
+  { label: "🚚 Order Track (/track)", value: "/track" },
+  { label: "🌐 Sitewide (All Pages /*)", value: "*" },
+];
 const displayTypes = [
   { value: "popup", label: "Popup Modal", icon: Maximize, desc: "Centered overlay modal" },
   { value: "banner", label: "Banner Bar", icon: PanelBottom, desc: "Top or bottom horizontal strip" },
@@ -196,8 +205,13 @@ const PopupSimulator = ({ popup, onClose }: { popup: any; onClose: () => void })
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
               </div>
-              <div className="flex-1 mx-3 h-5 rounded-lg bg-background border border-border/40 flex items-center px-2">
-                <span className="text-[9px] text-muted-foreground font-mono">https://orizino.com</span>
+              <div className="flex-1 mx-3 h-5 rounded-lg bg-background border border-border/40 flex items-center justify-between px-2">
+                <span className="text-[9px] text-muted-foreground font-mono truncate">
+                  https://orizino.com{popup.target_routes && Array.isArray(popup.target_routes) && popup.target_routes[0] && popup.target_routes[0] !== "*" ? (popup.target_routes[0].startsWith("/") ? popup.target_routes[0] : `/${popup.target_routes[0]}`) : "/"}
+                </span>
+                <span className="text-[9px] text-primary/80 font-semibold tracking-wider shrink-0 ml-2">
+                  {popup.target_routes?.includes("*") ? "🌐 Sitewide" : (popup.target_routes?.[0] === "/" || !popup.target_routes?.length ? "🏠 Home Only" : "🎯 Targeted")}
+                </span>
               </div>
             </div>
 
@@ -289,6 +303,7 @@ export default function AdminPopups() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [customRouteInput, setCustomRouteInput] = useState("");
 
   const [form, setForm] = useState({
     title: "",
@@ -309,7 +324,28 @@ export default function AdminPopups() {
     ends_at: "",
     bg_color: "",
     text_color: "",
+    target_routes: ["/"] as string[],
   });
+
+  const addTargetRoute = (route: string) => {
+    const clean = route.trim();
+    if (!clean) return;
+    const current = form.target_routes || [];
+    if (clean === "*") {
+      setForm({ ...form, target_routes: ["*"] });
+      return;
+    }
+    const filtered = current.filter((r) => r !== "*");
+    if (!filtered.includes(clean)) {
+      setForm({ ...form, target_routes: [...filtered, clean] });
+    }
+  };
+
+  const removeTargetRoute = (route: string) => {
+    const current = form.target_routes || [];
+    const next = current.filter((r) => r !== route);
+    setForm({ ...form, target_routes: next.length > 0 ? next : ["/"] });
+  };
 
   /* ── Query Popups ── */
   const { data: rawPopups = [], isLoading, refetch } = useQuery({
@@ -398,6 +434,7 @@ export default function AdminPopups() {
 
   const openNew = () => {
     setEditingItem(null);
+    setCustomRouteInput("");
     setForm({
       title: "",
       message: "",
@@ -417,12 +454,14 @@ export default function AdminPopups() {
       ends_at: "",
       bg_color: "",
       text_color: "",
+      target_routes: ["/"],
     });
     setDialogOpen(true);
   };
 
   const openEdit = (item: any) => {
     setEditingItem(item);
+    setCustomRouteInput("");
     setForm({
       title: item.title || "",
       message: item.message || "",
@@ -442,18 +481,21 @@ export default function AdminPopups() {
       ends_at: item.ends_at ? new Date(item.ends_at).toISOString().slice(0, 16) : "",
       bg_color: item.bg_color || "",
       text_color: item.text_color || "",
+      target_routes: Array.isArray(item.target_routes) && item.target_routes.length > 0 ? item.target_routes : ["/"],
     });
     setDialogOpen(true);
   };
 
   const duplicateItem = (item: any) => {
     setEditingItem(null);
+    setCustomRouteInput("");
     setForm({
       ...item,
       title: `${item.title} (Copy)`,
       is_active: false,
       starts_at: "",
       ends_at: "",
+      target_routes: Array.isArray(item.target_routes) && item.target_routes.length > 0 ? item.target_routes : ["/"],
     });
     setDialogOpen(true);
   };
@@ -461,6 +503,7 @@ export default function AdminPopups() {
   const closeDialog = () => {
     setDialogOpen(false);
     setEditingItem(null);
+    setCustomRouteInput("");
   };
 
   const activeFilterLabel = filterOptions.find((f) => f.id === selectedFilter)?.label || "All";
@@ -705,6 +748,15 @@ export default function AdminPopups() {
                         <span className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground bg-secondary/80 px-2 py-0.5 rounded-md">
                           {popup.animation_style || "scale"}
                         </span>
+
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md">
+                          <MapPin className="w-3 h-3" />
+                          {popup.target_routes && Array.isArray(popup.target_routes) && popup.target_routes.length > 0
+                            ? popup.target_routes.includes("*")
+                              ? "Sitewide (*)"
+                              : popup.target_routes.join(", ")
+                            : "Home (/) Only"}
+                        </span>
                       </div>
                     </div>
 
@@ -948,7 +1000,130 @@ export default function AdminPopups() {
               </div>
             </div>
 
-            {/* Section 4: Trigger Behavior & Frequency */}
+            {/* Section 4: Target Routes & Display Pages */}
+            <div className="p-4 rounded-2xl bg-secondary/30 border border-border/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  Target Routes & Display Pages
+                </h4>
+                <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5 rounded-lg border-primary/30 text-primary">
+                  {form.target_routes.includes("*") ? "All Routes (*)" : `${form.target_routes.length} Target(s)`}
+                </Badge>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Control which pages this popup triggers on. If left at default, it will only appear on the <strong>Home Page (/)</strong>, preventing unwanted popups on direct visits to verification, checkout, or specific routes.
+              </p>
+
+              {/* Quick Preset Buttons */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">Quick Presets</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {routePresets.map((preset) => {
+                    const isSelected = preset.value
+                      ? form.target_routes.includes(preset.value)
+                      : preset.values?.every((v) => form.target_routes.includes(v));
+
+                    return (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => {
+                          if (preset.value) {
+                            if (preset.value === "*") {
+                              setForm({ ...form, target_routes: ["*"] });
+                            } else if (form.target_routes.includes(preset.value)) {
+                              removeTargetRoute(preset.value);
+                            } else {
+                              addTargetRoute(preset.value);
+                            }
+                          } else if (preset.values) {
+                            const allIn = preset.values.every((v) => form.target_routes.includes(v));
+                            if (allIn) {
+                              const next = form.target_routes.filter((r) => !preset.values!.includes(r));
+                              setForm({ ...form, target_routes: next.length > 0 ? next : ["/"] });
+                            } else {
+                              const filtered = form.target_routes.filter((r) => r !== "*");
+                              const merged = Array.from(new Set([...filtered, ...preset.values]));
+                              setForm({ ...form, target_routes: merged });
+                            }
+                          }
+                        }}
+                        className={`text-[11px] px-2.5 py-1 rounded-xl font-medium border transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                            : "bg-background/80 hover:bg-secondary text-muted-foreground hover:text-foreground border-border/60"
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Current Active Route Chips */}
+              <div className="space-y-1.5 pt-1">
+                <Label className="text-xs font-medium text-foreground">Active Target Routes</Label>
+                <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-background border border-border/50 min-h-[38px]">
+                  {form.target_routes.map((rt) => (
+                    <span
+                      key={rt}
+                      className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20"
+                    >
+                      {rt === "/" ? "🏠 / (Home)" : rt === "*" ? "🌐 * (All Pages)" : rt}
+                      <button
+                        type="button"
+                        onClick={() => removeTargetRoute(rt)}
+                        className="hover:text-destructive hover:scale-110 transition-all p-0.5 rounded"
+                        title={`Remove ${rt}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Route Input */}
+              <div className="flex items-center gap-2 pt-1">
+                <div className="relative flex-1">
+                  <Input
+                    value={customRouteInput}
+                    onChange={(e) => setCustomRouteInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (customRouteInput.trim()) {
+                          addTargetRoute(customRouteInput.trim());
+                          setCustomRouteInput("");
+                        }
+                      }
+                    }}
+                    placeholder="e.g. /custom-drop, /collection/*, /promo"
+                    className="h-9 text-xs font-mono rounded-xl pl-3"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    if (customRouteInput.trim()) {
+                      addTargetRoute(customRouteInput.trim());
+                      setCustomRouteInput("");
+                    }
+                  }}
+                  disabled={!customRouteInput.trim()}
+                  className="h-9 px-3 text-xs rounded-xl font-medium border border-border/60 shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Add Route
+                </Button>
+              </div>
+            </div>
+
+            {/* Section 5: Trigger Behavior & Frequency */}
             <div className="p-4 rounded-2xl bg-secondary/30 border border-border/40 space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 Triggers & Frequency

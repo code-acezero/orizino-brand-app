@@ -69,9 +69,11 @@ const ProductTabs: React.FC<ProductTabsProps> = ({ product, reviews, ownReviewId
           >
             <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-70" strokeWidth={1.75} />
             <span>Reviews</span>
-            <span className="text-[9.5px] font-mono px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold leading-none">
-              {reviews.length}
-            </span>
+            {reviews.length > 0 && (
+              <span className="text-[9.5px] font-mono px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold leading-none">
+                {reviews.length}
+              </span>
+            )}
           </a>
         </div>
       </nav>
@@ -105,7 +107,7 @@ const ProductTabs: React.FC<ProductTabsProps> = ({ product, reviews, ownReviewId
 
       {/* Reviews */}
       <section>
-        <SectionHead icon={MessageSquare} label="Reviews" meta={`${reviews.length} total`} id="reviews" />
+        <SectionHead icon={MessageSquare} label="Reviews" meta={reviews.length > 0 ? `${reviews.length} total` : undefined} id="reviews" />
         <div className="w-full mb-6">
           <ReviewForm productId={product.id} />
         </div>

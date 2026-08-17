@@ -50,8 +50,15 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className = "" }) => {
         {items.map((item, i) => {
           const isLast = i === items.length - 1;
           const isFirst = i === 0;
+          const isBeforeLast = i === items.length - 2 && items.length > 1;
+
           return (
-            <li key={i} className="inline-flex items-center gap-1.5 shrink-0">
+            <li
+              key={i}
+              className={`inline-flex items-center gap-1.5 shrink-0 ${
+                isLast && items.length > 1 ? "hidden sm:inline-flex" : ""
+              }`}
+            >
               {isLast || !item.href ? (
                 <span className="inline-flex items-center gap-1.5 text-foreground font-medium truncate max-w-[180px] sm:max-w-[260px] leading-none">
                   {isFirst && (
@@ -71,7 +78,12 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className = "" }) => {
                 </Link>
               )}
               {!isLast && (
-                <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground/45 shrink-0 select-none" strokeWidth={2} />
+                <ChevronRight
+                  className={`w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground/45 shrink-0 select-none ${
+                    isBeforeLast ? "hidden sm:inline-block" : ""
+                  }`}
+                  strokeWidth={2}
+                />
               )}
             </li>
           );

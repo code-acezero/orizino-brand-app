@@ -304,8 +304,8 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
         </button>
 
         {/* Bottom Pill Indicators & Counter */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 bg-background/85 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-border/60 shadow-xs">
-          <div className="flex items-center gap-1.5">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-background/85 backdrop-blur-md px-3 py-1 rounded-full border border-border/60 shadow-xs">
+          <div className="flex items-center gap-1">
             {images.map((_, i) => (
               <button
                 type="button"
@@ -315,16 +315,20 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
                   pauseAutoPlay();
                   setActiveIndex(i);
                 }}
-                className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                  i === activeIndex
-                    ? "w-5 bg-primary"
-                    : "w-1.5 bg-foreground/25 hover:bg-foreground/50"
-                }`}
+                className="p-0.5 !min-w-0 !min-h-0 bg-transparent border-0 outline-none flex items-center justify-center cursor-pointer"
                 aria-label={`Go to image ${i + 1}`}
-              />
+              >
+                <span
+                  className={`block rounded-full transition-all duration-300 pointer-events-none ${
+                    i === activeIndex
+                      ? "w-4 h-1 bg-primary"
+                      : "w-1.5 h-1 bg-foreground/25 hover:bg-foreground/50"
+                  }`}
+                />
+              </button>
             ))}
           </div>
-          <span className="text-foreground/80 text-[10.5px] font-mono font-bold pl-1 border-l border-border/60">
+          <span className="text-foreground/80 text-[10px] font-mono font-bold pl-1.5 border-l border-border/60 leading-none">
             {activeIndex + 1} / {total}
           </span>
         </div>

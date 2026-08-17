@@ -16,6 +16,7 @@ import BrandLogo from "@/components/BrandLogo";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import LanguageMenu from "@/components/footer/LanguageMenu";
 import { BrandTitle, loadGoogleFont } from "@orizino/shared/lib/brand-title";
+import { BrandImage } from "@orizino/shared";
 
 interface NavbarProps {
   bottomNavProductTray?: BottomNavProductTray;
@@ -297,15 +298,28 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                     className="flex items-center group my-auto max-lg:absolute max-lg:left-1/2 max-lg:-translate-x-1/2 z-10"
                   >
                     {titleSource === "image" && titleImageUrl ? (
-                      <img
+                      <BrandImage
                         src={titleImageUrl}
                         alt={siteName}
+                        filter="foreground"
                         className="w-auto object-contain shrink-0 transition-transform duration-300 group-hover:scale-105"
                         style={{
                           height: `${Math.round((brandTitleSizeNav * 1.35) * brandLogoTitleRatio)}px`,
                           maxHeight: "44px",
                           minHeight: "20px",
                         }}
+                        fallback={
+                          <img
+                            src={titleImageUrl}
+                            alt={siteName}
+                            className="w-auto object-contain shrink-0 transition-transform duration-300 group-hover:scale-105 dark:invert dark:hue-rotate-180"
+                            style={{
+                              height: `${Math.round((brandTitleSizeNav * 1.35) * brandLogoTitleRatio)}px`,
+                              maxHeight: "44px",
+                              minHeight: "20px",
+                            }}
+                          />
+                        }
                       />
                     ) : (
                       <BrandTitle

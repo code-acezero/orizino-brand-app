@@ -182,16 +182,21 @@ const CoverflowGallery: React.FC<CoverflowGalleryProps> = ({
             <ChevronLeft className="w-4 h-4" />
           </button>
 
-          <div className="flex gap-1.5">
+          <div className="flex items-center gap-1">
             {images.map((_, i) => (
               <button
                 key={i}
+                type="button"
                 onClick={() => setActive(i)}
-                className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                  i === active ? "w-5 bg-primary" : "w-1.5 bg-foreground/20 hover:bg-foreground/40"
-                }`}
+                className="p-0.5 !min-w-0 !min-h-0 bg-transparent border-0 outline-none flex items-center justify-center cursor-pointer"
                 aria-label={`Go to slide ${i + 1}`}
-              />
+              >
+                <span
+                  className={`block rounded-full transition-all duration-300 pointer-events-none ${
+                    i === active ? "w-4 h-1 bg-primary" : "w-1.5 h-1 bg-foreground/20 hover:bg-foreground/40"
+                  }`}
+                />
+              </button>
             ))}
           </div>
 

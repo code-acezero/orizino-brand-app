@@ -6,6 +6,63 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { X, ArrowRight, Tag, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+/**
+ * Route matching utility:
+ * Checks if current pathname matches any of the popup target route patterns.
+ * If targetRoutes is not defined or empty, defaults to Home page only ("/").
+ */
+export function isRouteMatched(currentPath: string, targetRoutes?: string[] | string | null): boolean {
+  // If targetRoutes is not set or empty, default to home page only ("/")
+  if (!targetRoutes) {
+    return currentPath === "/" || currentPath === "";
+  }
+
+  let list: string[] = [];
+  if (Array.isArray(targetRoutes)) {
+    list = targetRoutes.map((r) => String(r).trim()).filter(Boolean);
+  } else if (typeof targetRoutes === "string") {
+    list = targetRoutes.split(",").map((r) => r.trim()).filter(Boolean);
+  }
+
+  if (list.length === 0) {
+    return currentPath === "/" || currentPath === "";
+  }
+
+  // Normalize current path (e.g. "/products/" -> "/products", "" -> "/")
+  const normCurrent = (currentPath || "/").replace(/\/+$/, "") || "/";
+
+  return list.some((pattern) => {
+    const p = (pattern || "").trim();
+    if (!p) return false;
+
+    // Sitewide wildcard: all pages
+    if (p === "*" || p.toLowerCase() === "all" || p === "/*") {
+      return true;
+    }
+
+    // Home page pattern
+    if (p === "/" || p.toLowerCase() === "home") {
+      return normCurrent === "/";
+    }
+
+    const normPattern = p.replace(/\/+$/, "");
+
+    // Wildcard prefix, e.g. "/products/*", "/product/*", "/categories/*"
+    if (normPattern.endsWith("/*")) {
+      const base = normPattern.slice(0, -2);
+      return normCurrent === base || normCurrent.startsWith(base + "/");
+    }
+    if (normPattern.endsWith("*")) {
+      const base = normPattern.slice(0, -1);
+      return normCurrent.startsWith(base);
+    }
+
+    // Exact route match (case-insensitive)
+    return normCurrent.toLowerCase() === normPattern.toLowerCase();
+  });
+}
 
 /* ── Animation variants by style ── */
 const getAnimationVariants = (style: string): Variants => {
@@ -100,6 +157,7 @@ const getContainerClasses = (displayType: string): string => {
 };
 
 const HomePopup: React.FC = () => {
+  const pathname = usePathname();
   const [visible, setVisible] = useState(false);
   const [popup, setPopup] = useState<any>(null);
 
@@ -118,8 +176,14 @@ const HomePopup: React.FC = () => {
     staleTime: 60 * 1000,
   });
 
-  const canShow = useCallback((p: any): boolean => {
+  const canShow = useCallback((p: any, currentPath: string): boolean => {
     if (!p || !p.is_active) return false;
+
+    // Route matching check: default to "/" if no target_routes set
+    if (!isRouteMatched(currentPath, p.target_routes)) {
+      return false;
+    }
+
     const now = new Date();
     if (p.starts_at && new Date(p.starts_at) > now) return false;
     if (p.ends_at && new Date(p.ends_at) < now) return false;
@@ -140,11 +204,20 @@ const HomePopup: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!popups || popups.length === 0) return;
+    // Reset visibility when route changes
+    setVisible(false);
 
-    // Find the first eligible active popup
-    const eligible = popups.find((p: any) => canShow(p));
-    if (!eligible) return;
+    if (!popups || popups.length === 0) {
+      setPopup(null);
+      return;
+    }
+
+    // Find the first eligible active popup that matches current route
+    const eligible = popups.find((p: any) => canShow(p, pathname));
+    if (!eligible) {
+      setPopup(null);
+      return;
+    }
 
     setPopup(eligible);
 
@@ -184,7 +257,7 @@ const HomePopup: React.FC = () => {
     // Default: Timer (in milliseconds, e.g. 2000 = 2 seconds)
     const timer = setTimeout(() => setVisible(true), triggerValue);
     return () => clearTimeout(timer);
-  }, [popups, canShow]);
+  }, [popups, canShow, pathname]);
 
   const dismiss = () => {
     if (popup) {

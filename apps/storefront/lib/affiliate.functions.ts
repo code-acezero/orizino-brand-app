@@ -1,3 +1,5 @@
+"use server";
+
 import { createServerFn } from "@/lib/server-fn-compat";
 import { getRequest } from "@/lib/server-fn-compat.server";
 import { z } from "zod";
