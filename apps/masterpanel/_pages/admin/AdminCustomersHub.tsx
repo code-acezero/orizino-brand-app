@@ -20,7 +20,7 @@ const SECTIONS = [
     group: "Support",
     items: [
       { title: "Support Inbox",        url: "/sales/support",           icon: Headphones, desc: "Live chat conversations & tickets" },
-      { title: "Announcements",        url: "/marketing/announcements", icon: Megaphone,  desc: "Sitewide banners & alerts" },
+      { title: "Announcements",        url: "/sales/announcements",     icon: Megaphone,  desc: "Sitewide banners & alerts" },
       { title: "Promotional Modals",   url: "/marketing/popups",        icon: AppWindow,  desc: "Modal campaigns & exit overlays" },
     ],
   },

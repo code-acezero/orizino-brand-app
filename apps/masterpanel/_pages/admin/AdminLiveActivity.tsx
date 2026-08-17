@@ -155,7 +155,7 @@ const AdminLiveActivity = () => {
       notifs.data?.forEach((n: any) => merged.push({
         id: `notif-${n.id}`, kind: "notification",
         title: n.title, description: n.type,
-        href: `/marketing/announcements`, created_at: n.created_at,
+        href: `/sales/announcements`, created_at: n.created_at,
       }));
       pageViews.data?.forEach((pv: any) => {
         if (pv.event_type === "page_view") merged.push({
@@ -199,7 +199,7 @@ const AdminLiveActivity = () => {
       { table: "categories", map: (c) => ({ id: `cat-${c.id}`, kind: "category", title: `Category added: ${c.name}`, href: `/sales/categories`, created_at: c.created_at }) },
       { table: "return_requests", map: (r) => ({ id: `return-${r.id}`, kind: "return", title: "Return requested", description: r.reason || r.status, href: `/sales/returns`, created_at: r.created_at }) },
       { table: "email_campaigns", map: (c) => ({ id: `campaign-${c.id}`, kind: "campaign", title: c.name || "Email campaign", description: c.status, href: `/marketing/email-campaigns`, created_at: c.created_at }) },
-      { table: "notifications", map: (n) => n.user_id ? null : ({ id: `notif-${n.id}`, kind: "notification", title: n.title, description: n.type, href: `/marketing/announcements`, created_at: n.created_at }) },
+      { table: "notifications", map: (n) => n.user_id ? null : ({ id: `notif-${n.id}`, kind: "notification", title: n.title, description: n.type, href: `/sales/announcements`, created_at: n.created_at }) },
       { table: "page_analytics", map: (pv) => pv.event_type === "page_view" ? ({ id: `pv-${pv.id}`, kind: "page_view", title: `Visitor on ${pv.page}`, meta: pv.session_id?.slice(0, 8), created_at: pv.created_at }) : null },
     ];
 

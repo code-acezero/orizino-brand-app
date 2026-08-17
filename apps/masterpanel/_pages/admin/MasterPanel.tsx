@@ -148,7 +148,7 @@ export const ADMIN_DOMAIN_GROUPS: AdminDomainGroup[] = [
       { label: "Ads & Tracking (CAPI)", url: "/marketing/tracking",         icon: BarChart3, section: "seo", badge: "CAPI", featured: true, adminOnly: true, keywords: ["facebook pixel", "tiktok", "meta capi", "google tag manager"] },
       { label: "Marketing Audiences",   url: "/email/subscribers",          icon: Users, section: "customers", keywords: ["segments", "retargeting"] },
       { label: "Promotional Modals",    url: "/marketing/popups",           icon: AppWindow, section: "customers", badge: "POPUPS", keywords: ["interactive alerts", "newsletter popup"] },
-      { label: "Announcements",         url: "/marketing/announcements",    icon: Megaphone, section: "customers", keywords: ["header banners", "notice bar"] },
+      { label: "Announcements",         url: "/sales/announcements",        icon: Megaphone, section: "customers", keywords: ["header banners", "notice bar"] },
     ],
   },
   {

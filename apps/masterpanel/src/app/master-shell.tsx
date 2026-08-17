@@ -125,6 +125,7 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/sales/support": AdminSupport,
   "/sales/customer-analytics": AdminCustomerAnalytics,
   "/sales/live-activity": AdminLiveActivity,
+  "/sales/announcements": AdminAnnouncements,
   "/sales/payments-couriers": AdminPaymentsCouriers,
   "/sales/payment-gateways": AdminPaymentGateways,
   "/sales/orders": AdminOrders,
