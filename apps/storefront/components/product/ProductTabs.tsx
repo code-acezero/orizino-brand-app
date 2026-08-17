@@ -26,7 +26,7 @@ interface ProductTabsProps {
 }
 
 const SectionHead: React.FC<{ icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; label: string; meta?: string; id: string }> = ({ icon: Icon, label, meta, id }) => (
-  <div id={id} className="flex items-baseline gap-3 mb-4 pb-2 border-b border-border/40 scroll-mt-24">
+  <div id={id} className="flex items-baseline gap-2.5 sm:gap-3 mb-4 pb-2 border-b border-border/40 scroll-mt-24 sm:scroll-mt-28">
     <Icon className="w-4 h-4 text-primary shrink-0 self-center" strokeWidth={1.5} />
     <h2 className="font-display text-xl sm:text-2xl text-foreground tracking-tight">{label}</h2>
     {meta && <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground ml-auto">{meta}</span>}
@@ -38,20 +38,40 @@ const ProductTabs: React.FC<ProductTabsProps> = ({ product, reviews, ownReviewId
   const hasSpecs = specs && Object.keys(specs).length > 0;
 
   return (
-    <div className="space-y-10 sm:space-y-14">
-      {/* Anchor pill */}
-      <nav aria-label="Sections" className="sticky top-16 z-10 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2 bg-background/95 border-y border-border/40">
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-          <a href="#description" className="shrink-0 px-3 py-1 rounded-full text-[11px] uppercase tracking-[0.15em] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors">
-            Description
+    <div className="space-y-8 sm:space-y-12">
+      {/* Anchor Segmented Bar — Sticks seamlessly below top nav with ZERO gap */}
+      <nav aria-label="Product Sections" className="sticky top-12 lg:top-14 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 py-1.5 bg-background/95 backdrop-blur-md border-y border-border/60 shadow-xs">
+        <div className={`grid ${hasSpecs ? "grid-cols-3" : "grid-cols-2"} gap-1 w-full max-w-xl mx-auto p-1 bg-secondary/50 dark:bg-card/70 rounded-xl border border-border/40`}>
+          <a
+            href="#description"
+            className="flex items-center justify-center gap-1.5 py-1.5 px-1.5 sm:px-3 rounded-lg text-[11px] sm:text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/80 active:bg-background transition-all text-center leading-none select-none"
+          >
+            <FileText className="w-3.5 h-3.5 shrink-0 opacity-70" strokeWidth={1.75} />
+            <span>Description</span>
           </a>
+
           {hasSpecs && (
-            <a href="#specifications" className="shrink-0 px-3 py-1 rounded-full text-[11px] uppercase tracking-[0.15em] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors">
-              Specifications
+            <a
+              href="#specifications"
+              className="flex items-center justify-center gap-1.5 py-1.5 px-1.5 sm:px-3 rounded-lg text-[11px] sm:text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/80 active:bg-background transition-all text-center leading-none select-none"
+            >
+              <ListChecks className="w-3.5 h-3.5 shrink-0 opacity-70" strokeWidth={1.75} />
+              <span>
+                <span className="sm:hidden">Specs</span>
+                <span className="hidden sm:inline">Specifications</span>
+              </span>
             </a>
           )}
-          <a href="#reviews" className="shrink-0 px-3 py-1 rounded-full text-[11px] uppercase tracking-[0.15em] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors">
-            Reviews ({reviews.length})
+
+          <a
+            href="#reviews"
+            className="flex items-center justify-center gap-1.5 py-1.5 px-1.5 sm:px-3 rounded-lg text-[11px] sm:text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/80 active:bg-background transition-all text-center leading-none select-none"
+          >
+            <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-70" strokeWidth={1.75} />
+            <span>Reviews</span>
+            <span className="text-[9.5px] font-mono px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold leading-none">
+              {reviews.length}
+            </span>
           </a>
         </div>
       </nav>
