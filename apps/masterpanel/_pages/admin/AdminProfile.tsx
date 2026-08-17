@@ -212,7 +212,7 @@ const AdminProfile: React.FC = () => {
               <p className="text-xs text-muted-foreground">Editing user: <span className="font-mono text-foreground">{fullName || effectiveUserId}</span> with full administrative control</p>
             </div>
           </div>
-          <Button size="sm" variant="outline" onClick={() => navigate("/admin/employees")}>
+          <Button size="sm" variant="outline" onClick={() => navigate("/team/employees")}>
             <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Employees
           </Button>
         </div>

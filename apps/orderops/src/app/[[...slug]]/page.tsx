@@ -14,6 +14,6 @@ const OrderOpsApp = dynamic(() => import("@/App"), {
   ),
 });
 
-export default function Page() {
+export default function CatchAllPage() {
   return <OrderOpsApp />;
 }

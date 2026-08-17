@@ -556,8 +556,8 @@ export default function AdminSupport() {
 
       {/* ── FILTER & SEARCH STRIPE ── */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+        {/* Single Segmented Filter Button Control */}
+        <div className="inline-flex items-center gap-1 p-1 rounded-2xl bg-secondary/35 dark:bg-card/70 border border-border/60 shadow-2xs overflow-x-auto max-w-full scrollbar-none">
           {(
             [
               { id: "all" as const, label: "All Tickets", count: counts.total, alert: false },
@@ -577,20 +577,22 @@ export default function AdminSupport() {
                   setActiveFilter(tab.id);
                   if (window.innerWidth < 1024) setSelectedConv(null);
                 }}
-                className={`px-3 py-1.5 rounded-xl border text-xs font-bold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer select-none ${
                   active
-                    ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                    ? "bg-primary text-primary-foreground shadow-sm font-bold"
                     : tab.alert
-                    ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
-                    : "bg-secondary/20 border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                    ? "text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
                 }`}
               >
                 <span>{tab.label}</span>
                 <span
-                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
                     active
-                      ? "bg-white/20 text-white"
-                      : "bg-background/80 text-foreground"
+                      ? "bg-white/20 text-white font-bold"
+                      : tab.alert
+                      ? "bg-amber-500/20 text-amber-500 font-bold"
+                      : "bg-secondary text-muted-foreground"
                   }`}
                 >
                   {tab.count}

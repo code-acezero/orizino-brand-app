@@ -11,6 +11,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { useBrandSettings } from "@/lib/brand";
 import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
@@ -25,17 +26,36 @@ const NAV = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
+  const brand = useBrandSettings();
 
   return (
     <div className="h-screen flex overflow-hidden bg-background">
       {/* macOS-style sidebar — desktop only */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border/60 md:bg-sidebar md:shrink-0">
         <div className="px-5 pt-6 pb-4">
-          <p className="text-[16px] font-bold tracking-tight text-foreground flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            OrderOps Station
-          </p>
-          <p className="text-xs text-muted-foreground truncate mt-0.5">{user?.email}</p>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-card border border-border/80 flex items-center justify-center p-1.5 shadow-xs overflow-hidden shrink-0">
+              {brand.logoUrl ? (
+                <img
+                  src={brand.logoUrl}
+                  alt={brand.siteName}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold tracking-tight text-foreground flex items-center gap-1.5 truncate">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span className="truncate">{brand.siteName} Ops</span>
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate">{user?.email}</p>
+            </div>
+          </div>
         </div>
 
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
@@ -77,9 +97,25 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Mobile top bar with theme toggle */}
         <header className="md:hidden flex items-center justify-between px-4 py-2.5 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-30">
-          <div>
-            <p className="text-xs font-bold tracking-tight">OrderOps Station</p>
-            <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{user?.email}</p>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-card border border-border/80 flex items-center justify-center p-1 shadow-2xs overflow-hidden shrink-0">
+              {brand.logoUrl ? (
+                <img
+                  src={brand.logoUrl}
+                  alt={brand.siteName}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold tracking-tight truncate">{brand.siteName} Ops</p>
+              <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{user?.email}</p>
+            </div>
           </div>
           <ThemeToggle compact />
         </header>

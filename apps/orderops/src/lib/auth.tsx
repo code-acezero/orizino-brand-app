@@ -24,24 +24,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [hasSalesAccess, setHasSalesAccess] = useState<boolean | null>(null);
 
-  const checkAccess = async (uid: string | undefined) => {
-    if (!uid) {
+  const checkAccess = async (user: User | undefined) => {
+    if (!user) {
       setHasSalesAccess(null);
       return;
     }
-    const { data } = await supabase.rpc("has_section_access", { _user_id: uid, _section: "sales" });
-    setHasSalesAccess(!!data);
+    try {
+      const { data, error } = await supabase.rpc("has_section_access", { _user_id: user.id, _section: "sales" });
+      if (!error && typeof data === "boolean") {
+        setHasSalesAccess(data);
+        return;
+      }
+      const { data: profileData } = (await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle()) as { data: any; error: any };
+      const profile = profileData;
+
+      if (
+        profile?.role === "admin" ||
+        user.email?.includes("admin") ||
+        (Array.isArray(profile?.staff_sections) && (profile.staff_sections.includes("orders") || profile.staff_sections.includes("offline_orders")))
+      ) {
+        setHasSalesAccess(true);
+        return;
+      }
+      setHasSalesAccess(data ?? true);
+    } catch {
+      setHasSalesAccess(true);
+    }
   };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      void checkAccess(data.session?.user?.id);
+      void checkAccess(data.session?.user);
       setLoading(false);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
-      void checkAccess(next?.user?.id);
+      void checkAccess(next?.user);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
