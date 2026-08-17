@@ -105,8 +105,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
       const secondaryImage = (productRes.data?.images as string[] | null)?.[1] ?? null;
       return { hasVariants: variantRows.length > 0, colors, sizes, totalStock, secondaryImage };
     },
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   const hasVariants = cardData?.hasVariants;

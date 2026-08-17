@@ -97,6 +97,7 @@ import { generateSku, checkSku, getDefaultSkuPrefix, setDefaultSkuPrefix } from 
 import { PrintStickersDialog } from "@/_pages/admin/AdminProductsManagement";
 import BulkUpload from "@/components/admin/BulkUpload";
 import { exportProducts, exportVariants } from "@/components/admin/bulkExport";
+import { deleteStorageFiles, cleanOrphanProductImages } from "@/lib/image-cleanup.functions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "@/lib/app-toast";
@@ -175,6 +176,11 @@ export default function AdminProducts() {
   const checkSkuFn = useServerFn(checkSku);
   const getDefaultSkuPrefixFn = useServerFn(getDefaultSkuPrefix);
   const setDefaultSkuPrefixFn = useServerFn(setDefaultSkuPrefix);
+  const deleteStorageFilesFn = useServerFn(deleteStorageFiles);
+  const cleanOrphanFn = useServerFn(cleanOrphanProductImages);
+
+  const [deletedImageUrls, setDeletedImageUrls] = useState<string[]>([]);
+  const [cleaningOrphans, setCleaningOrphans] = useState(false);
 
   const [skuPrefix, setSkuPrefix] = useState("ORZ");
   const [savingPrefix, setSavingPrefix] = useState(false);
@@ -459,12 +465,20 @@ export default function AdminProducts() {
         } catch (err) {
           console.warn("Serial reconciliation note:", err);
         }
+
+        if (deletedImageUrls.length > 0) {
+          deleteStorageFilesFn({ data: { urls: deletedImageUrls } }).catch(() => {});
+          setDeletedImageUrls([]);
+        }
       }
 
       return productId;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["product"] });
+      qc.invalidateQueries({ queryKey: ["product-card-data"] });
       qc.invalidateQueries({ queryKey: ["all-product-variants-summary"] });
       qc.invalidateQueries({ queryKey: ["serials"] });
       setDialogOpen(false);
@@ -476,13 +490,23 @@ export default function AdminProducts() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      const { data: prod } = await supabase.from("products").select("thumbnail, images").eq("id", id).maybeSingle();
+      const urlsToDelete: string[] = [];
+      if (prod?.thumbnail) urlsToDelete.push(prod.thumbnail);
+      if (Array.isArray(prod?.images)) urlsToDelete.push(...prod.images.filter(Boolean));
+      if (urlsToDelete.length > 0) {
+        deleteStorageFilesFn({ data: { urls: urlsToDelete } }).catch(() => {});
+      }
       const { error } = await supabase.from("products").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["product"] });
+      qc.invalidateQueries({ queryKey: ["product-card-data"] });
       qc.invalidateQueries({ queryKey: ["all-product-variants-summary"] });
-      toast.success("Product deleted");
+      toast.success("Product and associated images deleted");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -490,6 +514,15 @@ export default function AdminProducts() {
   const bulkAction = useMutation({
     mutationFn: async ({ ids, action }: { ids: string[]; action: "delete" | "activate" | "deactivate" }) => {
       if (action === "delete") {
+        const { data: prods } = await supabase.from("products").select("thumbnail, images").in("id", ids);
+        const urlsToDelete: string[] = [];
+        prods?.forEach((p) => {
+          if (p.thumbnail) urlsToDelete.push(p.thumbnail);
+          if (Array.isArray(p.images)) urlsToDelete.push(...p.images.filter(Boolean));
+        });
+        if (urlsToDelete.length > 0) {
+          deleteStorageFilesFn({ data: { urls: urlsToDelete } }).catch(() => {});
+        }
         const { error } = await supabase.from("products").delete().in("id", ids);
         if (error) throw error;
       } else {
@@ -499,6 +532,9 @@ export default function AdminProducts() {
     },
     onSuccess: (_, { ids, action }) => {
       qc.invalidateQueries({ queryKey: ["admin-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["product"] });
+      qc.invalidateQueries({ queryKey: ["product-card-data"] });
       qc.invalidateQueries({ queryKey: ["all-product-variants-summary"] });
       setSelected(new Set());
       toast.success(
@@ -528,6 +564,7 @@ export default function AdminProducts() {
   const someSelected = selected.size > 0;
 
   const openEdit = (product?: any) => {
+    setDeletedImageUrls([]);
     if (product) {
       setEditing({ ...product, specifications: product.specifications || {} });
       const specs = product.specifications || {};
@@ -562,6 +599,10 @@ export default function AdminProducts() {
       setVariants([]);
       setHasVariantsMode(false);
     }
+    setCustomColorInput("");
+    setCustomSizeInput("");
+    setBulkPriceValue("");
+    setBulkStockValue("");
     setDialogOpen(true);
   };
 
@@ -658,6 +699,11 @@ export default function AdminProducts() {
     if (!editing) return;
     const current = [...(editing.images || [])];
     const removedUrl = current[idx];
+    if (removedUrl) {
+      setDeletedImageUrls((prev) => [...prev, removedUrl]);
+      // Prune immediately from storage
+      deleteStorageFilesFn({ data: { urls: [removedUrl] } }).catch(() => {});
+    }
     current.splice(idx, 1);
     const newThumbnail = editing.thumbnail === removedUrl ? current[0] || "" : editing.thumbnail;
     setEditing((prev) => (prev ? { ...prev, images: current, thumbnail: newThumbnail } : null));
@@ -980,6 +1026,29 @@ export default function AdminProducts() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={exportVariants} className="gap-2 cursor-pointer">
                   <Download className="h-3.5 w-3.5" /> Variants CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    setCleaningOrphans(true);
+                    try {
+                      const res: any = await cleanOrphanFn();
+                      if (res.deletedCount > 0) {
+                        toast.success(`Cleaned ${res.deletedCount} unused images from storage!`);
+                        qc.invalidateQueries({ queryKey: ["admin-products"] });
+                        qc.invalidateQueries({ queryKey: ["products"] });
+                      } else {
+                        toast.success("Storage is clean — no unused images found.");
+                      }
+                    } catch (e: any) {
+                      toast.error(e.message || "Failed to clean orphan images");
+                    } finally {
+                      setCleaningOrphans(false);
+                    }
+                  }}
+                  disabled={cleaningOrphans}
+                  className="gap-2 cursor-pointer text-amber-600 dark:text-amber-400"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Clean Orphan Images
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

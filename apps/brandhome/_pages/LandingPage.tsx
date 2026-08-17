@@ -49,7 +49,7 @@ const LandingPage: React.FC = () => {
     queryKey: ["company-site-settings"],
     queryFn: async () => {
       const { data } = await supabase.from("site_settings").select("key, value")
-        .in("key", ["site_name", "logo_url", "site_icon_url", "site_description", "social_instagram", "social_facebook", "contact_email", "contact_phone", "landing_config", "title_image_url", "title_source", "logo_display_style", "title_font"]);
+        .in("key", ["site_name", "logo_url", "site_icon_url", "site_description", "site_tagline", "social_instagram", "social_facebook", "contact_email", "contact_phone", "landing_config", "title_image_url", "title_source", "logo_display_style", "title_font"]);
       const map: Record<string, any> = {};
       data?.forEach((s) => { const v = s.value; map[s.key] = typeof v === "object" && v !== null ? (v as any).value ?? v : v; });
       return map;
@@ -60,6 +60,7 @@ const LandingPage: React.FC = () => {
   const siteName = (siteSettings?.site_name as string) || "Orizino";
   const logoUrl = (siteSettings?.logo_url as string) || "";
   const siteDesc = (siteSettings?.site_description as string) || "Premium drop shoulder streetwear from Dhaka.";
+  const siteTagline = (siteSettings?.site_tagline as string) || (siteSettings?.landing_config as any)?.hero_tagline || "The mark of what's next.";
   const instagram = (siteSettings?.social_instagram as string) || "";
   const contactEmail = (siteSettings?.contact_email as string) || "";
   const contactPhone = (siteSettings?.contact_phone as string) || "";
@@ -194,34 +195,37 @@ const LandingPage: React.FC = () => {
           
           {showTitle && (
             <motion.div
-              className="mb-6 flex justify-center w-full"
+              className="relative mb-8 flex flex-col items-center justify-center w-full max-w-4xl mx-auto select-none"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
             >
-              {titleSource === "image" && titleImageUrl ? (
-                <img src={titleImageUrl} alt={siteName} className="h-10 sm:h-16 lg:h-20 w-auto object-contain" />
-              ) : (
-                <div className="flex items-center justify-center text-center my-2">
+              {/* Foreshadowed Brand Title (Background Layer) */}
+              <div className="w-full flex items-center justify-center opacity-25 dark:opacity-20 pointer-events-none transition-opacity duration-500 scale-105 sm:scale-110 select-none">
+                {titleSource === "image" && titleImageUrl ? (
+                  <img src={titleImageUrl} alt={siteName} className="h-16 sm:h-24 lg:h-32 w-auto object-contain filter grayscale contrast-50 opacity-30" />
+                ) : (
                   <BrandTitle
-                    className="brand-name uppercase text-foreground font-bold tracking-[0.14em] leading-none select-none drop-shadow-sm transition-transform duration-300 hover:scale-[1.01]"
-                    fontSize="clamp(2.4rem, 6.5vw, 5.2rem)"
+                    className="brand-name uppercase text-muted-foreground/60 font-black tracking-[0.16em] leading-none select-none drop-shadow-none"
+                    fontSize="clamp(3.2rem, 9.5vw, 7.5rem)"
                     fallback="ORIZINO"
                   />
-                </div>
-              )}
+                )}
+              </div>
+
+              {/* Center-aligned Tagline Overlay (Foreground Layer) */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-auto px-4">
+                <motion.h2
+                  className="font-sans-brand text-foreground/90 text-center font-medium tracking-[0.24em] sm:tracking-[0.32em] lg:tracking-[0.38em] uppercase text-sm sm:text-lg md:text-xl lg:text-2xl drop-shadow-md backdrop-blur-[0.5px]"
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.8, delay: 0.25 }}
+                >
+                  {siteTagline}
+                </motion.h2>
+              </div>
             </motion.div>
           )}
-
-          <motion.p
-            className="font-sans-brand text-muted-foreground mb-10 max-w-xl mx-auto leading-relaxed"
-            style={{ fontSize: "clamp(0.9rem, 1.8vw, 1.1rem)" }}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.25 }}
-          >
-            {siteDesc}
-          </motion.p>
 
           <motion.div
             className="flex items-center justify-center gap-3.5 flex-wrap pt-2"
