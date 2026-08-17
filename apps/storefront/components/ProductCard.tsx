@@ -205,6 +205,25 @@ const ProductCard: React.FC<ProductCardProps> = ({
   }, [isSoldOut, addingToCart, hasVariants, id, slug, thumbnail, name, price, user, queryClient]);
 
   // ── Tap-and-Hold Touch Gesture for Mobile ──
+  useEffect(() => {
+    const handleOtherCardActive = (e: CustomEvent<{ id: string }>) => {
+      if (e.detail?.id !== id) {
+        setShowCartOnMobile(false);
+      }
+    };
+    const handleDismissAll = () => {
+      setShowCartOnMobile(false);
+    };
+    window.addEventListener("product-card-active" as any, handleOtherCardActive);
+    window.addEventListener("dismiss-product-cards" as any, handleDismissAll);
+    return () => {
+      window.removeEventListener("product-card-active" as any, handleOtherCardActive);
+      window.removeEventListener("dismiss-product-cards" as any, handleDismissAll);
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+      if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current);
+    };
+  }, [id]);
+
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
     touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
@@ -213,12 +232,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
     if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current);
 
     holdTimerRef.current = setTimeout(() => {
+      // Dismiss any other active card so only one card shows options at a time
+      window.dispatchEvent(new CustomEvent("product-card-active", { detail: { id } }));
       setShowCartOnMobile(true);
-      // Auto-hide after 4.5 seconds of inactivity
+      // Auto-hide after 5 seconds of inactivity
       autoHideTimerRef.current = setTimeout(() => {
         setShowCartOnMobile(false);
-      }, 4500);
-    }, 220); // 220ms hold threshold
+      }, 5000);
+    }, 200); // 200ms hold threshold
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -227,8 +248,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
     const diffX = Math.abs(touch.clientX - touchStartPosRef.current.x);
     const diffY = Math.abs(touch.clientY - touchStartPosRef.current.y);
 
-    // If user scrolls > 10px, cancel tap-and-hold
-    if (diffX > 10 || diffY > 10) {
+    // If user scrolls > 8px, cancel tap-and-hold
+    if (diffX > 8 || diffY > 8) {
       if (holdTimerRef.current) {
         clearTimeout(holdTimerRef.current);
         holdTimerRef.current = null;
@@ -244,25 +265,21 @@ const ProductCard: React.FC<ProductCardProps> = ({
     touchStartPosRef.current = null;
   };
 
-  useEffect(() => {
-    return () => {
-      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
-      if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current);
-    };
-  }, []);
-
   const isCartVisible = hovered || showCartOnMobile;
 
   return (
     <>
       <article
-        className={`group relative flex flex-col overflow-hidden bg-card select-none transition-all duration-500 w-full max-w-[280px] mx-auto ${className}`}
+        onContextMenu={(e) => e.preventDefault()}
+        className={`group relative flex flex-col overflow-hidden bg-card select-none [-webkit-touch-callout:none] [-webkit-user-select:none] transition-all duration-500 w-full max-w-[280px] mx-auto ${className}`}
         style={{
           borderRadius: 0,
           transform: hovered ? "translateY(-3px)" : "translateY(0)",
           boxShadow: hovered ? "0 12px 28px -8px hsl(var(--primary) / 0.14)" : "0 0 0 1px hsl(var(--border) / 0.3)",
           transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
           willChange: "transform, box-shadow",
+          WebkitTouchCallout: "none",
+          userSelect: "none",
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -274,8 +291,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
         {/* ── Image area ── */}
         <Link
           href={`/product/${slug}`}
-          className="relative overflow-hidden block"
-          style={{ aspectRatio: "3/4" }}
+          draggable={false}
+          onContextMenu={(e) => e.preventDefault()}
+          className="relative overflow-hidden block select-none [-webkit-touch-callout:none]"
+          style={{ aspectRatio: "3/4", WebkitTouchCallout: "none" }}
           onClick={() => trackClick("product_card", slug, window.location.pathname)}
         >
           {/* Primary image */}

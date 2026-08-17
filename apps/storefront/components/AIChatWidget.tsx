@@ -1673,13 +1673,17 @@ const AIChatWidget: React.FC = () => {
             exit={{ scale: 0.4, opacity: 0, filter: "blur(6px)" }}
             transition={{ type: "spring", stiffness: 320, damping: 22, mass: 0.7 }}
             ref={launcherBtnRef}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             onClick={(e) => {
               if (dragRef.current?.moved) { e.preventDefault(); e.stopPropagation(); return; }
               if (incomingCall) { acceptCall(); return; }
               setOpen(true);
             }}
             onPointerDown={handleLauncherPointerDown}
-            className={`fixed z-[10001] group touch-none select-none ${dragging ? "cursor-grabbing" : "cursor-grab"} ${
+            className={`fixed z-[10001] group touch-none select-none [-webkit-touch-callout:none] [-webkit-user-select:none] ${dragging ? "cursor-grabbing" : "cursor-grab"} ${
               isMascotIdle && !open ? "opacity-0 pointer-events-none scale-95" : "opacity-100 scale-100"
             }`}
             style={
@@ -1691,12 +1695,16 @@ const AIChatWidget: React.FC = () => {
                     bottom: "auto",
                     transform: "translate(-50%, -50%)",
                     transition: "none",
+                    WebkitTouchCallout: "none",
+                    userSelect: "none",
                   }
                 : launcherPos.yPercent != null
                 ? {
                     [launcherPos.edge]: "clamp(16px, 2.5vw, 40px)",
                     top: `${Math.max(8, Math.min(88, launcherPos.yPercent * 100))}%`,
                     transform: "translateY(-50%)",
+                    WebkitTouchCallout: "none",
+                    userSelect: "none",
                     transition: isMascotIdle
                       ? "opacity 1.5s ease-out, transform 1.5s ease-out"
                       : "opacity 0.3s ease-in, transform 0.3s ease-in, top 0.35s cubic-bezier(0.16, 1, 0.3, 1), left 0.35s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -1704,6 +1712,8 @@ const AIChatWidget: React.FC = () => {
                 : {
                     [launcherPos.edge]: "clamp(16px, 2.5vw, 40px)",
                     bottom: `${mascotBottomPx}px`,
+                    WebkitTouchCallout: "none",
+                    userSelect: "none",
                     transition: isMascotIdle
                       ? "opacity 1.5s ease-out, transform 1.5s ease-out"
                       : "opacity 0.3s ease-in, transform 0.3s ease-in, bottom 0.35s cubic-bezier(0.16, 1, 0.3, 1), left 0.35s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
