@@ -436,9 +436,9 @@ const CinematicHero: React.FC = () => {
         </motion.div>
       </AnimatePresence>
 
-      {/* ── Content Area: Top title tag center-aligned with the navigation arrow (top-1/2) ── */}
+      {/* ── Content Area: Anchored towards the bottom on mobile, center-aligned with arrows on desktop ── */}
       <div
-        className={`absolute inset-x-0 top-1/2 -translate-y-2.5 sm:-translate-y-3.5 flex items-start pointer-events-none z-10 ${textPosition === "center"
+        className={`absolute inset-x-0 bottom-4 sm:bottom-auto sm:top-1/2 sm:-translate-y-3.5 flex items-start pointer-events-none z-10 ${textPosition === "center"
             ? "justify-center text-center"
             : textPosition === "right"
               ? "justify-end text-right"
@@ -447,7 +447,7 @@ const CinematicHero: React.FC = () => {
       >
         <div className="w-full pl-9 pr-4 sm:pl-14 sm:pr-10 lg:px-14">
           <AnimatePresence mode="wait" initial={false}>
-            {/* CONTENT BOX — Top Counter pill & Subtitle sits directly aligned with the center navigation arrow */}
+            {/* CONTENT BOX */}
             <motion.div
               key={slide.id + "-content"}
               className="w-full max-w-[340px] sm:max-w-[640px] lg:max-w-[760px] flex flex-col justify-start pointer-events-auto"
@@ -457,15 +457,15 @@ const CinematicHero: React.FC = () => {
               animate="animate"
               exit="exit"
             >
-              {/* 1. Counter Pill & Subtitle — Sits aligned with center arrow */}
+              {/* 1. Counter Pill & Subtitle */}
               <div className="flex items-center gap-1.5 sm:gap-3 mb-1 sm:mb-2.5 shrink-0 flex-wrap">
-                <span className="font-sans-brand text-foreground/80 text-[8px] sm:text-[0.62rem] tracking-[0.2em] bg-background/60 backdrop-blur-md px-2 sm:px-2.5 py-0.5 rounded-full border border-border/30 shadow-xs">
+                <span className="font-sans-brand text-foreground/80 text-[8px] sm:text-[0.62rem] tracking-[0.2em] bg-background/60 backdrop-blur-md px-2 sm:px-2.5 py-0.5 rounded-full border border-border/30 shadow-xs leading-none">
                   {String(current + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
                 </span>
                 {slide.subtitle && (
                   <>
                     <span className="text-foreground/30 text-[9px] sm:text-[10px]">•</span>
-                    <span className="font-sans-brand text-[8px] sm:text-[0.7rem] font-semibold tracking-[0.14em] sm:tracking-[0.22em] uppercase text-foreground/90 drop-shadow-xs truncate max-w-[180px] sm:max-w-none">
+                    <span className="font-sans-brand text-[8px] sm:text-[0.7rem] font-semibold tracking-[0.14em] sm:tracking-[0.22em] uppercase text-foreground/90 drop-shadow-xs truncate max-w-[180px] sm:max-w-none leading-none">
                       {slide.subtitle}
                     </span>
                   </>
@@ -483,10 +483,10 @@ const CinematicHero: React.FC = () => {
                     style={{
                       fontSize:
                         slide.title.length <= 35
-                          ? "clamp(1.2rem, 5vw, 4.75rem)"
+                          ? "clamp(1.15rem, 4.8vw, 4.75rem)"
                           : slide.title.length <= 55
-                            ? "clamp(1.05rem, 4vw, 3.75rem)"
-                            : "clamp(0.95rem, 3.2vw, 3rem)",
+                            ? "clamp(1rem, 3.8vw, 3.75rem)"
+                            : "clamp(0.9rem, 3vw, 3rem)",
                       lineHeight: 1.15,
                       letterSpacing: "-0.01em",
                     }}
@@ -494,9 +494,9 @@ const CinematicHero: React.FC = () => {
                 )}
               </div>
 
-              {/* 3. CTA Buttons — Fixed below headline */}
+              {/* 3. CTA Buttons — Perfectly centered text and balanced padding */}
               <motion.div
-                className="flex items-center gap-2 sm:gap-4 shrink-0 mt-1.5 sm:mt-4"
+                className="flex items-center gap-2 sm:gap-4 shrink-0 mt-1 sm:mt-4"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
@@ -504,14 +504,17 @@ const CinematicHero: React.FC = () => {
                 {slide.button_text && slide.button_link && (
                   <a
                     href={slide.button_link}
-                    className="px-3 py-1 sm:px-6 sm:py-3 rounded-full bg-primary text-primary-foreground dark:bg-foreground dark:text-background text-[10px] sm:text-xs font-sans-brand font-semibold tracking-wider uppercase hover:opacity-90 transition-all shadow-xs"
+                    className="inline-flex items-center justify-center text-center px-3.5 py-1.5 sm:px-6 sm:py-3 rounded-full bg-primary text-primary-foreground dark:bg-foreground dark:text-background text-[10px] sm:text-xs font-sans-brand font-semibold tracking-wider uppercase hover:opacity-90 transition-all shadow-xs leading-none"
                     onClick={() => trackClick("hero_cta", slide.id, "/", { slide_title: slide.title })}
                   >
-                    {slide.button_text}
+                    <span>{slide.button_text}</span>
                   </a>
                 )}
-                <a href="/inventory" className="px-3 py-1 sm:px-6 sm:py-3 rounded-full bg-background/50 border border-border/50 text-foreground text-[10px] sm:text-xs font-sans-brand font-medium tracking-wider uppercase hover:bg-background/80 transition-all backdrop-blur-md">
-                  View All
+                <a
+                  href="/inventory"
+                  className="inline-flex items-center justify-center text-center px-3.5 py-1.5 sm:px-6 sm:py-3 rounded-full bg-background/50 border border-border/50 text-foreground text-[10px] sm:text-xs font-sans-brand font-medium tracking-wider uppercase hover:bg-background/80 transition-all backdrop-blur-md leading-none"
+                >
+                  <span>View All</span>
                 </a>
               </motion.div>
             </motion.div>
