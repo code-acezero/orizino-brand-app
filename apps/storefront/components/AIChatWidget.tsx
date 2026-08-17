@@ -692,6 +692,9 @@ const AIChatWidget: React.FC = () => {
 
     let startX = 0;
     let startY = 0;
+    // Offset from finger to widget center — so it follows exactly where you grabbed it
+    let grabOffsetX = 0;
+    let grabOffsetY = 0;
     let moved = false;
 
     const onTouchStart = (e: TouchEvent) => {
@@ -700,6 +703,12 @@ const AIChatWidget: React.FC = () => {
       startX = touch.clientX;
       startY = touch.clientY;
       moved = false;
+      // Measure the widget's current bounding center so we can preserve the grab offset
+      const rect = el.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      grabOffsetX = touch.clientX - centerX;
+      grabOffsetY = touch.clientY - centerY;
     };
 
     const onTouchMove = (e: TouchEvent) => {
@@ -715,8 +724,12 @@ const AIChatWidget: React.FC = () => {
 
       if (moved) {
         e.preventDefault(); // Stop mobile page scroll!
-        const x = Math.max(28, Math.min(window.innerWidth - 28, touch.clientX));
-        const y = Math.max(50, Math.min(window.innerHeight - 70, touch.clientY));
+        // Subtract the grab offset so the widget follows exactly where the finger landed
+        const halfSize = el.offsetWidth / 2;
+        const targetX = touch.clientX - grabOffsetX;
+        const targetY = touch.clientY - grabOffsetY;
+        const x = Math.max(halfSize, Math.min(window.innerWidth - halfSize, targetX));
+        const y = Math.max(50, Math.min(window.innerHeight - 70, targetY));
         setDragXY({ x, y });
       }
     };
@@ -724,8 +737,11 @@ const AIChatWidget: React.FC = () => {
     const onTouchEnd = (e: TouchEvent) => {
       if (moved) {
         const lastTouch = e.changedTouches[0];
-        const clientX = lastTouch ? lastTouch.clientX : startX;
-        const clientY = lastTouch ? lastTouch.clientY : startY;
+        // The final center position (accounting for grab offset)
+        const rawX = lastTouch ? lastTouch.clientX - grabOffsetX : startX;
+        const rawY = lastTouch ? lastTouch.clientY - grabOffsetY : startY;
+        const clientX = Math.max(0, Math.min(window.innerWidth, rawX));
+        const clientY = Math.max(0, Math.min(window.innerHeight, rawY));
         const edge: "left" | "right" = clientX < window.innerWidth / 2 ? "left" : "right";
         const margin = 80;
         const clampedY = Math.max(margin, Math.min(window.innerHeight - margin, clientY));
@@ -768,6 +784,13 @@ const AIChatWidget: React.FC = () => {
     const startY = e.clientY;
     let hasMoved = false;
 
+    // Measure grab offset from cursor to widget center so drag is 1:1 without snapping
+    const el = launcherBtnRef.current;
+    const rect = el ? el.getBoundingClientRect() : null;
+    const grabOffsetX = rect ? e.clientX - (rect.left + rect.width / 2) : 0;
+    const grabOffsetY = rect ? e.clientY - (rect.top + rect.height / 2) : 0;
+    const halfSize = rect ? rect.width / 2 : 28;
+
     const onPointerMove = (moveEvent: PointerEvent) => {
       const dx = moveEvent.clientX - startX;
       const dy = moveEvent.clientY - startY;
@@ -776,8 +799,11 @@ const AIChatWidget: React.FC = () => {
         setDragging(true);
       }
       if (hasMoved) {
-        const x = Math.max(28, Math.min(window.innerWidth - 28, moveEvent.clientX));
-        const y = Math.max(50, Math.min(window.innerHeight - 60, moveEvent.clientY));
+        // Subtract grab offset so the widget doesn't snap center to cursor
+        const targetX = moveEvent.clientX - grabOffsetX;
+        const targetY = moveEvent.clientY - grabOffsetY;
+        const x = Math.max(halfSize, Math.min(window.innerWidth - halfSize, targetX));
+        const y = Math.max(50, Math.min(window.innerHeight - 60, targetY));
         setDragXY({ x, y });
       }
     };
@@ -788,9 +814,12 @@ const AIChatWidget: React.FC = () => {
       window.removeEventListener("pointercancel", onPointerUp);
 
       if (hasMoved) {
-        const edge: "left" | "right" = upEvent.clientX < window.innerWidth / 2 ? "left" : "right";
+        // Final center position accounting for grab offset
+        const finalX = upEvent.clientX - grabOffsetX;
+        const finalY = upEvent.clientY - grabOffsetY;
+        const edge: "left" | "right" = finalX < window.innerWidth / 2 ? "left" : "right";
         const margin = 70;
-        const y = Math.max(margin, Math.min(window.innerHeight - margin, upEvent.clientY));
+        const y = Math.max(margin, Math.min(window.innerHeight - margin, finalY));
         const yPercent = y / window.innerHeight;
         const next = { edge, yPercent };
         setLauncherPos(next);
