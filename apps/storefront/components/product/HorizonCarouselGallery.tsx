@@ -252,7 +252,7 @@ export default function HorizonCarouselGallery({
           })}
         </div>
 
-        {/* Navigation Arrows */}
+        {/* Navigation Arrows — Clean circle-less icons, hidden on idle */}
         {total > 1 && (
           <>
             <button
@@ -261,10 +261,10 @@ export default function HorizonCarouselGallery({
                 e.stopPropagation();
                 navigate(-1);
               }}
-              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background border border-border/70 text-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md backdrop-blur-md"
+              className="absolute left-1 sm:left-3 top-1/2 -translate-y-1/2 z-30 p-2 text-foreground/75 hover:text-primary focus:text-primary transition-opacity duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer bg-transparent border-0 outline-none hover:scale-105"
               aria-label="Previous image"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-md" strokeWidth={1.75} />
             </button>
             <button
               type="button"
@@ -272,31 +272,31 @@ export default function HorizonCarouselGallery({
                 e.stopPropagation();
                 navigate(1);
               }}
-              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background border border-border/70 text-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md backdrop-blur-md"
+              className="absolute right-1 sm:right-3 top-1/2 -translate-y-1/2 z-30 p-2 text-foreground/75 hover:text-primary focus:text-primary transition-opacity duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer bg-transparent border-0 outline-none hover:scale-105"
               aria-label="Next image"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-md" strokeWidth={1.75} />
             </button>
           </>
         )}
       </div>
 
-      {/* ── FOOTER TELEMETRY & PROGRESS ── */}
+      {/* ── FOOTER TELEMETRY & PROGRESS — Sleek Micro Dots ── */}
       <div className="z-20 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {images.map((_, i) => (
             <button
               key={i}
               type="button"
               onClick={() => setActiveIdx(i)}
-              className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                i === activeIdx ? "w-6 bg-primary" : "w-1.5 bg-foreground/25 hover:bg-foreground/50"
+              className={`h-1 rounded-full transition-all cursor-pointer ${
+                i === activeIdx ? "w-4 bg-primary" : "w-1 bg-foreground/25 hover:bg-foreground/50"
               }`}
             />
           ))}
         </div>
 
-        <span className="text-[10px] font-mono text-foreground/80 bg-background/80 backdrop-blur-md px-3 py-1 rounded-full border border-border/60 shadow-xs">
+        <span className="text-[10px] font-mono text-foreground/80 bg-background/80 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-border/60 shadow-xs">
           {activeIdx + 1} / {total}
         </span>
       </div>

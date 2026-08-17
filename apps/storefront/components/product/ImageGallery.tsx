@@ -296,28 +296,30 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
             </div>
           )}
 
-          {/* Navigation Arrows */}
+          {/* Navigation Arrows — Clean circle-less icons, hidden on idle, revealed on group hover/focus */}
           {images.length > 1 && (
             <>
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(-1);
                 }}
-                className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground hover:text-primary flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                className="absolute left-1 sm:left-3 top-1/2 -translate-y-1/2 z-20 p-2 text-foreground/75 hover:text-primary focus:text-primary transition-opacity duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer bg-transparent border-0 outline-none"
                 aria-label="Previous image"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-md" strokeWidth={1.75} />
               </button>
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(1);
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground hover:text-primary flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                className="absolute right-1 sm:right-3 top-1/2 -translate-y-1/2 z-20 p-2 text-foreground/75 hover:text-primary focus:text-primary transition-opacity duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer bg-transparent border-0 outline-none"
                 aria-label="Next image"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-md" strokeWidth={1.75} />
               </button>
             </>
           )}
@@ -329,12 +331,22 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
             </span>
           )}
 
-          {/* Image Counter & Fullscreen Icon */}
+          {/* Image Counter & Fullscreen Icon — Sleek micro indicators */}
           <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
             {images.length > 1 && (
-              <span className="bg-background/80 backdrop-blur-md rounded-full px-2.5 py-0.5 text-[10px] text-foreground font-mono font-semibold border border-border/50">
-                {selected + 1} / {images.length}
-              </span>
+              <div className="flex items-center gap-1 bg-background/80 backdrop-blur-md rounded-full px-2 py-1 border border-border/50">
+                {images.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`block rounded-full transition-all duration-300 ${
+                      i === selected ? "w-2.5 h-1 bg-primary" : "w-1 h-1 bg-foreground/30"
+                    }`}
+                  />
+                ))}
+                <span className="text-[9px] font-mono font-semibold text-foreground ml-1">
+                  {selected + 1}/{images.length}
+                </span>
+              </div>
             )}
             <span className="ml-auto bg-background/80 backdrop-blur-md rounded-full p-1.5 text-foreground border border-border/50 opacity-0 group-hover:opacity-100 transition-opacity">
               <Maximize2 className="w-3.5 h-3.5" />
@@ -354,7 +366,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                     setSelected(idx);
                     setLightboxZoom(1);
                   }}
-                  className={`relative shrink-0 w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden border transition-all cursor-pointer ${
+                  className={`relative shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border transition-all cursor-pointer ${
                     active
                       ? "border-primary ring-1 ring-primary/40 opacity-100 scale-102"
                       : "border-border/60 opacity-60 hover:opacity-100"
@@ -372,7 +384,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
         )}
       </div>
 
-      {/* ── LUXURY HIGH-PRECISION FULLSCREEN LIGHTBOX ── */}
+      {/* ── LUXURY HIGH-PRECISION FULLSCREEN LIGHTBOX (MOBILE-OPTIMIZED FIT) ── */}
       <AnimatePresence>
         {lightboxOpen && (
           <motion.div
@@ -380,59 +392,63 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 sm:p-6"
+            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col justify-between p-2.5 sm:p-6"
             onClick={() => setLightboxOpen(false)}
           >
             {/* Top Toolbar */}
             <div
-              className="flex items-center justify-between w-full z-10 max-w-6xl mx-auto"
+              className="flex items-center justify-between w-full z-10 max-w-6xl mx-auto shrink-0 pb-1"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-white tracking-wide truncate max-w-xs sm:max-w-md">
+              <div className="flex items-center gap-2 min-w-0 pr-2">
+                <span className="text-xs sm:text-sm font-bold text-white tracking-wide truncate max-w-[160px] sm:max-w-md">
                   {productName}
                 </span>
-                <span className="text-[10.5px] font-mono text-zinc-400">
-                  ({selected + 1} of {images.length})
+                <span className="text-[10px] sm:text-[10.5px] font-mono text-zinc-400 shrink-0">
+                  ({selected + 1}/{images.length})
                 </span>
               </div>
 
               {/* Zoom & Close Controls */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-xl p-1 border border-white/15">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <div className="flex items-center gap-0.5 sm:gap-1 bg-white/10 backdrop-blur-md rounded-xl p-0.5 sm:p-1 border border-white/15">
                   <button
+                    type="button"
                     onClick={() => setLightboxZoom((z) => Math.max(1, z - 0.5))}
                     disabled={lightboxZoom <= 1}
-                    className="p-1.5 text-white/80 hover:text-white disabled:opacity-30 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                    className="p-1 sm:p-1.5 text-white/80 hover:text-white disabled:opacity-30 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                     title="Zoom Out"
                   >
-                    <ZoomOut className="w-4 h-4" />
+                    <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
 
                   <button
+                    type="button"
                     onClick={toggleZoom}
-                    className="px-2 py-1 text-[11px] font-mono font-bold text-white hover:text-primary rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                    className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-mono font-bold text-white hover:text-primary rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                     title="Toggle Fit / Zoom"
                   >
                     {Math.round(lightboxZoom * 100)}%
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => setLightboxZoom((z) => Math.min(4, z + 0.5))}
                     disabled={lightboxZoom >= 4}
-                    className="p-1.5 text-white/80 hover:text-white disabled:opacity-30 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                    className="p-1 sm:p-1.5 text-white/80 hover:text-white disabled:opacity-30 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                     title="Zoom In"
                   >
-                    <ZoomIn className="w-4 h-4" />
+                    <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
 
                   {lightboxZoom > 1 && (
                     <button
+                      type="button"
                       onClick={() => {
                         setLightboxZoom(1);
                         setPanPosition({ x: 0, y: 0 });
                       }}
-                      className="p-1.5 text-white/80 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                      className="p-1 sm:p-1.5 text-white/80 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                       title="Reset Zoom"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
@@ -441,18 +457,19 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => setLightboxOpen(false)}
-                  className="p-2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl transition-all cursor-pointer"
+                  className="p-1.5 sm:p-2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl transition-all cursor-pointer"
                   title="Close (Esc)"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
             </div>
 
-            {/* Central High-Resolution Viewport */}
+            {/* Central High-Resolution Viewport — Fully Fitted for Mobile Screens */}
             <div
-              className={`relative flex-1 flex items-center justify-center my-auto overflow-hidden ${
+              className={`relative flex-1 min-h-0 flex items-center justify-center my-auto w-full overflow-hidden ${
                 lightboxZoom > 1 ? (isDragging ? "cursor-grabbing" : "cursor-grab") : "cursor-zoom-in"
               }`}
               onMouseDown={handleLightboxMouseDown}
@@ -480,32 +497,34 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                   scale: { type: "spring", stiffness: 300, damping: 30 },
                   opacity: { duration: 0.2 },
                 }}
-                className="max-h-[78vh] max-w-[90vw] object-contain select-none pointer-events-none"
+                className="max-h-[62dvh] sm:max-h-[75vh] max-w-[94vw] sm:max-w-[85vw] object-contain select-none pointer-events-none"
                 draggable={false}
               />
 
-              {/* Next / Prev Navigation */}
+              {/* Next / Prev Navigation — Transparent clean arrows */}
               {images.length > 1 && (
                 <>
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(-1);
                     }}
-                    className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer"
+                    className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 z-20 p-2 sm:p-3 text-white/80 hover:text-white transition-all cursor-pointer bg-transparent border-0 outline-none hover:scale-110"
                     aria-label="Previous photo"
                   >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-lg" strokeWidth={2} />
                   </button>
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(1);
                     }}
-                    className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer"
+                    className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 z-20 p-2 sm:p-3 text-white/80 hover:text-white transition-all cursor-pointer bg-transparent border-0 outline-none hover:scale-110"
                     aria-label="Next photo"
                   >
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-lg" strokeWidth={2} />
                   </button>
                 </>
               )}
@@ -514,20 +533,21 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
             {/* Bottom Thumbnails Navigation Bar */}
             {images.length > 1 && (
               <div
-                className="flex items-center justify-center gap-2 overflow-x-auto py-2 z-10 max-w-2xl mx-auto scrollbar-none"
+                className="flex items-center justify-center gap-1.5 sm:gap-2 overflow-x-auto py-1 z-10 max-w-2xl mx-auto scrollbar-none shrink-0"
                 onClick={(e) => e.stopPropagation()}
               >
                 {images.map((img, idx) => {
                   const active = selected === idx;
                   return (
                     <button
+                      type="button"
                       key={idx}
                       onClick={() => {
                         setSelected(idx);
                         setLightboxZoom(1);
                         setPanPosition({ x: 0, y: 0 });
                       }}
-                      className={`relative w-12 h-12 rounded-lg overflow-hidden border transition-all cursor-pointer shrink-0 ${
+                      className={`relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border transition-all cursor-pointer shrink-0 ${
                         active
                           ? "border-primary ring-1 ring-primary/50 scale-105 opacity-100"
                           : "border-white/20 opacity-40 hover:opacity-80"

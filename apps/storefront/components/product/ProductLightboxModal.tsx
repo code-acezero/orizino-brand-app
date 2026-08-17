@@ -217,9 +217,9 @@ export const ProductLightboxModal: React.FC<ProductLightboxModalProps> = ({
             </div>
           </div>
 
-          {/* Center Image Stage */}
+          {/* Central High-Resolution Viewport — Fully Fitted for Mobile Viewports */}
           <div
-            className={`relative flex-1 flex items-center justify-center my-auto overflow-hidden ${
+            className={`relative flex-1 min-h-0 flex items-center justify-center my-auto w-full overflow-hidden ${
               zoom > 1 ? (isDragging ? "cursor-grabbing" : "cursor-grab") : "cursor-zoom-in"
             }`}
             onMouseDown={handleMouseDown}
@@ -249,11 +249,11 @@ export const ProductLightboxModal: React.FC<ProductLightboxModalProps> = ({
                 scale: { type: "spring", stiffness: 300, damping: 30 },
                 opacity: { duration: 0.2 },
               }}
-              className="max-h-[78vh] max-w-[90vw] object-contain select-none pointer-events-none"
+              className="max-h-[62dvh] sm:max-h-[75vh] max-w-[94vw] sm:max-w-[85vw] object-contain select-none pointer-events-none"
               draggable={false}
             />
 
-            {/* Next / Prev Navigation */}
+            {/* Next / Prev Navigation — Clean transparent arrows */}
             {images.length > 1 && (
               <>
                 <button
@@ -262,10 +262,10 @@ export const ProductLightboxModal: React.FC<ProductLightboxModalProps> = ({
                     e.stopPropagation();
                     navigate(-1);
                   }}
-                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-40 w-11 h-11 rounded-full bg-black/60 hover:bg-black/90 border border-white/25 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-xl"
+                  className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 z-40 p-2 sm:p-3 text-white/80 hover:text-white transition-all cursor-pointer bg-transparent border-0 outline-none hover:scale-110 active:scale-95"
                   aria-label="Previous photo"
                 >
-                  <ChevronLeft className="w-6 h-6" />
+                  <ChevronLeft className="w-7 h-7 sm:w-9 sm:h-9 drop-shadow-xl" strokeWidth={2} />
                 </button>
                 <button
                   type="button"
@@ -273,10 +273,10 @@ export const ProductLightboxModal: React.FC<ProductLightboxModalProps> = ({
                     e.stopPropagation();
                     navigate(1);
                   }}
-                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-40 w-11 h-11 rounded-full bg-black/60 hover:bg-black/90 border border-white/25 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-xl"
+                  className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 z-40 p-2 sm:p-3 text-white/80 hover:text-white transition-all cursor-pointer bg-transparent border-0 outline-none hover:scale-110 active:scale-95"
                   aria-label="Next photo"
                 >
-                  <ChevronRight className="w-6 h-6" />
+                  <ChevronRight className="w-7 h-7 sm:w-9 sm:h-9 drop-shadow-xl" strokeWidth={2} />
                 </button>
               </>
             )}
@@ -285,7 +285,7 @@ export const ProductLightboxModal: React.FC<ProductLightboxModalProps> = ({
           {/* Bottom Thumbnails Navigation Bar */}
           {images.length > 1 && (
             <div
-              className="flex items-center justify-center gap-2 overflow-x-auto py-2 z-50 max-w-2xl mx-auto scrollbar-none pointer-events-auto"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 overflow-x-auto py-1 z-50 max-w-2xl mx-auto scrollbar-none pointer-events-auto shrink-0"
               onClick={(e) => e.stopPropagation()}
             >
               {images.map((img, idx) => {
@@ -299,7 +299,7 @@ export const ProductLightboxModal: React.FC<ProductLightboxModalProps> = ({
                       setZoom(1);
                       setPan({ x: 0, y: 0 });
                     }}
-                    className={`relative w-12 h-12 rounded-lg overflow-hidden border transition-all cursor-pointer shrink-0 ${
+                    className={`relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border transition-all cursor-pointer shrink-0 ${
                       active
                         ? "border-primary ring-2 ring-primary/60 scale-105 opacity-100"
                         : "border-white/20 opacity-40 hover:opacity-80"

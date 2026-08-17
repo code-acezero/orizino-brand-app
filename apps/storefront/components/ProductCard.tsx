@@ -352,13 +352,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
             )}
           </div>
 
-          {/* ── Action buttons: Share & Wishlist ── */}
+          {/* ── Action buttons: Share & Wishlist — Shown on Hover (Desktop) or Tap-and-Hold (Mobile) ── */}
           <div className="absolute bottom-10 right-2 z-20 flex flex-col gap-2.5">
             <button
               onClick={handleShare}
               aria-label="Share product"
-              className={`flex items-center justify-center transition-all duration-300 text-foreground/80 filter drop-shadow-md ${
-                hovered ? "opacity-100 scale-100 translate-x-0" : "opacity-0 scale-90 translate-x-4 pointer-events-none"
+              className={`flex items-center justify-center transition-all duration-300 text-foreground/80 filter drop-shadow-md cursor-pointer ${
+                isCartVisible ? "opacity-100 scale-100 translate-x-0" : "opacity-0 scale-90 translate-x-4 pointer-events-none"
               } hover:text-primary hover:scale-110`}
               style={{
                 transition: "all 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -368,12 +368,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <Share2 className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
             </button>
             <button
-              className={`flex items-center justify-center transition-all duration-300 hover:text-primary hover:scale-110 text-foreground/80 filter drop-shadow-md ${
-                hovered ? "opacity-100 scale-100 translate-x-0" : "opacity-0 scale-90 translate-x-4 pointer-events-none"
+              className={`flex items-center justify-center transition-all duration-300 hover:text-primary hover:scale-110 text-foreground/80 filter drop-shadow-md cursor-pointer ${
+                isCartVisible ? "opacity-100 scale-100 translate-x-0" : "opacity-0 scale-90 translate-x-4 pointer-events-none"
               }`}
               style={{
                 transition: "all 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
-                transitionDelay: hovered ? "40ms" : "0ms",
+                transitionDelay: isCartVisible ? "40ms" : "0ms",
                 willChange: "transform, opacity",
               }}
               onClick={handleWishlist}
@@ -435,36 +435,46 @@ const ProductCard: React.FC<ProductCardProps> = ({
           />
         </Link>
 
-        {/* ── Product Info: Compact Height + Space for 2 Rows of Text ── */}
-        <div className="flex flex-col items-center text-center px-2 py-2 sm:px-3 sm:py-2.5 gap-0.5 sm:gap-1">
-          {/* 2 Rows of Text */}
-          <Link
-            href={`/product/${slug}`}
-            className="font-sans-brand text-[11px] sm:text-xs font-medium tracking-tight text-foreground/90 line-clamp-2 min-h-[2.4em] sm:min-h-[2.5em] leading-[1.22] flex items-center justify-center text-center hover:text-primary transition-colors w-full"
-            title={name}
-          >
-            {name}
-          </Link>
+        {/* ── Product Info: Perfectly Symmetrical Fixed Height + 3-Row Auto-Fitting Title ── */}
+        <div className="flex flex-col items-center text-center px-2 py-2 sm:px-3 sm:py-2.5 w-full min-h-[96px] sm:min-h-[108px] justify-between">
+          {/* 3 Rows Max with Auto-Resizing Font for Short vs Long Titles */}
+          <div className="w-full h-[3.8em] sm:h-[4em] flex items-center justify-center overflow-hidden">
+            <Link
+              href={`/product/${slug}`}
+              className={`font-sans-brand font-medium tracking-tight text-foreground/90 line-clamp-3 leading-[1.25] text-center hover:text-primary transition-colors w-full ${
+                name.length <= 22
+                  ? "text-[12px] sm:text-[13px] font-semibold"
+                  : name.length <= 42
+                    ? "text-[11px] sm:text-[12px]"
+                    : "text-[10px] sm:text-[11px]"
+              }`}
+              title={name}
+            >
+              {name}
+            </Link>
+          </div>
 
-          {/* Color swatch dots */}
-          {variantColors.length > 1 && (
-            <div className="flex items-center justify-center gap-1 my-0.5">
-              {variantColors.slice(0, 5).map((color, i) => (
-                <span
-                  key={i}
-                  className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full border border-foreground/15 shrink-0"
-                  style={{ backgroundColor: color }}
-                  title={color}
-                />
-              ))}
-              {variantColors.length > 5 && (
-                <span className="text-[7.5px] sm:text-[8px] text-muted-foreground font-sans-brand">+{variantColors.length - 5}</span>
-              )}
-            </div>
-          )}
+          {/* Fixed-height color swatch dots slot for perfect vertical alignment */}
+          <div className="h-4 sm:h-5 flex items-center justify-center">
+            {variantColors.length > 1 ? (
+              <div className="flex items-center justify-center gap-1">
+                {variantColors.slice(0, 5).map((color, i) => (
+                  <span
+                    key={i}
+                    className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full border border-foreground/15 shrink-0"
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                ))}
+                {variantColors.length > 5 && (
+                  <span className="text-[7.5px] sm:text-[8px] text-muted-foreground font-sans-brand">+{variantColors.length - 5}</span>
+                )}
+              </div>
+            ) : null}
+          </div>
 
-          {/* Price display */}
-          <div className="flex items-baseline justify-center gap-1.5 mt-0.5">
+          {/* Price display with consistent fixed height */}
+          <div className="flex items-baseline justify-center gap-1.5 h-5 sm:h-6">
             <span className="text-xs sm:text-sm md:text-base font-bold text-foreground tracking-tight">
               {formatPrice(price)}
             </span>

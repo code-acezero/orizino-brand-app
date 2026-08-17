@@ -22,17 +22,17 @@ interface Slide {
 import SkeletonWatermark from "@/components/skeletons/SkeletonWatermark";
 
 const CinematicHeroSkeleton: React.FC = () => (
-  <section className="relative w-full h-[85vh] min-h-[520px] max-h-[920px] bg-card/40 animate-pulse overflow-hidden flex items-center">
+  <section className="relative w-full h-[44vh] sm:h-[85vh] min-h-[260px] sm:min-h-[520px] max-h-[920px] bg-card/40 animate-pulse overflow-hidden flex items-center">
     {/* Brand mark watermark positioned on the right side where space is blank */}
     <div className="absolute right-6 sm:right-12 md:right-20 lg:right-28 top-1/2 -translate-y-1/2 pointer-events-none z-0">
       <SkeletonWatermark size="xl" />
     </div>
-    <div className="w-full px-5 sm:px-9 lg:px-11 xl:px-12 pb-16 lg:pb-0 relative z-10">
-      <div className="max-w-2xl flex flex-col gap-4">
-        <div className="h-4 w-32 bg-foreground/10 rounded" />
-        <div className="h-12 sm:h-16 w-3/4 bg-foreground/15 rounded-lg" />
-        <div className="h-4 w-1/2 bg-foreground/10 rounded" />
-        <div className="h-10 w-36 bg-foreground/20 rounded-full mt-2" />
+    <div className="w-full px-5 sm:px-9 lg:px-11 xl:px-12 pb-8 sm:pb-16 lg:pb-0 relative z-10">
+      <div className="max-w-2xl flex flex-col gap-2 sm:gap-4">
+        <div className="h-3 sm:h-4 w-24 sm:w-32 bg-foreground/10 rounded" />
+        <div className="h-8 sm:h-16 w-3/4 bg-foreground/15 rounded-lg" />
+        <div className="h-3 sm:h-4 w-1/2 bg-foreground/10 rounded" />
+        <div className="h-8 sm:h-10 w-28 sm:w-36 bg-foreground/20 rounded-full mt-1 sm:mt-2" />
       </div>
     </div>
   </section>
@@ -308,8 +308,10 @@ const CinematicHero: React.FC = () => {
 
   return (
     <section
-      className="relative w-full overflow-hidden select-none m-0 p-0 min-h-[520px] sm:min-h-[620px] lg:min-h-[680px]"
-      style={{ height: heroHeight, minHeight: 520 }}
+      className="relative w-full overflow-hidden select-none m-0 p-0 h-[44vh] sm:h-[88vh] min-h-[260px] sm:min-h-[520px] lg:min-h-[680px]"
+      style={{
+        height: typeof window !== "undefined" && window.innerWidth < 640 ? "44vh" : heroHeight,
+      }}
       onMouseEnter={() => pauseOnHover && setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={onTouchStart}
@@ -417,7 +419,7 @@ const CinematicHero: React.FC = () => {
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden px-4" aria-hidden="true">
                 <span
                   className="font-editorial brand-title text-foreground/8 dark:text-foreground/15 font-extrabold max-w-full text-center tracking-tight select-none uppercase transition-colors"
-                  style={{ fontSize: "clamp(3.5rem, 14vw, 14rem)", lineHeight: 1 }}
+                  style={{ fontSize: "clamp(2rem, 10vw, 14rem)", lineHeight: 1 }}
                 >
                   {brandName}
                 </span>
@@ -436,19 +438,19 @@ const CinematicHero: React.FC = () => {
 
       {/* ── Content Area: Top title tag center-aligned with the navigation arrow (top-1/2) ── */}
       <div
-        className={`absolute inset-x-0 top-1/2 -translate-y-3 sm:-translate-y-3.5 flex items-start pointer-events-none z-10 ${textPosition === "center"
+        className={`absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-start pointer-events-none z-10 ${textPosition === "center"
             ? "justify-center text-center"
             : textPosition === "right"
               ? "justify-end text-right"
               : ""
           }`}
       >
-        <div className="w-full px-6 sm:px-10 lg:px-12 xl:px-14">
+        <div className="w-full px-4 sm:px-10 lg:px-12 xl:px-14">
           <AnimatePresence mode="wait" initial={false}>
             {/* CONTENT BOX — Top Counter pill & Subtitle sits directly aligned with the center navigation arrow */}
             <motion.div
               key={slide.id + "-content"}
-              className="w-full max-w-[480px] sm:max-w-[640px] lg:max-w-[760px] flex flex-col justify-start pointer-events-auto"
+              className="w-full max-w-[340px] sm:max-w-[640px] lg:max-w-[760px] flex flex-col justify-start pointer-events-auto"
               style={{ willChange: "opacity, transform, filter" }}
               variants={textVariants}
               initial="initial"
@@ -456,14 +458,14 @@ const CinematicHero: React.FC = () => {
               exit="exit"
             >
               {/* 1. Counter Pill & Subtitle — Sits aligned with center arrow */}
-              <div className="flex items-center gap-2 sm:gap-3 mb-1.5 sm:mb-2.5 shrink-0 flex-wrap">
-                <span className="font-sans-brand text-foreground/80 text-[9px] sm:text-[0.62rem] tracking-[0.2em] bg-background/60 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-border/30 shadow-xs">
+              <div className="flex items-center gap-1.5 sm:gap-3 mb-1 sm:mb-2.5 shrink-0 flex-wrap">
+                <span className="font-sans-brand text-foreground/80 text-[8px] sm:text-[0.62rem] tracking-[0.2em] bg-background/60 backdrop-blur-md px-2 sm:px-2.5 py-0.5 rounded-full border border-border/30 shadow-xs">
                   {String(current + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
                 </span>
                 {slide.subtitle && (
                   <>
-                    <span className="text-foreground/30 text-[10px]">•</span>
-                    <span className="font-sans-brand text-[9px] sm:text-[0.7rem] font-semibold tracking-[0.16em] sm:tracking-[0.22em] uppercase text-foreground/90 drop-shadow-xs">
+                    <span className="text-foreground/30 text-[9px] sm:text-[10px]">•</span>
+                    <span className="font-sans-brand text-[8px] sm:text-[0.7rem] font-semibold tracking-[0.14em] sm:tracking-[0.22em] uppercase text-foreground/90 drop-shadow-xs truncate max-w-[200px] sm:max-w-none">
                       {slide.subtitle}
                     </span>
                   </>
@@ -481,11 +483,11 @@ const CinematicHero: React.FC = () => {
                     style={{
                       fontSize:
                         slide.title.length <= 35
-                          ? "clamp(1.9rem, 6vw, 4.75rem)"
+                          ? "clamp(1.2rem, 5vw, 4.75rem)"
                           : slide.title.length <= 55
-                            ? "clamp(1.5rem, 4.6vw, 3.75rem)"
-                            : "clamp(1.25rem, 3.6vw, 3rem)",
-                      lineHeight: 1.18,
+                            ? "clamp(1.05rem, 4vw, 3.75rem)"
+                            : "clamp(0.95rem, 3.2vw, 3rem)",
+                      lineHeight: 1.15,
                       letterSpacing: "-0.01em",
                     }}
                   />
@@ -494,7 +496,7 @@ const CinematicHero: React.FC = () => {
 
               {/* 3. CTA Buttons — Fixed below headline */}
               <motion.div
-                className="flex items-center gap-2.5 sm:gap-4 shrink-0 mt-2.5 sm:mt-4"
+                className="flex items-center gap-2 sm:gap-4 shrink-0 mt-1.5 sm:mt-4"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
@@ -502,13 +504,13 @@ const CinematicHero: React.FC = () => {
                 {slide.button_text && slide.button_link && (
                   <a
                     href={slide.button_link}
-                    className="px-3.5 py-1.5 sm:px-6 sm:py-3 rounded-full bg-primary text-primary-foreground dark:bg-foreground dark:text-background text-[11px] sm:text-xs font-sans-brand font-semibold tracking-wider uppercase hover:opacity-90 transition-all shadow-xs"
+                    className="px-3 py-1 sm:px-6 sm:py-3 rounded-full bg-primary text-primary-foreground dark:bg-foreground dark:text-background text-[10px] sm:text-xs font-sans-brand font-semibold tracking-wider uppercase hover:opacity-90 transition-all shadow-xs"
                     onClick={() => trackClick("hero_cta", slide.id, "/", { slide_title: slide.title })}
                   >
                     {slide.button_text}
                   </a>
                 )}
-                <a href="/inventory" className="px-3.5 py-1.5 sm:px-6 sm:py-3 rounded-full bg-background/50 border border-border/50 text-foreground text-[11px] sm:text-xs font-sans-brand font-medium tracking-wider uppercase hover:bg-background/80 transition-all backdrop-blur-md">
+                <a href="/inventory" className="px-3 py-1 sm:px-6 sm:py-3 rounded-full bg-background/50 border border-border/50 text-foreground text-[10px] sm:text-xs font-sans-brand font-medium tracking-wider uppercase hover:bg-background/80 transition-all backdrop-blur-md">
                   View All
                 </a>
               </motion.div>
