@@ -9,19 +9,23 @@ import {
   Truck,
   Printer,
   RotateCcw,
+  Layers,
+  Headphones,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useBrandSettings } from "@/lib/brand";
 import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
+  { to: "/offline", label: "Offline POS", icon: Store, primary: true },
+  { to: "/scanner", label: "Scanner Terminal", icon: ScanLine, primary: true },
   { to: "/", label: "Dashboard", icon: LayoutGrid, end: true },
   { to: "/orders", label: "Fulfillment Queue", icon: PackageSearch },
-  { to: "/scanner", label: "Scanner Terminal", icon: ScanLine },
-  { to: "/dispatch", label: "Courier Dispatch", icon: Truck },
+  { to: "/stock", label: "Stock & Serials", icon: Layers },
+  { to: "/support", label: "Support Inbox", icon: Headphones },
   { to: "/labels", label: "Slips & 4x6 Labels", icon: Printer },
+  { to: "/dispatch", label: "Courier Dispatch", icon: Truck },
   { to: "/returns", label: "Returns Intake", icon: RotateCcw },
-  { to: "/offline", label: "Offline POS", icon: Store },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -34,7 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border/60 md:bg-sidebar md:shrink-0">
         <div className="px-5 pt-6 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-card border border-border/80 flex items-center justify-center p-1.5 shadow-xs overflow-hidden shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-card border border-border/80 flex items-center justify-center p-1.5 shadow-2xs overflow-hidden shrink-0">
               {brand.logoUrl ? (
                 <img
                   src={brand.logoUrl}
@@ -67,7 +71,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               className={({ isActive }) =>
                 `flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs sm:text-sm transition-colors ${
                   isActive
-                    ? "bg-primary/10 text-primary font-semibold"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                     : "text-foreground/80 hover:bg-muted/60"
                 }`
               }
@@ -80,7 +84,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <div className="p-3 space-y-2 border-t border-border/40">
           <div className="px-1">
-            <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-1.5">Appearance</p>
+            <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-1.5">
+              Appearance
+            </p>
             <ThemeToggle />
           </div>
           <button
@@ -135,15 +141,19 @@ export function AppShell({ children }: { children: ReactNode }) {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex-1 min-w-[56px] flex flex-col items-center justify-center gap-0.5 py-2 text-[9px] font-medium transition-colors ${
-                  isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                `flex-1 min-w-[62px] flex flex-col items-center justify-center gap-0.5 py-2 text-[9px] font-medium transition-colors ${
+                  isActive ? "text-primary font-bold" : "text-muted-foreground"
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <item.icon className={`w-4.5 h-4.5 ${isActive ? "scale-110 text-primary" : ""} transition-transform`} />
-                  <span className="truncate max-w-[50px]">{item.label.split(" ")[0]}</span>
+                  <item.icon
+                    className={`w-5 h-5 ${
+                      isActive ? "scale-110 text-primary" : ""
+                    } transition-transform`}
+                  />
+                  <span className="truncate max-w-[56px]">{item.label.split(" ")[0]}</span>
                 </>
               )}
             </NavLink>

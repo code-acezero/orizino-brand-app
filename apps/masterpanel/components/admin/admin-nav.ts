@@ -244,7 +244,6 @@ export const adminNav: AdminNavSection[] = [
           { title: "Support Inbox",      url: "/sales/support" },
           { title: "Customer Analytics", url: "/sales/customer-analytics" },
           { title: "Live Activity",      url: "/sales/live-activity" },
-          { title: "Announcements",      url: "/sales/announcements" },
         ],
       },
       {
@@ -408,13 +407,13 @@ export const adminNav: AdminNavSection[] = [
       },
       {
         title: "Announcements & Modals",
-        url: "/sales/announcements",
+        url: "/email/announcements",
         icon: Megaphone,
         section: "customers",
         description: "Sitewide announcements, marquee tickers & promotional modals",
         children: [
-          { title: "Announcements",        url: "/sales/announcements" },
-          { title: "Promotional Modals",   url: "/marketing/popups" },
+          { title: "Announcements",        url: "/email/announcements" },
+          { title: "Promotional Modals",   url: "/email/popups" },
         ],
       },
     ],

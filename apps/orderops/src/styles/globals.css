@@ -94,42 +94,42 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 6% 10%;
 
-    --primary: 211 100% 50%;         /* iOS systemBlue */
+    --primary: 348 83% 47%;          /* Brand Crimson */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 240 10% 94%;
     --secondary-foreground: 240 6% 20%;
 
     --muted: 240 10% 94%;
-    --muted-foreground: 240 4% 46%;  /* secondaryLabel */
+    --muted-foreground: 240 4% 46%;
 
-    --accent: 211 100% 96%;
-    --accent-foreground: 211 100% 40%;
+    --accent: 348 83% 96%;
+    --accent-foreground: 348 83% 40%;
 
-    --destructive: 4 90% 58%;        /* iOS systemRed */
+    --destructive: 4 90% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 45%;          /* iOS systemGreen */
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
-    --warning: 35 100% 50%;          /* iOS systemOrange */
+    --warning: 35 100% 50%;
     --warning-foreground: 0 0% 12%;
-    --info: 211 100% 50%;
+    --info: 348 83% 47%;
     --info-foreground: 0 0% 100%;
 
     --border: 240 8% 88%;
     --input: 240 8% 88%;
-    --ring: 211 100% 50%;
+    --ring: 348 83% 47%;
 
     --radius: 1.125rem;
 
     --sidebar-background: 240 15% 96%;
     --sidebar-foreground: 240 6% 15%;
-    --sidebar-primary: 211 100% 50%;
+    --sidebar-primary: 348 83% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 211 100% 96%;
-    --sidebar-accent-foreground: 211 100% 40%;
+    --sidebar-accent: 348 83% 96%;
+    --sidebar-accent-foreground: 348 83% 40%;
     --sidebar-border: 240 8% 88%;
-    --sidebar-ring: 211 100% 50%;
+    --sidebar-ring: 348 83% 47%;
   }
 
   .dark {
@@ -140,19 +140,19 @@
     --card-foreground: 0 0% 96%;
     --popover: 0 0% 11%;
     --popover-foreground: 0 0% 96%;
-    --primary: 211 100% 56%;
+    --primary: 348 83% 53%;
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 16%;
     --secondary-foreground: 0 0% 90%;
     --muted: 0 0% 16%;
     --muted-foreground: 0 0% 62%;
-    --accent: 211 60% 20%;
-    --accent-foreground: 211 100% 75%;
+    --accent: 348 60% 20%;
+    --accent-foreground: 348 83% 85%;
     --destructive: 4 90% 62%;
     --destructive-foreground: 0 0% 100%;
     --border: 0 0% 20%;
     --input: 0 0% 20%;
-    --ring: 211 100% 56%;
+    --ring: 348 83% 53%;
     --sidebar-background: 0 0% 9%;
     --sidebar-foreground: 0 0% 92%;
     --sidebar-border: 0 0% 20%;

@@ -2,12 +2,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { OrderOpsThemeProvider } from "@/lib/OrderOpsThemeProvider";
 import { AppShell } from "@/components/AppShell";
 import { Login } from "@/_pages/Login";
 import { Dashboard } from "@/_pages/Dashboard";
 import { Orders } from "@/_pages/Orders";
 import { OfflineOrders } from "@/_pages/OfflineOrders";
 import { Scanner } from "@/_pages/Scanner";
+import { StockSerials } from "@/_pages/StockSerials";
+import { SupportInbox } from "@/_pages/SupportInbox";
 import { CourierDispatch } from "@/_pages/CourierDispatch";
 import { LabelsAndSlips } from "@/_pages/LabelsAndSlips";
 import { ReturnsIntake } from "@/_pages/ReturnsIntake";
@@ -41,10 +44,6 @@ function DeferredWidgets() {
   );
 }
 
-// HashRouter, deliberately: it needs zero server-side rewrite rules to work,
-// which matters both for a plain static host and — especially — once this
-// gets wrapped in Capacitor, where there's no server to configure SPA
-// fallbacks on at all.
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false } },
 });
@@ -55,7 +54,10 @@ function Gate({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground text-sm">
-        Loading…
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <span className="text-xs font-mono">Authenticating…</span>
+        </div>
       </div>
     );
   }
@@ -79,26 +81,30 @@ export default function App() {
   useOrderOpsTheme();
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <HashRouter>
-          <Gate>
-            <AppShell>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/scanner" element={<Scanner />} />
-                <Route path="/dispatch" element={<CourierDispatch />} />
-                <Route path="/labels" element={<LabelsAndSlips />} />
-                <Route path="/returns" element={<ReturnsIntake />} />
-                <Route path="/offline" element={<OfflineOrders />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </AppShell>
-          </Gate>
-          <DeferredWidgets />
-        </HashRouter>
-        <Toaster position="top-center" richColors />
-      </AuthProvider>
+      <OrderOpsThemeProvider>
+        <AuthProvider>
+          <HashRouter>
+            <Gate>
+              <AppShell>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/orders" element={<Orders />} />
+                  <Route path="/offline" element={<OfflineOrders />} />
+                  <Route path="/scanner" element={<Scanner />} />
+                  <Route path="/stock" element={<StockSerials />} />
+                  <Route path="/support" element={<SupportInbox />} />
+                  <Route path="/dispatch" element={<CourierDispatch />} />
+                  <Route path="/labels" element={<LabelsAndSlips />} />
+                  <Route path="/returns" element={<ReturnsIntake />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </AppShell>
+            </Gate>
+            <DeferredWidgets />
+          </HashRouter>
+          <Toaster position="top-center" richColors />
+        </AuthProvider>
+      </OrderOpsThemeProvider>
     </QueryClientProvider>
   );
 }
