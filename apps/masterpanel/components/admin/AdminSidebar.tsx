@@ -40,10 +40,10 @@ import {
 } from "@/lib/master-sections";
 
 const MASTER_CONTROL_ITEMS = [
-  { title: "Customer & Sales", url: "/sales", icon: ShoppingCart, color: "#f59e0b", section: "orders" },
-  { title: "Products, Shipping & Offers", url: "/sales/products-management?tab=products", icon: Package, color: "#10b981", section: "products" },
-  { title: "Marketing Management", url: "/marketing", icon: Search, color: "#f97316", section: "seo" },
-  { title: "Email Marketing", url: "/email", icon: Send, color: "#06b6d4", section: "customers" },
+  { title: "Sales & Customers", url: "/sales", icon: ShoppingCart, color: "#f59e0b", section: "orders" },
+  { title: "PSO Management", url: "/sales/products-management?tab=products", icon: Package, color: "#10b981", section: "products" },
+  { title: "SEO & Ads Management", url: "/marketing", icon: Search, color: "#f97316", section: "seo" },
+  { title: "Emails & Marketing", url: "/email", icon: Send, color: "#06b6d4", section: "customers" },
   { title: "Affiliate Program", url: "/affiliate", icon: Tag, color: "#84cc16", section: "affiliate" },
   { title: "Public Contents & UI", url: "/brand", icon: Palette, color: "#ec4899", section: "storefront_ui" },
   { title: "Backend & System", url: "/system", icon: Activity, color: "#38bdf8", section: "settings" },
@@ -108,7 +108,6 @@ export function AdminSidebar() {
       clean.startsWith("/sales/stock") ||
       clean.startsWith("/sales/invoice-stickers") ||
       clean.startsWith("/sales/coupons") ||
-      clean.startsWith("/sales/reviews") ||
       clean.startsWith("/sales/requests") ||
       clean.startsWith("/sales/user-promos") ||
       clean.startsWith("/sales/showcase") ||
@@ -124,20 +123,20 @@ export function AdminSidebar() {
 
   const sectionLabel = (() => {
     if (isSettingsSubroute) return "Settings & AI";
-    if (isProductShippingOffersRoute) return "Products, Shipping & Offers";
+    if (isProductShippingOffersRoute) return "PSO Management";
     const seg = location.pathname.replace(/\/+$/, "").split("/")[1] ?? "";
-    if (seg === "sales") return "Customer & Sales";
-    return SECTION_LABELS[seg] ?? "Admin Management";
+    if (seg === "sales") return "Sales & Customers";
+    return SECTION_LABELS[seg] ?? "Master Controls";
   })();
 
   // Only show nav sections relevant to the current route segment (unless actively searching)
   const visibleNavLabels = (() => {
     if (query.trim()) return null;
     if (isSettingsSubroute) return ["Settings & AI"];
-    if (isProductShippingOffersRoute) return ["Products, Shipping & Offers"];
+    if (isProductShippingOffersRoute) return ["PSO Management"];
     const seg = location.pathname.replace(/\/+$/, "").split("/")[1] ?? "";
-    if (seg === "sales") return ["Customer & Sales"];
-    return SEGMENT_TO_NAV_LABELS[seg] ?? ["Overview"];
+    if (seg === "sales") return ["Sales & Customers"];
+    return SEGMENT_TO_NAV_LABELS[seg] ?? ["Master Controls"];
   })();
 
 
@@ -222,7 +221,13 @@ export function AdminSidebar() {
 
   const isActive = (path: string) => {
     const { path: cleanPath, query } = splitNavUrl(path);
-    if (query) return pathMatches(cleanPath, true) && searchMatches(query);
+    if (query) {
+      if (pathMatches(cleanPath, true)) {
+        if (searchMatches(query)) return true;
+        if ((!location.search || location.search === "?") && query === "tab=dashboard") return true;
+      }
+      return false;
+    }
     if (SECTION_LANDING_PATHS.has(cleanPath)) return pathMatches(cleanPath, true);
     return pathMatches(cleanPath);
   };
@@ -347,46 +352,44 @@ export function AdminSidebar() {
             } : undefined}
             className={
               (isParentActive
-                ? "h-9 text-[13px] bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary font-semibold rounded-lg"
+                ? "h-9 text-[13px] bg-primary/15 text-foreground dark:text-[#FAF6EE] border border-primary/35 hover:bg-primary/20 font-semibold rounded-lg shadow-2xs"
                 : "h-9 text-[13px] text-muted-foreground hover:bg-muted/50 hover:text-foreground rounded-lg") +
-              (!collapsed && showPin ? (hasChildren ? " pr-12" : " pr-7") : "")
+              (showPin ? " group-data-[collapsible=icon]:pr-2 " + (hasChildren ? " pr-12" : " pr-7") : "")
             }
           >
             {hasChildren ? (
-              <span className="w-full flex items-center gap-2 cursor-pointer">
-                <item.icon className="shrink-0 !size-[15px]" />
-                <span className="truncate flex-1 text-left">{item.title}</span>
-                {!collapsed && (
-                  <ChevronDown
-                    className={`!size-3.5 shrink-0 transition-transform duration-200 ${
-                      open ? "rotate-180" : ""
-                    }`}
-                  />
-                )}
+              <span className="w-full flex items-center gap-2 cursor-pointer min-w-0">
+                <item.icon className="shrink-0 !size-[15px] text-primary" />
+                <span className="truncate flex-1 text-left whitespace-nowrap transition-opacity duration-200 group-data-[collapsible=icon]:hidden">{item.title}</span>
+                <ChevronDown
+                  className={`!size-3.5 shrink-0 transition-transform duration-200 group-data-[collapsible=icon]:hidden ${
+                    open ? "rotate-180" : ""
+                  }`}
+                />
               </span>
             ) : (
-              <NavLink to={item.url} end={item.url === "/"} onClick={closeOnMobile}>
-                <item.icon className="shrink-0 !size-[15px]" />
-                <span className="truncate">{item.title}</span>
-                {badge != null && !collapsed && (
-                  <span className="ml-auto min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5">
+              <NavLink to={item.url} end={item.url === "/"} onClick={closeOnMobile} className="flex items-center gap-2 w-full min-w-0">
+                <item.icon className={`shrink-0 !size-[15px] ${isParentActive ? "text-primary" : ""}`} />
+                <span className="truncate flex-1 text-left whitespace-nowrap transition-opacity duration-200 group-data-[collapsible=icon]:hidden">{item.title}</span>
+                {badge != null && (
+                  <span className="ml-auto min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 group-data-[collapsible=icon]:hidden">
                     {badge}
                   </span>
                 )}
-                {badge != null && collapsed && (
-                  <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-destructive" />
+                {badge != null && (
+                  <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-destructive hidden group-data-[collapsible=icon]:block" />
                 )}
               </NavLink>
             )}
           </SidebarMenuButton>
-          {!collapsed && showPin && (
+          {showPin && (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 togglePin(item.url);
               }}
-              className={`absolute ${hasChildren ? "right-7" : "right-1"} top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/item:opacity-100 transition-opacity hover:bg-muted ${
+              className={`absolute ${hasChildren ? "right-7" : "right-1"} top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/item:opacity-100 transition-opacity hover:bg-muted group-data-[collapsible=icon]:hidden ${
                 isPinned ? "!opacity-100 text-primary" : "text-muted-foreground"
               }`}
               title={isPinned ? "Unpin" : "Pin to favorites"}
@@ -397,8 +400,8 @@ export function AdminSidebar() {
         </div>
 
         {/* Children */}
-        {hasChildren && open && !collapsed && (
-          <div className="ml-4 mt-0.5 pl-3 border-l border-border/40 space-y-0.5">
+        {hasChildren && open && (
+          <div className="ml-4 mt-0.5 pl-3 border-l border-border/40 space-y-0.5 group-data-[collapsible=icon]:hidden">
             {item.children!.map((child, idx) => {
               const hasSub = !!child.children?.length;
               const subActive = hasSub && child.children!.some(
@@ -419,7 +422,7 @@ export function AdminSidebar() {
                         }}
                         className={`flex-1 flex items-center justify-between h-7 px-2 rounded-md text-[12px] transition-colors ${
                           cActive
-                            ? "text-primary bg-primary/10 font-semibold"
+                            ? "text-foreground dark:text-[#FAF6EE] bg-primary/15 border border-primary/25 font-semibold"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                         }`}
                       >
@@ -434,7 +437,7 @@ export function AdminSidebar() {
                         onClick={closeOnMobile}
                         className={`flex-1 flex items-center h-7 px-2 rounded-md text-[12px] transition-colors ${
                           cActive
-                            ? "text-primary bg-primary/10 font-semibold"
+                            ? "text-foreground dark:text-[#FAF6EE] bg-primary/15 border border-primary/25 font-semibold"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                         }`}
                       >
@@ -476,8 +479,8 @@ export function AdminSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/60">
-      <SidebarHeader className="border-b border-border/40 group-data-[collapsible=icon]:p-2 p-3">
-        <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center">
+      <SidebarHeader className="border-b border-border/40 group-data-[collapsible=icon]:p-2 p-3 transition-[padding] duration-300">
+        <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center min-w-0">
           {logoUrl ? (
             <BrandImage
               src={logoUrl}
@@ -503,30 +506,26 @@ export function AdminSidebar() {
               </span>
             </div>
           )}
-          {!collapsed && (
-            <div className="min-w-0">
-              <h2 className="font-display text-sm font-bold text-foreground leading-tight tracking-tight">
-                {headerTitle}
-              </h2>
-              <p className="text-[10px] text-muted-foreground leading-tight uppercase tracking-wider">
-                {sectionLabel}
-              </p>
-            </div>
-          )}
-        </div>
-        {!collapsed && (
-          <div className="relative mt-3">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <input
-              id="admin-sidebar-search"
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search… (press /)"
-              className="w-full h-8 pl-8 pr-2 text-xs rounded-lg bg-muted/40 border border-border/40 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition"
-            />
+          <div className="min-w-0 flex-1 transition-all duration-300 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:pointer-events-none">
+            <h2 className="font-display text-sm font-bold text-foreground leading-tight tracking-tight whitespace-nowrap truncate">
+              {headerTitle}
+            </h2>
+            <p className="text-[10px] text-muted-foreground leading-tight uppercase tracking-wider whitespace-nowrap truncate">
+              {sectionLabel}
+            </p>
           </div>
-        )}
+        </div>
+        <div className="relative mt-3 transition-all duration-300 group-data-[collapsible=icon]:h-0 group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:pointer-events-none">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+          <input
+            id="admin-sidebar-search"
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search… (press /)"
+            className="w-full h-8 pl-8 pr-2 text-xs rounded-lg bg-muted/40 border border-border/40 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition"
+          />
+        </div>
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-2 gap-0">
@@ -549,11 +548,9 @@ export function AdminSidebar() {
           return (
             <>
               <SidebarGroup className="px-0 py-1">
-                {!collapsed && (
-                  <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60 font-semibold px-3 h-6">
-                    Account
-                  </SidebarGroupLabel>
-                )}
+                <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60 font-semibold px-3 h-6 transition-all duration-300 group-data-[collapsible=icon]:h-0 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:overflow-hidden">
+                  Account
+                </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu className="gap-0.5">
                     <SidebarMenuItem>
@@ -562,33 +559,31 @@ export function AdminSidebar() {
                         tooltip={collapsed ? "Profile" : undefined}
                         className="h-9 text-[13px] bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary font-medium rounded-lg"
                       >
-                        <span className="w-full flex items-center gap-2">
+                        <span className="w-full flex items-center gap-2 min-w-0">
                           <UserCircle2 className="shrink-0 !size-[15px]" />
-                          <span className="truncate flex-1 text-left">Profile</span>
+                          <span className="truncate flex-1 text-left whitespace-nowrap transition-opacity duration-200 group-data-[collapsible=icon]:hidden">Profile</span>
                         </span>
                       </SidebarMenuButton>
-                      {!collapsed && (
-                        <div className="ml-4 mt-0.5 pl-3 border-l border-border/40 space-y-0.5">
-                          {tabItems.map((t) => {
-                            const active = currentTab === t.key;
-                            return (
-                              <NavLink
-                                key={t.key}
-                                to={`/master/profile?tab=${t.key}`}
-                                onClick={closeOnMobile}
-                                className={`flex items-center gap-2 h-8 px-2 rounded-md text-[12px] transition-colors ${
-                                  active
-                                    ? "text-primary bg-primary/10 font-medium"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                                }`}
-                              >
-                                <t.icon className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate">{t.label}</span>
-                              </NavLink>
-                            );
-                          })}
-                        </div>
-                      )}
+                      <div className="ml-4 mt-0.5 pl-3 border-l border-border/40 space-y-0.5 group-data-[collapsible=icon]:hidden">
+                        {tabItems.map((t) => {
+                          const active = currentTab === t.key;
+                          return (
+                            <NavLink
+                              key={t.key}
+                              to={`/master/profile?tab=${t.key}`}
+                              onClick={closeOnMobile}
+                              className={`flex items-center gap-2 h-8 px-2 rounded-md text-[12px] transition-colors ${
+                                active
+                                  ? "text-primary bg-primary/10 font-medium"
+                                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                              }`}
+                            >
+                              <t.icon className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate">{t.label}</span>
+                            </NavLink>
+                          );
+                        })}
+                      </div>
                     </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroupContent>
@@ -596,19 +591,17 @@ export function AdminSidebar() {
 
               {canTeam && (
                 <SidebarGroup className="px-0 py-1">
-                  {!collapsed && (
-                    <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60 font-semibold px-3 h-6">
-                      Team
-                    </SidebarGroupLabel>
-                  )}
+                  <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60 font-semibold px-3 h-6 transition-all duration-300 group-data-[collapsible=icon]:h-0 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:overflow-hidden">
+                    Team
+                  </SidebarGroupLabel>
                   <SidebarGroupContent>
                     <SidebarMenu className="gap-0.5">
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild size="sm" tooltip={collapsed ? "My team" : undefined}
                           className="h-9 text-[13px] text-muted-foreground hover:bg-muted/50 hover:text-foreground rounded-lg">
-                          <NavLink to="/team/my-team" onClick={closeOnMobile}>
+                          <NavLink to="/team/my-team" onClick={closeOnMobile} className="flex items-center gap-2 w-full min-w-0">
                             <Users2 className="shrink-0 !size-[15px]" />
-                            <span className="truncate">My team</span>
+                            <span className="truncate flex-1 text-left whitespace-nowrap group-data-[collapsible=icon]:hidden">My team</span>
                           </NavLink>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -617,27 +610,27 @@ export function AdminSidebar() {
                           <SidebarMenuItem>
                             <SidebarMenuButton asChild size="sm" tooltip={collapsed ? "Employee IDs" : undefined}
                               className="h-9 text-[13px] text-muted-foreground hover:bg-muted/50 hover:text-foreground rounded-lg">
-                              <NavLink to="/origin/employee-ids" onClick={closeOnMobile}>
+                              <NavLink to="/origin/employee-ids" onClick={closeOnMobile} className="flex items-center gap-2 w-full min-w-0">
                                 <IdCard className="shrink-0 !size-[15px]" />
-                                <span className="truncate">Employee IDs</span>
+                                <span className="truncate flex-1 text-left whitespace-nowrap group-data-[collapsible=icon]:hidden">Employee IDs</span>
                               </NavLink>
                             </SidebarMenuButton>
                           </SidebarMenuItem>
                           <SidebarMenuItem>
                             <SidebarMenuButton asChild size="sm" tooltip={collapsed ? "Approvals" : undefined}
                               className="h-9 text-[13px] text-muted-foreground hover:bg-muted/50 hover:text-foreground rounded-lg">
-                              <NavLink to="/origin/profile-approvals" onClick={closeOnMobile}>
+                              <NavLink to="/origin/profile-approvals" onClick={closeOnMobile} className="flex items-center gap-2 w-full min-w-0">
                                 <Inbox className="shrink-0 !size-[15px]" />
-                                <span className="truncate">Approvals</span>
+                                <span className="truncate flex-1 text-left whitespace-nowrap group-data-[collapsible=icon]:hidden">Approvals</span>
                               </NavLink>
                             </SidebarMenuButton>
                           </SidebarMenuItem>
                           <SidebarMenuItem>
                             <SidebarMenuButton asChild size="sm" tooltip={collapsed ? "Identity audit" : undefined}
                               className="h-9 text-[13px] text-muted-foreground hover:bg-muted/50 hover:text-foreground rounded-lg">
-                              <NavLink to="/origin/identity-audit" onClick={closeOnMobile}>
+                              <NavLink to="/origin/identity-audit" onClick={closeOnMobile} className="flex items-center gap-2 w-full min-w-0">
                                 <History className="shrink-0 !size-[15px]" />
-                                <span className="truncate">Identity audit</span>
+                                <span className="truncate flex-1 text-left whitespace-nowrap group-data-[collapsible=icon]:hidden">Identity audit</span>
                               </NavLink>
                             </SidebarMenuButton>
                           </SidebarMenuItem>
@@ -654,11 +647,9 @@ export function AdminSidebar() {
         {/* Pinned */}
         {pinnedItems.length > 0 && !query && !(normalizedCurrentPath === "/master/profile" || normalizedCurrentPath.startsWith("/master/profile/")) && (
           <SidebarGroup className="px-0 py-1">
-            {!collapsed && (
-              <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60 font-semibold px-3 h-6 flex items-center gap-1">
-                <Star className="w-2.5 h-2.5 fill-current" /> Pinned
-              </SidebarGroupLabel>
-            )}
+            <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60 font-semibold px-3 h-6 flex items-center gap-1 transition-all duration-300 group-data-[collapsible=icon]:h-0 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:overflow-hidden">
+              <Star className="w-2.5 h-2.5 fill-current" /> Pinned
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
                 {pinnedItems.map((item) => renderItem(item, true))}
@@ -673,12 +664,10 @@ export function AdminSidebar() {
           if (filtered.length === 0) return null;
           return (
             <SidebarGroup key={section.label} className="px-0 py-1">
-              {!collapsed && (
-                <SidebarGroupLabel className="text-[10.5px] uppercase tracking-[0.16em] text-primary/80 font-bold px-3 h-7 mt-2 flex items-center gap-1.5 select-none">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-                  {section.label}
-                </SidebarGroupLabel>
-              )}
+              <SidebarGroupLabel className="text-[10.5px] uppercase tracking-[0.16em] text-primary/80 font-bold px-3 h-7 mt-2 flex items-center gap-1.5 select-none transition-all duration-300 group-data-[collapsible=icon]:h-0 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:overflow-hidden">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                {section.label}
+              </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0.5">
                   {filtered.map((item) => renderItem(item))}
@@ -689,8 +678,7 @@ export function AdminSidebar() {
         })}
       </SidebarContent>
 
-
-      <SidebarFooter className="p-2 border-t border-border/40">
+      <SidebarFooter className="p-2 border-t border-border/40 transition-[padding] duration-300">
         <SidebarMenu className="gap-0.5">
           {!isMasterPanelHome && (
             <SidebarMenuItem>
@@ -702,10 +690,10 @@ export function AdminSidebar() {
                     tooltip={collapsed ? "Master Controls" : undefined}
                     className="h-8 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg group/btn cursor-pointer w-full"
                   >
-                    <button type="button" className="flex items-center gap-2 h-8 px-2 text-[13px] text-muted-foreground group-hover/btn:text-foreground rounded-lg transition-colors w-full">
+                    <button type="button" className="flex items-center gap-2 h-8 px-2 text-[13px] text-muted-foreground group-hover/btn:text-foreground rounded-lg transition-colors w-full min-w-0">
                       <LayoutGrid className="shrink-0 !size-[15px] text-primary" />
-                      <span className="truncate flex-1 text-left font-medium">Master Controls</span>
-                      <ChevronUp className="shrink-0 !size-3.5 text-muted-foreground/70 transition-transform duration-200 group-data-[state=open]/btn:rotate-180" />
+                      <span className="truncate flex-1 text-left font-medium whitespace-nowrap group-data-[collapsible=icon]:hidden">Master Controls</span>
+                      <ChevronUp className="shrink-0 !size-3.5 text-muted-foreground/70 transition-transform duration-200 group-data-[state=open]/btn:rotate-180 group-data-[collapsible=icon]:hidden" />
                     </button>
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
@@ -795,10 +783,10 @@ export function AdminSidebar() {
                 href={orderOpsHref()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 h-8 px-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors w-full"
+                className="flex items-center gap-2 h-8 px-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors w-full min-w-0"
               >
                 <Smartphone className="shrink-0 !size-[15px]" />
-                <span className="truncate flex-1 text-left font-medium">
+                <span className="truncate flex-1 text-left font-medium whitespace-nowrap group-data-[collapsible=icon]:hidden">
                   <span className="lg:hidden">Order Ops</span>
                   <span className="hidden lg:inline">Open Order Ops</span>
                 </span>
@@ -816,10 +804,10 @@ export function AdminSidebar() {
                 href={shopHref()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 h-8 px-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors w-full"
+                className="flex items-center gap-2 h-8 px-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors w-full min-w-0"
               >
                 <ArrowLeft className="shrink-0 !size-[15px]" />
-                <span className="truncate flex-1 text-left font-medium">
+                <span className="truncate flex-1 text-left font-medium whitespace-nowrap group-data-[collapsible=icon]:hidden">
                   <span className="lg:hidden">{getBackToShopLabelShort()}</span>
                   <span className="hidden lg:inline">{getBackToShopLabel()}</span>
                 </span>

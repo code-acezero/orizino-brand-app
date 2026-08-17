@@ -1,19 +1,15 @@
 "use client";
 import React, { useState } from "react";
-import { Link, useNavigate } from "@/lib/router-compat";
+import { useLocation } from "@/lib/router-compat";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@/lib/server-fn-compat";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Settings as SettingsIcon, Users, Package, Image as ImageIcon,
   DollarSign, Wallet, TrendingUp, Clock, CheckCircle2, XCircle, Plus, Trash2,
-  ArrowLeft, ShieldCheck, Palette, Percent, Search, ExternalLink, Briefcase,
-  BarChart3, LogOut,
+  ShieldCheck, Percent, Search, ExternalLink, Briefcase,
+  BarChart3,
 } from "lucide-react";
-import NotificationBell from "@/components/NotificationBell";
-import AdminFooter from "@/components/admin/AdminFooter";
-import { useAuth } from "@/contexts/AuthContext";
-import { useAdminRole } from "@/components/AdminRoute";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,11 +18,6 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import {
-  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
-  SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger,
-  SidebarInset, useSidebar,
-} from "@/components/ui/sidebar";
 import { toast } from "@/lib/app-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -40,240 +31,102 @@ import {
 } from "@/lib/affiliate.functions";
 import { generateAffiliateReport, getAffiliateReportConfig, getAffiliateReportHealth, exportAffiliateReport, testAffiliateReportSheetsWorkflow } from "@/lib/affiliate-report.functions";
 import { FileSpreadsheet, Download, Activity, AlertTriangle, FlaskConical } from "lucide-react";
-
 import { TableEmptyRow } from "@/components/admin/TableStates";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 
+import { useSearchParams } from "next/navigation";
+
 type TabId = "dashboard" | "settings" | "products" | "categories" | "applications" | "affiliates" | "commissions" | "payouts" | "creatives";
 
-const TAB_GROUPS: { label: string; items: { id: TabId; label: string; icon: any }[] }[] = [
-  {
-    label: "Overview",
-    items: [{ id: "dashboard", label: "Dashboard", icon: LayoutDashboard }],
-  },
-  {
-    label: "Catalog",
-    items: [
-      { id: "products", label: "Products", icon: Package },
-      { id: "categories", label: "Category rates", icon: Percent },
-      { id: "creatives", label: "Creatives", icon: ImageIcon },
-    ],
-  },
-  {
-    label: "People",
-    items: [
-      { id: "applications", label: "Applications", icon: Clock },
-      { id: "affiliates", label: "Affiliates", icon: Users },
-    ],
-  },
-  {
-    label: "Money",
-    items: [
-      { id: "commissions", label: "Commissions", icon: DollarSign },
-      { id: "payouts", label: "Payouts", icon: Wallet },
-    ],
-  },
-  {
-    label: "Configuration",
-    items: [{ id: "settings", label: "Settings", icon: SettingsIcon }],
-  },
-];
+const VALID_TABS: TabId[] = ["dashboard", "settings", "products", "categories", "applications", "affiliates", "commissions", "payouts", "creatives"];
 
-const ALL_TABS = TAB_GROUPS.flatMap((g) => g.items);
-
-const HubSidebar: React.FC<{ tab: TabId; setTab: (t: TabId) => void }> = ({ tab, setTab }) => {
-  const { state, setOpenMobile, isMobile } = useSidebar();
-  const collapsed = state === "collapsed";
-  const close = () => { if (isMobile) setOpenMobile(false); };
-  return (
-    <Sidebar collapsible="icon" className="border-r border-border/60 [&_[data-sidebar=sidebar]]:transition-all [&>div]:!duration-300 [&>div]:!ease-[cubic-bezier(0.32,0.72,0,1)]">
-      <SidebarHeader className="border-b border-border/40 p-3 group-data-[collapsible=icon]:p-2">
-        <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary via-primary to-primary/40 flex items-center justify-center shadow-[0_0_20px_-4px_hsl(var(--primary)/0.6)] shrink-0">
-            <Briefcase className="w-4 h-4 text-primary-foreground" />
-          </div>
-          {!collapsed && (
-            <div className="min-w-0">
-              <h2 className="text-sm font-bold leading-tight tracking-tight">Affiliate Hub</h2>
-              <p className="text-[10px] text-muted-foreground leading-tight uppercase tracking-wider">Program control</p>
-            </div>
-          )}
-        </div>
-      </SidebarHeader>
-
-      <SidebarContent className="px-2 py-2 gap-0">
-        {TAB_GROUPS.map((group) => (
-          <SidebarGroup key={group.label} className="px-0 py-1">
-            {!collapsed && (
-              <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60 font-semibold px-3 h-6">
-                {group.label}
-              </SidebarGroupLabel>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
-                {group.items.map((item) => {
-                  const active = tab === item.id;
-                  const Icon = item.icon;
-                  return (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        size="sm"
-                        tooltip={collapsed ? item.label : undefined}
-                        onClick={() => { setTab(item.id); close(); }}
-                        className={
-                          active
-                            ? "h-9 text-[13px] bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary font-medium relative before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:rounded-full before:bg-primary rounded-lg"
-                            : "h-9 text-[13px] text-muted-foreground hover:bg-muted/50 hover:text-foreground rounded-lg"
-                        }
-                      >
-                        <button type="button" className="w-full flex items-center gap-2">
-                          <Icon className="shrink-0 !size-[15px]" />
-                          <span className="truncate">{item.label}</span>
-                        </button>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
-      </SidebarContent>
-
-      <SidebarFooter className="p-2 border-t border-border/40">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild size="sm" tooltip={collapsed ? "Back to Control Center" : undefined}
-              className="h-8 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg">
-              <Link to="/" onClick={close}>
-                <ArrowLeft className="shrink-0 !size-[15px]" />
-                <span className="truncate">Control Center</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild size="sm" tooltip={collapsed ? "Public affiliate page" : undefined}
-              className="h-8 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg">
-              <a href="/affiliate" target="_blank" rel="noreferrer">
-                <ExternalLink className="shrink-0 !size-[15px]" />
-                <span className="truncate">Public page</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
-  );
+const TAB_META: Record<TabId, { title: string; desc: string }> = {
+  dashboard:    { title: "Affiliate Dashboard",    desc: "Overview of partner performance, earnings & reports" },
+  applications: { title: "Affiliate Applications", desc: "Review and approve new affiliate program applicants" },
+  affiliates:   { title: "Affiliate Partners",     desc: "Active affiliates, custom commission rates & members" },
+  commissions:  { title: "Commission Ledger",      desc: "Track, approve and adjust earned referral commissions" },
+  payouts:      { title: "Payouts & Withdrawals",  desc: "Process affiliate withdrawal requests and mark payments" },
+  products:     { title: "Enrolled Products",      desc: "Curate products for affiliates & set custom bonuses" },
+  categories:   { title: "Category Overrides",     desc: "Set special category-wide commission rates" },
+  creatives:    { title: "Marketing Creatives",    desc: "Banners, copy assets and social materials for partners" },
+  settings:     { title: "Affiliate Settings",     desc: "Configure commission rates, cookie windows & policies" },
 };
 
 const AffiliateHub: React.FC = () => {
-  const [tab, setTab] = useState<TabId>("dashboard");
-  const getSettings = useServerFn(getAffiliateSettings);
-  const { data: settings } = useQuery({ queryKey: ["affiliate-settings"], queryFn: () => getSettings() });
-  const style = (settings?.display_style as string) ?? "console";
-  const current = ALL_TABS.find((t) => t.id === tab);
-  const CurrentIcon = current?.icon ?? LayoutDashboard;
+  const searchParams = useSearchParams();
+  const location = useLocation();
 
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-  const role = useAdminRole();
-  const { data: profile } = useQuery({
-    queryKey: ["admin-profile", user?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("full_name, avatar_url")
-        .eq("id", user!.id)
-        .single();
-      return data;
-    },
-    enabled: !!user,
-    staleTime: 10 * 60 * 1000,
-  });
-  const initials = profile?.full_name
-    ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
-    : "AD";
+  // Read tab from query params, supporting Next.js useSearchParams, router-compat, and window.location
+  const rawTab =
+    searchParams?.get("tab") ||
+    (location.search ? new URLSearchParams(location.search).get("tab") : null) ||
+    (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null) ||
+    "dashboard";
+
+  const tab: TabId = VALID_TABS.includes(rawTab as TabId) ? (rawTab as TabId) : "dashboard";
+  const meta = TAB_META[tab] ?? TAB_META.dashboard;
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background" data-affiliate-style={style}>
-        <HubSidebar tab={tab} setTab={setTab} />
-        <SidebarInset className="flex-1 min-w-0 flex flex-col">
-          <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/80 border-b border-border/60 h-14 flex items-center gap-2 md:gap-3 px-3 md:px-4">
-            <SidebarTrigger />
-            <div className="hidden md:block h-5 w-px bg-border/60" />
-            <CurrentIcon className="hidden sm:block w-4 h-4 text-primary" />
-            <h1 className="text-sm font-semibold tracking-tight whitespace-nowrap truncate">{current?.label ?? "Dashboard"}</h1>
-
-            <div className="flex-1" />
-
-            <div className="flex items-center gap-2 shrink-0">
-              <Badge variant="outline" className="hidden xl:inline-flex">
-                <Palette className="w-3 h-3 mr-1" /> {style} mode
-              </Badge>
-              <NotificationBell adminMode />
-              <div className="hidden sm:block h-6 w-px bg-border/60 mx-1" />
-              <div className="flex items-center gap-2.5 pl-1">
-                {profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt="Admin"
-                    className="w-8 h-8 rounded-full object-cover ring-2 ring-border/60"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center ring-2 ring-border/40">
-                    <span className="text-xs font-semibold text-primary-foreground">{initials}</span>
-                  </div>
-                )}
-                <div className="hidden xl:block leading-tight">
-                  <p className="text-xs font-medium text-foreground">{profile?.full_name || "Admin"}</p>
-                  <p className="text-[10px] text-muted-foreground capitalize">
-                    {role === "moderator" ? "Moderator" : "Administrator"}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => { signOut(); navigate({ to: "/auth" }); }}
-                className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                title="Sign out"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          </header>
-          <main className="flex-1 p-3 md:p-5 max-w-[1600px] w-full mx-auto">
-            {tab === "dashboard" && <DashboardTab />}
-            {tab === "settings" && <SettingsTab />}
-            {tab === "products" && <ProductsTab />}
-            {tab === "categories" && <CategoriesTab />}
-            {tab === "applications" && <ApplicationsTab />}
-            {tab === "affiliates" && <AffiliatesTab />}
-            {tab === "commissions" && <CommissionsTab />}
-            {tab === "payouts" && <PayoutsTab />}
-            {tab === "creatives" && <CreativesTab />}
-          </main>
-          <AdminFooter />
-        </SidebarInset>
+    <div className="flex flex-col min-h-full space-y-5">
+      {/* ── Dynamic Page Header ── */}
+      <div className="flex items-center justify-between gap-3 px-1 pb-2 border-b border-border/40">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/40 flex items-center justify-center shadow-[0_0_20px_-4px_hsl(var(--primary)/0.5)] shrink-0">
+            <Briefcase className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold leading-tight tracking-tight">{meta.title}</h1>
+            <p className="text-xs text-muted-foreground">{meta.desc}</p>
+          </div>
+        </div>
+        <a
+          href="/affiliate"
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-muted/50 border border-border/40"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          Public page
+        </a>
       </div>
-    </SidebarProvider>
+
+      {/* ── Tab Content ── */}
+      <div className="flex-1 w-full" key={tab}>
+        {tab === "dashboard"    && <DashboardTab />}
+        {tab === "settings"     && <SettingsTab />}
+        {tab === "products"     && <ProductsTab />}
+        {tab === "categories"   && <CategoriesTab />}
+        {tab === "applications" && <ApplicationsTab />}
+        {tab === "affiliates"   && <AffiliatesTab />}
+        {tab === "commissions"  && <CommissionsTab />}
+        {tab === "payouts"      && <PayoutsTab />}
+        {tab === "creatives"    && <CreativesTab />}
+      </div>
+    </div>
   );
 };
 
-
-
 // ============ DASHBOARD ============
-const StatCard: React.FC<{ icon: any; label: string; value: any; tone?: string }> = ({ icon: Icon, label, value, tone = "primary" }) => (
-  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-    className={`stat-card relative overflow-hidden rounded-3xl border border-border/60 bg-card/60 backdrop-blur-xl p-5`}>
-    <div className={`stat-bg absolute -top-12 -right-12 w-32 h-32 rounded-full bg-${tone}/10 blur-2xl`} />
-    <div className={`stat-icon relative w-10 h-10 rounded-2xl bg-${tone}/15 text-${tone} flex items-center justify-center mb-3`}>
-      <Icon className="w-5 h-5" />
-    </div>
-    <p className="text-xs text-muted-foreground uppercase tracking-wider relative">{label}</p>
-    <p className="stat-value text-2xl font-bold relative">{value}</p>
-  </motion.div>
-);
+const StatCard: React.FC<{ icon: any; label: string; value: any; color?: string; tone?: string }> = ({ icon: Icon, label, value, color, tone }) => {
+  const resolvedColor = color || (tone === "emerald-500" ? "#10b981" : tone === "violet-500" ? "#8b5cf6" : undefined);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="stat-card relative overflow-hidden rounded-2xl border border-border/60 bg-card/70 backdrop-blur-xl p-5 shadow-xs hover:border-primary/40 transition-all"
+    >
+      <div
+        className="stat-icon relative w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-3"
+        style={resolvedColor ? { backgroundColor: `${resolvedColor}18`, color: resolvedColor } : undefined}
+      >
+        <Icon className="w-5 h-5" />
+      </div>
+      <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">{label}</p>
+      <p className="stat-value text-2xl font-bold mt-1 tracking-tight">{value}</p>
+    </motion.div>
+  );
+};
 
 const DashboardTab: React.FC = () => {
   const getDash = useServerFn(adminGetAffiliateDashboard);
@@ -427,14 +280,14 @@ const DashboardTab: React.FC = () => {
 
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard icon={Users} label="Total affiliates" value={dash?.total_affiliates ?? 0} />
-        <StatCard icon={ShieldCheck} label="Approved" value={dash?.approved_affiliates ?? 0} tone="emerald-500" />
-        <StatCard icon={Clock} label="Pending apps" value={dash?.pending_applications ?? 0} />
-        <StatCard icon={TrendingUp} label="Recent clicks" value={dash?.total_clicks_recent ?? 0} />
-        <StatCard icon={DollarSign} label="Commissions" value={formatPrice(dash?.total_commissions ?? 0)} />
-        <StatCard icon={CheckCircle2} label="Paid" value={formatPrice(dash?.paid_commissions ?? 0)} tone="emerald-500" />
-        <StatCard icon={Wallet} label="Pending payouts" value={formatPrice(dash?.pending_payouts_amount ?? 0)} />
-        <StatCard icon={BarChart3} label="Conversion rate" value={`${(dash?.conversion_rate ?? 0).toFixed(2)}%`} tone="violet-500" />
+        <StatCard icon={Users} label="Total affiliates" value={dash?.total_affiliates ?? 0} color="#3b82f6" />
+        <StatCard icon={ShieldCheck} label="Approved" value={dash?.approved_affiliates ?? 0} color="#10b981" />
+        <StatCard icon={Clock} label="Pending apps" value={dash?.pending_applications ?? 0} color="#f59e0b" />
+        <StatCard icon={TrendingUp} label="Recent clicks" value={dash?.total_clicks_recent ?? 0} color="#06b6d4" />
+        <StatCard icon={DollarSign} label="Commissions" value={formatPrice(dash?.total_commissions ?? 0)} color="#8b5cf6" />
+        <StatCard icon={CheckCircle2} label="Paid" value={formatPrice(dash?.paid_commissions ?? 0)} color="#10b981" />
+        <StatCard icon={Wallet} label="Pending payouts" value={formatPrice(dash?.pending_payouts_amount ?? 0)} color="#ec4899" />
+        <StatCard icon={BarChart3} label="Conversion rate" value={`${(dash?.conversion_rate ?? 0).toFixed(2)}%`} color="#8b5cf6" />
       </div>
 
       <div className="rounded-3xl border border-border/60 bg-card/60 p-6">
@@ -499,27 +352,52 @@ const DashboardTab: React.FC = () => {
 };
 
 
+const DEFAULT_AFFILIATE_SETTINGS = {
+  enabled: true,
+  status_message: "Affiliate program is currently active",
+  program_name: "Orizino Partner Program",
+  program_description: "Earn commission by referring customers to our brand.",
+  commission_rate: 10,
+  min_payout: 50,
+  cookie_days: 30,
+  auto_approve: false,
+  terms_md: "# Affiliate Terms & Conditions\n\nWelcome to our partner program. By participating, you agree to earn standard referral commissions on qualified sales.",
+  referral_bonus: 0,
+  holding_period_days: 14,
+  allow_self_referral: false,
+  attribution_model: "last_click",
+  payout_methods: ["bkash", "nagad", "bank_transfer"],
+  display_style: "console",
+};
+
 // ============ SETTINGS ============
 const SettingsTab: React.FC = () => {
   const qc = useQueryClient();
   const getSettings = useServerFn(getAffiliateSettings);
   const save = useServerFn(adminUpdateAffiliateSettings);
-  const { data } = useQuery({ queryKey: ["affiliate-settings"], queryFn: () => getSettings() });
-  const [form, setForm] = useState<any>(null);
-  React.useEffect(() => { if (data && !form) setForm(data); }, [data]);
-  if (!form) return <div className="text-muted-foreground">Loading…</div>;
+  const { data } = useQuery({
+    queryKey: ["affiliate-settings"],
+    queryFn: () => getSettings(),
+  });
+  const [form, setForm] = useState<any>(DEFAULT_AFFILIATE_SETTINGS);
+  const [saving, setSaving] = useState(false);
+
+  React.useEffect(() => {
+    if (data) setForm(data);
+  }, [data]);
 
   const onSave = async () => {
+    setSaving(true);
     try {
       await save({ data: {
-        enabled: form.enabled,
+        enabled: !!form.enabled,
         status_message: form.status_message,
         program_name: form.program_name,
         program_description: form.program_description,
         commission_rate: Number(form.commission_rate),
         min_payout: Number(form.min_payout),
         cookie_days: Number(form.cookie_days),
-        auto_approve: form.auto_approve,
+        auto_approve: !!form.auto_approve,
         terms_md: form.terms_md ?? "",
         referral_bonus: Number(form.referral_bonus ?? 0),
         holding_period_days: Number(form.holding_period_days ?? 0),
@@ -530,13 +408,17 @@ const SettingsTab: React.FC = () => {
           : form.payout_methods,
         display_style: form.display_style ?? "console",
       }});
-      toast.success("Settings saved");
+      toast.success("Settings saved successfully");
       qc.invalidateQueries({ queryKey: ["affiliate-settings"] });
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="grid md:grid-cols-2 gap-6 max-w-6xl">
+    <div className="grid md:grid-cols-2 gap-6 w-full">
       <Card title="Program status" desc="Switch the entire program on or off.">
         <Row label="Program enabled"><Switch checked={form.enabled} onCheckedChange={(v) => setForm({ ...form, enabled: v })} /></Row>
         <Field label="Status message (shown when disabled)"><Input value={form.status_message ?? ""} onChange={(e) => setForm({ ...form, status_message: e.target.value })} /></Field>
@@ -589,7 +471,9 @@ const SettingsTab: React.FC = () => {
       </Card>
 
       <div className="md:col-span-2">
-        <Button size="lg" onClick={onSave}>Save settings</Button>
+        <Button size="lg" onClick={onSave} disabled={saving}>
+          {saving ? "Saving…" : "Save settings"}
+        </Button>
       </div>
     </div>
   );
@@ -782,7 +666,7 @@ const CategoriesTab: React.FC = () => {
   const [rate, setRate] = useState<string>("");
 
   return (
-    <div className="space-y-4 max-w-3xl">
+    <div className="space-y-4 w-full">
       <div>
         <h2 className="text-xl font-bold">Category commission overrides</h2>
         <p className="text-sm text-muted-foreground">Set higher or lower commission rates for specific categories (overrides the default).</p>
@@ -989,7 +873,18 @@ const PayoutsTab: React.FC = () => {
               <td className="p-3">{new Date(p.requested_at).toLocaleDateString()}</td>
               <td className="p-3 font-mono text-xs">{p.affiliate?.code}</td>
               <td className="p-3 font-semibold">{formatPrice(Number(p.amount))}</td>
-              <td className="p-3">{p.method}</td>
+              <td className="p-3">
+                <span className="font-semibold capitalize">{p.method?.replace(/_/g, " ")}</span>
+                {p.details && typeof p.details === "object" && Object.keys(p.details).length > 0 && (
+                  <div className="text-[11px] text-muted-foreground mt-1 font-mono bg-secondary/30 p-1.5 rounded-lg border border-border/40 space-y-0.5 max-w-xs">
+                    {p.details.account_holder && <div><span className="text-foreground/70">Holder:</span> {p.details.account_holder}</div>}
+                    {p.details.mobile_number && <div><span className="text-foreground/70">MFS:</span> {p.details.mobile_number}</div>}
+                    {p.details.account_number && <div><span className="text-foreground/70">A/C:</span> {p.details.account_number}</div>}
+                    {p.details.bank_name && <div><span className="text-foreground/70">Bank:</span> {p.details.bank_name} {p.details.branch_name ? `(${p.details.branch_name})` : ""}</div>}
+                    {p.details.routing_number && <div><span className="text-foreground/70">Routing:</span> {p.details.routing_number}</div>}
+                  </div>
+                )}
+              </td>
               <td className="p-3"><Badge>{p.status}</Badge></td>
               <td className="p-3 text-xs font-mono">{p.txn_reference ?? "—"}</td>
               <td className="p-3">

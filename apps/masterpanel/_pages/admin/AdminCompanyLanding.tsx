@@ -22,11 +22,12 @@ import { getBrandHomeUrl, getLiveBrandHomeUrl } from "@/lib/cross-app-urls";
 import { toast } from "@/lib/app-toast";
 import ImageUpload from "@/components/ImageUpload";
 import { BrandHomeSubNav } from "@/components/admin/BrandHomeSubNav";
+import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 import {
   Save, RotateCcw, Eye, Plus, Trash2, GripVertical, Image as ImageIcon,
   Layout, BarChart3, MessageSquare, Star, Package, Loader2,
   ExternalLink, LayoutTemplate, Rocket, Monitor, Laptop, Tablet, Smartphone,
-  RefreshCw, Sliders, Sparkles, Shield, Truck, Users, Globe, ArrowUpRight, ArrowRight,
+  RefreshCw, Sliders, Crown, Gem, Shield, Truck, Users, Globe, ArrowUpRight, ArrowRight,
   ChevronDown, ChevronUp, ZoomIn, ZoomOut, Maximize2, ShoppingBag, Layers,
   Search, Copy, Check, Filter, Heart, Zap, Play, Upload, Link as LinkIcon,
   EyeOff, ArrowUp, ArrowDown, Video, Film, Award
@@ -93,7 +94,7 @@ const DEFAULTS: LandingConfig = {
     { icon: "Shield",   title: "Authentic",     desc: "Every piece verified for quality and origin." },
     { icon: "Truck",    title: "Global reach",  desc: "Shipping wherever style travels." },
     { icon: "Users",    title: "Community",     desc: "Built with and for people who care." },
-    { icon: "Sparkles", title: "Timeless",      desc: "Designed to outlast the trend cycle." },
+    { icon: "Crown",    title: "Timeless",      desc: "Designed to outlast the trend cycle." },
   ],
   stats: [
     { value: "10K+", label: "HAPPY CUSTOMERS" },
@@ -129,7 +130,7 @@ const DEFAULTS: LandingConfig = {
   discover_eyebrow: "Discover",
   discover_title: "Explore Orizino",
   discover_items: [
-    { label: "Docs", href: "/docs", icon: "Sparkles", desc: "Case studies & references" },
+    { label: "Docs", href: "/docs", icon: "Layers", desc: "Case studies & references" },
     { label: "News", href: "/news", icon: "Star", desc: "Latest updates" },
     { label: "Products", href: "/products", icon: "Package", desc: "Product highlights" },
     { label: "Shop", href: "", icon: "ArrowUpRight", desc: "Enter the store", external: true },
@@ -137,7 +138,7 @@ const DEFAULTS: LandingConfig = {
 };
 
 const ICON_MAP: Record<string, React.ElementType> = {
-  Shield, Truck, Users, Sparkles, Star, Package, Heart, Zap, Globe, RotateCcw, ArrowUpRight, ArrowRight, Layers, ShoppingBag
+  Shield, Truck, Users, Crown, Gem, Star, Package, Heart, Zap, Globe, RotateCcw, ArrowUpRight, ArrowRight, Layers, ShoppingBag
 };
 
 type DeviceMode = "desktop" | "laptop" | "tablet" | "mobile";
@@ -164,7 +165,7 @@ const textareaCls = inputCls + " resize-y min-h-[80px] leading-relaxed";
 /* Visual Icon Picker Primitive */
 const IconPicker: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => {
   const [open, setOpen] = React.useState(false);
-  const CurrentIcon = ICON_MAP[value] || Sparkles;
+  const CurrentIcon = ICON_MAP[value] || Star;
 
   return (
     <div className="relative w-full">
@@ -519,6 +520,19 @@ export default function AdminCompanyLanding() {
     return title.toLowerCase().includes(q) || desc.toLowerCase().includes(q);
   };
 
+  useRegisterUniversalSave(
+    {
+      id: "brandhome-landing",
+      label: "Save Landing Page",
+      onSave: () => draft && save.mutate(draft),
+      isSaving: save.isPending,
+      isDirty: dirty,
+      onReject: reset,
+      canReject: dirty,
+    },
+    [draft, dirty, save.isPending]
+  );
+
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-background">
       {/* ── Studio Header Toolbar ────────────────────────────────────── */}
@@ -564,23 +578,6 @@ export default function AdminCompanyLanding() {
             className="text-[11px] px-2.5 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition hidden sm:block"
           >
             Defaults
-          </button>
-          <button
-            type="button"
-            onClick={reset}
-            disabled={!dirty || save.isPending}
-            className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-border/60 hover:bg-muted/60 disabled:opacity-40 transition"
-          >
-            <RotateCcw className="w-3.5 h-3.5" /> Revert
-          </button>
-          <button
-            type="button"
-            onClick={() => draft && save.mutate(draft)}
-            disabled={!dirty || save.isPending}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground disabled:opacity-40 hover:brightness-110 shadow-sm transition"
-          >
-            {save.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            Save
           </button>
           <a
             href={getLiveBrandHomeUrl("/")}
@@ -788,7 +785,7 @@ export default function AdminCompanyLanding() {
                 items={draft.discover_items}
                 onChange={(next) => patch("discover_items", next)}
                 empty="No discover tiles added."
-                add={{ label: "Add Navigation Tile", make: () => ({ label: "", href: "", icon: "Sparkles", desc: "", external: false }) }}
+                add={{ label: "Add Navigation Tile", make: () => ({ label: "", href: "", icon: "Layers", desc: "", external: false }) }}
                 render={(it, i, upd) => (
                   <div className="space-y-2 flex-1">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

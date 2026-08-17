@@ -82,19 +82,23 @@ const DEFAULT_MAPPING: SheetMapping = {
   serialColumn: 1,
   statusColumn: 5,
   columns: [
-    { header: "Serial code",   field: "serial_code" },
-    { header: "Product",       field: "product" },
-    { header: "Variant",       field: "variant" },
-    { header: "SKU",           field: "sku" },
-    { header: "Status",        field: "status" },
-    { header: "Order ID",      field: "order_id" },
-    { header: "Available at",  field: "available_at" },
-    { header: "Sold at",       field: "sold_at" },
-    { header: "Cancelled at",  field: "cancelled_at" },
-    { header: "Returned at",   field: "returned_at" },
-    { header: "Defective at",  field: "defective_at" },
-    { header: "Created at",    field: "created_at" },
-    { header: "Updated at",    field: "updated_at" },
+    { header: "Serial code",          field: "serial_code" },
+    { header: "Product",              field: "product" },
+    { header: "Variant",              field: "variant" },
+    { header: "SKU",                  field: "sku" },
+    { header: "Status",               field: "status" },
+    { header: "Price (৳)",            field: "price" },
+    { header: "Discount Price (৳)",   field: "discount_price" },
+    { header: "Discounted (৳)",       field: "discounted" },
+    { header: "Sold Price (৳)",       field: "sold_price" },
+    { header: "Order ID",             field: "order_id" },
+    { header: "Available at",         field: "available_at" },
+    { header: "Sold at",              field: "sold_at" },
+    { header: "Cancelled at",         field: "cancelled_at" },
+    { header: "Returned at",          field: "returned_at" },
+    { header: "Defective at",         field: "defective_at" },
+    { header: "Created at",           field: "created_at" },
+    { header: "Updated at",           field: "updated_at" },
   ],
 };
 
@@ -283,46 +287,197 @@ async function loadSheetConfig(sb: any) {
   return { id: row.id, sheetId: row.google_sheet_id, tab: row.google_sheet_tab || "Serials" };
 }
 
-async function loadStatusDates(sb: any, serialIds: string[]): Promise<Record<string, Record<string, string>>> {
-  const out: Record<string, Record<string, string>> = {};
-  if (!serialIds.length) return out;
+async function loadStatusDatesAndPricing(
+  sb: any,
+  rows: any[]
+): Promise<{
+  datesBySerial: Record<string, Record<string, string>>;
+  pricingBySerial: Record<
+    string,
+    {
+      mainPrice: number;
+      normalDiscountPrice: number;
+      discount: number;
+      soldPrice: number | string;
+      isOverridden: boolean;
+    }
+  >;
+}> {
+  const datesBySerial: Record<string, Record<string, string>> = {};
+  const pricingBySerial: Record<
+    string,
+    {
+      mainPrice: number;
+      normalDiscountPrice: number;
+      discount: number;
+      soldPrice: number | string;
+      isOverridden: boolean;
+    }
+  > = {};
+
+  const serialIds = rows.map((r) => r.id);
+  if (!serialIds.length) return { datesBySerial, pricingBySerial };
+
+  for (const r of rows) {
+    const mainPrice = Number(
+      r.product_variants?.price_override ||
+      r.products?.compare_at_price ||
+      r.products?.price ||
+      0
+    );
+    const normalDiscountPrice = Number(
+      r.product_variants?.price_override ||
+      r.products?.price ||
+      mainPrice ||
+      0
+    );
+    pricingBySerial[r.id] = {
+      mainPrice,
+      normalDiscountPrice,
+      discount: r.status === "sold" ? Math.max(0, mainPrice - normalDiscountPrice) : 0,
+      soldPrice: r.status === "sold" ? normalDiscountPrice : "",
+      isOverridden: false,
+    };
+  }
+
   const CHUNK = 200;
+  const soldOrderIds = new Set<string>();
+
   for (let i = 0; i < serialIds.length; i += CHUNK) {
     const chunk = serialIds.slice(i, i + CHUNK);
-    const { data } = await sb
+    const { data: events } = await sb
       .from("product_serial_events")
-      .select("serial_id, to_status, created_at")
+      .select("serial_id, to_status, created_at, action, metadata, order_id")
       .in("serial_id", chunk)
       .order("created_at", { ascending: true });
-    for (const ev of data ?? []) {
-      if (!ev.to_status) continue;
-      (out[ev.serial_id] ??= {})[ev.to_status] = ev.created_at;
+
+    for (const ev of events ?? []) {
+      if (ev.to_status) {
+        (datesBySerial[ev.serial_id] ??= {})[ev.to_status] = ev.created_at;
+      }
+      if (ev.order_id) soldOrderIds.add(ev.order_id);
+
+      if (ev.action === "sell" && ev.metadata) {
+        const meta = ev.metadata;
+        const main = meta.main_price !== undefined ? Number(meta.main_price) : pricingBySerial[ev.serial_id]?.mainPrice ?? 0;
+        const normDisc = meta.discounted_price !== undefined ? Number(meta.discounted_price) : pricingBySerial[ev.serial_id]?.normalDiscountPrice ?? main;
+        const sold = meta.sold_price !== undefined ? Number(meta.sold_price) : normDisc;
+        const disc = meta.discount !== undefined ? Number(meta.discount) : Math.max(0, main - sold);
+        const isOverride = meta.is_override === true || (typeof sold === "number" && typeof normDisc === "number" && sold !== normDisc);
+        pricingBySerial[ev.serial_id] = {
+          mainPrice: main,
+          normalDiscountPrice: normDisc,
+          discount: disc,
+          soldPrice: sold,
+          isOverridden: isOverride,
+        };
+      }
     }
   }
-  return out;
+
+  const orderIdList = [...soldOrderIds];
+  if (orderIdList.length > 0) {
+    for (let i = 0; i < orderIdList.length; i += CHUNK) {
+      const orderChunk = orderIdList.slice(i, i + CHUNK);
+      const { data: orderItems } = await sb
+        .from("order_items")
+        .select("order_id, product_id, variant_id, unit_price")
+        .in("order_id", orderChunk);
+
+      const itemsMap = new Map<string, number>();
+      for (const it of orderItems ?? []) {
+        itemsMap.set(`${it.order_id}::${it.product_id}::${it.variant_id ?? ""}`, Number(it.unit_price ?? 0));
+      }
+
+      for (const r of rows) {
+        if (r.status === "sold" && r.sold_order_id) {
+          const key = `${r.sold_order_id}::${r.product_id}::${r.variant_id ?? ""}`;
+          if (itemsMap.has(key)) {
+            const soldPrice = itemsMap.get(key)!;
+            const mainPrice =
+              pricingBySerial[r.id]?.mainPrice ||
+              Number(r.products?.compare_at_price || r.products?.price || 0);
+            const normalDiscountPrice =
+              pricingBySerial[r.id]?.normalDiscountPrice ||
+              Number(r.product_variants?.price_override || r.products?.price || mainPrice);
+            const discount = Math.max(0, mainPrice - soldPrice);
+            const isOverride = pricingBySerial[r.id]?.isOverridden || soldPrice !== normalDiscountPrice;
+            pricingBySerial[r.id] = {
+              mainPrice,
+              normalDiscountPrice,
+              discount,
+              soldPrice,
+              isOverridden: isOverride,
+            };
+          }
+        }
+      }
+    }
+  }
+
+  return { datesBySerial, pricingBySerial };
 }
 
-function fieldValue(field: SheetField | "", r: any, dates: Record<string, string>): string {
+function fieldValue(
+  field: SheetField | "",
+  r: any,
+  dates: Record<string, string>,
+  pricingBySerial: Record<
+    string,
+    { mainPrice: number; normalDiscountPrice: number; discount: number; soldPrice: number | string; isOverridden: boolean }
+  > = {}
+): string {
+  const mainPrice = Number(r.product_variants?.price_override || r.products?.compare_at_price || r.products?.price || 0);
+  const normalDiscountPrice = Number(r.product_variants?.price_override || r.products?.price || 0);
+  const p = pricingBySerial[r.id] || {
+    mainPrice,
+    normalDiscountPrice,
+    discount: Math.max(0, mainPrice - normalDiscountPrice),
+    soldPrice: r.status === "sold" ? normalDiscountPrice : "",
+    isOverridden: false,
+  };
+
   switch (field) {
-    case "serial_code":  return r.serial_code ?? "";
-    case "product":      return r.products?.name ?? "";
-    case "variant":      return [r.product_variants?.size, r.product_variants?.color].filter(Boolean).join(" / ");
-    case "sku":          return r.product_variants?.sku || r.products?.sku || "";
-    case "status":       return r.status ?? "";
-    case "order_id":     return r.sold_order_id ?? "";
-    case "available_at": return dates.available ?? "";
-    case "sold_at":      return dates.sold ?? r.sold_at ?? "";
-    case "cancelled_at": return dates.cancelled ?? "";
-    case "returned_at":  return dates.returned ?? "";
-    case "defective_at": return dates.defective ?? "";
-    case "created_at":   return r.created_at ? new Date(r.created_at).toLocaleString() : "";
-    case "updated_at":   return r.updated_at ? new Date(r.updated_at).toLocaleString() : "";
-    default:             return "";
+    case "serial_code":       return r.serial_code ?? "";
+    case "product":           return r.products?.name ?? "";
+    case "variant":           return [r.product_variants?.size, r.product_variants?.color].filter(Boolean).join(" / ");
+    case "sku":               return r.product_variants?.sku || r.products?.sku || "";
+    case "status":            return r.status ?? "";
+    case "price":             return p.mainPrice ? String(p.mainPrice) : "";
+    case "discount_price":
+    case "discounted_price":  return p.normalDiscountPrice ? String(p.normalDiscountPrice) : "";
+    case "discounted":
+    case "discount": {
+      if (p.isOverridden && p.soldPrice !== "" && typeof p.soldPrice === "number") {
+        const overriddenDiscount = Math.max(0, p.mainPrice - p.soldPrice);
+        return String(overriddenDiscount);
+      }
+      const regularDiscount = Math.max(0, p.mainPrice - p.normalDiscountPrice);
+      return regularDiscount ? String(regularDiscount) : "0";
+    }
+    case "sold_price":        return p.soldPrice !== "" ? String(p.soldPrice) : "";
+    case "order_id":          return r.sold_order_id ?? "";
+    case "available_at":      return dates.available ?? "";
+    case "sold_at":           return dates.sold ?? r.sold_at ?? "";
+    case "cancelled_at":      return dates.cancelled ?? "";
+    case "returned_at":       return dates.returned ?? "";
+    case "defective_at":      return dates.defective ?? "";
+    case "created_at":        return r.created_at ? new Date(r.created_at).toLocaleString() : "";
+    case "updated_at":        return r.updated_at ? new Date(r.updated_at).toLocaleString() : "";
+    default:                  return "";
   }
 }
 
-function toRow(mapping: SheetMapping, r: any, dates: Record<string, string> = {}) {
-  return mapping.columns.map((c) => fieldValue(c.field, r, dates));
+function toRow(
+  mapping: SheetMapping,
+  r: any,
+  dates: Record<string, string> = {},
+  pricingBySerial: Record<
+    string,
+    { mainPrice: number; normalDiscountPrice: number; discount: number; soldPrice: number | string; isOverridden: boolean }
+  > = {}
+) {
+  return mapping.columns.map((c) => fieldValue(c.field, r, dates, pricingBySerial));
 }
 
 function colLetter(n: number): string {
@@ -557,6 +712,84 @@ async function initializeAndDesignSpreadsheet(sheetId: string, primaryTab = "Ser
   return { ok: true, tabs: [primaryTab, "Stock_Overview"] };
 }
 
+async function formatOverriddenSheetRows(
+  sheetId: string,
+  tabTitle: string,
+  mapping: SheetMapping,
+  rows: any[],
+  pricingBySerial: Record<string, { isOverridden?: boolean }>
+) {
+  try {
+    const meta = await callSheets(`/spreadsheets/${sheetId}`, {
+      query: { fields: "sheets.properties" },
+    });
+    const sheets: Array<{ sheetId: number; title: string }> = (meta.sheets ?? []).map((s: any) => ({
+      sheetId: s.properties?.sheetId ?? 0,
+      title: s.properties?.title ?? "",
+    }));
+    const targetSheet = sheets.find((s) => s.title === tabTitle);
+    if (!targetSheet || rows.length === 0) return;
+
+    const sId = targetSheet.sheetId;
+    const numCols = mapping.columns.length;
+    const startRow = mapping.dataStartRow - 1; // 0-based row index in sheet
+    const endRow = startRow + rows.length;
+
+    const requests: any[] = [
+      // Reset all data rows to clean background
+      {
+        repeatCell: {
+          range: {
+            sheetId: sId,
+            startRowIndex: startRow,
+            endRowIndex: endRow,
+            startColumnIndex: 0,
+            endColumnIndex: numCols,
+          },
+          cell: {
+            userEnteredFormat: {
+              backgroundColor: { red: 1.0, green: 1.0, blue: 1.0 },
+            },
+          },
+          fields: "userEnteredFormat.backgroundColor",
+        },
+      },
+    ];
+
+    // Highlight each overridden row with warm yellow background
+    rows.forEach((r, idx) => {
+      if (pricingBySerial[r.id]?.isOverridden) {
+        requests.push({
+          repeatCell: {
+            range: {
+              sheetId: sId,
+              startRowIndex: startRow + idx,
+              endRowIndex: startRow + idx + 1,
+              startColumnIndex: 0,
+              endColumnIndex: numCols,
+            },
+            cell: {
+              userEnteredFormat: {
+                backgroundColor: { red: 1.0, green: 0.95, blue: 0.65 }, // Yellow highlight for price override
+              },
+            },
+            fields: "userEnteredFormat.backgroundColor",
+          },
+        });
+      }
+    });
+
+    if (requests.length > 0) {
+      await callSheets(`/spreadsheets/${sheetId}:batchUpdate`, {
+        method: "POST",
+        body: { requests },
+      });
+    }
+  } catch (err) {
+    console.warn("Overridden row styling warning:", err);
+  }
+}
+
 export const autoFormatGoogleSheet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { sheetId?: string; tab?: string } | undefined) => d ?? {})
@@ -587,15 +820,15 @@ export const pushSerialsToSheet = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await sb
       .from("product_serials")
-      .select("id, serial_code, status, sold_order_id, sold_at, created_at, updated_at, products(name, sku), product_variants(size, color, sku)")
+      .select("id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, created_at, updated_at, products(name, sku, price, compare_at_price), product_variants(size, color, sku, price_override)")
       .order("created_at", { ascending: false })
       .limit(5000);
     if (error) throw new Error(error.message);
 
-    const datesBySerial = await loadStatusDates(sb, (rows ?? []).map((r: any) => r.id));
+    const { datesBySerial, pricingBySerial } = await loadStatusDatesAndPricing(sb, rows ?? []);
 
     const headerRow = mapping.columns.map((c) => c.header);
-    const dataRows = (rows ?? []).map((r: any) => toRow(mapping, r, datesBySerial[r.id] ?? {}));
+    const dataRows = (rows ?? []).map((r: any) => toRow(mapping, r, datesBySerial[r.id] ?? {}, pricingBySerial));
 
     const lastCol = colLetter(mapping.columns.length);
     const clearRange = `${cfg.tab}!A1:${lastCol}10000`;
@@ -615,6 +848,9 @@ export const pushSerialsToSheet = createServerFn({ method: "POST" })
         query: { valueInputOption: "RAW" },
         body: { range: `${cfg.tab}!A${mapping.dataStartRow}`, majorDimension: "ROWS", values: dataRows },
       });
+
+      // Highlight overridden rows in yellow
+      await formatOverriddenSheetRows(cfg.sheetId, cfg.tab, mapping, rows ?? [], pricingBySerial);
     }
 
     if (cfg.id) {
@@ -665,8 +901,8 @@ export const pushStockSummaryToSheet = createServerFn({ method: "POST" })
 
     // Query products, variants, and live available serial counts
     const [{ data: products }, { data: variants }, { data: serials }] = await Promise.all([
-      sb.from("products").select("id, name, sku, stock_quantity, is_active").order("name"),
-      sb.from("product_variants").select("id, product_id, size, color, sku, stock_quantity"),
+      sb.from("products").select("id, name, sku, price, compare_at_price, stock_quantity, is_active").order("name"),
+      sb.from("product_variants").select("id, product_id, size, color, sku, price_override, stock_quantity"),
       sb.from("product_serials").select("id, product_id, variant_id, status").eq("status", "available"),
     ]);
 
@@ -688,6 +924,7 @@ export const pushStockSummaryToSheet = createServerFn({ method: "POST" })
       "Variant / Size",
       "Color",
       "Variant SKU",
+      "Base Price (৳)",
       "Available Serials (Live)",
       "Database Stock Qty",
       "Stock Health",
@@ -709,6 +946,7 @@ export const pushStockSummaryToSheet = createServerFn({ method: "POST" })
             v.size || "Standard",
             v.color || "",
             v.sku || "",
+            String(v.price_override || p.compare_at_price || p.price || 0),
             String(availCount),
             String(dbStock),
             health,
@@ -725,6 +963,7 @@ export const pushStockSummaryToSheet = createServerFn({ method: "POST" })
           "All",
           "",
           p.sku || "",
+          String(p.compare_at_price || p.price || 0),
           String(availCount),
           String(dbStock),
           health,
@@ -733,7 +972,7 @@ export const pushStockSummaryToSheet = createServerFn({ method: "POST" })
       }
     }
 
-    const clearRange = `${stockTab}!A1:I1000`;
+    const clearRange = `${stockTab}!A1:J1000`;
     try {
       await callSheets(`/spreadsheets/${cfg.sheetId}/values/${clearRange}:clear`, { method: "POST", body: {} });
     } catch {}
@@ -746,6 +985,71 @@ export const pushStockSummaryToSheet = createServerFn({ method: "POST" })
 
     return { pushedRows: rows.length, tab: stockTab };
   });
+
+/**
+ * Background / silent helper to keep connected Google Sheets synchronized in real-time
+ * whenever an offline/online order or invoice is confirmed.
+ */
+export async function syncSerialsAndStockToSheetSilently(sb: any): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { data: cfg } = await sb
+      .from("sticker_settings")
+      .select("id, google_sheet_id, google_sheet_tab, sync_enabled")
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle();
+
+    if (!cfg?.google_sheet_id || cfg.sync_enabled === false) {
+      return { ok: false, error: "No active Google Sheet configured or sync disabled" };
+    }
+
+    const mapping = await loadMapping(sb);
+    const primaryTab = cfg.google_sheet_tab || "Serials";
+
+    const { data: rows, error: rErr } = await sb
+      .from("product_serials")
+      .select("id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, created_at, updated_at, products(name, sku, price, compare_at_price), product_variants(size, color, sku, price_override)")
+      .order("created_at", { ascending: false })
+      .limit(5000);
+
+    if (rErr) throw new Error(rErr.message);
+
+    const { datesBySerial, pricingBySerial } = await loadStatusDatesAndPricing(sb, rows ?? []);
+    const headerRow = mapping.columns.map((c) => c.header);
+    const dataRows = (rows ?? []).map((r: any) => toRow(mapping, r, datesBySerial[r.id] ?? {}, pricingBySerial));
+
+    const lastCol = colLetter(mapping.columns.length);
+    const clearRange = `${primaryTab}!A1:${lastCol}10000`;
+    try {
+      await callSheets(`/spreadsheets/${cfg.google_sheet_id}/values/${clearRange}:clear`, { method: "POST", body: {} });
+    } catch {}
+
+    await callSheets(`/spreadsheets/${cfg.google_sheet_id}/values/${primaryTab}!A${mapping.headerRow}`, {
+      method: "PUT",
+      query: { valueInputOption: "RAW" },
+      body: { range: `${primaryTab}!A${mapping.headerRow}`, majorDimension: "ROWS", values: [headerRow] },
+    });
+
+    if (dataRows.length) {
+      await callSheets(`/spreadsheets/${cfg.google_sheet_id}/values/${primaryTab}!A${mapping.dataStartRow}`, {
+        method: "PUT",
+        query: { valueInputOption: "RAW" },
+        body: { range: `${primaryTab}!A${mapping.dataStartRow}`, majorDimension: "ROWS", values: dataRows },
+      });
+
+      // Highlight overridden rows in yellow
+      await formatOverriddenSheetRows(cfg.google_sheet_id, primaryTab, mapping, rows ?? [], pricingBySerial);
+    }
+
+    if (cfg.id) {
+      await sb.from("sticker_settings").update({ last_synced_at: new Date().toISOString() }).eq("id", cfg.id);
+    }
+    return { ok: true };
+  } catch (err: any) {
+    console.warn("Silent sheet sync warning:", err?.message || err);
+    return { ok: false, error: err?.message };
+  }
+}
 
 export const testSheetConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

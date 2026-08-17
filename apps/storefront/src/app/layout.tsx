@@ -7,6 +7,12 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: "Orizino — Premium Drop Shoulder Streetwear",
   description: "Orizino — premium drop shoulder t-shirts & streetwear. Crafted for those who carry themselves with quiet intention.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Orizino",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -24,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){if(typeof Node!=='undefined'&&Node.prototype){var origRemoveChild=Node.prototype.removeChild;Node.prototype.removeChild=function(child){if(child.parentNode!==this){if(child.parentNode){return child.parentNode.removeChild(child);}return child;}return origRemoveChild.call(this,child);};var origInsertBefore=Node.prototype.insertBefore;Node.prototype.insertBefore=function(newNode,refNode){if(refNode&&refNode.parentNode!==this){if(refNode.parentNode){return refNode.parentNode.insertBefore(newNode,refNode);}return this.appendChild(newNode);}return origInsertBefore.call(this,newNode,refNode);};}})();`,
+            __html: `(function(){if(typeof Node!=='undefined'&&Node.prototype){var origRemoveChild=Node.prototype.removeChild;Node.prototype.removeChild=function(child){if(child.parentNode!==this){if(child.parentNode){return child.parentNode.removeChild(child);}return child;}return origRemoveChild.call(this,child);};var origInsertBefore=Node.prototype.insertBefore;Node.prototype.insertBefore=function(newNode,refNode){if(refNode&&refNode.parentNode!==this){if(refNode.parentNode){return refNode.parentNode.insertBefore(newNode,refNode);}return this.appendChild(newNode);}return origInsertBefore.call(this,newNode,refNode);};}})();(function(){try{var t=localStorage.getItem('theme');var d=document.documentElement;var m=window.matchMedia('(prefers-color-scheme: dark)').matches;var r=(!t||t==='system')?(m?'dark':'light'):t;d.classList.remove('light','dark');d.classList.add(r);}catch(e){}})();`,
           }}
         />
       </head>

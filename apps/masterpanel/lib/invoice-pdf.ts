@@ -208,9 +208,22 @@ export function buildInvoicePdf(order: any, items: any[], brand: PdfBrand): jsPD
   };
 
   totalRow("Subtotal", money(order.subtotal, symbol));
-  if (order.shipping_fee) totalRow("Shipping", money(order.shipping_fee, symbol));
+  const isPrepaidDelivery = !!order.is_delivery_prepaid || (order.delivery_prepaid_amount != null && Number(order.delivery_prepaid_amount) > 0);
+  const prepaidDeliveryFee = isPrepaidDelivery ? Number(order.delivery_prepaid_amount || order.shipping_fee || 0) : 0;
+
+  if (order.shipping_fee) {
+    if (isPrepaidDelivery) {
+      totalRow("Delivery Fee (Pre-paid)", money(order.shipping_fee, symbol), { color: GREEN });
+    } else {
+      totalRow("Delivery Fee", money(order.shipping_fee, symbol));
+    }
+  }
   if (order.coupon_discount) totalRow(`Discount${order.coupon_code ? ` (${order.coupon_code})` : ""}`, `- ${money(order.coupon_discount, symbol)}`, { color: GREEN });
   if (order.loyalty_discount) totalRow("Loyalty Reward", `- ${money(order.loyalty_discount, symbol)}`, { color: GREEN });
+
+  if (isPrepaidDelivery && !isPaid) {
+    totalRow("Advance Paid (Delivery)", `- ${money(prepaidDeliveryFee, symbol)}`, { color: GREEN });
+  }
 
   // Grand total band
   y += 1;
@@ -219,10 +232,12 @@ export function buildInvoicePdf(order: any, items: any[], brand: PdfBrand): jsPD
   doc.setFont(SANS, "bold");
   doc.setFontSize(11);
   doc.setTextColor(255, 255, 255);
-  doc.text("TOTAL DUE", totalsX, y + 1.5);
+  const labelDue = isPaid ? "PAID IN FULL" : isPrepaidDelivery ? "DUE ON DELIVERY" : "TOTAL DUE";
+  const dueAmount = isPaid ? 0 : isPrepaidDelivery ? Math.max(0, Number(order.total || 0) - prepaidDeliveryFee) : Number(order.total || 0);
+  doc.text(labelDue, totalsX, y + 1.5);
   doc.setTextColor(...GOLD_SOFT);
   doc.setFontSize(12);
-  doc.text(money(order.total, symbol), valX, y + 1.5, { align: "right" });
+  doc.text(money(dueAmount, symbol), valX, y + 1.5, { align: "right" });
 
   // Footer
   doc.setDrawColor(...GOLD);
@@ -348,6 +363,120 @@ export function buildStickerPdf(order: any, brand: PdfBrand): jsPDF {
 export function downloadInvoicePdf(order: any, items: any[], brand: PdfBrand) {
   const doc = buildInvoicePdf(order, items, brand);
   doc.save(`Invoice-${order.order_number}.pdf`);
+}
+
+export function printInvoicePdf(order: any, items: any[], brand: PdfBrand) {
+  const doc = buildInvoicePdf(order, items, brand);
+  doc.autoPrint();
+  const blobUrl = doc.output("bloburl");
+  const win = window.open(blobUrl as any, "_blank");
+  if (win) {
+    win.focus();
+  }
+}
+
+export function printThermalSlip(order: any, items: any[], brand: PdfBrand) {
+  const symbol = safeCurrency(brand.currency);
+  const dateStr = new Date(order.created_at || Date.now()).toLocaleString("en-US", {
+    year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
+  });
+  const itemsHtml = (items || []).map((it: any) => `
+    <tr>
+      <td style="padding: 4px 0; font-weight: 600;">
+        ${it.product_name || "Item"}
+        ${it.sku ? `<br/><span style="font-size: 10px; color: #666;">SKU: ${it.sku}</span>` : ""}
+      </td>
+      <td style="padding: 4px 0; text-align: center;">${it.quantity ?? 1}</td>
+      <td style="padding: 4px 0; text-align: right; font-family: monospace;">${money(it.total_price, symbol)}</td>
+    </tr>
+  `).join("");
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8"/>
+      <title>POS Receipt - ${order.order_number}</title>
+      <style>
+        @page { size: 80mm auto; margin: 4mm; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          width: 72mm;
+          margin: 0 auto;
+          padding: 6px 0;
+          color: #000;
+          font-size: 12px;
+          line-height: 1.4;
+        }
+        .header { text-align: center; margin-bottom: 10px; }
+        .header h1 { font-size: 17px; font-weight: 900; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .header p { margin: 2px 0; font-size: 11px; color: #444; }
+        .divider { border-top: 1px dashed #000; margin: 8px 0; }
+        .info-row { display: flex; justify-content: space-between; font-size: 11px; margin: 2px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 11px; }
+        th { border-bottom: 1px solid #000; padding: 4px 0; text-align: left; font-size: 10px; text-transform: uppercase; }
+        .total-row { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; margin: 4px 0; }
+        .grand-total { font-size: 14px; font-weight: 900; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 6px 0; margin-top: 6px; }
+        .badge { text-align: center; font-weight: bold; font-size: 11px; padding: 5px; border: 1px solid #000; margin: 10px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .footer { text-align: center; font-size: 10px; color: #555; margin-top: 10px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>${brand.name || "ORIZINO"}</h1>
+        ${brand.addr ? `<p>${brand.addr}</p>` : ""}
+        ${brand.phone ? `<p>Phone: ${brand.phone}</p>` : ""}
+        ${brand.email ? `<p>${brand.email}</p>` : ""}
+      </div>
+      <div class="divider"></div>
+      <div class="info-row"><span>Receipt #:</span><strong>${order.order_number}</strong></div>
+      <div class="info-row"><span>Date:</span><span>${dateStr}</span></div>
+      <div class="info-row"><span>Customer:</span><strong>${order.customer_name || order.shipping_address?.full_name || "Walk-in Customer"}</strong></div>
+      ${order.guest_phone || order.shipping_address?.phone ? `<div class="info-row"><span>Phone:</span><span>${order.guest_phone || order.shipping_address?.phone}</span></div>` : ""}
+      <div class="info-row"><span>Channel:</span><span>${String(order.order_source || "Store Counter").toUpperCase()}</span></div>
+      <div class="divider"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th style="text-align: center;">Qty</th>
+            <th style="text-align: right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
+      <div class="divider"></div>
+      <div class="info-row"><span>Subtotal:</span><span>${money(order.subtotal, symbol)}</span></div>
+      ${order.shipping_fee ? `<div class="info-row"><span>Shipping:</span><span>${money(order.shipping_fee, symbol)}</span></div>` : ""}
+      ${order.coupon_discount ? `<div class="info-row"><span>Discount:</span><span>-${money(order.coupon_discount, symbol)}</span></div>` : ""}
+      <div class="total-row grand-total">
+        <span>TOTAL PAID:</span>
+        <span>${money(order.total, symbol)}</span>
+      </div>
+      <div class="badge">
+        ${order.status === "delivered" ? "PAID IN FULL · DELIVERED" : "PAID IN FULL"}
+      </div>
+      <div class="footer">
+        <p>${brand.footer || `Thank you for shopping with ${brand.name || "ORIZINO"}!`}</p>
+        <p>Keep this receipt slip for warranty & authentication.</p>
+      </div>
+      <script>
+        window.onload = function() {
+          window.print();
+        };
+      </script>
+    </body>
+    </html>
+  `;
+
+  const printWin = window.open("", "_blank", "width=420,height=650");
+  if (printWin) {
+    printWin.document.open();
+    printWin.document.write(html);
+    printWin.document.close();
+  }
 }
 
 export function downloadStickerPdf(order: any, brand: PdfBrand) {

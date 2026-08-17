@@ -53,22 +53,25 @@ export async function updateOrderStatus(orderId: string, status: string) {
   if (error) throw new Error(error.message);
 }
 
+import { calculateOrderFinancials } from "@orizino/shared";
+
 /** Dashboard KPIs — today's revenue/orders plus a breakdown by source & status. */
 export async function fetchDashboardStats() {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
   const [{ data: todayOrders }, { data: allRecent }] = await Promise.all([
-    sb.from("orders").select("id, total, status, order_source").gte("created_at", startOfToday.toISOString()),
+    sb.from("orders").select("id, total, subtotal, shipping_fee, coupon_discount, loyalty_discount, status, payment_method, is_delivery_prepaid, order_source").gte("created_at", startOfToday.toISOString()),
     sb
       .from("orders")
-      .select("id, total, status, order_source, created_at")
+      .select("id, total, subtotal, shipping_fee, coupon_discount, loyalty_discount, status, payment_method, is_delivery_prepaid, order_source, created_at")
       .order("created_at", { ascending: false })
       .limit(500),
   ]);
 
   const today = todayOrders ?? [];
-  const todayRevenue = today.filter((o) => o.status !== "cancelled").reduce((s, o) => s + Number(o.total || 0), 0);
+  const todayFinancials = calculateOrderFinancials(today as any[]);
+  const todayRevenue = todayFinancials.recognizedRevenue;
   const todayCount = today.length;
 
   const bySource = new Map<string, number>();
@@ -81,6 +84,7 @@ export async function fetchDashboardStats() {
   return {
     todayRevenue,
     todayCount,
+    todayFinancials,
     bySource: [...bySource.entries()].map(([source, count]) => ({ source, count })),
     byStatus: [...byStatus.entries()].map(([status, count]) => ({ status, count })),
     recent: (allRecent ?? []).slice(0, 8),

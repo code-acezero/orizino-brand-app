@@ -23,7 +23,6 @@ import {
   ChevronLeft,
   Search,
   Zap,
-  Sparkles,
   RefreshCw,
   Shield,
   LifeBuoy,

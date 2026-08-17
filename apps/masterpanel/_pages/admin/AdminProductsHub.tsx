@@ -14,9 +14,7 @@ const SECTIONS = [
       { title: "Categories",  url: "/sales/products-management?tab=categories", icon: FolderTree,  desc: "Product taxonomy & hierarchy" },
       { title: "Stock & Serials", url: "/sales/products-management?tab=stock",  icon: Package,     desc: "Serial numbers, barcodes & Sheets sync" },
       { title: "Product Scanner", url: "/sales/products-management?tab=scanner", icon: Package, desc: "Serial & product scanner" },
-      { title: "Reviews",     url: "/sales/reviews",     icon: Star,        desc: "Customer product reviews" },
       { title: "Wishlists & Demand", url: "/sales/requests", icon: Heart, desc: "Customer wishlists & restock alerts" },
-
     ],
   },
   {
@@ -40,11 +38,8 @@ export default function AdminProductsHub() {
   const { data: stats } = useQuery({
     queryKey: ["products-hub-stats"],
     queryFn: async () => {
-      const [productsRes, reviewsRes] = await Promise.all([
-        supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
-        (supabase.from("product_reviews" as never) as any).select("id", { count: "exact", head: true }).eq("approved", false),
-      ]);
-      return { products: productsRes.count ?? 0, pendingReviews: reviewsRes.count ?? 0 };
+      const { count } = await supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true);
+      return { products: count ?? 0 };
     },
     staleTime: 2 * 60 * 1000,
   });
@@ -61,8 +56,7 @@ export default function AdminProductsHub() {
       {stats && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="grid grid-cols-2 gap-3">
           {[
-            { label: "Active Products",  value: stats.products,       icon: Package, url: "/sales/products" },
-            { label: "Pending Reviews",  value: stats.pendingReviews, icon: Star,    url: "/sales/reviews" },
+            { label: "Active Products",  value: stats.products, icon: Package, url: "/sales/products-management?tab=products" },
           ].map(({ label, value, icon: Icon, url }) => (
             <button key={label} onClick={() => navigate(url)}
               className="flex flex-col items-start gap-1 rounded-xl border border-border/60 bg-card/60 p-3 text-left hover:bg-card hover:border-border hover:shadow-sm transition-all">

@@ -5,17 +5,18 @@ import { useStaffSections } from "@/hooks/use-staff-sections";
 import { useNavigate } from "@/lib/router-compat";
 import { motion } from "framer-motion";
 import type { Variants } from "framer-motion";
-import { ShoppingCart, Search, Tag, Palette, Activity, Settings, Users2, ChevronRight, LayoutGrid, Package } from "lucide-react";
+import { ShoppingCart, Search, Tag, Palette, Activity, Settings, Users2, ChevronRight, LayoutGrid, Package, Send } from "lucide-react";
 
 const ALL_SECTIONS = [
-  { key: "sales",      title: "Customer & Sales",     url: "/sales",                                     icon: ShoppingCart, color: "#f59e0b", sections: ["orders","offline_orders","customers","analytics"] },
-  { key: "products",   title: "Products, Shipping & Offers",   url: "/sales/products-management?tab=products",    icon: Package,      color: "#10b981", sections: ["products","orders"] },
-  { key: "seo",        title: "Marketing Management", url: "/marketing",                                 icon: Search,       color: "#f97316", sections: ["seo","customers"] },
-  { key: "affiliate",  title: "Affiliate Program",    url: "/affiliate",                                 icon: Tag,          color: "#84cc16", sections: ["affiliate"] },
-  { key: "brandconfig",title: "Brand & Storefront",   url: "/brand",                                     icon: Palette,      color: "#ec4899", sections: ["storefront_ui","portfolio"] },
-  { key: "backend",    title: "Backend & System",     url: "/system",                                    icon: Activity,     color: "#38bdf8", sections: ["settings"] },
-  { key: "settings",   title: "Settings & AI",        url: "/settings-ai",                              icon: Settings,     color: "#94a3b8", sections: ["settings","ai"] },
-  { key: "corporate",  title: "Team & Access",        url: "/team",                                     icon: Users2,       color: "#a855f7", sections: ["employees"] },
+  { key: "sales",     title: "Sales & Customers",    url: "/sales",                                     icon: ShoppingCart, color: "#f59e0b", sections: ["orders","offline_orders","customers","analytics"] },
+  { key: "products",  title: "PSO Management",       url: "/sales/products-management?tab=products",    icon: Package,      color: "#10b981", sections: ["products"] },
+  { key: "seo",       title: "SEO & Ads Management", url: "/marketing",                                 icon: Search,       color: "#f97316", sections: ["seo"] },
+  { key: "email",     title: "Emails & Marketing",   url: "/email",                                     icon: Send,         color: "#06b6d4", sections: ["customers"] },
+  { key: "affiliate", title: "Affiliate Program",    url: "/affiliate",                                 icon: Tag,          color: "#84cc16", sections: ["affiliate"] },
+  { key: "brand",     title: "Public Contents & UI", url: "/brand",                                     icon: Palette,      color: "#ec4899", sections: ["storefront_ui","portfolio"] },
+  { key: "system",    title: "Backend & System",     url: "/system",                                    icon: Activity,     color: "#38bdf8", sections: ["settings"] },
+  { key: "settings",  title: "Settings & AI",        url: "/settings-ai",                               icon: Settings,     color: "#94a3b8", sections: ["settings","ai"] },
+  { key: "team",      title: "Team & Access",        url: "/team",                                      icon: Users2,       color: "#a855f7", sections: ["employees"] },
 ];
 
 const ia = {

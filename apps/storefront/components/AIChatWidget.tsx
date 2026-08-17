@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Bot, User, Headphones, Phone, PhoneOff, Mic, MicOff, AlertTriangle, MessageSquare, ChevronDown, Paperclip, Smile, Sparkles, LifeBuoy, ChevronLeft, ChevronRight, Lock, Plus, Ticket } from "lucide-react";
+import { X, Send, Bot, User, Headphones, Phone, PhoneOff, Mic, MicOff, AlertTriangle, MessageSquare, ChevronDown, Paperclip, Smile, LifeBuoy, ChevronLeft, ChevronRight, Lock, Plus, Ticket } from "lucide-react";
+import { Sparkle } from "@/components/icons/Sparkle";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -783,7 +784,7 @@ const AIChatWidget: React.FC = () => {
       <img src={avatarUrl} alt={agentName || "Orizino AI"} className={`${size} object-cover rounded-full`} loading="eager" decoding="async" style={{ background: "transparent" }} />
     ) : (
       <div className={`${size} flex items-center justify-center rounded-full bg-primary/15 text-primary`}>
-        <Bot className={`${iconSize} text-primary`} />
+        <Sparkle className={`${iconSize} text-primary`} />
       </div>
     )
   );
@@ -2045,7 +2046,7 @@ const AIChatWidget: React.FC = () => {
                         className="px-2.5 py-1 rounded-lg bg-secondary/90 hover:bg-secondary text-foreground border border-border/60 text-[10px] font-semibold flex items-center gap-1 transition-all"
                         title="Return to AI Concierge"
                       >
-                        <Bot className="w-2.5 h-2.5 text-cherry" /> Return to AI
+                        <Sparkle className="w-2.5 h-2.5 text-cherry" /> Return to AI
                       </button>
                     </div>
                   </div>

@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminRole } from "@/components/AdminRoute";
 import { useRealtimeStatus } from "@/hooks/use-realtime-status";
+import { useRealtimeVisitors } from "@/hooks/use-realtime-visitors";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -62,6 +63,7 @@ const AdminTopBar: React.FC<Props> = ({
   const navigate = useNavigate();
   const role = useAdminRole();
   const realtimeStatus = useRealtimeStatus();
+  const visitors = useRealtimeVisitors();
   const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent);
   const modKey = isMac ? "⌘" : "Ctrl";
 
@@ -96,17 +98,31 @@ const AdminTopBar: React.FC<Props> = ({
 
   const currentMode = String(modeSetting || "auto");
 
-  const setSiteMode = async (nextMode: "auto" | "light" | "dark") => {
+  const applySiteMode = async (targetMode: "auto" | "light" | "dark") => {
+    const isAuto = targetMode === "auto";
+    const systemIsDark =
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const effectiveIsLight = isAuto ? !systemIsDark : targetMode === "light";
+
     if (typeof document !== "undefined") {
-      if (nextMode === "auto") {
-        const isDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? true;
-        document.documentElement.classList.toggle("light", !isDark);
-      } else {
-        document.documentElement.classList.toggle("light", nextMode === "light");
-      }
+      document.documentElement.classList.toggle("light", effectiveIsLight);
+      window.dispatchEvent(
+        new CustomEvent("site-mode-change", {
+          detail: { mode: targetMode, resolvedMode: effectiveIsLight ? "light" : "dark" },
+        })
+      );
     }
+
+    queryClient.setQueryData(["site-mode-admin-topbar"], targetMode);
+    queryClient.setQueryData(["site-settings"], (old: any) => ({
+      ...(old || {}),
+      site_mode: targetMode,
+    }));
+
     await supabase.from("site_settings").upsert(
-      { key: "site_mode", value: { value: nextMode } },
+      { key: "site_mode", value: { value: targetMode } },
       { onConflict: "key" }
     );
     queryClient.invalidateQueries({ queryKey: ["site-mode-admin-topbar"] });
@@ -162,28 +178,27 @@ const AdminTopBar: React.FC<Props> = ({
       <div className="ml-auto flex items-center gap-1 sm:gap-2 min-w-0">
         {showPresence && <PresenceAvatars currentName={profile?.full_name || user?.email} />}
 
+        {/* Live Storefront Visitors Pill */}
         <div
-          className={cn(
-            "hidden lg:flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-medium shrink-0",
-            rt.cls,
-          )}
+          className="hidden sm:flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-medium shrink-0 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
           role="status"
           aria-live="polite"
-          title={`Realtime status: ${rt.label}`}
+          title={`Storefront Live Visitors: ${visitors}`}
         >
-          <StatusDot tone={rt.tone as any} pulse={rt.ping} />
-          <Activity className="w-3 h-3" aria-hidden />
-          {rt.label}
+          <Activity className="w-3.5 h-3.5 text-emerald-500 animate-pulse" aria-hidden />
+          <span className="font-mono font-bold">{visitors}</span>
+          <span className="text-foreground/80 font-medium">Live</span>
         </div>
-        {/* Compact realtime dot on small screens */}
-        <span
-          className={cn("lg:hidden inline-flex items-center justify-center h-7 w-7 rounded-full shrink-0", rt.cls)}
+        {/* Compact realtime badge on small screens */}
+        <div
+          className="sm:hidden inline-flex items-center gap-1 h-7 px-2 rounded-full shrink-0 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
           role="status"
           aria-live="polite"
-          title={`Realtime: ${rt.label}`}
+          title={`Storefront Live Visitors: ${visitors}`}
         >
-          <StatusDot tone={rt.tone as any} pulse={rt.ping} />
-        </span>
+          <Activity className="w-3 h-3 text-emerald-500 animate-pulse" aria-hidden />
+          <span className="text-[11px] font-mono font-bold">{visitors}</span>
+        </div>
 
         {showShortcuts && onOpenShortcuts && (
           <button
@@ -201,42 +216,60 @@ const AdminTopBar: React.FC<Props> = ({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              title={`Theme: ${currentMode === "auto" ? "Auto (Device)" : currentMode === "light" ? "Light" : "Dark"}`}
-              aria-label="Select theme mode"
-              className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0 cursor-pointer"
+              title={`Theme: ${currentMode === "auto" ? "Auto (System)" : currentMode === "light" ? "Light Mode" : "Dark Mode"}`}
+              aria-label="Toggle theme mode"
+              className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0 cursor-pointer active:scale-95 outline-none"
             >
               {currentMode === "auto" ? (
-                <Monitor className="w-4 h-4 text-blue-400" />
+                <Monitor className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
               ) : currentMode === "light" ? (
-                <Sun className="w-4 h-4 text-amber-400" />
+                <Sun className="w-4 h-4 text-amber-500 dark:text-amber-400" />
               ) : (
                 <Moon className="w-4 h-4 text-indigo-400" />
               )}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-card/95 backdrop-blur-md border-border/60">
+          <DropdownMenuContent align="end" className="w-44 p-1 rounded-xl shadow-xl border-border/80">
+            <DropdownMenuLabel className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase tracking-wider">
+              Theme Mode
+            </DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => setSiteMode("auto")}
-              className={`flex items-center gap-2 cursor-pointer ${currentMode === "auto" ? "font-semibold text-primary" : ""}`}
+              onClick={() => applySiteMode("auto")}
+              className={cn(
+                "flex items-center justify-between px-2.5 py-1.5 text-xs rounded-lg cursor-pointer",
+                currentMode === "auto" && "bg-primary/10 text-primary font-semibold"
+              )}
             >
-              <Monitor className="w-4 h-4 text-blue-400" />
-              <span className="flex-1">Auto (Device)</span>
+              <div className="flex items-center gap-2">
+                <Monitor className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Auto (System)</span>
+              </div>
               {currentMode === "auto" && <Check className="w-3.5 h-3.5 text-primary" />}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => setSiteMode("light")}
-              className={`flex items-center gap-2 cursor-pointer ${currentMode === "light" ? "font-semibold text-primary" : ""}`}
+              onClick={() => applySiteMode("light")}
+              className={cn(
+                "flex items-center justify-between px-2.5 py-1.5 text-xs rounded-lg cursor-pointer",
+                currentMode === "light" && "bg-primary/10 text-primary font-semibold"
+              )}
             >
-              <Sun className="w-4 h-4 text-amber-400" />
-              <span className="flex-1">Light Mode</span>
+              <div className="flex items-center gap-2">
+                <Sun className="w-3.5 h-3.5 text-amber-500" />
+                <span>Light Mode</span>
+              </div>
               {currentMode === "light" && <Check className="w-3.5 h-3.5 text-primary" />}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => setSiteMode("dark")}
-              className={`flex items-center gap-2 cursor-pointer ${currentMode === "dark" ? "font-semibold text-primary" : ""}`}
+              onClick={() => applySiteMode("dark")}
+              className={cn(
+                "flex items-center justify-between px-2.5 py-1.5 text-xs rounded-lg cursor-pointer",
+                currentMode === "dark" && "bg-primary/10 text-primary font-semibold"
+              )}
             >
-              <Moon className="w-4 h-4 text-indigo-400" />
-              <span className="flex-1">Dark Mode</span>
+              <div className="flex items-center gap-2">
+                <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Dark Mode</span>
+              </div>
               {currentMode === "dark" && <Check className="w-3.5 h-3.5 text-primary" />}
             </DropdownMenuItem>
           </DropdownMenuContent>

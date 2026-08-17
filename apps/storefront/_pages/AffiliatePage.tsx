@@ -1,12 +1,14 @@
 "use client";
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@/lib/server-fn-compat";
 import {
   Megaphone, TrendingUp, DollarSign, Users, MousePointerClick,
   Copy, Check, Wallet, ArrowUpRight, Award, Clock, ShieldCheck,
-  CircleDollarSign, Link2, Share2, Gift, Info, Landmark, CreditCard, Smartphone,
+  Link2, Share2, Info, Landmark, CreditCard, Smartphone,
+  Calculator, Sparkles, QrCode, Download, RefreshCw, CheckCircle2, Shield,
+  Layers, Package, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +17,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/lib/app-toast";
 import {
   getAffiliateSettings, getMyAffiliateAccount, getMyAffiliateStats,
@@ -27,76 +28,74 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 // =================== PAYOUT METHODS ===================
-// Fixed, professional set of payout methods. Each has structured fields
-// so admins receive clean, complete information instead of a freeform string.
 type FieldDef = { key: string; label: string; placeholder?: string; type?: string; required?: boolean };
-type MethodDef = { id: string; label: string; icon: any; tone: string; fields: FieldDef[] };
+type MethodDef = { id: string; label: string; icon: any; color: string; fields: FieldDef[] };
 
 const PAYOUT_METHODS: MethodDef[] = [
-  {
-    id: "bank_account",
-    label: "Bank Account",
-    icon: Landmark,
-    tone: "from-sky-500/15 to-indigo-500/5 text-sky-600",
-    fields: [
-      { key: "account_holder", label: "Account holder name", required: true },
-      { key: "account_number", label: "Account number", required: true },
-      { key: "bank_name", label: "Bank name", required: true },
-      { key: "branch_name", label: "Branch name" },
-      { key: "routing_number", label: "Routing / SWIFT (optional)" },
-    ],
-  },
-  {
-    id: "card",
-    label: "Card",
-    icon: CreditCard,
-    tone: "from-violet-500/15 to-fuchsia-500/5 text-violet-600",
-    fields: [
-      { key: "cardholder_name", label: "Cardholder name", required: true },
-      { key: "card_number", label: "Card number", required: true, placeholder: "1234 5678 9012 3456" },
-      { key: "card_brand", label: "Brand (Visa, Mastercard, …)" },
-    ],
-  },
   {
     id: "bkash",
     label: "bKash",
     icon: Smartphone,
-    tone: "from-pink-500/15 to-rose-500/5 text-pink-600",
+    color: "#e11d48",
     fields: [
-      { key: "account_holder", label: "Account holder name", required: true },
-      { key: "mobile_number", label: "bKash number", required: true, placeholder: "01XXXXXXXXX" },
-      { key: "account_type", label: "Account type (Personal / Agent)" },
+      { key: "account_holder", label: "Account holder name", required: true, placeholder: "e.g. Tanvir Ahmed" },
+      { key: "mobile_number", label: "bKash mobile number", required: true, placeholder: "017XXXXXXXX" },
+      { key: "account_type", label: "Account type", placeholder: "Personal / Merchant" },
     ],
   },
   {
     id: "nagad",
     label: "Nagad",
     icon: Smartphone,
-    tone: "from-orange-500/15 to-amber-500/5 text-orange-600",
+    color: "#ea580c",
     fields: [
-      { key: "account_holder", label: "Account holder name", required: true },
-      { key: "mobile_number", label: "Nagad number", required: true, placeholder: "01XXXXXXXXX" },
-      { key: "account_type", label: "Account type" },
+      { key: "account_holder", label: "Account holder name", required: true, placeholder: "e.g. Tanvir Ahmed" },
+      { key: "mobile_number", label: "Nagad mobile number", required: true, placeholder: "018XXXXXXXX" },
+      { key: "account_type", label: "Account type", placeholder: "Personal" },
     ],
   },
   {
     id: "upay",
     label: "Upay",
     icon: Smartphone,
-    tone: "from-blue-500/15 to-cyan-500/5 text-blue-600",
+    color: "#2563eb",
     fields: [
-      { key: "account_holder", label: "Account holder name", required: true },
-      { key: "mobile_number", label: "Upay number", required: true, placeholder: "01XXXXXXXXX" },
+      { key: "account_holder", label: "Account holder name", required: true, placeholder: "e.g. Tanvir Ahmed" },
+      { key: "mobile_number", label: "Upay number", required: true, placeholder: "019XXXXXXXX" },
     ],
   },
   {
     id: "rocket",
     label: "Rocket",
     icon: Smartphone,
-    tone: "from-purple-500/15 to-fuchsia-500/5 text-purple-600",
+    color: "#9333ea",
     fields: [
-      { key: "account_holder", label: "Account holder name", required: true },
-      { key: "mobile_number", label: "Rocket number", required: true, placeholder: "017XXXXXXXX-X" },
+      { key: "account_holder", label: "Account holder name", required: true, placeholder: "e.g. Tanvir Ahmed" },
+      { key: "mobile_number", label: "Rocket number (with 12th digit)", required: true, placeholder: "017XXXXXXXX-X" },
+    ],
+  },
+  {
+    id: "bank_account",
+    label: "Bank Transfer (EFT/NPSB)",
+    icon: Landmark,
+    color: "#0ea5e9",
+    fields: [
+      { key: "account_holder", label: "Account holder name", required: true, placeholder: "As per bank records" },
+      { key: "account_number", label: "Bank account number", required: true, placeholder: "13-16 digit account number" },
+      { key: "bank_name", label: "Bank name", required: true, placeholder: "e.g. BRAC Bank, City Bank" },
+      { key: "branch_name", label: "Branch name", placeholder: "e.g. Gulshan Branch" },
+      { key: "routing_number", label: "Routing number (9 digits)", placeholder: "Optional 9-digit routing" },
+    ],
+  },
+  {
+    id: "card",
+    label: "Debit / Credit Card",
+    icon: CreditCard,
+    color: "#8b5cf6",
+    fields: [
+      { key: "cardholder_name", label: "Cardholder name", required: true, placeholder: "Name on card" },
+      { key: "card_number", label: "Card number (masked)", required: true, placeholder: "1234 56XX XXXX 3456" },
+      { key: "card_brand", label: "Card network", placeholder: "Visa / Mastercard" },
     ],
   },
 ];
@@ -104,25 +103,165 @@ const PAYOUT_METHODS: MethodDef[] = [
 const methodLabel = (id?: string | null) =>
   PAYOUT_METHODS.find((m) => m.id === id)?.label ?? (id ?? "—");
 
+const TIER_COLORS: Record<string, { badge: string; border: string; glow: string; text: string }> = {
+  bronze: { badge: "bg-amber-700/15 text-amber-500 border-amber-600/30", border: "border-amber-700/30", glow: "rgba(180,83,9,0.1)", text: "text-amber-500" },
+  silver: { badge: "bg-slate-300/15 text-slate-300 border-slate-300/30", border: "border-slate-300/30", glow: "rgba(203,213,225,0.1)", text: "text-slate-300" },
+  gold: { badge: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30", border: "border-yellow-500/30", glow: "rgba(234,179,8,0.2)", text: "text-yellow-400" },
+  platinum: { badge: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30", border: "border-cyan-500/30", glow: "rgba(6,182,212,0.2)", text: "text-cyan-400" },
+  diamond: { badge: "bg-purple-500/15 text-purple-300 border-purple-500/30", border: "border-purple-500/30", glow: "rgba(168,85,247,0.2)", text: "text-purple-300" },
+};
 
-const StatCard: React.FC<{ icon: any; label: string; value: string | number; sub?: string; tone?: string }> = ({
-  icon: Icon, label, value, sub, tone = "primary",
-}) => (
-  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-    className="stat-card relative overflow-hidden rounded-3xl border border-border/60 bg-card/60 backdrop-blur-xl p-5">
-    <div className={`stat-bg absolute -top-12 -right-12 w-32 h-32 rounded-full bg-${tone}/10 blur-2xl`} />
-    <div className="relative">
-      <div className={`stat-icon w-10 h-10 rounded-2xl bg-${tone}/15 text-${tone} flex items-center justify-center mb-3`}>
-        <Icon className="w-5 h-5" />
+/* ─────────────────────────────────────────────────────────────────────────────
+   STAT METRIC CARD
+───────────────────────────────────────────────────────────────────────────── */
+const MetricCard: React.FC<{
+  icon: any;
+  label: string;
+  value: string | number;
+  sub?: string;
+  color?: string;
+}> = ({ icon: Icon, label, value, sub, color = "#3b82f6" }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/60 backdrop-blur-xl p-4 sm:p-5 flex flex-col justify-between hover:border-primary/40 transition-all shadow-xs"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground">{label}</span>
+        <div
+          className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+          style={{ backgroundColor: `${color}18`, color }}
+        >
+          <Icon className="w-4 h-4" />
+        </div>
       </div>
-      <p className="text-xs text-muted-foreground uppercase tracking-wider">{label}</p>
-      <p className="stat-value text-2xl font-bold text-foreground mt-1">{value}</p>
-      {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
-    </div>
-  </motion.div>
-);
+      <div className="mt-3 space-y-0.5">
+        <p className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{value}</p>
+        {sub && <p className="text-[11px] text-muted-foreground truncate">{sub}</p>}
+      </div>
+    </motion.div>
+  );
+};
 
-const AffiliatePage: React.FC = () => {
+/* ─────────────────────────────────────────────────────────────────────────────
+   LIVE EARNINGS SIMULATOR
+───────────────────────────────────────────────────────────────────────────── */
+function EarningsSimulator({ baseRate }: { baseRate: number }) {
+  const { formatPrice } = useCurrency();
+  const [traffic, setTraffic] = useState<number>(3000);
+  const [conversionRate, setConversionRate] = useState<number>(3.5);
+  const [avgOrderValue, setAvgOrderValue] = useState<number>(3500);
+
+  const estimatedOrders = Math.round((traffic * (conversionRate / 100)));
+  const estimatedGmv = estimatedOrders * avgOrderValue;
+  const estimatedCommission = Math.round((estimatedGmv * (baseRate / 100)));
+  const estimatedAnnual = estimatedCommission * 12;
+
+  return (
+    <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-xl p-5 sm:p-7 space-y-6 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center border border-primary/20 shrink-0">
+            <Calculator className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base sm:text-lg font-bold text-foreground">Interactive Earnings Simulator</h3>
+            <p className="text-xs text-muted-foreground">Adjust traffic volume and basket size to project your potential earnings</p>
+          </div>
+        </div>
+        <Badge variant="outline" className="border-primary/30 text-primary self-start sm:self-auto font-mono text-xs px-2.5 py-1">
+          {baseRate}% Base Rate
+        </Badge>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-5">
+          {/* Slider 1: Traffic */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs font-semibold">
+              <span className="text-muted-foreground flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-primary" /> Monthly Audience Clicks
+              </span>
+              <span className="font-mono text-foreground font-bold">{traffic.toLocaleString()}</span>
+            </div>
+            <input
+              type="range"
+              min={200}
+              max={50000}
+              step={200}
+              value={traffic}
+              onChange={(e) => setTraffic(Number(e.target.value))}
+              className="w-full accent-primary h-2 bg-secondary rounded-lg cursor-pointer"
+            />
+          </div>
+
+          {/* Slider 2: Conversion Rate */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs font-semibold">
+              <span className="text-muted-foreground flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> Estimated Conversion Rate
+              </span>
+              <span className="font-mono text-emerald-400 font-bold">{conversionRate.toFixed(1)}%</span>
+            </div>
+            <input
+              type="range"
+              min={0.5}
+              max={10}
+              step={0.1}
+              value={conversionRate}
+              onChange={(e) => setConversionRate(Number(e.target.value))}
+              className="w-full accent-primary h-2 bg-secondary rounded-lg cursor-pointer"
+            />
+          </div>
+
+          {/* Slider 3: Average Order Value */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs font-semibold">
+              <span className="text-muted-foreground flex items-center gap-1.5">
+                <DollarSign className="w-3.5 h-3.5 text-amber-400" /> Average Order Value
+              </span>
+              <span className="font-mono text-amber-400 font-bold">{formatPrice(avgOrderValue)}</span>
+            </div>
+            <input
+              type="range"
+              min={500}
+              max={20000}
+              step={250}
+              value={avgOrderValue}
+              onChange={(e) => setAvgOrderValue(Number(e.target.value))}
+              className="w-full accent-primary h-2 bg-secondary rounded-lg cursor-pointer"
+            />
+          </div>
+        </div>
+
+        {/* Output card */}
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 flex flex-col justify-between space-y-4">
+          <div className="space-y-3">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Projected Revenue</p>
+            <div>
+              <p className="text-xs text-muted-foreground">Estimated Monthly Payout</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-primary">{formatPrice(estimatedCommission)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Annual Potential</p>
+              <p className="text-lg font-bold text-foreground">{formatPrice(estimatedAnnual)}</p>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-border/40 text-[11px] text-muted-foreground flex justify-between font-mono">
+            <span>~{estimatedOrders} orders / mo</span>
+            <span>{formatPrice(estimatedGmv)} GMV</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MAIN AFFILIATE PAGE COMPONENT
+───────────────────────────────────────────────────────────────────────────── */
+export const AffiliatePage: React.FC = () => {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { formatPrice } = useCurrency();
@@ -133,12 +272,18 @@ const AffiliatePage: React.FC = () => {
   const updatePayout = useServerFn(updateMyPayoutMethod);
   const reqPayout = useServerFn(requestPayout);
 
-  const { data: settings } = useQuery({ queryKey: ["affiliate-settings"], queryFn: () => getSettings() });
-  const { data: account } = useQuery({
-    queryKey: ["affiliate-account"], queryFn: () => getAccount(), enabled: !!user,
+  const { data: settings, isLoading: settingsLoading } = useQuery({
+    queryKey: ["affiliate-settings"],
+    queryFn: () => getSettings(),
+  });
+  const { data: account, isLoading: accountLoading } = useQuery({
+    queryKey: ["affiliate-account"],
+    queryFn: () => getAccount(),
+    enabled: !!user,
   });
   const { data: stats } = useQuery({
-    queryKey: ["affiliate-stats"], queryFn: () => getStats(),
+    queryKey: ["affiliate-stats"],
+    queryFn: () => getStats(),
     enabled: !!user && account?.status === "approved",
   });
 
@@ -146,298 +291,565 @@ const AffiliatePage: React.FC = () => {
   const [applyOpen, setApplyOpen] = useState(false);
   const [payoutOpen, setPayoutOpen] = useState(false);
   const [methodOpen, setMethodOpen] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
-  // PROGRAM DISABLED
-  if (!settings) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
-
-  if (!settings.enabled) {
+  // 1. Loading state
+  if (settingsLoading || (user && accountLoading)) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md text-center rounded-3xl border border-border/60 bg-card/60 backdrop-blur-xl p-10">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4">
-            <Megaphone className="w-8 h-8" />
+      <div className="min-h-[70vh] flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCw className="w-7 h-7 text-primary animate-spin" />
+          <p className="text-xs font-semibold text-muted-foreground">Loading Affiliate Program…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Program Disabled
+  if (!settings?.enabled) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full text-center rounded-2xl border border-border/70 bg-card/70 backdrop-blur-xl p-8 space-y-4 shadow-sm"
+        >
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center">
+            <Megaphone className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-bold mb-2">{settings.program_name}</h1>
-          <p className="text-muted-foreground">{settings.status_message}</p>
+          <h1 className="text-xl font-bold text-foreground">{settings?.program_name || "Affiliate Program"}</h1>
+          <p className="text-xs text-muted-foreground leading-relaxed">{settings?.status_message || "The partner affiliate program is currently undergoing maintenance. Please check back soon."}</p>
         </motion.div>
       </div>
     );
   }
 
+  // 3. User not signed in -> Public Landing View
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-md text-center rounded-3xl border border-border/60 bg-card/60 p-10">
-          <h1 className="text-2xl font-bold mb-2">Sign in to join</h1>
-          <p className="text-muted-foreground mb-4">Please sign in to apply for our affiliate program.</p>
-          <Button asChild><a href="/auth?next=/affiliate">Sign in</a></Button>
+      <div className="w-full pb-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-10 pt-6">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4 pt-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5" />
+            Official Creator &amp; Ambassador Program
+          </div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground max-w-3xl mx-auto leading-tight">
+            Turn Your Influence Into Ongoing Referral Revenue
+          </h1>
+          <p className="text-xs sm:text-sm md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Earn up to <strong className="text-primary font-bold">{settings.commission_rate}%</strong> commission on qualified customer orders referred through your custom links and digital passes.
+          </p>
+          <div className="pt-2 flex justify-center">
+            <Button size="lg" asChild className="rounded-xl px-7 h-11 text-sm font-bold shadow-sm cursor-pointer">
+              <a href="/auth?next=/affiliate">
+                Sign In to Join Program <ArrowUpRight className="w-4 h-4 ml-1.5" />
+              </a>
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* Benefits Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="rounded-2xl border border-border/70 bg-card/60 p-5 space-y-2">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center">
+              <Award className="w-4 h-4" />
+            </div>
+            <h3 className="font-bold text-sm text-foreground">Generous Commissions</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Earn {settings.commission_rate}% base commission on all catalog pieces with special bonus campaigns.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border/70 bg-card/60 p-5 space-y-2">
+            <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-500 border border-sky-500/20 flex items-center justify-center">
+              <Clock className="w-4 h-4" />
+            </div>
+            <h3 className="font-bold text-sm text-foreground">{settings.cookie_days}-Day Cookie Window</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Every customer that enters through your link is tied to your account for {settings.cookie_days} days.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border/70 bg-card/60 p-5 space-y-2">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center justify-center">
+              <Wallet className="w-4 h-4" />
+            </div>
+            <h3 className="font-bold text-sm text-foreground">Direct MFS &amp; Bank Payouts</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Receive your balance directly via bKash, Nagad, Rocket, or direct bank transfer upon reaching {formatPrice(Number(settings.min_payout))}.
+            </p>
+          </div>
         </div>
+
+        {/* Live Simulator */}
+        <EarningsSimulator baseRate={Number(settings.commission_rate)} />
       </div>
     );
   }
 
-  // NO ACCOUNT YET → marketing + apply
+  // 4. User signed in but no affiliate account yet -> Application View
   if (!account) {
     return (
-      <div className="min-h-screen p-4 md:p-8 max-w-5xl mx-auto">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-10">
-          <Badge className="mb-3" variant="secondary">{settings.program_name}</Badge>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent mb-3">
-            Earn {settings.commission_rate}% on every referral
+      <div className="w-full pb-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-8 pt-6">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-3 pt-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
+            <Award className="w-3.5 h-3.5" />
+            {settings.program_name || "Official Partner Program"}
+          </div>
+          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground max-w-2xl mx-auto">
+            Become an Official Brand Partner
           </h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto">{settings.program_description}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            {settings.program_description ||
+              "Share your personal curated links, earn generous commissions on every sale, and get early access to new releases."}
+          </p>
+          <div className="pt-2">
+            <Button size="lg" onClick={() => setApplyOpen(true)} className="rounded-xl px-7 h-11 text-sm font-bold shadow-sm cursor-pointer">
+              Complete Fast Application <ArrowUpRight className="w-4 h-4 ml-1.5" />
+            </Button>
+          </div>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          <div className="rounded-3xl border border-border/60 bg-card/60 p-6">
-            <Award className="w-8 h-8 text-primary mb-3" />
-            <h3 className="font-semibold mb-1">High commissions</h3>
-            <p className="text-sm text-muted-foreground">Earn {settings.commission_rate}% on every qualified order from your referrals.</p>
+        {/* Features */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="rounded-2xl border border-border/70 bg-card/60 p-5 space-y-2">
+            <Award className="w-6 h-6 text-primary mb-1" />
+            <h3 className="font-bold text-sm">Competitive Commission</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">Earn {settings.commission_rate}% on standard products plus special product bonuses.</p>
           </div>
-          <div className="rounded-3xl border border-border/60 bg-card/60 p-6">
-            <Clock className="w-8 h-8 text-primary mb-3" />
-            <h3 className="font-semibold mb-1">{settings.cookie_days}-day cookie</h3>
-            <p className="text-sm text-muted-foreground">Get credit for purchases up to {settings.cookie_days} days after the click.</p>
+          <div className="rounded-2xl border border-border/70 bg-card/60 p-5 space-y-2">
+            <Clock className="w-6 h-6 text-primary mb-1" />
+            <h3 className="font-bold text-sm">{settings.cookie_days}-Day Tracking Window</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">Keep earning commissions even if customers return to purchase weeks later.</p>
           </div>
-          <div className="rounded-3xl border border-border/60 bg-card/60 p-6">
-            <Wallet className="w-8 h-8 text-primary mb-3" />
-            <h3 className="font-semibold mb-1">Fast payouts</h3>
-            <p className="text-sm text-muted-foreground">Withdraw once you reach the {settings.min_payout} minimum threshold.</p>
+          <div className="rounded-2xl border border-border/70 bg-card/60 p-5 space-y-2">
+            <Wallet className="w-6 h-6 text-primary mb-1" />
+            <h3 className="font-bold text-sm">Reliable Payouts</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">Fast withdrawal requests to bKash, Nagad, Rocket, or direct Bank transfer.</p>
           </div>
         </div>
 
-        <div className="text-center">
-          <Button size="lg" onClick={() => setApplyOpen(true)} className="px-8">
-            Apply now <ArrowUpRight className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
+        <EarningsSimulator baseRate={Number(settings.commission_rate)} />
 
         <ApplyDialog
-          open={applyOpen} onOpenChange={setApplyOpen}
+          open={applyOpen}
+          onOpenChange={setApplyOpen}
           payoutMethods={PAYOUT_METHODS}
           onSubmit={async (payload) => {
             try {
               await apply({ data: payload });
-              toast.success("Application submitted!");
+              toast.success("Application submitted successfully!");
               qc.invalidateQueries({ queryKey: ["affiliate-account"] });
               setApplyOpen(false);
-            } catch (e: any) { toast.error(e.message); }
+            } catch (e: any) {
+              toast.error(e.message || "Failed to submit application");
+            }
           }}
         />
       </div>
     );
   }
 
-  // PENDING / REJECTED / SUSPENDED
+  // 5. Account Pending or Suspended
   if (account.status !== "approved") {
-    const statusMap: Record<string, { title: string; desc: string; color: string }> = {
-      pending: { title: "Application under review", desc: "We'll notify you once it's approved.", color: "text-amber-500" },
-      rejected: { title: "Application not approved", desc: account.rejection_reason || "Please contact support.", color: "text-destructive" },
-      suspended: { title: "Account suspended", desc: "Please contact support to reinstate.", color: "text-destructive" },
+    const statusMap: Record<string, { title: string; desc: string; icon: any; color: string }> = {
+      pending: {
+        title: "Application Under Review",
+        desc: "Your affiliate application is currently being reviewed by our partner management team. You will be notified once approved.",
+        icon: Clock,
+        color: "text-amber-400 bg-amber-500/10 border-amber-500/30",
+      },
+      suspended: {
+        title: "Account Suspended",
+        desc: "Your affiliate account is currently paused. Please contact partner support for more information.",
+        icon: ShieldCheck,
+        color: "text-destructive bg-destructive/10 border-destructive/30",
+      },
+      rejected: {
+        title: "Application Not Approved",
+        desc: "Your application was not approved at this time. You may reapply in the future.",
+        icon: Shield,
+        color: "text-destructive bg-destructive/10 border-destructive/30",
+      },
     };
-    const s = statusMap[account.status];
+    const s = statusMap[account.status] || statusMap.pending;
+    const StatusIcon = s.icon;
+
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-md text-center rounded-3xl border border-border/60 bg-card/60 p-10">
-          <ShieldCheck className={`w-16 h-16 mx-auto mb-4 ${s.color}`} />
-          <h1 className="text-2xl font-bold mb-2">{s.title}</h1>
-          <p className="text-muted-foreground">{s.desc}</p>
-        </div>
+      <div className="min-h-[70vh] flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full text-center rounded-2xl border border-border/70 bg-card/70 backdrop-blur-xl p-8 space-y-4 shadow-sm"
+        >
+          <div className={`w-14 h-14 mx-auto rounded-2xl border flex items-center justify-center ${s.color}`}>
+            <StatusIcon className="w-7 h-7" />
+          </div>
+          <h1 className="text-xl font-bold text-foreground">{s.title}</h1>
+          <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
+        </motion.div>
       </div>
     );
   }
 
-  // APPROVED DASHBOARD
-  const shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/?ref=${account.code}`;
-  const style: "console" | "editorial" | "pulse" = (settings.display_style as any) ?? "console";
-
-  const heroByStyle = {
-    console: {
-      wrap: "min-h-screen p-4 md:p-8 max-w-7xl mx-auto",
-      hero: "mb-6 border border-border rounded-md bg-card p-4 md:p-5 flex items-center justify-between gap-4 flex-wrap",
-      title: "text-xl font-semibold uppercase tracking-tight",
-      meta: "text-xs text-muted-foreground font-mono uppercase tracking-wider",
-    },
-    editorial: {
-      wrap: "min-h-screen px-6 md:px-12 py-10 max-w-6xl mx-auto",
-      hero: "mb-10 border-b border-border pb-8",
-      title: "text-5xl md:text-6xl font-serif font-normal tracking-tighter leading-none",
-      meta: "text-sm text-muted-foreground mt-3 font-mono",
-    },
-    pulse: {
-      wrap: "min-h-screen p-4 md:p-8 max-w-7xl mx-auto",
-      hero: "mb-6 relative overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6 md:p-8",
-      title: "text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent",
-      meta: "text-sm text-muted-foreground mt-2",
-    },
-  }[style];
+  // 6. APPROVED AFFILIATE DASHBOARD
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const shareUrl = `${origin}/?ref=${account.code}`;
+  const tierKey = (account.tier || "bronze").toLowerCase();
+  const tierStyle = TIER_COLORS[tierKey] || TIER_COLORS.bronze;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(shareUrl)}&format=svg`;
 
   return (
-    <div className={heroByStyle.wrap} data-affiliate-style={style}>
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className={heroByStyle.hero}>
-        {style === "pulse" && <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-primary/20 blur-3xl pointer-events-none" />}
-        <div className="flex items-center justify-between flex-wrap gap-3 relative">
-          <div>
-            {style === "editorial" && <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground mb-3">— Affiliate</p>}
-            <h1 className={heroByStyle.title}>{style === "editorial" ? "Your earnings, in focus." : "Affiliate Dashboard"}</h1>
-            <p className={heroByStyle.meta}>Code: <span className="font-mono font-semibold text-foreground">{account.code}</span> · Tier: <span className="capitalize">{account.tier}</span></p>
+    <div className="w-full pb-24 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6 pt-4">
+      {/* Top Banner Ribbon */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-2xl border border-border/70 bg-card/70 backdrop-blur-xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4"
+      >
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border ${tierStyle.badge}`}>
+              {account.tier || "Bronze"} Partner
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-bold flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" /> Active
+            </span>
           </div>
-          <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/20">Active</Badge>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+            Affiliate Partner Portal
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            Code: <span className="font-mono font-bold text-foreground">{account.code}</span> · Rate: <span className="font-bold text-primary">{account.custom_rate ?? settings.commission_rate}%</span>
+          </p>
+        </div>
+
+        {/* Quick Action Payout Buttons */}
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+          <Button
+            size="sm"
+            onClick={() => setPayoutOpen(true)}
+            disabled={Number(account.available_balance) < Number(settings.min_payout)}
+            className="rounded-xl font-bold h-10 px-4 shadow-xs flex-1 sm:flex-initial cursor-pointer text-xs"
+          >
+            <Wallet className="w-4 h-4 mr-1.5" /> Request Payout
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setMethodOpen(true)}
+            className="rounded-xl font-semibold h-10 px-4 border-border/70 hover:bg-secondary flex-1 sm:flex-initial cursor-pointer text-xs"
+          >
+            Payout Settings
+          </Button>
         </div>
       </motion.div>
 
-      {/* Share link */}
-      <div className={`rounded-3xl border ${style === "pulse" ? "border-primary/40 bg-gradient-to-br from-primary/10 to-transparent" : style === "editorial" ? "border-border bg-transparent rounded-none border-l-2 border-r-0 border-t-0 border-b-0 pl-4" : "border-border/60 bg-gradient-to-br from-primary/5 to-transparent"} p-5 mb-6`}>
-        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Your referral link</Label>
-        <div className="flex gap-2 mt-2">
-          <Input readOnly value={shareUrl} className="font-mono text-sm" />
-          <Button variant="outline" onClick={() => {
-            navigator.clipboard.writeText(shareUrl);
-            setCopied(true); setTimeout(() => setCopied(false), 1500);
-          }}>
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+      {/* Main Referral Link & QR Card */}
+      <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-4 sm:p-5 space-y-3 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              Your Universal Referral Link
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Share this link across social bios and messages for automatic {settings.cookie_days}-day cookie attribution.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowQrModal(true)}
+            className="self-start sm:self-auto rounded-xl text-xs font-semibold gap-1.5 border-border hover:bg-secondary cursor-pointer h-8"
+          >
+            <QrCode className="w-3.5 h-3.5" /> VIP QR Pass
           </Button>
-          <Button variant="outline" onClick={() => {
-            if (navigator.share) navigator.share({ url: shareUrl, title: "Join me" });
-            else navigator.clipboard.writeText(shareUrl);
-          }}>
-            <Share2 className="w-4 h-4" />
-          </Button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+          <Input readOnly value={shareUrl} className="font-mono text-xs h-10 rounded-xl bg-background/80 w-full" />
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+            <Button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(shareUrl);
+                setCopied(true);
+                toast.success("Referral link copied!");
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="flex-1 sm:flex-initial h-10 px-4 rounded-xl font-bold gap-1.5 cursor-pointer text-xs"
+            >
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? "Copied" : "Copy Link"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ title: "Orizino", url: shareUrl });
+                } else {
+                  navigator.clipboard.writeText(shareUrl);
+                  toast.success("Link copied!");
+                }
+              }}
+              className="h-10 px-3 rounded-xl cursor-pointer"
+              title="Share"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard icon={DollarSign} label="Available" value={formatPrice(Number(account.available_balance))} sub="Ready to withdraw" />
-        <StatCard icon={Clock} label="Pending" value={formatPrice(Number(account.pending_balance))} sub="In payout queue" />
-        <StatCard icon={TrendingUp} label="Lifetime earned" value={formatPrice(Number(account.total_earnings))} />
-        <StatCard icon={CircleDollarSign} label="Lifetime paid" value={formatPrice(Number(account.lifetime_paid))} />
+      {/* Financial & Performance Metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <MetricCard
+          icon={DollarSign}
+          label="Available"
+          value={formatPrice(Number(account.available_balance))}
+          sub={`Min. ${formatPrice(Number(settings.min_payout))}`}
+          color="#10b981"
+        />
+        <MetricCard
+          icon={Clock}
+          label="Pending"
+          value={formatPrice(Number(account.pending_balance))}
+          sub="Unlocks after delivery"
+          color="#f59e0b"
+        />
+        <MetricCard
+          icon={TrendingUp}
+          label="Lifetime Earned"
+          value={formatPrice(Number(account.total_earnings))}
+          sub={`Paid: ${formatPrice(Number(account.lifetime_paid))}`}
+          color="#8b5cf6"
+        />
+        <MetricCard
+          icon={MousePointerClick}
+          label="Clicks / Traffic"
+          value={account.total_clicks?.toLocaleString() ?? 0}
+          sub={`${account.total_orders ?? 0} Orders · ${account.total_signups ?? 0} Sign-ups`}
+          color="#06b6d4"
+        />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard icon={MousePointerClick} label="Clicks" value={account.total_clicks} />
-        <StatCard icon={Users} label="Sign-ups" value={account.total_signups} />
-        <StatCard icon={Gift} label="Orders" value={account.total_orders} />
-        <StatCard icon={Award} label="Rate" value={`${account.custom_rate ?? settings.commission_rate}%`} />
-      </div>
+      {/* Main Tabs Suite */}
+      <Tabs defaultValue="products" className="w-full space-y-4">
+        <div className="overflow-x-auto no-scrollbar pb-1">
+          <TabsList className="inline-flex h-10 items-center gap-1 p-1 rounded-xl bg-secondary/60 border border-border/60 min-w-max">
+            <TabsTrigger value="products" className="rounded-lg text-xs font-bold px-3">Catalog &amp; Links</TabsTrigger>
+            <TabsTrigger value="links" className="rounded-lg text-xs font-bold px-3">Campaigns ({stats?.clicks?.length ?? 0})</TabsTrigger>
+            <TabsTrigger value="creatives" className="rounded-lg text-xs font-bold px-3">Media Kit</TabsTrigger>
+            <TabsTrigger value="commissions" className="rounded-lg text-xs font-bold px-3">Commission Ledger</TabsTrigger>
+            <TabsTrigger value="referrals" className="rounded-lg text-xs font-bold px-3">Referrals</TabsTrigger>
+            <TabsTrigger value="payouts" className="rounded-lg text-xs font-bold px-3">Payouts History</TabsTrigger>
+          </TabsList>
+        </div>
 
-      <div className="flex gap-3 mb-6 flex-wrap">
-        <Button onClick={() => setPayoutOpen(true)} disabled={Number(account.available_balance) < Number(settings.min_payout)}>
-          <Wallet className="w-4 h-4 mr-2" /> Request payout
-        </Button>
-        <Button variant="outline" onClick={() => setMethodOpen(true)}>
-          Update payout method
-        </Button>
-      </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="products" className="w-full">
-        <TabsList className="flex-wrap h-auto">
-          <TabsTrigger value="products">Products</TabsTrigger>
-          <TabsTrigger value="links">My Links</TabsTrigger>
-          <TabsTrigger value="creatives">Creatives</TabsTrigger>
-          <TabsTrigger value="commissions">Commissions</TabsTrigger>
-          <TabsTrigger value="referrals">Referrals</TabsTrigger>
-          <TabsTrigger value="clicks">Clicks</TabsTrigger>
-          <TabsTrigger value="payouts">Payouts</TabsTrigger>
-        </TabsList>
-
+        {/* Tab 1: Products Studio */}
         <TabsContent value="products">
-          <ProductBrowser affiliateCode={account.code} origin={typeof window !== "undefined" ? window.location.origin : ""} onCreated={() => qc.invalidateQueries({ queryKey: ["my-affiliate-links"] })} />
+          <ProductBrowser
+            affiliateCode={account.code}
+            origin={origin}
+            onCreated={() => qc.invalidateQueries({ queryKey: ["my-affiliate-links"] })}
+          />
         </TabsContent>
+
+        {/* Tab 2: Custom Links */}
         <TabsContent value="links">
-          <MyLinksTab affiliateCode={account.code} origin={typeof window !== "undefined" ? window.location.origin : ""} />
+          <MyLinksTab affiliateCode={account.code} origin={origin} />
         </TabsContent>
+
+        {/* Tab 3: Creatives & Media Kit */}
         <TabsContent value="creatives">
           <CreativesTab affiliateCode={account.code} />
         </TabsContent>
 
+        {/* Tab 4: Commissions Ledger */}
         <TabsContent value="commissions">
-          <DataTable rows={stats?.commissions ?? []} columns={[
-            { label: "Date", get: (r) => new Date(r.created_at).toLocaleDateString() },
-            { label: "Order amount", get: (r) => Number(r.order_amount).toFixed(2) },
-            { label: "Rate", get: (r) => `${r.commission_rate}%` },
-            { label: "Commission", get: (r) => Number(r.commission_amount).toFixed(2) },
-            { label: "Status", get: (r) => <Badge variant="secondary">{r.status}</Badge> },
-          ]} />
+          <DataTable
+            rows={stats?.commissions ?? []}
+            columns={[
+              { label: "Date", get: (r) => new Date(r.created_at).toLocaleDateString() },
+              { label: "Order Amount", get: (r) => formatPrice(Number(r.order_amount)) },
+              { label: "Rate", get: (r) => `${r.commission_rate}%` },
+              { label: "Commission", get: (r) => <span className="font-bold text-emerald-400">{formatPrice(Number(r.commission_amount))}</span> },
+              {
+                label: "Status",
+                get: (r) => (
+                  <Badge
+                    variant="outline"
+                    className={`capitalize font-semibold text-[11px] ${
+                      r.status === "approved"
+                        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                        : r.status === "pending"
+                        ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {r.status}
+                  </Badge>
+                ),
+              },
+            ]}
+          />
         </TabsContent>
+
+        {/* Tab 5: Referrals */}
         <TabsContent value="referrals">
-          <DataTable rows={stats?.referrals ?? []} columns={[
-            { label: "Signed up", get: (r) => new Date(r.signed_up_at).toLocaleDateString() },
-            { label: "Orders", get: (r) => r.total_orders ?? 0 },
-            { label: "Status", get: (r) => <Badge variant="secondary">{r.status}</Badge> },
-          ]} />
+          <DataTable
+            rows={stats?.referrals ?? []}
+            columns={[
+              { label: "Joined", get: (r) => new Date(r.signed_up_at || r.created_at).toLocaleDateString() },
+              { label: "Orders Placed", get: (r) => r.total_orders ?? 0 },
+              {
+                label: "Status",
+                get: (r) => (
+                  <Badge variant="outline" className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                    {r.status || "active"}
+                  </Badge>
+                ),
+              },
+            ]}
+          />
         </TabsContent>
-        <TabsContent value="clicks">
-          <DataTable rows={stats?.clicks ?? []} columns={[
-            { label: "When", get: (r) => new Date(r.created_at).toLocaleString() },
-            { label: "Device", get: (r) => r.device ?? "—" },
-            { label: "Landing", get: (r) => <span className="text-xs truncate max-w-[200px] inline-block">{r.landing_url ?? "—"}</span> },
-            { label: "Converted", get: (r) => r.converted ? <Check className="w-4 h-4 text-emerald-500" /> : "—" },
-          ]} />
-        </TabsContent>
+
+        {/* Tab 6: Payouts */}
         <TabsContent value="payouts">
           <PayoutsList rows={stats?.payouts ?? []} />
         </TabsContent>
       </Tabs>
 
+      {/* QR Code Pass Dialog */}
+      <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
+        <DialogContent className="max-w-sm text-center rounded-2xl border border-border/80 bg-card p-6">
+          <DialogHeader>
+            <DialogTitle className="font-bold text-base">Your Partner VIP QR Pass</DialogTitle>
+            <DialogDescription className="text-xs">
+              Show this QR code to customers or print on promotional materials.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-4 rounded-xl bg-white flex items-center justify-center my-3 mx-auto shadow-sm">
+            <img src={qrUrl} alt="Affiliate QR Code" className="w-48 h-48 object-contain" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs font-mono font-bold text-foreground">{account.code}</p>
+            <Button
+              size="sm"
+              onClick={() => {
+                const a = document.createElement("a");
+                a.href = qrUrl;
+                a.download = `orizino-referral-qr-${account.code}.svg`;
+                a.click();
+                toast.success("QR Pass downloaded!");
+              }}
+              className="w-full rounded-xl font-bold text-xs gap-1.5"
+            >
+              <Download className="w-4 h-4" /> Download QR Code
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payout Request Dialog */}
       <PayoutDialog
-        open={payoutOpen} onOpenChange={setPayoutOpen}
-        available={Number(account.available_balance)} min={Number(settings.min_payout)} methodLabel={methodLabel(account.payout_method)}
+        open={payoutOpen}
+        onOpenChange={setPayoutOpen}
+        available={Number(account.available_balance)}
+        min={Number(settings.min_payout)}
+        methodLabel={methodLabel(account.payout_method)}
         onSubmit={async (amount) => {
           try {
             await reqPayout({ data: { amount } });
-            toast.success("Payout requested");
+            toast.success("Payout request submitted successfully!");
             qc.invalidateQueries({ queryKey: ["affiliate-account"] });
             qc.invalidateQueries({ queryKey: ["affiliate-stats"] });
             setPayoutOpen(false);
-          } catch (e: any) { toast.error(e.message); }
+          } catch (e: any) {
+            toast.error(e.message || "Failed to submit payout request");
+          }
         }}
       />
+
+      {/* Payout Method Update Dialog */}
       <PayoutMethodDialog
-        open={methodOpen} onOpenChange={setMethodOpen}
+        open={methodOpen}
+        onOpenChange={setMethodOpen}
         current={{ method: account.payout_method, details: account.payout_details ?? {} }}
         onSubmit={async (m, d) => {
           try {
             await updatePayout({ data: { payout_method: m, payout_details: d } });
-            toast.success("Payout method updated");
+            toast.success("Payout destination updated successfully!");
             qc.invalidateQueries({ queryKey: ["affiliate-account"] });
             setMethodOpen(false);
-          } catch (e: any) { toast.error(e.message); }
+          } catch (e: any) {
+            toast.error(e.message || "Failed to update payout method");
+          }
         }}
       />
     </div>
   );
 };
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   DATA TABLE HELPER (RESPONSIVE TABLE + MOBILE CARDS)
+───────────────────────────────────────────────────────────────────────────── */
 const DataTable: React.FC<{ rows: any[]; columns: { label: string; get: (r: any) => any }[] }> = ({ rows, columns }) => (
-  <div className="rounded-3xl border border-border/60 bg-card/60 overflow-hidden mt-4">
+  <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md overflow-hidden">
     {rows.length === 0 ? (
-      <div className="p-10 text-center text-muted-foreground text-sm">No data yet</div>
-    ) : (
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40">
-            <tr>{columns.map((c) => <th key={c.label} className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">{c.label}</th>)}</tr>
-          </thead>
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={r.id ?? i} className="border-t border-border/40">
-                {columns.map((c) => <td key={c.label} className="p-3">{c.get(r)}</td>)}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="p-10 text-center text-muted-foreground text-xs font-medium">
+        No records found yet.
       </div>
+    ) : (
+      <>
+        {/* Desktop Table View */}
+        <div className="hidden sm:block overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-secondary/40 border-b border-border/50">
+              <tr>
+                {columns.map((c) => (
+                  <th key={c.label} className="text-left p-3.5 font-bold uppercase tracking-wider text-muted-foreground">
+                    {c.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/40">
+              {rows.map((r, i) => (
+                <tr key={r.id ?? i} className="hover:bg-secondary/20 transition-colors">
+                  {columns.map((c) => (
+                    <td key={c.label} className="p-3.5">
+                      {c.get(r)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Cards View */}
+        <div className="sm:hidden divide-y divide-border/40">
+          {rows.map((r, i) => (
+            <div key={r.id ?? i} className="p-3.5 space-y-2">
+              {columns.map((c) => (
+                <div key={c.label} className="flex items-center justify-between text-xs gap-2">
+                  <span className="text-muted-foreground font-medium">{c.label}</span>
+                  <div className="text-right">{c.get(r)}</div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </>
     )}
   </div>
 );
 
-// ============ Method picker + fields (shared) ============
+/* ─────────────────────────────────────────────────────────────────────────────
+   METHOD PICKER & FIELDS
+───────────────────────────────────────────────────────────────────────────── */
 const MethodPicker: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
-  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
     {PAYOUT_METHODS.map((m) => {
       const Icon = m.icon;
       const active = value === m.id;
@@ -446,34 +858,47 @@ const MethodPicker: React.FC<{ value: string; onChange: (v: string) => void }> =
           key={m.id}
           type="button"
           onClick={() => onChange(m.id)}
-          className={`relative text-left rounded-2xl border p-3 transition-all ${
-            active ? "border-primary ring-2 ring-primary/30 bg-primary/5" : "border-border/60 hover:border-border bg-card/40"
+          className={`relative text-left rounded-xl border p-3 transition-all cursor-pointer ${
+            active
+              ? "border-primary ring-2 ring-primary/20 bg-primary/10 shadow-xs"
+              : "border-border/60 hover:border-border/90 bg-card/50"
           }`}
         >
-          <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${m.tone} flex items-center justify-center mb-2`}>
-            <Icon className="w-4 h-4" />
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center mb-1.5"
+            style={{ backgroundColor: `${m.color}18`, color: m.color }}
+          >
+            <Icon className="w-3.5 h-3.5" />
           </div>
-          <p className="text-sm font-medium">{m.label}</p>
-          {active && <Check className="w-4 h-4 absolute top-2 right-2 text-primary" />}
+          <p className="text-xs font-bold text-foreground truncate">{m.label}</p>
+          {active && <Check className="w-3.5 h-3.5 absolute top-2.5 right-2.5 text-primary" />}
         </button>
       );
     })}
   </div>
 );
 
-const MethodFields: React.FC<{ methodId: string; details: Record<string, string>; onChange: (d: Record<string, string>) => void }> = ({ methodId, details, onChange }) => {
+const MethodFields: React.FC<{ methodId: string; details: Record<string, string>; onChange: (d: Record<string, string>) => void }> = ({
+  methodId,
+  details,
+  onChange,
+}) => {
   const def = PAYOUT_METHODS.find((m) => m.id === methodId);
   if (!def) return null;
   return (
-    <div className="grid md:grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
       {def.fields.map((f) => (
-        <div key={f.key} className={f.key === "card_number" || f.key === "account_number" ? "md:col-span-2" : ""}>
-          <Label className="text-xs">{f.label}{f.required && <span className="text-destructive"> *</span>}</Label>
+        <div key={f.key} className={f.key === "account_number" || f.key === "card_number" ? "sm:col-span-2 space-y-1" : "space-y-1"}>
+          <Label className="text-xs font-semibold">
+            {f.label}
+            {f.required && <span className="text-destructive"> *</span>}
+          </Label>
           <Input
             type={f.type ?? "text"}
             placeholder={f.placeholder}
             value={details[f.key] ?? ""}
             onChange={(e) => onChange({ ...details, [f.key]: e.target.value })}
+            className="h-10 text-xs rounded-xl"
           />
         </div>
       ))}
@@ -490,8 +915,12 @@ const validateDetails = (methodId: string, details: Record<string, string>) => {
   return null;
 };
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   APPLY DIALOG
+───────────────────────────────────────────────────────────────────────────── */
 const ApplyDialog: React.FC<{
-  open: boolean; onOpenChange: (v: boolean) => void;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
   payoutMethods: MethodDef[];
   onSubmit: (p: any) => void;
 }> = ({ open, onOpenChange, onSubmit }) => {
@@ -499,173 +928,191 @@ const ApplyDialog: React.FC<{
   const [details, setDetails] = useState<Record<string, string>>({});
   const [website, setWebsite] = useState("");
   const [promo, setPromo] = useState("");
-  const [notes, setNotes] = useState("");
+  const [notes] = useState("");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border/80 bg-card p-5 sm:p-6">
         <DialogHeader>
-          <DialogTitle>Apply to the affiliate program</DialogTitle>
-          <DialogDescription>Choose how you'd like to receive payouts and tell us about your channels.</DialogDescription>
+          <DialogTitle className="font-bold text-base sm:text-lg">Apply to the Ambassador Program</DialogTitle>
+          <DialogDescription className="text-xs">
+            Set up your preferred payout route and tell us how you plan to promote.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-5">
+        <div className="space-y-4 pt-2">
           <div>
-            <Label className="mb-2 block">Preferred payout method</Label>
+            <Label className="text-xs font-bold mb-2 block">Preferred Payout Route</Label>
             <MethodPicker value={method} onChange={(v) => { setMethod(v); setDetails({}); }} />
           </div>
           <div>
-            <Label className="mb-2 block">Payout account details</Label>
             <MethodFields methodId={method} details={details} onChange={setDetails} />
           </div>
-          <div>
-            <Label>Website / channel URL (optional)</Label>
-            <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://..." />
+          <div className="space-y-1">
+            <Label className="text-xs font-semibold">Social Channel / Website URL (optional)</Label>
+            <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://instagram.com/..." className="h-10 text-xs rounded-xl" />
           </div>
-          <div>
-            <Label>How will you promote?</Label>
-            <Textarea value={promo} onChange={(e) => setPromo(e.target.value)} rows={2} />
-          </div>
-          <div>
-            <Label>Additional notes (optional)</Label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+          <div className="space-y-1">
+            <Label className="text-xs font-semibold">Promotion Strategy</Label>
+            <Textarea value={promo} onChange={(e) => setPromo(e.target.value)} rows={2} placeholder="e.g. Fashion stories, haul videos, lifestyle blog..." className="text-xs rounded-xl" />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => {
-            const err = validateDetails(method, details);
-            if (err) { toast.error(err); return; }
-            onSubmit({
-              payout_method: method, payout_details: details,
-              website_url: website || undefined, promotion_method: promo || undefined,
-              application_notes: notes || undefined,
-            });
-          }}>Submit application</Button>
+        <DialogFooter className="pt-3 gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl text-xs h-10">
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              const err = validateDetails(method, details);
+              if (err) { toast.error(err); return; }
+              onSubmit({
+                payout_method: method,
+                payout_details: details,
+                website_url: website || undefined,
+                promotion_method: promo || undefined,
+                application_notes: notes || undefined,
+              });
+            }}
+            className="rounded-xl text-xs font-bold h-10"
+          >
+            Submit Application
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   PAYOUT REQUEST DIALOG
+───────────────────────────────────────────────────────────────────────────── */
 const PayoutDialog: React.FC<{
-  open: boolean; onOpenChange: (v: boolean) => void;
-  available: number; min: number; methodLabel: string; onSubmit: (amount: number) => void;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  available: number;
+  min: number;
+  methodLabel: string;
+  onSubmit: (amount: number) => void;
 }> = ({ open, onOpenChange, available, min, methodLabel, onSubmit }) => {
+  const { formatPrice } = useCurrency();
   const [amount, setAmount] = useState(String(available));
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="rounded-2xl border border-border/80 bg-card p-5 sm:p-6 max-w-md">
         <DialogHeader>
-          <DialogTitle>Request payout</DialogTitle>
-          <DialogDescription>Available: {available.toFixed(2)} · Minimum: {min.toFixed(2)} · Method: <span className="font-medium text-foreground">{methodLabel}</span></DialogDescription>
+          <DialogTitle className="font-bold text-base sm:text-lg">Request Balance Withdrawal</DialogTitle>
+          <DialogDescription className="text-xs">
+            Available: {formatPrice(available)} · Minimum: {formatPrice(min)} · Destination: <strong className="text-foreground">{methodLabel}</strong>
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <Label>Amount</Label>
-            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <div className="space-y-3 pt-2">
+          <div className="space-y-1">
+            <Label className="text-xs font-semibold">Withdrawal Amount</Label>
+            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-10 text-sm font-mono rounded-xl" />
           </div>
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground flex gap-2">
-            <Info className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-            <span>Your request will be reviewed by our payouts team. You'll receive your funds within <strong className="text-foreground">24–72 working hours</strong> after verification.</span>
+            <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <p>
+              Your withdrawal request is verified and processed to your chosen account within <strong className="text-foreground">24–72 business hours</strong>.
+            </p>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => onSubmit(Number(amount))}>Submit request</Button>
+        <DialogFooter className="pt-2 gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl text-xs h-10">
+            Cancel
+          </Button>
+          <Button onClick={() => onSubmit(Number(amount))} className="rounded-xl text-xs font-bold h-10">
+            Confirm Withdrawal
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   PAYOUT METHOD DIALOG
+───────────────────────────────────────────────────────────────────────────── */
 const PayoutMethodDialog: React.FC<{
-  open: boolean; onOpenChange: (v: boolean) => void;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
   current: { method: string | null; details: any };
   onSubmit: (method: string, details: any) => void;
 }> = ({ open, onOpenChange, current, onSubmit }) => {
   const [method, setMethod] = useState(current.method ?? PAYOUT_METHODS[0].id);
   const [details, setDetails] = useState<Record<string, string>>(
-    (current.details && typeof current.details === "object") ? current.details : {}
+    current.details && typeof current.details === "object" ? current.details : {}
   );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border/80 bg-card p-5 sm:p-6">
         <DialogHeader>
-          <DialogTitle>Update payout method</DialogTitle>
-          <DialogDescription>Choose where you want your earnings sent.</DialogDescription>
+          <DialogTitle className="font-bold text-base sm:text-lg">Update Payout Destination</DialogTitle>
+          <DialogDescription className="text-xs">
+            Choose where your verified commissions should be transferred.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-5">
+        <div className="space-y-4 pt-2">
           <MethodPicker value={method} onChange={(v) => { setMethod(v); setDetails({}); }} />
           <MethodFields methodId={method} details={details} onChange={setDetails} />
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => {
-            const err = validateDetails(method, details);
-            if (err) { toast.error(err); return; }
-            onSubmit(method, details);
-          }}>Save</Button>
+        <DialogFooter className="pt-3 gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl text-xs h-10">
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              const err = validateDetails(method, details);
+              if (err) { toast.error(err); return; }
+              onSubmit(method, details);
+            }}
+            className="rounded-xl text-xs font-bold h-10"
+          >
+            Save Method
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
 
-// ============ Payouts list (premium) ============
+/* ─────────────────────────────────────────────────────────────────────────────
+   PAYOUTS HISTORY
+───────────────────────────────────────────────────────────────────────────── */
 const STATUS_TONE: Record<string, string> = {
-  requested: "bg-amber-500/15 text-amber-600 border-amber-500/30",
-  processing: "bg-sky-500/15 text-sky-600 border-sky-500/30",
-  paid: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+  requested: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  processing: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+  paid: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
   rejected: "bg-destructive/15 text-destructive border-destructive/30",
 };
 
 const PayoutsList: React.FC<{ rows: any[] }> = ({ rows }) => {
   const { formatPrice } = useCurrency();
   return (
-    <div className="mt-4 space-y-3">
-      <div className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 flex gap-3">
-        <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-        <div className="text-sm">
-          <p className="font-semibold text-foreground">Your request is in safe hands</p>
-          <p className="text-muted-foreground mt-0.5">
-            All payout requests are reviewed and verified by our finance team. Once verified, your payment is released within <strong className="text-foreground">24–72 working hours</strong>. Thank you for your patience.
-          </p>
-        </div>
-      </div>
-
+    <div className="space-y-3">
       {rows.length === 0 ? (
-        <div className="rounded-3xl border border-border/60 bg-card/60 p-10 text-center text-muted-foreground text-sm">
-          No payouts requested yet
+        <div className="rounded-2xl border border-border/70 bg-card/60 p-10 text-center text-muted-foreground text-xs">
+          No payout requests made yet.
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-2.5">
           {rows.map((p) => (
-            <div key={p.id} className="rounded-2xl border border-border/60 bg-card/60 p-4">
-              <div className="flex items-center justify-between flex-wrap gap-3">
+            <div key={p.id} className="rounded-xl border border-border/70 bg-card/60 p-3.5 sm:p-4 space-y-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">{new Date(p.requested_at).toLocaleString()}</p>
-                  <p className="text-xl font-bold mt-1">{formatPrice(Number(p.amount))}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">via <span className="font-medium text-foreground">{methodLabel(p.method)}</span></p>
+                  <p className="text-[11px] font-mono text-muted-foreground">{new Date(p.requested_at).toLocaleDateString()}</p>
+                  <p className="text-lg sm:text-xl font-bold text-foreground">{formatPrice(Number(p.amount))}</p>
+                  <p className="text-xs text-muted-foreground">via <span className="font-semibold text-foreground">{methodLabel(p.method)}</span></p>
                 </div>
-                <Badge variant="outline" className={`capitalize ${STATUS_TONE[p.status] ?? ""}`}>{p.status}</Badge>
+                <Badge variant="outline" className={`capitalize font-bold text-[11px] ${STATUS_TONE[p.status] ?? ""}`}>
+                  {p.status}
+                </Badge>
               </div>
-
               {p.txn_reference && (
-                <p className="mt-3 text-xs">
-                  <span className="text-muted-foreground">Transaction reference: </span>
-                  <span className="font-mono font-medium">{p.txn_reference}</span>
+                <p className="text-xs font-mono bg-secondary/50 p-2 rounded-lg text-muted-foreground">
+                  Reference: <span className="text-foreground font-semibold">{p.txn_reference}</span>
                 </p>
-              )}
-              {p.rejection_reason && (
-                <div className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs">
-                  <p className="font-medium text-destructive mb-0.5">Reason for rejection</p>
-                  <p className="text-muted-foreground">{p.rejection_reason}</p>
-                </div>
-              )}
-              {p.admin_notes && (
-                <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs">
-                  <p className="font-medium text-primary mb-0.5">Message from our team</p>
-                  <p className="text-foreground/90 whitespace-pre-wrap">{p.admin_notes}</p>
-                </div>
               )}
             </div>
           ))}
@@ -675,9 +1122,15 @@ const PayoutsList: React.FC<{ rows: any[] }> = ({ rows }) => {
   );
 };
 
-
-// ============ Product Browser ============
-const ProductBrowser: React.FC<{ affiliateCode: string; origin: string; onCreated: () => void }> = ({ affiliateCode, origin, onCreated }) => {
+/* ─────────────────────────────────────────────────────────────────────────────
+   PRODUCT CATALOG BROWSER & DEEP LINK STUDIO
+───────────────────────────────────────────────────────────────────────────── */
+const ProductBrowser: React.FC<{ affiliateCode: string; origin: string; onCreated: () => void }> = ({
+  affiliateCode,
+  origin,
+  onCreated,
+}) => {
+  const { formatPrice } = useCurrency();
   const listProducts = useServerFn(listAffiliateProducts);
   const createLink = useServerFn(createAffiliateLink);
   const [search, setSearch] = useState("");
@@ -690,54 +1143,87 @@ const ProductBrowser: React.FC<{ affiliateCode: string; origin: string; onCreate
   const generate = async (p: any) => {
     const target = `${origin}/product/${p.slug}?ref=${affiliateCode}`;
     try {
-      await createLink({ data: {
-        product_id: p.id, target_url: target, label: p.name,
-        utm_source: "affiliate", utm_medium: "link", utm_campaign: affiliateCode,
-      }});
+      await createLink({
+        data: {
+          product_id: p.id,
+          target_url: target,
+          label: p.name,
+          utm_source: "affiliate",
+          utm_medium: "product_link",
+          utm_campaign: affiliateCode,
+        },
+      });
       navigator.clipboard.writeText(target);
-      toast.success("Link generated & copied!");
+      toast.success("Product referral link copied!");
       onCreated();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to generate link");
+    }
   };
 
   return (
-    <div className="mt-4 space-y-4">
+    <div className="space-y-4">
       <div className="flex gap-2 flex-wrap">
-        <Input placeholder="Search products…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
-        <Button variant={featuredOnly ? "default" : "outline"} onClick={() => setFeaturedOnly((v) => !v)}>
-          <Award className="w-4 h-4 mr-1" /> Featured
+        <Input
+          placeholder="Search catalog products…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-xs h-10 text-xs rounded-xl"
+        />
+        <Button
+          variant={featuredOnly ? "default" : "outline"}
+          onClick={() => setFeaturedOnly((v) => !v)}
+          className="h-10 text-xs rounded-xl font-semibold cursor-pointer"
+        >
+          <Award className="w-3.5 h-3.5 mr-1" /> Featured Picks
         </Button>
       </div>
+
       {isLoading ? (
-        <div className="text-center text-muted-foreground p-10 text-sm">Loading products…</div>
+        <div className="text-center text-muted-foreground p-10 text-xs">Loading pieces…</div>
       ) : (products ?? []).length === 0 ? (
-        <div className="rounded-3xl border border-border/60 bg-card/60 p-10 text-center text-muted-foreground text-sm">No products enrolled yet</div>
+        <div className="rounded-2xl border border-border/70 bg-card/60 p-10 text-center text-muted-foreground text-xs">
+          No products enrolled for affiliate tracking yet.
+        </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {(products ?? []).map((p: any) => {
             const ap = p.affiliate;
             const finalPrice = Number(p.sale_price ?? p.price);
-            const bonus = Number(ap?.bonus_amount ?? 0);
             const rate = ap?.override_rate;
+
             return (
-              <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden flex flex-col">
-                <div className="aspect-square bg-muted relative">
-                  {p.thumbnail && <img src={p.thumbnail} alt={p.name} className="w-full h-full object-cover" />}
-                  {ap?.is_featured && <Badge className="absolute top-2 left-2 bg-amber-500/90 text-white border-0">Featured</Badge>}
+              <div
+                key={p.id}
+                className="rounded-xl border border-border/70 bg-card/60 overflow-hidden flex flex-col justify-between group hover:border-primary/40 transition-all shadow-xs"
+              >
+                <div className="aspect-square bg-secondary/40 relative overflow-hidden">
+                  {p.thumbnail && (
+                    <img src={p.thumbnail} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  )}
+                  {ap?.is_featured && (
+                    <Badge className="absolute top-2 left-2 bg-amber-500 text-black font-bold text-[9px] border-0 px-1.5 py-0.5">
+                      Featured
+                    </Badge>
+                  )}
                 </div>
-                <div className="p-3 flex-1 flex flex-col">
-                  <p className="font-medium text-sm line-clamp-2">{p.name}</p>
-                  <div className="flex items-center justify-between mt-2 text-xs">
-                    <span className="font-semibold text-foreground">{finalPrice.toFixed(2)}</span>
-                    {rate != null && <Badge variant="secondary">{rate}%</Badge>}
+                <div className="p-3 flex flex-col justify-between flex-1 space-y-2">
+                  <div>
+                    <p className="font-semibold text-xs text-foreground line-clamp-1">{p.name}</p>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="font-bold text-xs text-foreground">{formatPrice(finalPrice)}</span>
+                      {rate != null && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                          {rate}% Rate
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  {bonus > 0 && <p className="text-[10px] text-emerald-600 mt-1">+{bonus.toFixed(2)} bonus</p>}
-                  <Button size="sm" className="mt-3 w-full" onClick={() => generate(p)}>
-                    <Link2 className="w-3 h-3 mr-1" /> Generate link
+                  <Button size="sm" onClick={() => generate(p)} className="w-full rounded-lg text-xs font-semibold gap-1 cursor-pointer h-8">
+                    <Link2 className="w-3.5 h-3.5" /> Deep Link
                   </Button>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </div>
@@ -746,7 +1232,9 @@ const ProductBrowser: React.FC<{ affiliateCode: string; origin: string; onCreate
   );
 };
 
-// ============ My Links ============
+/* ─────────────────────────────────────────────────────────────────────────────
+   CUSTOM LINKS & CAMPAIGNS
+───────────────────────────────────────────────────────────────────────────── */
 const MyLinksTab: React.FC<{ affiliateCode: string; origin: string }> = ({ affiliateCode, origin }) => {
   const qc = useQueryClient();
   const listLinks = useServerFn(getMyAffiliateLinks);
@@ -760,76 +1248,145 @@ const MyLinksTab: React.FC<{ affiliateCode: string; origin: string }> = ({ affil
   const addCustom = async () => {
     if (!customUrl) return;
     try {
-      await createLink({ data: {
-        target_url: customUrl, label: label || undefined,
-        utm_source: "affiliate", utm_medium: "link", utm_campaign: campaign || affiliateCode,
-      }});
-      toast.success("Link created");
-      setCustomUrl(""); setLabel(""); setCampaign("");
+      await createLink({
+        data: {
+          target_url: customUrl,
+          label: label || undefined,
+          utm_source: "affiliate",
+          utm_medium: "custom_link",
+          utm_campaign: campaign || affiliateCode,
+        },
+      });
+      toast.success("Campaign link generated!");
+      setCustomUrl("");
+      setLabel("");
+      setCampaign("");
       qc.invalidateQueries({ queryKey: ["my-affiliate-links"] });
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to create link");
+    }
   };
 
   return (
-    <div className="mt-4 space-y-4">
-      <div className="rounded-3xl border border-border/60 bg-card/60 p-5">
-        <p className="font-semibold mb-3">Generate custom link</p>
-        <div className="grid md:grid-cols-3 gap-2">
-          <Input placeholder="Target URL (e.g. /shop)" value={customUrl} onChange={(e) => setCustomUrl(e.target.value)} className="md:col-span-2" />
-          <Input placeholder="Label" value={label} onChange={(e) => setLabel(e.target.value)} />
-          <Input placeholder="Campaign tag (optional)" value={campaign} onChange={(e) => setCampaign(e.target.value)} className="md:col-span-2" />
-          <Button onClick={addCustom}><Link2 className="w-4 h-4 mr-1" /> Create</Button>
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-border/70 bg-card/60 p-4 sm:p-5 space-y-3">
+        <p className="font-bold text-xs uppercase tracking-wider text-muted-foreground">Generate Custom Campaign Link</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <Input
+            placeholder="Target page URL (e.g. /shop)"
+            value={customUrl}
+            onChange={(e) => setCustomUrl(e.target.value)}
+            className="sm:col-span-2 h-10 text-xs rounded-xl"
+          />
+          <Input
+            placeholder="Campaign tag (e.g. Instagram Bio)"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            className="h-10 text-xs rounded-xl"
+          />
+          <Button onClick={addCustom} className="sm:col-span-3 h-10 rounded-xl font-bold text-xs gap-1.5 cursor-pointer">
+            <Link2 className="w-4 h-4" /> Create Campaign Link
+          </Button>
         </div>
       </div>
 
-      <DataTable rows={links ?? []} columns={[
-        { label: "Label", get: (r) => r.label ?? "—" },
-        { label: "Target", get: (r) => <span className="text-xs truncate max-w-[280px] inline-block font-mono">{r.target_url}</span> },
-        { label: "Clicks", get: (r) => r.clicks ?? 0 },
-        { label: "Conv.", get: (r) => r.conversions ?? 0 },
-        { label: "Share URL", get: (r) => (
-          <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(r.target_url); toast.success("Copied"); }}>
-            <Copy className="w-3 h-3 mr-1" /> Copy
-          </Button>
-        ) },
-        { label: "", get: (r) => (
-          <Button size="sm" variant="ghost" onClick={async () => {
-            if (!confirm("Delete link?")) return;
-            await delLink({ data: { id: r.id } });
-            qc.invalidateQueries({ queryKey: ["my-affiliate-links"] });
-          }}>Delete</Button>
-        ) },
-      ]} />
+      <DataTable
+        rows={links ?? []}
+        columns={[
+          { label: "Campaign", get: (r) => <span className="font-medium text-foreground">{r.label ?? "Direct Link"}</span> },
+          {
+            label: "Target Link",
+            get: (r) => <span className="font-mono text-xs text-muted-foreground truncate max-w-[200px] inline-block">{r.target_url}</span>,
+          },
+          { label: "Clicks", get: (r) => r.clicks ?? 0 },
+          { label: "Orders", get: (r) => r.conversions ?? 0 },
+          {
+            label: "Actions",
+            get: (r) => (
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(r.target_url);
+                    toast.success("Link copied!");
+                  }}
+                  className="rounded-lg text-xs h-7 px-2.5 font-semibold cursor-pointer"
+                >
+                  <Copy className="w-3 h-3 mr-1" /> Copy
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={async () => {
+                    await delLink({ data: { id: r.id } });
+                    qc.invalidateQueries({ queryKey: ["my-affiliate-links"] });
+                  }}
+                  className="text-destructive hover:bg-destructive/10 rounded-lg text-xs h-7 px-2"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 };
 
-// ============ Creatives ============
+/* ─────────────────────────────────────────────────────────────────────────────
+   MARKETING CREATIVES KIT
+───────────────────────────────────────────────────────────────────────────── */
 const CreativesTab: React.FC<{ affiliateCode: string }> = ({ affiliateCode }) => {
   const list = useServerFn(listAffiliateCreatives);
   const { data: creatives } = useQuery({ queryKey: ["affiliate-creatives"], queryFn: () => list() });
+
   return (
-    <div className="mt-4">
+    <div className="space-y-4">
       {(creatives ?? []).length === 0 ? (
-        <div className="rounded-3xl border border-border/60 bg-card/60 p-10 text-center text-muted-foreground text-sm">No creatives available yet</div>
+        <div className="rounded-2xl border border-border/70 bg-card/60 p-10 text-center text-muted-foreground text-xs">
+          Marketing creatives will be uploaded here by the brand team.
+        </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {(creatives ?? []).map((c: any) => (
-            <div key={c.id} className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-              {c.image_url && <img src={c.image_url} alt={c.title} className="w-full aspect-video object-cover" />}
-              <div className="p-4">
-                <Badge variant="secondary" className="mb-2 capitalize">{c.type}</Badge>
-                <p className="font-semibold">{c.title}</p>
-                {c.content && <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{c.content}</p>}
-                <div className="flex gap-2 mt-3">
-                  {c.content && <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(c.content); toast.success("Copied"); }}><Copy className="w-3 h-3 mr-1" />Text</Button>}
-                  {c.image_url && <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(c.image_url); toast.success("Copied"); }}><Copy className="w-3 h-3 mr-1" />Image URL</Button>}
-                  {c.target_url && <Button size="sm" onClick={() => {
-                    const sep = c.target_url.includes("?") ? "&" : "?";
-                    navigator.clipboard.writeText(`${c.target_url}${sep}ref=${affiliateCode}`);
-                    toast.success("Tracked URL copied");
-                  }}><Link2 className="w-3 h-3 mr-1" />Get link</Button>}
-                </div>
+            <div key={c.id} className="rounded-xl border border-border/70 bg-card/60 overflow-hidden space-y-3 p-3.5">
+              {c.image_url && <img src={c.image_url} alt={c.title} className="w-full aspect-video rounded-lg object-cover" />}
+              <div>
+                <Badge variant="outline" className="capitalize text-[10px] font-bold mb-1">
+                  {c.type}
+                </Badge>
+                <p className="font-bold text-xs text-foreground">{c.title}</p>
+                {c.content && <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{c.content}</p>}
+              </div>
+              <div className="flex gap-2">
+                {c.content && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(c.content);
+                      toast.success("Copy template copied!");
+                    }}
+                    className="rounded-lg text-xs flex-1 h-8"
+                  >
+                    Copy Copywriting
+                  </Button>
+                )}
+                {c.image_url && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(c.image_url);
+                      toast.success("Asset URL copied!");
+                    }}
+                    className="rounded-lg text-xs h-8"
+                  >
+                    Copy Image
+                  </Button>
+                )}
               </div>
             </div>
           ))}
@@ -840,4 +1397,3 @@ const CreativesTab: React.FC<{ affiliateCode: string }> = ({ affiliateCode }) =>
 };
 
 export default AffiliatePage;
-// code:4ce0

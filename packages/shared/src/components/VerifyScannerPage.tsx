@@ -3,9 +3,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ScanLine, Camera, CheckCircle2, ShieldCheck, XCircle, Info, ArrowRight,
-  Sparkles, Package, X, ArrowLeft, Search, Copy, Check,
+  Package, X, ArrowLeft, Search, Copy, Check,
   BadgeCheck, AlertCircle, RefreshCw, Eye, ExternalLink, Fingerprint,
-  Lock, Shield, Award, QrCode, Barcode, SwitchCamera, Volume2, Flashlight,
+  Lock, Shield, Award, QrCode, Barcode, SwitchCamera, Volume2, VolumeX, Flashlight,
   FlaskConical, HelpCircle, ShieldAlert, CheckCircle, Zap, Unlock, Printer, Download, FileText
 } from "lucide-react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
@@ -13,6 +13,7 @@ import { DecodeHintType, BarcodeFormat } from "@zxing/library";
 import { Link, useNavigate } from "../lib/router-compat";
 import type { VerifyResult } from "../types/verify";
 import { extractSerialCode } from "../lib/scanner-utils";
+import { playScanSound, isScanSoundMuted, toggleScanSound } from "../utils/scan-sound";
 
 export interface VerifyScannerContent {
   enabled?: boolean;
@@ -94,6 +95,7 @@ function EntryView(props: VerifyScannerPageProps) {
   const [hasTorch, setHasTorch] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scanSuccessDetected, setScanSuccessDetected] = useState(false);
+  const [soundMuted, setSoundMuted] = useState(isScanSoundMuted());
   
   // Default to QR mode as requested
   const [mode, setMode] = useState<ScannerMode>("qr");
@@ -103,6 +105,11 @@ function EntryView(props: VerifyScannerPageProps) {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const scanLoopRef = useRef<number | null>(null);
   const isHandlingScanRef = useRef<boolean>(false);
+
+  const handleToggleSound = () => {
+    const next = toggleScanSound();
+    setSoundMuted(next);
+  };
 
   const getReader = useCallback(() => {
     if (!zxingReaderRef.current) {
@@ -126,6 +133,7 @@ function EntryView(props: VerifyScannerPageProps) {
       if (!raw || isHandlingScanRef.current) return;
       isHandlingScanRef.current = true;
       setScanSuccessDetected(true);
+      playScanSound("success");
       triggerScanFeedback();
 
       const extracted = extractSerialCode(raw);
@@ -311,15 +319,16 @@ function EntryView(props: VerifyScannerPageProps) {
               </button>
               <button
                 type="button"
-                onClick={() => setMode("barcode")}
+                onClick={handleToggleSound}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  mode === "barcode"
-                    ? "bg-primary text-primary-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
+                  soundMuted
+                    ? "bg-muted text-muted-foreground"
+                    : "bg-primary/15 text-primary border border-primary/30"
                 }`}
+                title={soundMuted ? "Unmute scanner sound" : "Mute scanner sound"}
               >
-                <Barcode className="w-3.5 h-3.5" />
-                Barcode Mode
+                {soundMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline">{soundMuted ? "Sound Off" : "Sound On"}</span>
               </button>
             </div>
 
@@ -368,6 +377,16 @@ function EntryView(props: VerifyScannerPageProps) {
 
               {/* Camera Controls Overlay */}
               <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-md p-1 rounded-xl border border-white/10 z-10">
+                <button
+                  type="button"
+                  onClick={handleToggleSound}
+                  className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                    soundMuted ? "text-white/40 hover:text-white" : "text-amber-400"
+                  }`}
+                  title={soundMuted ? "Unmute scan sound" : "Mute scan sound"}
+                >
+                  {soundMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                </button>
                 {hasTorch && (
                   <button
                     type="button"
@@ -484,9 +503,19 @@ function ResultView({
     (async () => {
       try {
         const r = await onLookup(code);
-        if (!cancelled) setState({ loading: false, result: r });
+        if (!cancelled) {
+          setState({ loading: false, result: r });
+          if (r && (r.status === "valid" || r.is_sample)) {
+            playScanSound("success");
+          } else {
+            playScanSound("error");
+          }
+        }
       } catch (e: any) {
-        if (!cancelled) setState({ loading: false, error: e?.message ?? "Lookup failed" });
+        if (!cancelled) {
+          setState({ loading: false, error: e?.message ?? "Lookup failed" });
+          playScanSound("error");
+        }
       }
     })();
     return () => {

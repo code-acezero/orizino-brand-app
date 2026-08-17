@@ -25,7 +25,9 @@ import {
   Megaphone,
   ShoppingBag,
   CreditCard,
+  Mail,
 } from "lucide-react";
+import { Sparkle } from "@/components/icons/Sparkle";
 import { BrandImage, type LogoFilter } from "@/lib/brand-image";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -94,7 +96,7 @@ export default function SettingsAiDashboard() {
   const storefrontAppearance = (brandSettings?.storefront_appearance as any) || {};
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 w-full pb-12">
       {/* ── UNIFIED HERO BANNER ── */}
       <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-card via-secondary/15 to-background p-6 sm:p-8 shadow-sm">
         <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
@@ -118,12 +120,12 @@ export default function SettingsAiDashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            <NavLink to="/brand/branding">
+            <NavLink to="/settings-ai/branding">
               <Button size="sm" className="h-9 rounded-xl font-bold gap-2 text-xs">
                 <Paintbrush className="w-3.5 h-3.5" /> Branding Hub
               </Button>
             </NavLink>
-            <NavLink to="/brand/appearance">
+            <NavLink to="/settings-ai/appearance">
               <Button size="sm" variant="outline" className="h-9 rounded-xl font-semibold gap-2 text-xs border-border/60">
                 <Layout className="w-3.5 h-3.5 text-primary" /> Appearance Studio
               </Button>
@@ -260,7 +262,7 @@ export default function SettingsAiDashboard() {
               </div>
             </div>
 
-            <NavLink to="/brand/branding" className="block pt-2">
+            <NavLink to="/settings-ai/branding" className="block pt-2">
               <Button variant="outline" size="sm" className="w-full text-xs font-semibold gap-1.5 border-border/60">
                 <Paintbrush className="w-3.5 h-3.5 text-primary" /> Edit Brand Assets
               </Button>
@@ -272,7 +274,7 @@ export default function SettingsAiDashboard() {
         <Card className="border-border/50 bg-card/60 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="py-4 px-5 border-b border-border/40 bg-secondary/15">
             <CardTitle className="text-sm font-bold flex items-center gap-2 text-foreground">
-              <Bot className="w-4 h-4 text-primary" /> AI &amp; Intelligence Center
+              <Sparkle className="w-4 h-4 text-primary" /> AI &amp; Intelligence Center
             </CardTitle>
             <CardDescription className="text-xs">Configure autonomous assistants and algorithms.</CardDescription>
           </CardHeader>
@@ -282,14 +284,14 @@ export default function SettingsAiDashboard() {
               {
                 title: "AI Agent Assistant",
                 desc: "Welcome greetings, shopper chat & order assistance",
-                icon: Bot,
+                icon: Sparkle,
                 url: "/settings-ai/ai-settings",
                 badge: "Autonomous",
               },
               {
                 title: "Recommendations Engine",
                 desc: "Collaborative filtering & AI cart upsell suggestions",
-                icon: Brain,
+                icon: Sparkle,
                 url: "/settings-ai/recommendations",
                 badge: "AI Model",
               },
@@ -299,6 +301,27 @@ export default function SettingsAiDashboard() {
                 icon: Phone,
                 url: "/settings-ai/call-settings",
                 badge: "Voice",
+              },
+              {
+                title: "Email Provider (Resend)",
+                desc: "Transactional & marketing senders, Resend API key & logs",
+                icon: Mail,
+                url: "/settings-ai/email-provider",
+                badge: "Resend",
+              },
+              {
+                title: "WhatsApp Cloud API",
+                desc: "Meta Cloud API for automated order updates & promos",
+                icon: MessageSquare,
+                url: "/settings-ai/whatsapp",
+                badge: "Meta Cloud",
+              },
+              {
+                title: "SMS Gateway (BulkSMSBD / Twilio)",
+                desc: "Local BD & Global carrier SMS dispatches",
+                icon: Phone,
+                url: "/settings-ai/sms",
+                badge: "SMS API",
               },
               {
                 title: "Telegram Community Bot",
@@ -343,13 +366,13 @@ export default function SettingsAiDashboard() {
                 title: "Storefront Appearance",
                 desc: "15+ Luxury typography pairs & surface styling",
                 icon: Layout,
-                url: "/brand/appearance",
+                url: "/settings-ai/appearance",
               },
               {
                 title: "Brand Themes & Colors",
                 desc: "Theme palette, logo filter & brand voice",
                 icon: Palette,
-                url: "/brand/branding",
+                url: "/settings-ai/branding",
               },
               {
                 title: "Payment Gateways",
@@ -364,8 +387,8 @@ export default function SettingsAiDashboard() {
                 url: "/settings-ai/general",
               },
               {
-                title: "URL Redirects",
-                desc: "301 & 302 canonical forwarding rules",
+                title: "Apps Redirection",
+                desc: "Cross-app domain gateway, CTA destinations & UTM forwarding",
                 icon: ExternalLink,
                 url: "/settings-ai/redirects",
               },

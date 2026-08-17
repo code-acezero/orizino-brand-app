@@ -91,17 +91,17 @@ export function NotFoundPage({
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-[85vh] bg-background flex flex-col justify-start items-center text-center px-4 pt-4 sm:pt-8 pb-12">
-      <main className="w-full max-w-lg mx-auto space-y-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center px-4 py-12">
+      <main className="w-full max-w-xl mx-auto space-y-6">
         
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-          className="space-y-4"
+          transition={{ duration: 0.3 }}
+          className="space-y-6"
         >
           {/* Minimal 404 Display */}
-          <h1 className="text-6xl sm:text-7xl font-extrabold font-display tracking-tight text-foreground">
+          <h1 className="text-8xl sm:text-9xl font-extrabold font-display tracking-tight text-foreground">
             404
           </h1>
 
@@ -109,39 +109,39 @@ export function NotFoundPage({
           <CursorTrackingEyes />
 
           {/* Clean Subtext */}
-          <div className="space-y-1 max-w-sm mx-auto">
-            <h2 className="text-xl sm:text-2xl font-bold font-display text-foreground tracking-tight">
+          <div className="space-y-2 max-w-sm mx-auto">
+            <h2 className="text-2xl sm:text-3xl font-bold font-display text-foreground tracking-tight">
               Oh Crumbs!
             </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
               Looks like someone escaped with the page you were looking for.
             </p>
           </div>
 
           {/* Clean Minimal Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
             <Link
               to={homeTo as any}
-              className="w-full sm:w-auto h-11 px-7 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-bold text-xs inline-flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-xs"
+              className="w-full sm:w-auto h-12 px-8 rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-bold text-sm inline-flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-md"
             >
               <Home className="w-4 h-4" /> Go Home
             </Link>
 
             <Link
               to={browseTo as any}
-              className="w-full sm:w-auto h-11 px-7 rounded-xl border border-border/60 bg-background text-foreground font-semibold text-xs inline-flex items-center justify-center gap-2 hover:bg-secondary/60 active:scale-95 transition-all shadow-xs"
+              className="w-full sm:w-auto h-12 px-8 rounded-2xl border border-border/60 bg-background text-foreground font-semibold text-sm inline-flex items-center justify-center gap-2 hover:bg-secondary/60 active:scale-95 transition-all shadow-xs"
             >
               <Search className="w-4 h-4" /> {browseLabel}
             </Link>
           </div>
 
           {/* Minimal Back Button */}
-          <div className="pt-1">
+          <div className="pt-2">
             <button
               onClick={() => navigate(-1)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
-              <ArrowLeft className="w-3.5 h-3.5" /> Back to Previous Page
+              <ArrowLeft className="w-4 h-4" /> Back to Previous Page
             </button>
           </div>
 

@@ -14,16 +14,15 @@ export interface LogoMarkProps {
 }
 
 /**
- * Orizino brand mark — three flowing swoosh strokes.
- * viewBox: 0 0 390.08 386.6
- * Original SVG uses fill:#fff. Color prop overrides.
+ * Orizino official brand mark — three sharp geometric shards.
+ * viewBox: 0 0 539.27 565.14
  */
-const PATH_A =
-  "M159.4,300.18c-42.48-5.86-83.72-13.44-124.86-24.27L0,266.03c2.08-.16,3.62.29,5.74.62,32.42,5.02,64.58,8.56,97.45,10.31,16.93.9,32.86.79,49.59-.25,15.42-.95,29.36-4.65,43.68-10.44,31.29-12.64,60.68-27.6,90.9-43.75l-63.47,55.02-111.91,97.11-14.3,11.95,67.7-69.91,6.46-7.81c1.79-2.16.23-5.44-2.23-6.29-3.28-1.14-6.1-1.84-10.21-2.41Z";
-const PATH_B =
-  "M162.86,215.76c-4.44-10.59-8.9-20.35-11.31-31.35-1.22-5.6.66-11.95,2.25-17.49,6.22-21.67,15.6-41.75,26.83-61.4,19.44-34.03,42.53-65.35,68.73-94.33l11.08-11.19c-21.8,30.39-41.05,61.59-56.65,95.5-15.7,34.15-29.39,70.89-29.38,108.74,0,17.44,3.87,33.3,8.07,50.49-8.19-12.43-13.87-25.25-19.62-38.97Z";
-const PATH_C =
-  "M241.78,152.43c11.45.83,22.18,1.27,33.07,4.1,5.55,1.44,10.36,5.99,14.58,9.91,16.52,15.35,30.18,32.79,42.63,51.7,21.55,32.73,39.05,67.49,53.04,103.96l4.97,14.94c-17.25-33.18-36.36-64.47-59.55-93.72-23.36-29.45-49.93-58.28-83.69-75.38-15.55-7.88-31.45-11.61-48.68-15.64,14.79-1.68,28.79-.94,43.63.13Z";
+const PATH_LEFT =
+  "M11.31,303.01l10.42,10.61,102.73,114.11c-16.27-34.27-34.28-66.2-53.79-98.11L0,219.52l41.25-42.82,104.13-107.09C169.3,45.99,192.23,22.22,218.19,0l-71.11,101.28L55.74,232.06c26,65.57,52.95,130.16,81.76,194.32l12.16,25.25,71.16,112.86L52.01,416.82l-40.7-113.8Z";
+const PATH_RIGHT =
+  "M510.24,351.74l-23.18,64.87-169.05,148.54,27.52-44.45,45.28-70.91,30.12-65.82,16.7-38.98,46-113.02-81.21-116.77-25.93-36.85L321.38.16c14.41,11.93,26.61,24.47,40.1,37.05l86.76,87.48,77.26,80.22,13.77,14.47-52.64,81.42c-26.66,41.23-50.32,83.4-72.56,127.58l33.83-36.98,79.5-88.8-17.16,49.14Z";
+const PATH_MIDDLE =
+  "M356.28,185.04l26.95,46.73-36.12,40.33-32.01,35.6-5.9,33.94-22.1,115.86-19.75,106.98-25.06-136.06-23.26-120.77-10.57-11.82-57.13-64.08,17.38-30.41,40.24-67.6c-.28,10.99,4.75,22.09,2.63,32.95l-18.99,63.2,44.02,68.95,9.75,55.81,20.97,113.31,20.22-107.91,10.47-61.52,44.22-68.68-19.37-63.68,2.55-32.17,30.86,51.02Z";
 
 const LogoMark: React.FC<LogoMarkProps> = ({
   size = 220,
@@ -39,7 +38,7 @@ const LogoMark: React.FC<LogoMarkProps> = ({
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 390.08 386.6"
+      viewBox="0 0 539.27 565.14"
       width={size}
       height={size}
       className={className}
@@ -54,18 +53,18 @@ const LogoMark: React.FC<LogoMarkProps> = ({
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
         </linearGradient>
         <clipPath id={idClip}>
-          <path d={PATH_A} />
-          <path d={PATH_B} />
-          <path d={PATH_C} />
+          <path d={PATH_LEFT} />
+          <path d={PATH_RIGHT} />
+          <path d={PATH_MIDDLE} />
         </clipPath>
       </defs>
 
       {variant === "solid" && (
         <g fill={color}>
-          <path d={PATH_A} className="ldr-shape ldr-snap-top" />
-          <path d={PATH_B} className="ldr-shape ldr-snap-right" />
+          <path d={PATH_LEFT} className="ldr-shape ldr-snap-top" />
+          <path d={PATH_RIGHT} className="ldr-shape ldr-snap-right" />
           <path
-            d={PATH_C}
+            d={PATH_MIDDLE}
             className={showShimmer ? "ldr-shape ldr-snap-red" : "ldr-shape ldr-shape-pulse"}
           />
         </g>
@@ -73,7 +72,7 @@ const LogoMark: React.FC<LogoMarkProps> = ({
 
       {variant === "outline" && (
         <g>
-          {[PATH_A, PATH_B, PATH_C].map((d, i) => (
+          {[PATH_LEFT, PATH_RIGHT, PATH_MIDDLE].map((d, i) => (
             <path
               key={`s-${i}`}
               d={d}
@@ -83,7 +82,7 @@ const LogoMark: React.FC<LogoMarkProps> = ({
               style={{ "--ldr-len": 800, animationDelay: `${i * 0.12}s` } as React.CSSProperties}
             />
           ))}
-          {[PATH_A, PATH_B, PATH_C].map((d, i) => (
+          {[PATH_LEFT, PATH_RIGHT, PATH_MIDDLE].map((d, i) => (
             <path
               key={`f-${i}`}
               d={d}
@@ -112,4 +111,3 @@ const LogoMark: React.FC<LogoMarkProps> = ({
 };
 
 export default LogoMark;
-// code:4ce0

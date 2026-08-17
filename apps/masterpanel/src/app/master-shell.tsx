@@ -14,7 +14,7 @@ import AdminProfile from "@/_pages/admin/AdminProfile";
 import SalesDashboard from "@/_pages/admin/dashboards/SalesDashboard";
 import SeoAdsDashboard from "@/_pages/admin/dashboards/SeoAdsDashboard";
 import EmailDashboard from "@/_pages/admin/dashboards/EmailDashboard";
-import AffiliateDashboard from "@/_pages/admin/dashboards/AffiliateDashboard";
+
 import BrandDashboard from "@/_pages/admin/dashboards/BrandDashboard";
 import SystemDashboard from "@/_pages/admin/dashboards/SystemDashboard";
 import SettingsAiDashboard from "@/_pages/admin/dashboards/SettingsAiDashboard";
@@ -45,16 +45,22 @@ import AdminReturns from "@/_pages/admin/AdminReturns";
 import AdminShipping from "@/_pages/admin/AdminShipping";
 import AdminCouriers from "@/_pages/admin/AdminCouriers";
 import AdminCourierManagement from "@/_pages/admin/AdminCourierManagement";
+import AdminOrderOps from "@/_pages/admin/AdminOrderOps";
 
 // Marketing & Email pages
 import AdminSeo from "@/_pages/admin/AdminSeo";
 import AdminTracking from "@/_pages/admin/AdminTracking";
 import AdminAnnouncements from "@/_pages/admin/AdminAnnouncements";
+import AdminPopups from "@/_pages/admin/AdminPopups";
+// Marketing & Communications
 import AdminEmailProvider from "@/_pages/admin/AdminEmailProvider";
 import AdminEmailSubscribers from "@/_pages/admin/AdminEmailSubscribers";
 import AdminEmailCampaigns from "@/_pages/admin/AdminEmailCampaigns";
 import AdminEmailTemplates from "@/_pages/admin/AdminEmailTemplates";
 import AdminEmailAutomations from "@/_pages/admin/AdminEmailAutomations";
+import AdminSmsProvider from "@/_pages/admin/AdminSmsProvider";
+import AdminWhatsAppProvider from "@/_pages/admin/AdminWhatsAppProvider";
+import AdminMarketingAudiences from "@/_pages/admin/AdminMarketingAudiences";
 import AffiliateHub from "@/_pages/admin/AffiliateHub";
 
 // Brand pages
@@ -70,6 +76,7 @@ import AdminBrandHomeTrack from "@/_pages/admin/AdminBrandHomeTrack";
 import AdminBrandHomeScanner from "@/_pages/admin/AdminBrandHomeScanner";
 import AdminHome from "@/_pages/admin/AdminHome";
 import AdminCmsPages from "@/_pages/admin/AdminCmsPages";
+import AdminExploreUI from "@/_pages/admin/AdminExploreUI";
 
 // System & Settings pages
 import AdminDbHealth from "@/_pages/admin/AdminDbHealth";
@@ -122,24 +129,39 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/sales/payments-couriers": AdminPaymentsCouriers,
   "/sales/payment-gateways": AdminPaymentGateways,
   "/sales/orders": AdminOrders,
+  "/sales/orderops": AdminOrderOps,
+  "/sales/order-ops": AdminOrderOps,
+  "/orderops": AdminOrderOps,
   "/sales/returns": AdminReturns,
   "/sales/shipping": AdminShipping,
   "/sales/couriers": AdminCouriers,
   "/sales/courier-management": AdminCourierManagement,
 
-  // Marketing & Email
+  // Marketing & Communications
   "/marketing": SeoAdsDashboard,
   "/marketing/seo": AdminSeo,
   "/marketing/tracking": AdminTracking,
   "/marketing/announcements": AdminAnnouncements,
+  "/marketing/popups": AdminPopups,
+  "/marketing/sms": AdminSmsProvider,
+  "/marketing/sms-provider": AdminSmsProvider,
+  "/marketing/whatsapp": AdminWhatsAppProvider,
+  "/marketing/audiences": AdminMarketingAudiences,
+  "/marketing/sheet-import": AdminMarketingAudiences,
   "/email": EmailDashboard,
   "/email/provider": AdminEmailProvider,
   "/email/subscribers": AdminEmailSubscribers,
+  "/email/audiences": AdminEmailSubscribers,
   "/email/campaigns": AdminEmailCampaigns,
   "/email/templates": AdminEmailTemplates,
   "/email/automations": AdminEmailAutomations,
-  "/affiliate": AffiliateDashboard,
-  "/affiliate/overview": AffiliateHub,
+  "/email/announcements": AdminAnnouncements,
+  "/email/popups": AdminPopups,
+  "/settings-ai/sms": AdminSmsProvider,
+  "/settings-ai/whatsapp": AdminWhatsAppProvider,
+  "/settings/sms": AdminSmsProvider,
+  "/settings/whatsapp": AdminWhatsAppProvider,
+  "/affiliate": AffiliateHub,
 
   // Brand (Public Contents & UI)
   "/brand": BrandDashboard,
@@ -149,6 +171,7 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/brand/banners": AdminBanners,
   "/brand/footer": AdminFooter,
   "/brand/mobile-ui": AdminMobileUI,
+  "/brand/orderops": AdminOrderOps,
   "/brand/landing": AdminCompanyLanding,
   "/brand/news": AdminBrandHomeNews,
   "/brand/docs": AdminBrandHomeDocs,
@@ -157,6 +180,8 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/brand/scanner-info": AdminBrandHomeScanner,
   "/brand/showcase": AdminShowcase,
   "/brand/cms-pages": AdminCmsPages,
+  "/brand/explore-ui": AdminExploreUI,
+  "/brand/explore": AdminExploreUI,
 
   // System & Settings
   "/system": SystemDashboard,
@@ -171,6 +196,10 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/settings-ai/recommendations": AdminRecommendations,
   "/settings-ai/call-settings": AdminCallSettings,
   "/settings-ai/telegram": AdminTelegram,
+  "/settings-ai/email": AdminEmailProvider,
+  "/settings-ai/email-provider": AdminEmailProvider,
+  "/settings/email": AdminEmailProvider,
+  "/settings/email-provider": AdminEmailProvider,
   "/settings-ai/redirects": AdminRedirects,
   "/settings-ai/payment-gateways": AdminPaymentGateways,
   "/settings-ai/payments": AdminPaymentGateways,

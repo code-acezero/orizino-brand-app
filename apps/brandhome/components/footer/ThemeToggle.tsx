@@ -1,5 +1,5 @@
 import React from "react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@orizino/ui";
 import { Moon, Sun, Monitor } from "lucide-react";
 
 const THEME_OPTIONS = [

@@ -1,8 +1,9 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@orizino/supabase/client";
 import { BrandImage, type LogoFilter } from "./brand-image";
+import { useLanguage, getLocalizedBrandName } from "../contexts/LanguageContext";
 
 export type TitleGroupMode = "single" | "1-1" | "2-2" | "1-2" | "custom";
 export type TitleSource = "text" | "image";
@@ -19,6 +20,8 @@ export interface BrandIdentity {
   titleGroupCustom: number[];
   titleFont: string;
   titleLetterColors: Record<number, string>;
+  brandTitleSizeNav: number;
+  brandLogoTitleRatio: number;
 }
 
 const readVal = (v: unknown) =>
@@ -33,7 +36,21 @@ const BRAND_KEYS = [
   "title_source", "title_image_url", "title_group_mode", "title_group_custom",
   "title_font", "title_letter_colors",
   "title_color_filter", "title_tint_color",
+  "brand_title_size_nav", "brand_logo_title_ratio",
 ] as const;
+
+const loadedGoogleFonts = new Set<string>();
+export function loadGoogleFont(family: string, weight = 700) {
+  if (typeof document === "undefined" || !family) return;
+  const key = `${family}@${weight}`;
+  if (loadedGoogleFonts.has(key)) return;
+  loadedGoogleFonts.add(key);
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, "+")}:wght@${weight}&display=swap`;
+  link.setAttribute("data-brand-font", "1");
+  document.head.appendChild(link);
+}
 
 export function useBrandIdentity(app?: BrandApp) {
   return useQuery({
@@ -89,12 +106,12 @@ export function useBrandIdentity(app?: BrandApp) {
         titleLetterColors: (m.title_letter_colors && typeof m.title_letter_colors === "object")
           ? (m.title_letter_colors as Record<number, string>)
           : {},
+        brandTitleSizeNav: Number(m.brand_title_size_nav) || 20,
+        brandLogoTitleRatio: Number(m.brand_logo_title_ratio) || 1.0,
       };
     },
   });
 }
-
-
 
 /** Split a title string into visual chunks based on group mode. */
 export function groupTitle(text: string, mode: TitleGroupMode, custom?: number[]): string[] {
@@ -139,11 +156,13 @@ interface BrandTitleProps {
   forceText?: boolean;
   /** Optional app scope to prefer per-app overrides */
   app?: BrandApp;
+  /** Optional override font size */
+  fontSize?: string | number;
 }
 
 /**
  * Universal brand title. Reads config from site_settings and renders
- * either an uploaded image title or grouped text with per-letter colors.
+ * either an uploaded image title or natural word / grouped text with per-letter colors.
  */
 export function BrandTitle({
   className,
@@ -152,11 +171,19 @@ export function BrandTitle({
   fallback = "",
   forceText = false,
   app,
+  fontSize,
 }: BrandTitleProps) {
+  const { language } = useLanguage();
   const { data } = useBrandIdentity(app);
 
+  useEffect(() => {
+    if (data?.titleFont) {
+      loadGoogleFont(data.titleFont);
+    }
+  }, [data?.titleFont]);
 
-  const siteName = data?.siteName || fallback;
+  const rawSiteName = data?.siteName || fallback;
+  const siteName = getLocalizedBrandName(rawSiteName, language);
   const useImage = !forceText && data?.titleSource === "image" && !!data.titleImageUrl;
 
   if (useImage) {
@@ -173,23 +200,37 @@ export function BrandTitle({
 
   if (!siteName) return null;
   const mode = data?.titleGroupMode || "single";
-  const chunks = groupTitle(siteName, mode, data?.titleGroupCustom);
   const colors = data?.titleLetterColors || {};
-  const style = data?.titleFont ? { fontFamily: `'${data.titleFont}', sans-serif` } : undefined;
+  const style: React.CSSProperties = {
+    fontFamily: data?.titleFont ? `'${data.titleFont}', sans-serif` : undefined,
+    fontSize: fontSize !== undefined ? (typeof fontSize === "number" ? `${fontSize}px` : fontSize) : undefined,
+  };
 
-  // Colors are keyed by group index (chunk index). In "single" mode there's
-  // one group; in "1-1" every letter is its own group; in "2-2" / "1-2" /
-  // "custom" every visual chunk shares one color.
+  // When in "single" mode (single word), render continuously so custom font ligatures,
+  // kerning, and cursive connections are completely preserved without character separation.
+  if (mode === "single") {
+    const singleColor = colors[0];
+    return (
+      <span
+        className={(className ?? "") + " inline-block"}
+        style={{ ...style, color: singleColor || undefined }}
+      >
+        {siteName}
+      </span>
+    );
+  }
+
+  const chunks = groupTitle(siteName, mode, data?.titleGroupCustom);
+
   return (
     <span
-      className={(className ?? "") + " inline-flex items-baseline notranslate skiptranslate " + gapClassName}
+      className={(className ?? "") + " inline-flex items-baseline " + gapClassName}
       style={style}
-      translate="no"
     >
       {chunks.map((chunk, ci) => {
         const c = colors[ci];
         return (
-          <span key={ci} className="inline-flex notranslate skiptranslate" translate="no" style={c ? { color: c } : undefined}>
+          <span key={ci} className="inline-flex" style={c ? { color: c } : undefined}>
             {chunk}
           </span>
         );

@@ -3,24 +3,33 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@orizino/supabase/client";
 
-interface SeoData {
+export interface SeoData {
   title?: string;
   description?: string;
   keywords?: string;
   og_title?: string;
   og_description?: string;
+  og_image?: string;
   canonical_url?: string;
   robots?: string;
-  structured_data?: string;
+  structured_data?: string | object;
 }
 
-interface GlobalSeoData {
+export interface GlobalSeoData {
   site_title_suffix?: string;
   default_og_image?: string;
+  brand_name?: string;
+  google_site_verification?: string;
+  bing_site_verification?: string;
+  pinterest_verification?: string;
+  yandex_verification?: string;
+  baidu_verification?: string;
+  facebook_domain_verification?: string;
+  custom_head_code?: string;
 }
 
 const setMeta = (name: string, content: string, attr = "name") => {
-  if (!content) return;
+  if (!content && content !== "") return;
   let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
   if (!el) {
     el = document.createElement("meta");
@@ -35,22 +44,24 @@ const setLink = (rel: string, href: string) => {
   let el = document.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement | null;
   if (!el) {
     el = document.createElement("link");
-    el.setAttribute("rel", rel);
+    el.setAttribute(rel, rel);
     document.head.appendChild(el);
   }
   el.setAttribute("href", href);
 };
 
-const setJsonLd = (json: string) => {
-  const existing = document.querySelector('script[data-seo-jsonld]');
+const setJsonLd = (jsonInput: string | object | undefined) => {
+  const existing = document.querySelector("script[data-seo-jsonld]");
   if (existing) existing.remove();
-  if (!json) return;
+  if (!jsonInput) return;
+
   try {
-    JSON.parse(json); // validate
+    const raw = typeof jsonInput === "string" ? jsonInput : JSON.stringify(jsonInput);
+    JSON.parse(raw); // validate
     const script = document.createElement("script");
     script.type = "application/ld+json";
     script.setAttribute("data-seo-jsonld", "true");
-    script.textContent = json;
+    script.textContent = raw;
     document.head.appendChild(script);
   } catch {
     // invalid JSON-LD, skip
@@ -58,10 +69,10 @@ const setJsonLd = (json: string) => {
 };
 
 /**
- * Hook that applies saved SEO settings for a given page ID.
+ * Enterprise SEO hook that applies saved SEO settings for a given page ID.
  * Falls back to the provided defaultTitle if no SEO title is configured.
  */
-export const useSeoMeta = (pageId: string, defaultTitle: string) => {
+export const useSeoMeta = (pageId: string, defaultTitle: string, appId: "storefront" | "brandhome" | "explore" = "storefront") => {
   const { data: seoSettings } = useQuery({
     queryKey: ["site-seo-settings"],
     queryFn: async () => {
@@ -83,50 +94,82 @@ export const useSeoMeta = (pageId: string, defaultTitle: string) => {
     const pagesRow = seoSettings.find((s) => s.key === "seo_pages");
     const globalRow = seoSettings.find((s) => s.key === "seo_global");
 
-    const pageSeo: SeoData = (pagesRow?.value as any)?.value?.[pageId] ?? {};
-    const globalSeo: GlobalSeoData = (globalRow?.value as any)?.value ?? {};
+    const rawPagesVal = (pagesRow?.value as any)?.value || (pagesRow?.value as any) || {};
+    const rawGlobalVal = (globalRow?.value as any)?.value || (globalRow?.value as any) || {};
 
-    // Title
-    const suffix = globalSeo.site_title_suffix || "";
-    document.title = pageSeo.title ? `${pageSeo.title}${suffix}` : defaultTitle;
+    // App-wise or root resolution
+    const appPages = rawPagesVal[appId] || rawPagesVal;
+    const pageSeo: SeoData = appPages[pageId] ?? rawPagesVal[pageId] ?? {};
 
-    // Meta description
-    setMeta("description", pageSeo.description || "");
+    const appGlobal = rawGlobalVal[appId] || rawGlobalVal;
+    const globalSeo: GlobalSeoData = typeof appGlobal === "object" ? appGlobal : rawGlobalVal;
 
-    // Keywords
-    setMeta("keywords", pageSeo.keywords || "");
+    // 1. Document Title
+    const suffix = globalSeo.site_title_suffix || (globalSeo.site_title_suffix === "" ? "" : " | ORIZINO");
+    const pageTitle = pageSeo.title?.trim() || defaultTitle;
+    document.title = pageSeo.title ? `${pageTitle}${suffix}` : defaultTitle;
 
-    // Robots
-    setMeta("robots", pageSeo.robots || "index, follow");
+    // 2. Meta description & Keywords
+    setMeta("description", pageSeo.description || "Discover premium luxury streetwear and oversized apparel by ORIZINO.");
+    setMeta("keywords", pageSeo.keywords || "luxury streetwear, oversized hoodie, heavy cotton tee, orizino");
 
-    // Open Graph
-    setMeta("og:title", pageSeo.og_title || pageSeo.title || defaultTitle, "property");
-    setMeta("og:description", pageSeo.og_description || pageSeo.description || "", "property");
-    if (globalSeo.default_og_image) {
-      setMeta("og:image", globalSeo.default_og_image, "property");
-    }
+    // 3. Robots Directives
+    setMeta("robots", pageSeo.robots || "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1");
+
+    // 4. Open Graph Tags
+    const ogTitle = pageSeo.og_title || pageTitle;
+    const ogDesc = pageSeo.og_description || pageSeo.description || "Discover luxury streetwear essentials by ORIZINO.";
+    const ogImage = pageSeo.og_image || globalSeo.default_og_image || "https://shop.orizino.com/og-image.jpg";
+
+    setMeta("og:site_name", globalSeo.brand_name || "ORIZINO", "property");
+    setMeta("og:title", ogTitle, "property");
+    setMeta("og:description", ogDesc, "property");
+    setMeta("og:image", ogImage, "property");
     setMeta("og:type", "website", "property");
+    if (typeof window !== "undefined") {
+      setMeta("og:url", window.location.href, "property");
+    }
 
-    // Twitter Card
+    // 5. Twitter Card
     setMeta("twitter:card", "summary_large_image");
-    setMeta("twitter:title", pageSeo.og_title || pageSeo.title || defaultTitle);
-    setMeta("twitter:description", pageSeo.og_description || pageSeo.description || "");
-    if (globalSeo.default_og_image) {
-      setMeta("twitter:image", globalSeo.default_og_image);
+    setMeta("twitter:title", ogTitle);
+    setMeta("twitter:description", ogDesc);
+    setMeta("twitter:image", ogImage);
+    setMeta("twitter:site", "@orizinobrand");
+
+    // 6. Canonical Link
+    const canonical = pageSeo.canonical_url || (typeof window !== "undefined" ? window.location.origin + window.location.pathname : "");
+    if (canonical) {
+      setLink("canonical", canonical);
     }
 
-    if (pageSeo.canonical_url) {
-      setLink("canonical", pageSeo.canonical_url);
+    // 7. Search Engine Verification Tags
+    if (globalSeo.google_site_verification) {
+      setMeta("google-site-verification", globalSeo.google_site_verification);
+    }
+    if (globalSeo.bing_site_verification) {
+      setMeta("msvalidate.01", globalSeo.bing_site_verification);
+    }
+    if (globalSeo.pinterest_verification) {
+      setMeta("p:domain_verify", globalSeo.pinterest_verification);
+    }
+    if (globalSeo.yandex_verification) {
+      setMeta("yandex-verification", globalSeo.yandex_verification);
+    }
+    if (globalSeo.baidu_verification) {
+      setMeta("baidu-site-verification", globalSeo.baidu_verification);
+    }
+    if (globalSeo.facebook_domain_verification) {
+      setMeta("facebook-domain-verification", globalSeo.facebook_domain_verification);
     }
 
-    // JSON-LD
-    setJsonLd(pageSeo.structured_data || "");
+    // 8. JSON-LD Structured Data
+    setJsonLd(pageSeo.structured_data);
 
     // Cleanup JSON-LD on unmount
     return () => {
-      const script = document.querySelector('script[data-seo-jsonld]');
+      const script = document.querySelector("script[data-seo-jsonld]");
       if (script) script.remove();
     };
   }, [seoSettings, pageId, defaultTitle]);
 };
-// code:4ce0

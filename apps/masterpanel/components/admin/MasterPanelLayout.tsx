@@ -111,7 +111,7 @@ const MasterPanelLayout: React.FC<{ children?: React.ReactNode }> = ({ children 
           />
 
           <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto min-h-0">
-            <div className="max-w-[1400px] mx-auto">
+            <div className="w-full">
               <React.Suspense fallback={<AutoSkeleton />}>
                 {children}
               </React.Suspense>

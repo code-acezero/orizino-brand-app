@@ -42,14 +42,19 @@ export interface ExternalRedirects {
   back_to_shop_label?: string;
   /** Label for the master panel sidebar "Back to Shop" button (mobile / compact). */
   back_to_shop_label_short?: string;
+  /** Automatically preserve and forward URL query parameters (e.g. UTM tracking, referral tags) across app redirects. */
+  preserve_query_params?: boolean;
+  /** Custom route alias mappings (e.g. /pos -> Order Ops scanner). */
+  custom_routes?: Array<{ id: string; from: string; to: string; app: "storefront" | "brandhome" | "masterpanel" | "orderops" | "explore" | "custom"; active: boolean }>;
 }
 
 // Module-scope, isomorphic (works in Node SSR and the browser alike).
 // Deliberately NOT `window.__X__` — see the block comment above.
 let cache: ExternalRedirects = {};
 
-function clean(v: string | undefined | null): string {
-  return (v || "").trim().replace(/\/$/, "");
+function clean(v: unknown): string {
+  if (typeof v !== "string") return "";
+  return v.trim().replace(/\/$/, "");
 }
 function env(...keys: string[]): string {
   if (typeof process === "undefined") return "";
@@ -60,7 +65,8 @@ function env(...keys: string[]): string {
   return "";
 }
 function runtime<K extends keyof ExternalRedirects>(key: K): string {
-  return clean(cache[key]);
+  const val = cache[key];
+  return typeof val === "string" ? clean(val) : "";
 }
 
 /**

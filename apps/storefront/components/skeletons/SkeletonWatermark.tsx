@@ -1,6 +1,8 @@
 "use client";
 import React from "react";
 
+import { useLanguage, getLocalizedBrandName } from "@/contexts/LanguageContext";
+
 export interface SkeletonWatermarkProps {
   className?: string;
   size?: "sm" | "md" | "lg" | "xl";
@@ -9,13 +11,16 @@ export interface SkeletonWatermarkProps {
 
 /**
  * Single source of truth for hardcoded elegant brand watermark shadow used in all skeleton loaders.
- * Zero database query latency — renders logo with hardcoded ORIZINO brand title under logo.
+ * Zero database query latency — renders logo with localized ORIZINO brand title under logo.
  */
 export default function SkeletonWatermark({
   className = "",
   size = "md",
   showText = true,
 }: SkeletonWatermarkProps) {
+  const { language } = useLanguage();
+  const brandName = getLocalizedBrandName("ORIZINO", language);
+
   const sizeClasses = {
     sm: "w-6 h-6",
     md: "w-10 h-10 sm:w-12 sm:h-12",
@@ -31,16 +36,16 @@ export default function SkeletonWatermark({
   };
 
   return (
-    <div className={`relative inline-flex flex-col items-center justify-center select-none pointer-events-none notranslate skiptranslate ${className}`} translate="no">
+    <div className={`relative inline-flex flex-col items-center justify-center select-none pointer-events-none ${className}`}>
       <img
         src="/orizino-logo.svg"
-        alt="Orizino"
+        alt={brandName}
         className={`object-contain opacity-25 dark:opacity-35 transition-opacity ${sizeClasses[size]}`}
         style={{ filter: "brightness(0) invert(1)" }}
       />
       {showText && (
-        <span className={`font-extrabold uppercase font-display text-foreground/30 dark:text-foreground/40 mt-2 notranslate ${textSizes[size]}`} translate="no">
-          ORIZINO
+        <span className={`font-extrabold uppercase font-display text-foreground/30 dark:text-foreground/40 mt-2 ${textSizes[size]}`}>
+          {brandName}
         </span>
       )}
     </div>

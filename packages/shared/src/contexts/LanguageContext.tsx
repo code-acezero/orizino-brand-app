@@ -875,10 +875,246 @@ const TRANSLATIONS: Record<string, Record<string, string>> = {
   },
 };
 
+export const BRAND_TRANSLATIONS: Record<string, string> = {
+  en: "ORIZINO",
+  bn: "অরিজিনো",
+  hi: "ओरिज़िनो",
+  ja: "オリジノ",
+  ko: "오리지노",
+  zh: "奥里齐诺",
+  "zh-TW": "奧里齊諾",
+  ar: "أوريزينو",
+  ur: "اوريزينو",
+  fa: "اوريزينو",
+  vi: "ORIZINO",
+  th: "โอริซิโน",
+  id: "ORIZINO",
+  ms: "ORIZINO",
+  tl: "ORIZINO",
+  ta: "ஒரிஸினோ",
+  te: "ఒரிజినో",
+  mr: "ओरिझिनो",
+  gu: "ઓરિઝિનો",
+  pa: "ਓਰੀਜ਼ੀਨੋ",
+  ne: "ओरिजिनो",
+  si: "ඔරිසිනෝ",
+  my: "အိုရီဇီနို",
+  km: "អូរីហ្ស៊ីណូ",
+  fr: "ORIZINO",
+  de: "ORIZINO",
+  es: "ORIZINO",
+  it: "ORIZINO",
+  ru: "ОРИЗИНО",
+  pt: "ORIZINO",
+  nl: "ORIZINO",
+  tr: "ORIZINO",
+  pl: "ORIZINO",
+  sv: "ORIZINO",
+  el: "ΟΡΙΖΙΝΟ",
+  he: "אוריזינו",
+  uk: "ОРІЗІНО",
+  cs: "ORIZINO",
+  ro: "ORIZINO",
+  hu: "ORIZINO",
+  da: "ORIZINO",
+  fi: "ORIZINO",
+  no: "ORIZINO",
+};
+
+export function getLocalizedBrandName(defaultName: string = "ORIZINO", lang: string = "en"): string {
+  if (!defaultName || defaultName.trim().toUpperCase() === "ORIZINO") {
+    return BRAND_TRANSLATIONS[lang] || defaultName || "ORIZINO";
+  }
+  return defaultName;
+}
+
+export const BRAND_SUFFIX_TRANSLATIONS: Record<string, Record<string, string>> = {
+  co: {
+    en: "co.",
+    bn: "কোং",
+    hi: "कं.",
+    ja: "社",
+    ko: "사",
+    zh: "社",
+    "zh-TW": "社",
+    ar: "ش.",
+    ur: "کم.",
+    fa: "ش.",
+    vi: "Cty",
+    th: "บ.",
+    id: "Co.",
+    ms: "Co.",
+    tl: "Co.",
+    ta: "நி.",
+    te: "సం.",
+    mr: "कं.",
+    gu: "કં.",
+    pa: "ਕੰ.",
+    ne: "क.",
+    si: "ස.",
+    my: "ကု",
+    km: "ក្រុមហ៊ុន",
+    fr: "Cie",
+    de: "Co.",
+    es: "Cía.",
+    it: "Cia.",
+    ru: "Ко.",
+    pt: "Cia.",
+    nl: "Co.",
+    tr: "Şti.",
+    pl: "Sp.",
+    sv: "Co.",
+    el: "ΣΙΑ",
+    he: "חב'",
+    uk: "Ко.",
+    cs: "Spol.",
+    ro: "Cia.",
+    hu: "Tsa.",
+    da: "Co.",
+    fi: "Yht.",
+    no: "Co.",
+  },
+  ltd: {
+    en: "ltd.",
+    bn: "লিঃ",
+    hi: "लि.",
+    ja: "(株)",
+    ko: "(주)",
+    zh: "有限",
+    "zh-TW": "有限",
+    ar: "ذ.م.م.",
+    ur: "لمیٹڈ",
+    fa: "م.م.",
+    vi: "TNHH",
+    th: "จก.",
+    id: "Ltd.",
+    ms: "Sdn Bhd",
+    tl: "Ltd.",
+    ta: "லிமிடெட்",
+    te: "లిమిటెడ్",
+    mr: "लि.",
+    gu: "લિ.",
+    pa: "ਲਿ.",
+    ne: "लि.",
+    si: "ලි.",
+    fr: "Ltée",
+    de: "GmbH",
+    es: "Ltda.",
+    it: "S.r.l.",
+    ru: "ООО",
+    pt: "Ltda.",
+    nl: "B.V.",
+    tr: "Ltd.",
+    pl: "Sp. z o.o.",
+    sv: "AB",
+    el: "ΕΠΕ",
+    he: "בע\"מ",
+    uk: "ТОВ",
+    cs: "s.r.o.",
+    ro: "SRL",
+    hu: "Kft.",
+    da: "ApS",
+    fi: "Oy",
+    no: "AS",
+  },
+  inc: {
+    en: "inc.",
+    bn: "ইনক.",
+    hi: "इंक.",
+    ja: "(株)",
+    ko: "(주)",
+    zh: "企",
+    "zh-TW": "企",
+    ar: "ش.م.",
+    ur: "انکارپوریٹڈ",
+    vi: "Inc.",
+    th: "บมจ.",
+    id: "Inc.",
+    fr: "Inc.",
+    de: "AG",
+    es: "Inc.",
+    it: "S.p.A.",
+    ru: "Инк.",
+    pt: "Inc.",
+    tr: "A.Ş.",
+  },
+  corp: {
+    en: "corp.",
+    bn: "কর্প.",
+    hi: "कॉर्प.",
+    ja: "(株)",
+    ko: "(주)",
+    zh: "团",
+    "zh-TW": "團",
+    ar: "ش.م.",
+    ur: "کارپوریشن",
+    vi: "Corp.",
+    th: "คอร์ป",
+    id: "Corp.",
+    fr: "Corp.",
+    de: "Konzern",
+    es: "Corp.",
+    it: "S.p.A.",
+    ru: "Корп.",
+    pt: "Corp.",
+    tr: "A.Ş.",
+  },
+  est: {
+    en: "est.",
+    bn: "স্থাপিত",
+    hi: "स्था.",
+    ja: "創",
+    ko: "설립",
+    zh: "始于",
+    "zh-TW": "始於",
+    ar: "تأسس",
+    ur: "قائم",
+    fa: "تاسیس",
+    vi: "TL",
+    th: "ก่อตั้ง",
+    id: "Est.",
+    ms: "Est.",
+    tl: "Est.",
+    fr: "Fond.",
+    de: "Gegr.",
+    es: "Est.",
+    it: "Fond.",
+    ru: "Осн.",
+    pt: "Est.",
+    nl: "Opger.",
+    tr: "Kur.",
+    pl: "Zał.",
+    sv: "Grund.",
+    el: "Ιδρ.",
+    he: "נוסד",
+    uk: "Засн.",
+    cs: "Zal.",
+    ro: "Fond.",
+    hu: "Alap.",
+    da: "Gr.",
+    fi: "Per.",
+    no: "Etab.",
+  },
+};
+
+export function getLocalizedBrandSuffix(rawSuffix: string = "co.", lang: string = "en"): string {
+  if (!rawSuffix) return "";
+  if (lang === "en") return rawSuffix;
+  
+  const normalized = rawSuffix.trim().toLowerCase().replace(/^[.\s/]+|[.\s/]+$/g, "");
+  const found = BRAND_SUFFIX_TRANSLATIONS[normalized]?.[lang];
+  if (found) return found;
+
+  return rawSuffix;
+}
+
 interface LanguageContextType {
   language: string;
   setLanguage: (code: string) => void;
   t: (key: string) => string;
+  brandName: string;
+  getBrandName: (defaultName?: string) => string;
+  getBrandSuffix: (defaultSuffix?: string) => string;
   dir: "ltr" | "rtl";
   allLanguages: LangDef[];
   detectedCountry: string | null;
@@ -889,6 +1125,9 @@ const LanguageContext = createContext<LanguageContextType>({
   language: "en",
   setLanguage: () => {},
   t: (key) => key,
+  brandName: "ORIZINO",
+  getBrandName: (defaultName = "ORIZINO") => getLocalizedBrandName(defaultName, "en"),
+  getBrandSuffix: (defaultSuffix = "co.") => getLocalizedBrandSuffix(defaultSuffix, "en"),
   dir: "ltr",
   allLanguages: ALL_LANGUAGES,
   detectedCountry: null,
@@ -997,14 +1236,16 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         color: inherit !important;
         box-shadow: none !important;
       }
-      /* Strict Non-Translation Rules: Protect Brand name, & Co., short forms, AI chats, currency, SKU, sizes */
+      /* Strict Non-Translation Rules: Protect Brand Identity, short forms, AI chats, currency, SKU, sizes */
       .notranslate,
       .skiptranslate,
       [translate="no"],
-      .brand-token,
       .brand-title,
       .brand-name,
       .brand-logo,
+      .brand-token,
+      .brand-suffix,
+      [data-brand="orizino"],
       .currency-symbol,
       .currency-code,
       .sku-code,
@@ -1042,11 +1283,14 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           hostParts.length >= 2 ? `.${hostParts.slice(-2).join(".")}` : "",
         ].filter(Boolean);
 
+        const paths = ["/", "", window.location.pathname];
+
         domainVariants.forEach((d) => {
           const domStr = d ? `; domain=${d}` : "";
-          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/` + domStr;
-          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=` + domStr;
-          document.cookie = `googtrans=/en/en; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/` + domStr;
+          paths.forEach((p) => {
+            document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${p}` + domStr;
+            document.cookie = `googtrans=/en/en; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${p}` + domStr;
+          });
         });
 
         // Reset the translation combo box if it exists
@@ -1189,20 +1433,36 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const setLanguage = useCallback(
     (code: string) => {
+      const prevLang = language;
       setLanguageState(code);
       localStorage.setItem("preferred_language", code);
       localStorage.setItem("orizino_user_lang_pref_set", "true");
       loadFontForLanguage(code);
       syncGoogleTranslateCookie(code);
 
-      const combo = document.querySelector(".goog-te-combo") as HTMLSelectElement;
-      if (combo) {
-        combo.value = code === "zh" ? "zh-CN" : code;
-        combo.dispatchEvent(new Event("change"));
-      } else if (code !== "en") {
-        setTimeout(() => {
-          window.location.reload();
-        }, 150);
+      if (code === "en") {
+        const hasGoogleTranslate =
+          document.getElementById("google-translate-script") ||
+          document.querySelector(".goog-te-combo") ||
+          document.querySelector("font[style], font") ||
+          prevLang !== "en";
+
+        if (hasGoogleTranslate) {
+          setTimeout(() => {
+            window.location.reload();
+          }, 80);
+          return;
+        }
+      } else {
+        const combo = document.querySelector(".goog-te-combo") as HTMLSelectElement;
+        if (combo) {
+          combo.value = code === "zh" ? "zh-CN" : code;
+          combo.dispatchEvent(new Event("change"));
+        } else {
+          setTimeout(() => {
+            window.location.reload();
+          }, 120);
+        }
       }
 
       if (user) {
@@ -1217,7 +1477,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           });
       }
     },
-    [user, loadFontForLanguage, syncGoogleTranslateCookie]
+    [user, language, loadFontForLanguage, syncGoogleTranslateCookie]
   );
 
   // Country & Language Auto-Detection
@@ -1371,10 +1631,12 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     document.documentElement.lang = language;
     loadFontForLanguage(language);
 
-    // When on English, enforce notranslate meta tag to stop automatic browser translations
+    // When on English, enforce notranslate meta tag and html attribute to stop automatic browser translations
     const metaId = "orizino-meta-notranslate";
     let metaTag = document.getElementById(metaId) as HTMLMetaElement | null;
     if (language === "en") {
+      document.documentElement.setAttribute("translate", "no");
+      document.documentElement.classList.add("notranslate");
       if (!metaTag) {
         metaTag = document.createElement("meta");
         metaTag.id = metaId;
@@ -1383,42 +1645,29 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         document.head.appendChild(metaTag);
       }
     } else {
+      document.documentElement.removeAttribute("translate");
+      document.documentElement.classList.remove("notranslate");
       if (metaTag) {
         metaTag.remove();
       }
     }
   }, [language, loadFontForLanguage]);
 
-  // Brand Name Non-Translation Guardian
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof document === "undefined") return;
-
-    const protectBrandElements = () => {
-      try {
-        const brandEls = document.querySelectorAll(
-          '.brand-title, .brand-name, .brand-logo, [data-brand="orizino"], .brand-token'
-        );
-        brandEls.forEach((el) => {
-          if (!el.getAttribute("translate")) {
-            el.setAttribute("translate", "no");
-          }
-          if (!el.classList.contains("notranslate")) {
-            el.classList.add("notranslate", "skiptranslate");
-          }
-        });
-      } catch {}
-    };
-
-    protectBrandElements();
-    const interval = setInterval(protectBrandElements, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
   const t = useCallback(
     (key: string): string => {
       if (language === "en") return EN_STRINGS[key] || key;
       return TRANSLATIONS[language]?.[key] || EN_STRINGS[key] || key;
     },
+    [language]
+  );
+
+  const brandName = useMemo(() => getLocalizedBrandName("ORIZINO", language), [language]);
+  const getBrandName = useCallback(
+    (defaultName = "ORIZINO") => getLocalizedBrandName(defaultName, language),
+    [language]
+  );
+  const getBrandSuffix = useCallback(
+    (defaultSuffix = "co.") => getLocalizedBrandSuffix(defaultSuffix, language),
     [language]
   );
 
@@ -1430,6 +1679,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         language,
         setLanguage,
         t,
+        brandName,
+        getBrandName,
+        getBrandSuffix,
         dir,
         allLanguages: ALL_LANGUAGES,
         detectedCountry,

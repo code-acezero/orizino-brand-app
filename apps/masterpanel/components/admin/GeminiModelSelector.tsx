@@ -8,7 +8,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Info, Sparkles, Zap, Shield, Brain, Cpu, Globe, CheckCircle2 } from "lucide-react";
+import { Info, Zap, Shield, Brain, Cpu, Globe, CheckCircle2, Bot } from "lucide-react";
+import { Sparkle } from "@/components/icons/Sparkle";
 import { GeminiLogo, GroqLogo, OpenRouterLogo } from "./GeminiFallbackPanel";
 
 export interface AIModelDetails {

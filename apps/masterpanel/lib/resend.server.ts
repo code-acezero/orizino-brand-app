@@ -49,9 +49,38 @@ export async function logDispatch(entry: {
 const RESEND_API = "https://api.resend.com/emails";
 const RESEND_BATCH_API = "https://api.resend.com/emails/batch";
 
-function getAuthHeaders(): Record<string, string> {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) throw new Error("RESEND_API_KEY is not configured");
+/**
+ * Resolves the active Resend API key with priority:
+ * 1. Runtime environment variable (RESEND_API_KEY / NEXT_PUBLIC_RESEND_API_KEY)
+ * 2. Database site_settings.email_provider.value.resend_api_key
+ */
+export async function getResolvedApiKey(): Promise<string | null> {
+  const envKey = process.env.RESEND_API_KEY || process.env.NEXT_PUBLIC_RESEND_API_KEY;
+  if (envKey && typeof envKey === "string" && envKey.trim()) {
+    return envKey.trim();
+  }
+
+  try {
+    const { data } = await (supabaseAdmin as any)
+      .from("site_settings")
+      .select("value")
+      .eq("key", "email_provider")
+      .maybeSingle();
+    const dbKey = (data?.value as any)?.resend_api_key;
+    if (dbKey && typeof dbKey === "string" && dbKey.trim()) {
+      return dbKey.trim();
+    }
+  } catch (err) {
+    console.warn("[resend] failed to resolve key from site_settings:", err);
+  }
+  return null;
+}
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const key = await getResolvedApiKey();
+  if (!key) {
+    throw new Error("RESEND_API_KEY is not configured in .env or Email Provider database settings");
+  }
   return {
     Authorization: `Bearer ${key}`,
     "Content-Type": "application/json",
@@ -61,7 +90,7 @@ function getAuthHeaders(): Record<string, string> {
 /**
  * Read the admin-configured email provider defaults
  * (from_name / from_email / reply_to) from site_settings.email_provider.
- * Falls back to env / Resend test address when unset.
+ * Falls back to env / Resend verified address when unset.
  */
 export async function getDefaultSender(): Promise<{ from_name: string; from_email: string; reply_to?: string }> {
   try {
@@ -72,71 +101,81 @@ export async function getDefaultSender(): Promise<{ from_name: string; from_emai
       .maybeSingle();
     const v = (data?.value ?? {}) as { from_email?: string; from_name?: string; reply_to?: string };
     return {
-      from_name: v.from_name?.trim() || "Orizino",
-      from_email: v.from_email?.trim() || process.env.RESEND_FROM_EMAIL || "team@orizino.com",
-      reply_to: v.reply_to?.trim() || undefined,
+      from_name: v.from_name?.trim() || "ORIZINO",
+      from_email: v.from_email?.trim() || process.env.RESEND_FROM_EMAIL || "orders@orizino.com",
+      reply_to: v.reply_to?.trim() || "support@orizino.com",
     };
   } catch {
     return {
-      from_name: "Orizino",
-      from_email: process.env.RESEND_FROM_EMAIL || "team@orizino.com",
+      from_name: "ORIZINO",
+      from_email: process.env.RESEND_FROM_EMAIL || "orders@orizino.com",
+      reply_to: "support@orizino.com",
     };
   }
 }
 
 export async function sendEmail(email: ResendEmail): Promise<{ id?: string; error?: string }> {
-  const res = await fetch(RESEND_API, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify(email),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    return { error: `Resend ${res.status}: ${text || res.statusText}` };
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(RESEND_API, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(email),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      return { error: `Resend ${res.status}: ${text || res.statusText}` };
+    }
+    const data = (await res.json()) as { id?: string };
+    return { id: data.id };
+  } catch (err: any) {
+    return { error: err?.message || "Failed to dispatch email via Resend" };
   }
-  const data = (await res.json()) as { id?: string };
-  return { id: data.id };
 }
 
 export async function sendBatch(
   emails: ResendEmail[]
 ): Promise<Array<{ id?: string; error?: string }>> {
   if (emails.length === 0) return [];
-  const headers = getAuthHeaders();
-  // Resend batch limit is 100 per request.
-  const out: Array<{ id?: string; error?: string }> = [];
-  for (let i = 0; i < emails.length; i += 100) {
-    const chunk = emails.slice(i, i + 100);
-    let attempt = 0;
-    while (attempt < 4) {
-      const res = await fetch(RESEND_BATCH_API, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(chunk),
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { data?: Array<{ id?: string }> };
-        const arr = data.data ?? [];
-        for (let j = 0; j < chunk.length; j++) {
-          out.push({ id: arr[j]?.id });
+  try {
+    const headers = await getAuthHeaders();
+    // Resend batch limit is 100 per request.
+    const out: Array<{ id?: string; error?: string }> = [];
+    for (let i = 0; i < emails.length; i += 100) {
+      const chunk = emails.slice(i, i + 100);
+      let attempt = 0;
+      while (attempt < 4) {
+        const res = await fetch(RESEND_BATCH_API, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(chunk),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { data?: Array<{ id?: string }> };
+          const arr = data.data ?? [];
+          for (let j = 0; j < chunk.length; j++) {
+            out.push({ id: arr[j]?.id });
+          }
+          break;
         }
+        if (res.status === 429 || res.status >= 500) {
+          const wait = 500 * Math.pow(2, attempt);
+          await new Promise((r) => setTimeout(r, wait));
+          attempt++;
+          continue;
+        }
+        const text = await res.text().catch(() => "");
+        for (let j = 0; j < chunk.length; j++) out.push({ error: `Resend ${res.status}: ${text}` });
         break;
       }
-      if (res.status === 429 || res.status >= 500) {
-        const wait = 500 * Math.pow(2, attempt);
-        await new Promise((r) => setTimeout(r, wait));
-        attempt++;
-        continue;
+      if (attempt >= 4) {
+        for (let j = 0; j < chunk.length; j++) out.push({ error: "rate limited after retries" });
       }
-      const text = await res.text().catch(() => "");
-      for (let j = 0; j < chunk.length; j++) out.push({ error: `Resend ${res.status}: ${text}` });
-      break;
     }
-    if (attempt >= 4) {
-      for (let j = 0; j < chunk.length; j++) out.push({ error: "rate limited after retries" });
-    }
+    return out;
+  } catch (err: any) {
+    return emails.map(() => ({ error: err?.message || "Batch send failed" }));
   }
-  return out;
 }
 
 /**

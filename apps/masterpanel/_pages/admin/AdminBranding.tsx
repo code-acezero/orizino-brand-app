@@ -17,18 +17,23 @@ import {
   Image as ImageIcon,
   Type,
   Shapes,
-  Wand2,
+  Megaphone,
   RotateCcw,
   Save,
   ArrowRight,
+  Sliders,
+  Scale,
+  Layout,
 } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
 import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { BrandImage, LOGO_FILTERS, type LogoFilter } from "@/lib/brand-image";
 import { useTabParam } from "@/hooks/use-tab-param";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SiteThemePanel from "@/components/admin/SiteThemePanel";
+import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
 const LOGO_STYLES = [
   { id: "none", label: "Bare", cls: "" },
@@ -390,6 +395,8 @@ const AdminBranding = () => {
   const [titleTint, setTitleTint] = useState<string>("#ffffff");
   const [titleGroupMode, setTitleGroupMode] = useState<"single" | "1-1" | "2-2" | "1-2" | "custom">("single");
   const [titleGroupCustom, setTitleGroupCustom] = useState<number[]>([]);
+  const [brandTitleSizeNav, setBrandTitleSizeNav] = useState<number>(20);
+  const [brandLogoTitleRatio, setBrandLogoTitleRatio] = useState<number>(1.0);
   const [initialSnapshot, setInitialSnapshot] = useState<string>("");
 
   // Ensure the currently selected Google font is loaded for live preview.
@@ -408,6 +415,7 @@ const AdminBranding = () => {
         "support_url", "address", "title_letter_colors", "title_font",
         "title_source", "title_image_url", "title_group_mode", "title_group_custom",
         "title_color_filter", "title_tint_color",
+        "brand_title_size_nav", "brand_logo_title_ratio",
       ];
       const map: Record<string, any> = {};
 
@@ -471,6 +479,8 @@ const AdminBranding = () => {
       setTitleGroupCustom(Array.isArray(settings.title_group_custom)
         ? (settings.title_group_custom as any[]).map((n) => Math.max(1, Number(n) || 1))
         : []);
+      setBrandTitleSizeNav(Number(settings.brand_title_size_nav) || 20);
+      setBrandLogoTitleRatio(Number(settings.brand_logo_title_ratio) || 1.0);
       setInitialSnapshot(JSON.stringify(settings));
     }
   }, [settings]);
@@ -488,6 +498,8 @@ const AdminBranding = () => {
     title_source: titleSource, title_image_url: titleImageUrl, title_group_mode: titleGroupMode,
     title_group_custom: titleGroupCustom,
     title_color_filter: titleFilter, title_tint_color: titleTint,
+    brand_title_size_nav: brandTitleSizeNav,
+    brand_logo_title_ratio: brandLogoTitleRatio,
   });
 
   const isDirty = useMemo(() => {
@@ -519,6 +531,8 @@ const AdminBranding = () => {
         title_group_custom: Array.isArray(init.title_group_custom) ? init.title_group_custom : [],
         title_color_filter: init.title_color_filter || "none",
         title_tint_color: init.title_tint_color || "#ffffff",
+        brand_title_size_nav: Number(init.brand_title_size_nav) || 20,
+        brand_logo_title_ratio: Number(init.brand_logo_title_ratio) || 1.0,
       });
       return initNormalized !== currentSnapshot;
     } catch {
@@ -553,6 +567,8 @@ const AdminBranding = () => {
         { key: "title_group_custom", value: titleGroupCustom },
         { key: "title_color_filter", value: titleFilter },
         { key: "title_tint_color", value: titleTint },
+        { key: "brand_title_size_nav", value: brandTitleSizeNav },
+        { key: "brand_logo_title_ratio", value: brandLogoTitleRatio },
       ];
 
       try {
@@ -622,6 +638,8 @@ const AdminBranding = () => {
       : []);
     setTitleFilter(((settings.title_color_filter as string) || "none") as LogoFilter);
     setTitleTint((settings.title_tint_color as string) || "#ffffff");
+    setBrandTitleSizeNav(Number(settings.brand_title_size_nav) || 20);
+    setBrandLogoTitleRatio(Number(settings.brand_logo_title_ratio) || 1.0);
   };
 
   const getEffectClass = (effect: string) => {
@@ -676,7 +694,7 @@ const AdminBranding = () => {
     return out;
   };
 
-  const renderTitle = (cls: string) => {
+  const renderTitle = (cls: string, customSize?: number) => {
     if (titleSource === "image" && titleImageUrl) {
       return (
         <BrandImage
@@ -689,10 +707,28 @@ const AdminBranding = () => {
       );
     }
     const text = siteName || "Your Brand";
+    const style: React.CSSProperties = {
+      fontFamily: titleFont ? `'${titleFont}', sans-serif` : undefined,
+      fontSize: customSize ? `${customSize}px` : undefined,
+    };
+
+    // When single mode, render as a single continuous text string without breaking into spans,
+    // so font kerning, ligatures, and script cursive connections apply naturally across the full word.
+    if (titleGroupMode === "single") {
+      const singleColor = titleColors[0];
+      return (
+        <span
+          className={cn(cls, "inline-block tracking-normal")}
+          style={{ ...style, color: singleColor || undefined }}
+        >
+          {text}
+        </span>
+      );
+    }
+
     const chunks = groupChunks(text);
     return (
-      <span className={cn(cls, "inline-flex items-baseline gap-[0.15em]")}
-        style={titleFont ? { fontFamily: `'${titleFont}', sans-serif` } : undefined}>
+      <span className={cn(cls, "inline-flex items-baseline gap-[0.15em]")} style={style}>
         {chunks.map((chunk, ci) => (
           <span key={ci} className="inline-flex" style={titleColors[ci] ? { color: titleColors[ci] } : undefined}>
             {chunk}
@@ -701,6 +737,17 @@ const AdminBranding = () => {
       </span>
     );
   };
+
+  useRegisterUniversalSave(
+    {
+      id: "admin-branding",
+      label: "Save Brand Changes",
+      onSave: () => saveMutation.mutate(),
+      isSaving: saveMutation.isPending,
+      isDirty: isDirty,
+    },
+    [isDirty, saveMutation.isPending]
+  );
 
   return (
     <div className="space-y-6 pb-28">
@@ -720,12 +767,6 @@ const AdminBranding = () => {
             <Check className="w-3.5 h-3.5" />
             Live Preview Synchronized
           </Badge>
-          {isDirty && (
-            <Button size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="h-9 text-xs font-bold rounded-xl shadow-md">
-              <Save className="w-3.5 h-3.5 mr-1.5" />
-              {saveMutation.isPending ? "Saving…" : "Save Changes"}
-            </Button>
-          )}
         </div>
       </div>
       {/* Two-column workspace */}
@@ -866,7 +907,7 @@ const AdminBranding = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                          <Globe className="h-4 w-4" />
+                          <Megaphone className="h-4 w-4" />
                         </div>
                         <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Corporate Voice & Contact</CardTitle>
                       </div>
@@ -1077,8 +1118,279 @@ const AdminBranding = () => {
           )}
 
           {show("typography") && (
-          <SectionCard icon={Type} title="Display Typography" description="Font used for the site name and headline titles">
+          <SectionCard icon={Type} title="Display Typography" description="Font used for the site name and headline titles across all public applications">
             <TypographyPicker titleFont={titleFont} setTitleFont={setTitleFont} />
+          </SectionCard>
+          )}
+
+          {/* Top Nav Brand Title Sizing */}
+          {show("typography") && (
+          <SectionCard
+            icon={Sliders}
+            title="Top Navigation Brand Title Size"
+            description="Control the exact rendered font size of the brand title in the main top navigation bar."
+          >
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/60 bg-muted/20">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-foreground flex items-center gap-2">
+                    <span>Navigation Title Size</span>
+                    <Badge variant="outline" className="font-mono text-[11px] px-2 py-0.5 bg-background">
+                      {brandTitleSizeNav}px
+                    </Badge>
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Adjusts title typography scale in header navbar across desktop and mobile.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 w-full sm:w-64">
+                  <Slider
+                    min={12}
+                    max={40}
+                    step={1}
+                    value={[brandTitleSizeNav]}
+                    onValueChange={([val]) => setBrandTitleSizeNav(val)}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    min={12}
+                    max={40}
+                    value={brandTitleSizeNav}
+                    onChange={(e) => setBrandTitleSizeNav(Math.min(40, Math.max(12, Number(e.target.value) || 20)))}
+                    className="w-16 h-8 text-xs font-mono text-center"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Sizing Presets */}
+              <div className="space-y-1.5">
+                <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Quick Presets</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {[
+                    { label: "Compact", size: 16, desc: "16px" },
+                    { label: "Standard", size: 20, desc: "20px" },
+                    { label: "Prominent", size: 24, desc: "24px" },
+                    { label: "Large", size: 28, desc: "28px" },
+                    { label: "Statement", size: 32, desc: "32px" },
+                  ].map((preset) => (
+                    <button
+                      key={preset.size}
+                      type="button"
+                      onClick={() => setBrandTitleSizeNav(preset.size)}
+                      className={cn(
+                        "flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all",
+                        brandTitleSizeNav === preset.size
+                          ? "border-primary bg-primary/10 shadow-sm"
+                          : "border-border/50 hover:border-primary/40 hover:bg-muted/40"
+                      )}
+                    >
+                      <span className="text-xs font-semibold text-foreground">{preset.label}</span>
+                      <span className="text-[10px] text-muted-foreground font-mono">{preset.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Live Top Nav Bar Simulation */}
+              <div className="space-y-1.5">
+                <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Live Top Nav Simulation</Label>
+                <div className="rounded-xl border border-border/70 bg-background/95 p-3 flex items-center justify-between shadow-sm overflow-hidden">
+                  <div className="flex items-center gap-3">
+                    <div className={cn("overflow-hidden relative shrink-0", styleObj.cls, getEffectClass(logoEffect))}
+                      style={{
+                        height: `${Math.round((brandTitleSizeNav * 1.35) * brandLogoTitleRatio)}px`,
+                        width: `${Math.round((brandTitleSizeNav * 1.35) * brandLogoTitleRatio)}px`,
+                        minWidth: "20px",
+                        minHeight: "20px",
+                      }}
+                    >
+                      {logoUrl ? (
+                        <BrandImage src={logoUrl} alt="" filter={logoFilter} customColor={logoTint} className="w-full h-full object-contain" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
+                          {siteName?.charAt(0) || "L"}
+                        </div>
+                      )}
+                    </div>
+                    {renderTitle("font-bold tracking-wider leading-none select-none uppercase", brandTitleSizeNav)}
+                  </div>
+                  <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
+                    <span>Catalog</span>
+                    <span>Collections</span>
+                    <span>Lookbook</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+          )}
+
+          {/* Logo vs Title Proportional Ratio Size Matching */}
+          {show("typography") && (
+          <SectionCard
+            icon={Scale}
+            title="Brand Logo vs Title Size Matching"
+            description="Adjust the relative proportional scale between the logo icon and brand title so they lock up harmoniously across Top Nav, Footer, and Landing pages."
+          >
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/60 bg-muted/20">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-foreground flex items-center gap-2">
+                    <span>Logo / Title Scale Ratio</span>
+                    <Badge variant="outline" className="font-mono text-[11px] px-2 py-0.5 bg-background">
+                      {brandLogoTitleRatio.toFixed(2)}x
+                    </Badge>
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Controls the relative size multiplier of the logo mark compared to the title text.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 w-full sm:w-64">
+                  <Slider
+                    min={0.6}
+                    max={2.0}
+                    step={0.05}
+                    value={[brandLogoTitleRatio]}
+                    onValueChange={([val]) => setBrandLogoTitleRatio(Number(val.toFixed(2)))}
+                    className="flex-1"
+                  />
+                  <span className="w-14 text-right text-xs font-mono font-semibold text-foreground">
+                    {brandLogoTitleRatio.toFixed(2)}x
+                  </span>
+                </div>
+              </div>
+
+              {/* Ratio Presets */}
+              <div className="space-y-1.5">
+                <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Ratio Balance Presets</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {[
+                    { label: "Subtle Logo", ratio: 0.75, desc: "0.75x Title" },
+                    { label: "Balanced 1:1", ratio: 1.0, desc: "1.00x Title" },
+                    { label: "Emphasized", ratio: 1.25, desc: "1.25x Title" },
+                    { label: "Prominent", ratio: 1.5, desc: "1.50x Title" },
+                    { label: "Hero Dominant", ratio: 1.8, desc: "1.80x Title" },
+                  ].map((preset) => (
+                    <button
+                      key={preset.ratio}
+                      type="button"
+                      onClick={() => setBrandLogoTitleRatio(preset.ratio)}
+                      className={cn(
+                        "flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all",
+                        Math.abs(brandLogoTitleRatio - preset.ratio) < 0.03
+                          ? "border-primary bg-primary/10 shadow-sm"
+                          : "border-border/50 hover:border-primary/40 hover:bg-muted/40"
+                      )}
+                    >
+                      <span className="text-xs font-semibold text-foreground">{preset.label}</span>
+                      <span className="text-[10px] text-muted-foreground font-mono">{preset.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Multi-Surface Live Lockup Previews */}
+              <div className="space-y-3 pt-2">
+                <Label className="text-[11px] uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <Layout className="w-3.5 h-3.5" /> Synchronized Multi-Surface Lockups
+                </Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* Top Nav Surface Lockup */}
+                  <div className="p-3.5 rounded-xl border border-border/60 bg-background flex flex-col justify-between gap-3 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Top Nav Lockup</span>
+                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Header</Badge>
+                    </div>
+                    <div className="flex items-center gap-2.5 py-2">
+                      <div className={cn("overflow-hidden relative shrink-0", styleObj.cls, getEffectClass(logoEffect))}
+                        style={{
+                          height: `${Math.round((brandTitleSizeNav * 1.35) * brandLogoTitleRatio)}px`,
+                          width: `${Math.round((brandTitleSizeNav * 1.35) * brandLogoTitleRatio)}px`,
+                          minWidth: "22px",
+                          minHeight: "22px",
+                        }}
+                      >
+                        {logoUrl ? (
+                          <BrandImage src={logoUrl} alt="" filter={logoFilter} customColor={logoTint} className="w-full h-full object-contain" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
+                            {siteName?.charAt(0) || "L"}
+                          </div>
+                        )}
+                      </div>
+                      {renderTitle("font-bold tracking-wider leading-none uppercase", brandTitleSizeNav)}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      Header bar with title at {brandTitleSizeNav}px and logo scaled {brandLogoTitleRatio.toFixed(2)}x.
+                    </p>
+                  </div>
+
+                  {/* Footer Surface Lockup */}
+                  <div className="p-3.5 rounded-xl border border-border/60 bg-background flex flex-col justify-between gap-3 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Footer Lockup</span>
+                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Footer</Badge>
+                    </div>
+                    <div className="flex items-center gap-2 py-2">
+                      <div className={cn("overflow-hidden relative shrink-0", styleObj.cls, getEffectClass(logoEffect))}
+                        style={{
+                          height: `${Math.round(20 * brandLogoTitleRatio)}px`,
+                          width: `${Math.round(20 * brandLogoTitleRatio)}px`,
+                          minWidth: "16px",
+                          minHeight: "16px",
+                        }}
+                      >
+                        {logoUrl ? (
+                          <BrandImage src={logoUrl} alt="" filter={logoFilter} customColor={logoTint} className="w-full h-full object-contain" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-[9px]">
+                            {siteName?.charAt(0) || "L"}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        {renderTitle("font-bold tracking-wider leading-none uppercase text-sm", 14)}
+                        {brandSuffix && <span className="text-[10px] text-muted-foreground">{brandSuffix}</span>}
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      Footer lockup automatically scales logo relative to footer typography.
+                    </p>
+                  </div>
+
+                  {/* Landing / Hero Surface Lockup */}
+                  <div className="p-3.5 rounded-xl border border-border/60 bg-background flex flex-col justify-between gap-3 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Hero Landing Lockup</span>
+                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Hero</Badge>
+                    </div>
+                    <div className="flex flex-col items-center justify-center text-center gap-2 py-1">
+                      <div className={cn("overflow-hidden relative shrink-0", styleObj.cls, getEffectClass(logoEffect))}
+                        style={{
+                          height: `${Math.round(36 * brandLogoTitleRatio)}px`,
+                          width: `${Math.round(36 * brandLogoTitleRatio)}px`,
+                          minWidth: "28px",
+                          minHeight: "28px",
+                        }}
+                      >
+                        {logoUrl ? (
+                          <BrandImage src={logoUrl} alt="" filter={logoFilter} customColor={logoTint} className="w-full h-full object-contain" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+                            {siteName?.charAt(0) || "L"}
+                          </div>
+                        )}
+                      </div>
+                      {renderTitle("font-bold tracking-widest leading-none uppercase text-lg", 22)}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground text-center">
+                      Centered hero brand identity with proportional lockup balance.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </SectionCard>
           )}
 
@@ -1086,8 +1398,8 @@ const AdminBranding = () => {
           {show("typography") && (
           <SectionCard
             icon={Type}
-            title="Site Title System"
-            description="Choose an image title or split the text into groups. Applies across storefront, company site & everywhere the title renders."
+            title="Site Title System & Letter Grouping"
+            description="Choose a single continuous wordmark for natural custom fonts & ligatures, or chunk text into visual groups with per-letter colors."
           >
             <div className="space-y-4">
               {/* Source toggle */}
@@ -1139,11 +1451,11 @@ const AdminBranding = () => {
                 <div className="space-y-4">
                   <div>
                     <Label className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2 block">
-                      Letter grouping
+                      Letter grouping mode
                     </Label>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                       {([
-                        { id: "single", label: "Single", hint: "Whole word" },
+                        { id: "single", label: "Single Word", hint: "Unbroken natural font" },
                         { id: "1-1",    label: "1 · 1",  hint: "Each letter" },
                         { id: "2-2",    label: "2 · 2",  hint: "Pairs" },
                         { id: "1-2",    label: "1 · 2",  hint: "Alternating" },
@@ -1172,7 +1484,7 @@ const AdminBranding = () => {
                             <span className="text-[9px] text-muted-foreground">{m.hint}</span>
                             {m.id === titleGroupMode && siteName && (
                               <span className="text-[9px] font-mono text-primary/80 truncate max-w-full">
-                                {preview}
+                                {m.id === "single" ? siteName : preview}
                               </span>
                             )}
                           </button>
@@ -1180,7 +1492,7 @@ const AdminBranding = () => {
                       })}
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-2">
-                      Grouping controls how the site name is chunked visually (used by animated loaders and headings).
+                      <strong>Single Word</strong> renders unbroken text with full font ligatures, kerning, and cursive connections. Chunked modes allow multi-colored segmented letters.
                     </p>
                   </div>
 
@@ -1286,10 +1598,10 @@ const AdminBranding = () => {
 
           {/* Brand voice */}
           {show("voice") && (
-          <SectionCard icon={Wand2} title="Brand Voice" description="The name, tagline, and ways customers reach you">
+          <SectionCard icon={Megaphone} title="Brand Voice" description="The name, tagline, and ways customers reach you">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Site Name" count={siteName.length} max={40}>
-                <Input value={siteName} onChange={(e) => setSiteName(e.target.value)} placeholder="Your Brand Name" />
+              <Field label="Primary Brand Name" count={siteName.length} max={40} hint="Master brand name across Storefront, Wordmark, Invoices, Emails &amp; SEO">
+                <Input value={siteName} onChange={(e) => setSiteName(e.target.value)} placeholder="e.g. ORIZINO" />
               </Field>
               <Field label="Brand Suffix" count={brandSuffix.length} max={12} hint="Shown after brand name in footer (e.g. co.). Hidden in top nav.">
                 <Input value={brandSuffix} onChange={(e) => setBrandSuffix(e.target.value)} placeholder="co." />

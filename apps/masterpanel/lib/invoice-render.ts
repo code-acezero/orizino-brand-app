@@ -19,6 +19,8 @@ export interface InvoiceOrderPayload {
   tracking_number?: string;
   subtotal: number;
   shipping_fee: number;
+  is_delivery_prepaid?: boolean;
+  delivery_prepaid_amount?: number;
   tax: number;
   discount: number;
   total: number;
@@ -954,7 +956,11 @@ function renderImperialBody(s: InvoiceSettings, o: InvoiceOrderPayload): string 
   parts.push(`<table class="imp-totals-table">`);
   parts.push(`<tr><td class="label">Subtotal</td><td class="val">${money(o.subtotal)}</td></tr>`);
   if (o.shipping_fee) {
-    parts.push(`<tr><td class="label">Shipping</td><td class="val">${money(o.shipping_fee)}</td></tr>`);
+    if (o.is_delivery_prepaid) {
+      parts.push(`<tr><td class="label">Delivery Fee <span style="font-size:0.75rem; color:#059669; font-weight:700;">(Pre-paid)</span></td><td class="val">${money(o.shipping_fee)}</td></tr>`);
+    } else {
+      parts.push(`<tr><td class="label">Delivery Fee</td><td class="val">${money(o.shipping_fee)}</td></tr>`);
+    }
   }
   if (o.tax) {
     parts.push(`<tr><td class="label">Tax</td><td class="val">${money(o.tax)}</td></tr>`);
@@ -962,7 +968,14 @@ function renderImperialBody(s: InvoiceSettings, o: InvoiceOrderPayload): string 
   if (o.discount && o.discount > 0) {
     parts.push(`<tr><td class="label" style="color:#059669;">Discount</td><td class="val" style="color:#059669;">-${money(o.discount)}</td></tr>`);
   }
-  parts.push(`<tr class="imp-grand-total-row"><td class="label">TOTAL AMOUNT</td><td class="val" style="font-size:1.18rem;">${money(o.total)}</td></tr>`);
+  if (o.is_delivery_prepaid) {
+    const prepaidFee = Number(o.delivery_prepaid_amount || o.shipping_fee || 0);
+    const balanceDue = Math.max(0, o.total - prepaidFee);
+    parts.push(`<tr><td class="label" style="color:#059669;">Advance Paid (Delivery)</td><td class="val" style="color:#059669;">-${money(prepaidFee)}</td></tr>`);
+    parts.push(`<tr class="imp-grand-total-row"><td class="label">BALANCE DUE ON DELIVERY</td><td class="val" style="font-size:1.18rem;">${money(balanceDue)}</td></tr>`);
+  } else {
+    parts.push(`<tr class="imp-grand-total-row"><td class="label">TOTAL AMOUNT</td><td class="val" style="font-size:1.18rem;">${money(o.total)}</td></tr>`);
+  }
   parts.push(`</table>`);
 
   // Order Support & Official Postal Stamp

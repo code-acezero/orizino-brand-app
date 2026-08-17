@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { BrandImage, type LogoFilter } from "@/lib/brand-image";
+import { useLanguage, getLocalizedBrandName } from "@/contexts/LanguageContext";
 
 interface SplashScreenProps {
   visible: boolean;
@@ -13,11 +14,14 @@ interface SplashScreenProps {
  * Features a bold, prominent brand logo mark with smooth entrance and exit transitions.
  */
 const SplashScreen: React.FC<SplashScreenProps> = ({ visible }) => {
+  const { language } = useLanguage();
   const [logoUrl, setLogoUrl] = useState<string>("/orizino-logo.svg");
   const [siteName, setSiteName] = useState<string>("ORIZINO");
   const [titleFont, setTitleFont] = useState<string>("Instrument Serif");
   const [logoFilter, setLogoFilter] = useState<LogoFilter>("none");
   const [logoTint, setLogoTint] = useState<string>("#ffffff");
+
+  const localizedSiteName = getLocalizedBrandName(siteName, language);
 
   useEffect(() => {
     supabase
@@ -70,7 +74,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ visible }) => {
               {logoUrl ? (
                 <BrandImage
                   src={logoUrl}
-                  alt={siteName}
+                  alt={localizedSiteName}
                   filter={logoFilter}
                   customColor={logoTint}
                   className="w-full h-full object-contain"
@@ -80,7 +84,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ visible }) => {
                   className="text-6xl sm:text-7xl md:text-8xl font-black text-foreground select-none"
                   style={{ fontFamily: `'${titleFont}', sans-serif` }}
                 >
-                  {siteName.charAt(0)}
+                  {localizedSiteName.charAt(0)}
                 </span>
               )}
             </div>
@@ -90,7 +94,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ visible }) => {
               className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-[0.25em] uppercase text-foreground/40"
               style={{ fontFamily: `'${titleFont}', sans-serif` }}
             >
-              {siteName}
+              {localizedSiteName}
             </h1>
 
             <p className="text-[9px] sm:text-[10px] font-mono tracking-[0.35em] uppercase text-muted-foreground/40">

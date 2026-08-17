@@ -16,7 +16,6 @@ import {
   Check,
   Package,
   Search,
-  Sparkles,
   ShoppingBag,
   ExternalLink,
 } from "lucide-react";

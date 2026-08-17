@@ -16,6 +16,7 @@ import AutoSkeleton from "@/components/skeletons/AutoSkeleton";
 import AdminTopBar from "./AdminTopBar";
 import { cn } from "@/lib/utils";
 import { RelatedSettingsNav } from "./RelatedSettingsNav";
+import UniversalFloatingSaveButton from "./UniversalFloatingSaveButton";
 
 
 const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
@@ -35,14 +36,36 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
 
   // Derive section name from the first path segment
   const sectionMeta = useMemo((): { name: string; sub: string; subShort: string } => {
+    const isPSO =
+      normalisedPath.startsWith("/sales/products") ||
+      normalisedPath.startsWith("/sales/categories") ||
+      normalisedPath.startsWith("/sales/stock") ||
+      normalisedPath.startsWith("/sales/invoice-stickers") ||
+      normalisedPath.startsWith("/sales/coupons") ||
+      normalisedPath.startsWith("/sales/requests") ||
+      normalisedPath.startsWith("/sales/user-promos") ||
+      normalisedPath.startsWith("/sales/showcase") ||
+      normalisedPath.startsWith("/sales/shipping") ||
+      normalisedPath.startsWith("/sales/couriers") ||
+      normalisedPath.startsWith("/sales/courier-management") ||
+      normalisedPath.startsWith("/sales/delivery-offers") ||
+      normalisedPath.startsWith("/sales/payments-couriers") ||
+      normalisedPath.startsWith("/products");
+
+    if (isPSO) {
+      return { name: "Control Panel", sub: "PSO Management", subShort: "PSO" };
+    }
+
     const seg = normalisedPath.split("/")[1] ?? "";
     const map: Record<string, { full: string; short: string }> = {
       "":            { full: "Master Panel",           short: "Master" },
-      "sales":       { full: "Sales & Operations",     short: "Sales" },
-      "marketing":     { full: "Marketing Management",   short: "Marketing" },
-      "email":       { full: "Email Marketing",        short: "Email" },
+      "sales":       { full: "Sales & Customers",      short: "Sales" },
+      "products-payments": { full: "PSO Management",   short: "PSO" },
+      "products":    { full: "PSO Management",         short: "PSO" },
+      "marketing":   { full: "SEO & Ads Management",   short: "SEO & Ads" },
+      "email":       { full: "Emails & Marketing",     short: "Emails" },
       "affiliate":   { full: "Affiliate Program",      short: "Affiliate" },
-      "brand":       { full: "Brand & Storefront",     short: "Branding" },
+      "brand":       { full: "Public Contents & UI",   short: "Brand" },
       "system":      { full: "Backend & System",       short: "System" },
       "settings-ai": { full: "Settings & AI",          short: "Settings" },
       "team":        { full: "Team & Access",          short: "Team" },
@@ -98,7 +121,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
           />
 
           <main className="flex-1 p-4 md:p-6 overflow-auto">
-            <div className="max-w-[1600px] mx-auto">
+            <div className="w-full">
               <React.Suspense fallback={<AutoSkeleton />}>
                 {children}
               </React.Suspense>
@@ -111,6 +134,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
 
         <AdminCommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
         <ShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} />
+        <UniversalFloatingSaveButton />
       </div>
     </SidebarProvider>
   );

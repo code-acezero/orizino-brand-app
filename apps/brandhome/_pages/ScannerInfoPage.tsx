@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { ScanLine, ShieldCheck, Sparkles, Eye, Lock, ArrowRight, QrCode, Smartphone, CheckCircle2 } from "lucide-react";
+import { ScanLine, ShieldCheck, Eye, Lock, ArrowRight, QrCode, Smartphone, CheckCircle2 } from "lucide-react";
 import { getStorefrontUrl } from "@/lib/cross-app-urls";
 import { useScannerConfig } from "@/hooks/use-scanner-config";
 import { CompanyNav } from "@/components/nav/CompanyNav";

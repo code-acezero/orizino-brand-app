@@ -15,9 +15,10 @@ import {
   RefreshCw, Cookie, Search, ExternalLink, Layers,
   Globe, Check, Loader2, FileCode, SearchCheck
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import PageBuilder, { type PageBlock } from "@/components/admin/PageBuilder";
+import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
 interface CmsPage {
   id: string;
@@ -128,6 +129,18 @@ const AdminCmsPages = () => {
     setSelected({ ...selected, content: `<!--BLOCKS:${JSON.stringify([])}-->` });
     setEditorMode("blocks");
   };
+
+  useRegisterUniversalSave(
+    selected
+      ? {
+          id: `cms-page-${selected.id}`,
+          label: `Save ${selected.title || "Page"}`,
+          onSave: () => saveMutation.mutate(selected),
+          isSaving: saveMutation.isPending,
+        }
+      : null,
+    [selected, saveMutation.isPending]
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
@@ -322,16 +335,6 @@ const AdminCmsPages = () => {
                     title="Delete Page"
                   >
                     <Trash2 className="w-4 h-4" />
-                  </Button>
-
-                  <Button
-                    size="sm"
-                    onClick={() => saveMutation.mutate(selected)}
-                    disabled={saveMutation.isPending}
-                    className="rounded-xl gap-2 font-bold h-9 text-xs px-4"
-                  >
-                    {saveMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                    Save Page
                   </Button>
                 </div>
               </div>

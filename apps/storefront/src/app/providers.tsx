@@ -11,12 +11,13 @@ import SiteThemeProvider from "@/components/SiteThemeProvider";
 import TrackingPixels from "@/components/TrackingPixels";
 import { useDynamicFavicon } from "@/hooks/use-dynamic-favicon";
 import { Toaster } from "@/components/ui/toaster";
-import { ThemeProvider } from "next-themes";
+import { ThemeProvider } from "@orizino/ui";
 import MainShell from "./main-shell";
 
 const SplashScreen = React.lazy(() => import("@/components/SplashScreen"));
 const AIChatWidget = React.lazy(() => import("@/components/AIChatWidget"));
 const PromoPopup = React.lazy(() => import("@/components/PromoPopup"));
+const HomePopup = React.lazy(() => import("@/components/HomePopup"));
 const InstallAppPrompt = React.lazy(() => import("@/components/InstallAppPrompt"));
 
 function makeQueryClient() {
@@ -95,6 +96,7 @@ function DeferredWidgets() {
     <React.Suspense fallback={null}>
       <AIChatWidget />
       <PromoPopup />
+      <HomePopup />
       <InstallAppPrompt />
     </React.Suspense>
   );

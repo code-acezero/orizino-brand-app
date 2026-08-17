@@ -77,6 +77,7 @@ import CourierPushDialog from "@/components/admin/CourierPushDialog";
 import ManualTrackingSection from "@/components/admin/ManualTrackingSection";
 import { decideCancellation, decideReturn } from "@/lib/order-workflows.functions";
 import { printOrderDocuments, exportOrderPdf, exportOrderJpg } from "@/lib/invoice-export-utils";
+import { emailOrderInvoice } from "@/lib/order-invoice-email.functions";
 
 type Order = Tables<"orders">;
 
@@ -207,6 +208,24 @@ export default function AdminOrders() {
     staleTime: 15000,
   });
 
+  const [isSendingInvoice, setIsSendingInvoice] = useState(false);
+
+  const handleSendInvoiceEmail = async (orderId: string, customTo?: string) => {
+    setIsSendingInvoice(true);
+    try {
+      const res = await emailOrderInvoice({ data: { order_id: orderId, to: customTo } });
+      if (res?.ok) {
+        toast.success(`Invoice email successfully dispatched to ${res.to || "customer"}`);
+      } else {
+        toast.error(res?.error || "Failed to dispatch invoice email");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to send invoice email");
+    } finally {
+      setIsSendingInvoice(false);
+    }
+  };
+
   // Mutations
   const updateStatus = useMutation({
     mutationFn: async ({ id, status, tracking }: { id: string; status: string; tracking?: string }) => {
@@ -214,10 +233,23 @@ export default function AdminOrders() {
       if (tracking) update.tracking_number = tracking;
       const { error } = await supabase.from("orders").update(update).eq("id", id);
       if (error) throw error;
+
+      // Automatically email invoice upon order confirmation / processing
+      if (status === "confirmed" || status === "processing") {
+        try {
+          await emailOrderInvoice({ data: { order_id: id } });
+        } catch (e) {
+          console.warn("[admin-orders] Auto invoice email dispatch note:", e);
+        }
+      }
     },
-    onSuccess: () => {
+    onSuccess: (_, { status }) => {
       qc.invalidateQueries({ queryKey: ["admin-orders"] });
-      toast.success("Order status updated");
+      if (status === "confirmed" || status === "processing") {
+        toast.success("Order confirmed & invoice emailed to customer");
+      } else {
+        toast.success("Order status updated");
+      }
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -1433,6 +1465,17 @@ export default function AdminOrders() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleSendInvoiceEmail(selectedOrder.id)}
+                  disabled={isSendingInvoice}
+                  className="h-8 rounded-xl text-xs font-semibold gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+                >
+                  <Mail className={`w-3.5 h-3.5 ${isSendingInvoice ? "animate-pulse" : ""}`} />
+                  {isSendingInvoice ? "Sending…" : "Email Invoice"}
+                </Button>
 
                 <Button
                   size="sm"

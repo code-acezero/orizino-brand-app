@@ -36,6 +36,7 @@ import {
   ImageIcon,
   Play,
 } from "lucide-react";
+import { Sparkle } from "@/components/icons/Sparkle";
 import { DEFAULT_AI_WIDGET_SETTINGS, type AiWidgetSettings } from "@/hooks/use-ai-widget-settings";
 import BubbleLivePreview from "@/components/admin/BubbleLivePreview";
 import GeminiFallbackPanel from "@/components/admin/GeminiFallbackPanel";
@@ -374,36 +375,16 @@ const AdminAISettings = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 w-full pb-12">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl border border-primary/20 bg-gradient-to-r from-primary/10 via-card to-background shadow-lg backdrop-blur-md">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/20 text-primary text-[11px] font-semibold">
-            <Bot className="w-3.5 h-3.5" /> Next-Gen Concierge Agent
+            <Sparkle className="w-3.5 h-3.5" /> Next-Gen Concierge Agent
           </div>
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">AI Concierge & Streetwear Companion</h1>
           <p className="text-xs sm:text-sm text-muted-foreground">
             Powered by <strong>Google Gemini 2.5 Flash</strong> with dynamic multilingual intelligence (English, Bangla, French, Spanish, Arabic, Hindi), drop-shoulder sizing precision, and live order tracking.
           </p>
-        </div>
-        <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
-          <Button
-            type="button"
-            onClick={() => saveMutation.mutateAsync()}
-            disabled={saveMutation.isPending}
-            className="gap-2 px-5 rounded-2xl shadow-md cursor-pointer font-bold"
-          >
-            {saveMutation.isPending ? (
-              <>
-                <RotateCcw className="w-4 h-4 animate-spin" />
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Save Changes</span>
-              </>
-            )}
-          </Button>
         </div>
       </div>
 
@@ -454,7 +435,7 @@ const AdminAISettings = () => {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="border-border/60 bg-card/70 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Bot className="w-5 h-5 text-primary" /> Identity & Avatar Studio</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Sparkle className="w-5 h-5 text-primary" /> Identity & Avatar Studio</CardTitle>
             <CardDescription>Configure agent name, greeting, and high-resolution photo avatar</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -559,7 +540,7 @@ const AdminAISettings = () => {
 
         <Card className="border-border/60 bg-card/70 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Bot className="w-5 h-5 text-primary" /> Storefront Visibility & Launcher</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Sparkle className="w-5 h-5 text-primary" /> Storefront Visibility & Launcher</CardTitle>
             <CardDescription>Control where and when the agent floating launcher appears</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -619,7 +600,7 @@ const AdminAISettings = () => {
 
         <Card className="md:col-span-2 border-border/60 bg-card/70 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Brain className="w-5 h-5 text-primary" /> AI Brain Engine & Multilingual Intelligence</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Sparkle className="w-5 h-5 text-primary" /> AI Brain Engine & Multilingual Intelligence</CardTitle>
             <CardDescription>Powered by Google Gemini 2.5 Flash Free Tier with automatic 3-tier language detection.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -673,7 +654,7 @@ const AdminAISettings = () => {
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <CardTitle className="flex items-center gap-2">
-                  <Play className="w-4 h-4 text-emerald-500" /> Live AI Agent Simulator
+                  <Sparkle className="w-4 h-4 text-emerald-500" /> Live AI Agent Simulator
                 </CardTitle>
                 <CardDescription>
                   Test conversation flow, multilingual language switching (Bangla, English, French, Spanish, Arabic, Hindi), and sizing recommendations in real time.

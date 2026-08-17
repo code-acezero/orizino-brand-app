@@ -17,12 +17,7 @@ export default function AdminLanding() {
   const role = useAdminRole();
   const { data: staff, isLoading } = useStaffSections();
 
-  // Master admins immediately get the MasterPanel home without waiting for staff query
-  if (role === "admin" || staff?.isAdmin) {
-    return <MasterPanel />;
-  }
-
-  if (isLoading && !staff) {
+  if (isLoading && !staff && role !== "admin") {
     return (
       <div className="min-h-[40vh] flex items-center justify-center">
         <SectionLoader tone="platinum" size={48} />
@@ -30,6 +25,6 @@ export default function AdminLanding() {
     );
   }
 
-  return <ControlPanel />;
+  return <MasterPanel />;
 }
 // code:4ce0

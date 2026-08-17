@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { subDays, startOfDay, format as fmtDate, eachDayOfInterval } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +57,7 @@ import {
   Loader2,
   Tag,
   Sliders,
+  SlidersHorizontal,
   Play,
 } from "lucide-react";
 import { useServerFn } from "@/lib/server-fn-compat";
@@ -79,6 +86,11 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, LineChart, Line } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import PageHeader from "@/components/admin/PageHeader";
+import {
+  CategoryMonochromeIcon,
+  MONOCHROME_CATEGORY_PRESETS,
+  type MonochromePreset,
+} from "@shared/components/CategoryMonochromeIcon";
 
 const PRESET_ACCENTS = [
   { name: "Indigo", color: "#6366f1" },
@@ -89,10 +101,6 @@ const PRESET_ACCENTS = [
   { name: "Violet", color: "#8b5cf6" },
   { name: "Rose", color: "#f43f5e" },
   { name: "Zinc", color: "#71717a" },
-];
-
-const PRESET_EMOJIS = [
-  "🔥", "👕", "👖", "🎌", "👘", "⚡", "🎒", "🕶️", "👟", "💎", "🏷️", "🧢", "🧥", "🩳", "✨", "🎁"
 ];
 
 function getYouTubeId(url: string) {
@@ -106,6 +114,7 @@ interface CategoryStudioProps {
   editing: Record<string, any>;
   updateField: (field: string, value: any) => void;
   parentCategories: any[];
+  allCategories?: any[];
   saveMutation: any;
   onClose: () => void;
 }
@@ -114,6 +123,7 @@ const CategoryStudio = ({
   editing,
   updateField,
   parentCategories,
+  allCategories,
   saveMutation,
   onClose,
 }: CategoryStudioProps) => {
@@ -283,19 +293,24 @@ const CategoryStudio = ({
                 <SelectTrigger className="h-9 rounded-xl mt-1 text-xs">
                   <SelectValue placeholder="None (Top-Level Category)" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent className="rounded-xl max-h-60">
                   <SelectItem value="none">None (Top-Level Category)</SelectItem>
-                  {parentCategories
+                  {(allCategories || parentCategories)
                     .filter((p) => p.id !== editing.id)
-                    .map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.icon ? `${p.icon} ` : ""}{p.name}
-                      </SelectItem>
-                    ))}
+                    .map((p) => {
+                      const isSub = !!p.parent_id;
+                      return (
+                        <SelectItem key={p.id} value={p.id}>
+                          {isSub ? "  ↳ " : ""}
+                          {p.icon ? `${p.icon} ` : ""}{p.name}
+                          {isSub ? " (Subcategory)" : ""}
+                        </SelectItem>
+                      );
+                    })}
                 </SelectContent>
               </Select>
               <p className="text-[10px] text-muted-foreground mt-0.5">
-                Assigning a parent places this category as a subcategory.
+                Assigning a parent places this category as a subcategory or sub-sub-category.
               </p>
             </div>
 
@@ -484,32 +499,52 @@ const CategoryStudio = ({
               )}
             </div>
 
-            {/* Icon & Emoji Presets */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold flex items-center gap-1.5">
-                <Palette className="w-3.5 h-3.5 text-primary" /> Category Icon & Emoji Picker
-              </Label>
+            {/* Monochrome Icon & Presets (Light/Dark Dynamic Switching) */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold flex items-center gap-1.5">
+                  <Palette className="w-3.5 h-3.5 text-primary" /> Category Icon (Monochrome Light/Dark)
+                </Label>
+                <span className="text-[10px] text-muted-foreground">
+                  Switches between black &amp; white based on active mode
+                </span>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-center">
                 <div className="flex items-center gap-2.5">
+                  {/* Live Monochrome Icon Preview */}
                   <div
-                    className="w-10 h-10 rounded-xl border border-border/80 flex items-center justify-center shrink-0 overflow-hidden text-lg shadow-xs"
+                    className="w-10 h-10 rounded-xl border border-border/80 flex items-center justify-center shrink-0 overflow-hidden text-lg shadow-xs bg-muted/40"
                     style={{ background: `${accentColor}18` }}
                   >
-                    {editing.icon_url ? (
-                      <img src={editing.icon_url} alt="" className="w-full h-full object-contain" />
-                    ) : editing.icon ? (
-                      <span>{editing.icon}</span>
-                    ) : (
-                      <FolderTree className="w-5 h-5 text-muted-foreground opacity-50" />
-                    )}
+                    <CategoryMonochromeIcon
+                      icon={editing.icon}
+                      iconUrl={editing.icon_url}
+                      className="w-5 h-5"
+                    />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 flex items-center gap-1.5">
                     <Input
                       value={editing.icon ?? ""}
                       onChange={(e) => updateField("icon", e.target.value)}
-                      placeholder="Emoji e.g. 👕 or 🎌"
-                      className="h-8.5 rounded-xl text-xs"
+                      placeholder="e.g. shirt, hoodie, flame, tag..."
+                      className="h-8.5 rounded-xl text-xs font-mono"
                     />
+                    {(editing.icon || editing.icon_url) && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="h-8.5 px-2 text-xs text-muted-foreground hover:text-foreground rounded-lg"
+                        onClick={() => {
+                          updateField("icon", "");
+                          updateField("icon_url", "");
+                        }}
+                        title="Clear icon"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -526,26 +561,43 @@ const CategoryStudio = ({
                 </div>
               </div>
 
-              {/* Emoji Presets Palette */}
-              <div className="flex items-center gap-1 flex-wrap pt-0.5">
-                <span className="text-[10px] text-muted-foreground font-medium mr-1">Presets:</span>
-                {PRESET_EMOJIS.map((em) => (
-                  <button
-                    key={em}
-                    type="button"
-                    onClick={() => {
-                      updateField("icon", em);
-                      updateField("icon_url", "");
-                    }}
-                    className={`w-6.5 h-6.5 rounded-lg text-xs flex items-center justify-center border transition-all hover:scale-110 active:scale-95 ${
-                      editing.icon === em
-                        ? "border-primary bg-primary/20 scale-105"
-                        : "border-border/60 bg-muted/40 hover:bg-muted"
-                    }`}
-                  >
-                    {em}
-                  </button>
-                ))}
+              {/* Monochrome Icon Presets Palette */}
+              <div className="space-y-1.5 p-2.5 rounded-xl bg-muted/30 border border-border/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                    Monochrome Icon Presets:
+                  </span>
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    {editing.icon ? `Selected: ${editing.icon}` : "Click any icon below"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-8 sm:grid-cols-11 md:grid-cols-16 gap-1.5 pt-1">
+                  {MONOCHROME_CATEGORY_PRESETS.map((preset) => {
+                    const Comp = preset.component;
+                    const isCurrent =
+                      editing.icon === preset.id ||
+                      preset.aliases?.includes(editing.icon);
+
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => {
+                          updateField("icon", preset.id);
+                          updateField("icon_url", "");
+                        }}
+                        title={`${preset.label} (${preset.group})`}
+                        className={`h-8 rounded-lg flex items-center justify-center border transition-all cursor-pointer hover:scale-110 active:scale-95 ${
+                          isCurrent
+                            ? "border-primary bg-primary/20 text-primary ring-2 ring-primary/40 scale-105"
+                            : "border-border/60 bg-card/60 text-foreground hover:bg-muted hover:border-border"
+                        }`}
+                      >
+                        <Comp className="w-4 h-4 stroke-[1.8]" />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -867,6 +919,7 @@ export default function AdminCategories() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "featured" | "parents" | "subs">("all");
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [sortBy, setSortBy] = useState<"name" | "products" | "orders" | "revenue">("revenue");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -894,6 +947,30 @@ export default function AdminCategories() {
     (parentId: string) => categories.filter((c) => c.parent_id === parentId),
     [categories]
   );
+
+  // Auto-expand all parent categories when categories load
+  useEffect(() => {
+    if (categories.length > 0) {
+      setExpandedCategories(new Set(categories.map((c) => c.id)));
+    }
+  }, [categories.length]);
+
+  const toggleExpand = (id: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleExpandAll = () => {
+    if (expandedCategories.size === parentCategories.length) {
+      setExpandedCategories(new Set());
+    } else {
+      setExpandedCategories(new Set(parentCategories.map((c) => c.id)));
+    }
+  };
 
   // Fetch product counts per category
   const { data: products = [] } = useQuery({
@@ -1119,7 +1196,31 @@ export default function AdminCategories() {
     "#f43f5e",
   ];
 
-  // Filtering
+  const parentMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
+
+  const allSubcategories = useMemo(() => {
+    return categories.filter((c) => !!c.parent_id);
+  }, [categories]);
+
+  const filteredSubs = useMemo(() => {
+    return allSubcategories.filter((sub) => {
+      const q = search.toLowerCase().trim();
+      const parent = sub.parent_id ? parentMap.get(sub.parent_id) : null;
+      const matchesSearch =
+        !q ||
+        sub.name.toLowerCase().includes(q) ||
+        sub.slug.toLowerCase().includes(q) ||
+        (parent && parent.name.toLowerCase().includes(q));
+
+      if (!matchesSearch) return false;
+      if (statusFilter === "active") return sub.is_active;
+      if (statusFilter === "inactive") return !sub.is_active;
+      if (statusFilter === "featured") return sub.is_featured;
+      return true;
+    });
+  }, [allSubcategories, search, parentMap, statusFilter]);
+
+  // Filtering for main categories
   const filteredParents = useMemo(() => {
     return parentCategories.filter((c) => {
       const children = getChildren(c.id);
@@ -1136,7 +1237,6 @@ export default function AdminCategories() {
       if (statusFilter === "inactive") return !c.is_active;
       if (statusFilter === "featured") return c.is_featured;
       if (statusFilter === "parents") return true;
-      if (statusFilter === "subs") return children.length > 0;
       return true;
     });
   }, [parentCategories, getChildren, search, statusFilter]);
@@ -1503,74 +1603,269 @@ export default function AdminCategories() {
           />
         </div>
 
-        <div className="flex items-center bg-muted/40 p-1 rounded-xl border border-border/50 text-xs overflow-x-auto w-full md:w-auto no-scrollbar">
-          <button
-            type="button"
-            onClick={() => setStatusFilter("all")}
-            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-medium text-center whitespace-nowrap transition-all ${
-              statusFilter === "all"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            All ({categories.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter("active")}
-            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-medium text-center whitespace-nowrap transition-all ${
-              statusFilter === "active"
-                ? "bg-background text-emerald-600 dark:text-emerald-400 shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Active ({totalActive})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter("featured")}
-            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-medium text-center whitespace-nowrap transition-all ${
-              statusFilter === "featured"
-                ? "bg-background text-amber-500 shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Featured ({totalFeatured})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter("parents")}
-            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-medium text-center whitespace-nowrap transition-all ${
-              statusFilter === "parents"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Top-Level ({parentCategories.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter("subs")}
-            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-medium text-center whitespace-nowrap transition-all ${
-              statusFilter === "subs"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Subs ({totalSubcategories})
-          </button>
+        <div className="flex items-center gap-2">
+          {/* Expand / Collapse All (only relevant when viewing parent sections) */}
+          {statusFilter !== "subs" && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={toggleExpandAll}
+              className="h-10 px-3 rounded-xl border-border/80 text-xs font-semibold gap-1.5 cursor-pointer bg-background/80 hover:bg-card text-foreground"
+              title={expandedCategories.size === parentCategories.length ? "Collapse all sections" : "Expand all sections"}
+            >
+              {expandedCategories.size === parentCategories.length ? (
+                <>
+                  <ChevronUp className="w-3.5 h-3.5 text-primary" />
+                  <span className="hidden sm:inline">Collapse All</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-3.5 h-3.5 text-primary" />
+                  <span className="hidden sm:inline">Expand All</span>
+                </>
+              )}
+            </Button>
+          )}
+
+          {/* ── 1-Button Consolidated Category Filter ── */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className={`h-10 px-3.5 rounded-xl border text-xs font-semibold gap-2 transition-all cursor-pointer ${
+                  statusFilter !== "all"
+                    ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                    : "bg-background/80 border-border/80 text-foreground hover:bg-card hover:border-border"
+                }`}
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>
+                  {statusFilter === "active"
+                    ? "Status: Active"
+                    : statusFilter === "inactive"
+                    ? "Status: Inactive"
+                    : statusFilter === "featured"
+                    ? "Status: Featured"
+                    : statusFilter === "parents"
+                    ? "Type: Main Categories"
+                    : statusFilter === "subs"
+                    ? "Type: Subcategories"
+                    : "Filter Categories"}
+                </span>
+                {statusFilter !== "all" && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />
+                )}
+                <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60 p-2 rounded-2xl border-border/80 bg-popover/95 backdrop-blur-xl shadow-xl space-y-1.5">
+              <div className="flex items-center justify-between px-2 pt-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Filter Categories</span>
+                {statusFilter !== "all" && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter("all")}
+                    className="text-[10px] font-semibold text-primary hover:underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-1 pt-1">
+                {[
+                  { key: "all" as const, label: `All Categories (${categories.length})` },
+                  { key: "parents" as const, label: `Main Categories (${parentCategories.length})`, dot: "bg-primary" },
+                  { key: "subs" as const, label: `Subcategories (${allSubcategories.length})`, dot: "bg-blue-500" },
+                  { key: "active" as const, label: `Active (${totalActive})`, dot: "bg-emerald-500" },
+                  { key: "featured" as const, label: `Featured (${totalFeatured})`, dot: "bg-amber-500" },
+                  { key: "inactive" as const, label: `Inactive (${categories.length - totalActive})`, dot: "bg-zinc-500" },
+                ].map((s) => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => setStatusFilter(s.key)}
+                    className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      statusFilter === s.key
+                        ? "bg-primary text-primary-foreground font-semibold"
+                        : "text-foreground hover:bg-muted/60"
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      {s.dot && <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />}
+                      <span>{s.label}</span>
+                    </span>
+                    {statusFilter === s.key && <Check className="w-3.5 h-3.5" />}
+                  </button>
+                ))}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      {/* ── Category Cards Grid (High Density & Mobile Compact with Visual Previews) ── */}
+      {/* ── Content View: Subcategories Flat View OR Clean Category Sections ── */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-36 rounded-2xl bg-card/40 border border-border/60 animate-pulse" />
-          ))}
+        <div className="rounded-2xl border border-border/70 bg-card/60 p-8 text-center animate-pulse">
+          <div className="h-6 w-48 bg-muted rounded-lg mx-auto mb-4" />
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-16 bg-muted/40 rounded-2xl" />
+            ))}
+          </div>
+        </div>
+      ) : statusFilter === "subs" ? (
+        /* ── Direct Subcategories List View ── */
+        <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md overflow-hidden shadow-sm">
+          <div className="p-3.5 sm:p-4 bg-muted/30 border-b border-border/40 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FolderTree className="w-4 h-4 text-primary" />
+              <span className="font-bold text-xs sm:text-sm text-foreground">
+                All Subcategories ({filteredSubs.length})
+              </span>
+            </div>
+            <span className="text-[11px] text-muted-foreground">
+              Showing all subcategories across the catalogue
+            </span>
+          </div>
+
+          {filteredSubs.length === 0 ? (
+            <div className="py-14 text-center">
+              <FolderTree className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-40" />
+              <p className="text-xs text-muted-foreground">No subcategories found.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border/30">
+              {filteredSubs.map((sub) => {
+                const parent = sub.parent_id ? parentMap.get(sub.parent_id) : null;
+                const subChildren = getChildren(sub.id);
+                const subProdCount = prodCountMap.get(sub.id) || 0;
+                const hasSubBanner = !!(sub.banner_url || sub.image_url);
+                const isSelected = selected.has(sub.id);
+
+                return (
+                  <div
+                    key={sub.id}
+                    className="py-3 px-3.5 sm:px-5 hover:bg-muted/20 transition-colors flex items-center justify-between gap-3 group"
+                  >
+                    {/* Left */}
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelect(sub.id)}
+                        aria-label={`Select ${sub.name}`}
+                      />
+
+                      <div
+                        className="w-8 h-8 rounded-lg border border-border/70 flex items-center justify-center shrink-0 overflow-hidden bg-muted/40 cursor-pointer shadow-2xs text-xs"
+                        style={{ background: `${sub.accent_color || "#6366f1"}15` }}
+                        onClick={() => openEdit(sub)}
+                      >
+                        <CategoryMonochromeIcon
+                          icon={sub.icon}
+                          iconUrl={sub.icon_url}
+                          className="w-4 h-4"
+                        />
+                      </div>
+
+                      <div className="min-w-0 cursor-pointer" onClick={() => openEdit(sub)}>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-xs sm:text-sm text-foreground hover:text-primary transition-colors truncate">
+                            {sub.name}
+                          </span>
+                          {parent && (
+                            <Badge variant="outline" className="text-[10px] font-normal py-0 h-4 bg-muted/50 border-border/60 text-muted-foreground">
+                              Parent: {parent.name}
+                            </Badge>
+                          )}
+                          {hasSubBanner && (
+                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted/60 text-[9px] font-medium text-muted-foreground border border-border/40">
+                              <img
+                                src={sub.banner_url || sub.image_url}
+                                alt={sub.name}
+                                className="w-5 h-3 rounded-xs object-cover border border-border/40"
+                              />
+                              <span className="hidden md:inline">Banner</span>
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[11px] font-mono text-muted-foreground block truncate">
+                          /{sub.slug}
+                        </span>
+                      </div>
+
+                      {/* Sub-children tags if any */}
+                      {subChildren.length > 0 && (
+                        <div className="flex items-center gap-1 flex-wrap ml-0 sm:ml-2">
+                          <span className="text-[10px] text-muted-foreground font-mono">↳ {subChildren.length} childs</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-muted/60 text-foreground border border-border/50">
+                        {subProdCount} prods
+                      </span>
+
+                      <Switch
+                        checked={!!sub.is_active}
+                        onCheckedChange={(checked) =>
+                          toggleActiveMutation.mutate({ id: sub.id, is_active: checked })
+                        }
+                        className="scale-65 origin-right"
+                      />
+
+                      <div className="flex items-center gap-0.5">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
+                          onClick={() => openEdit(sub)}
+                          title="Edit subcategory"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
+                              title="Delete subcategory"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="rounded-2xl">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete "{sub.name}"?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will delete "{sub.name}" and any sub-childs under it.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+                                onClick={() => deleteMutation.mutate(sub.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       ) : filteredParents.length === 0 ? (
-        <Card className="glass border-border/80">
+        <Card className="rounded-2xl border-border/80 bg-card/60">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <FolderTree className="w-10 h-10 text-muted-foreground mb-3 opacity-40" />
             <p className="text-sm font-semibold text-foreground">
@@ -1582,7 +1877,7 @@ export default function AdminCategories() {
             {!search && (
               <Button
                 variant="outline"
-                className="mt-4 gap-1.5 rounded-xl h-9 text-xs font-semibold"
+                className="mt-4 gap-1.5 rounded-xl h-9 text-xs font-semibold cursor-pointer"
                 onClick={() => openEdit()}
               >
                 <Plus className="w-3.5 h-3.5" /> Add Category
@@ -1591,273 +1886,393 @@ export default function AdminCategories() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        /* ── Column Block Cards Grid ── */
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
           {filteredParents.map((c, idx) => {
             const children = getChildren(c.id);
+            const isSelected = selected.has(c.id);
+            const isExpanded = expandedCategories.has(c.id);
             const isDragging = dragIndex === idx;
             const isOver = overIndex === idx;
-            const isSelected = selected.has(c.id);
             const parentProdCount = prodCountMap.get(c.id) || 0;
             const totalBranchProducts =
               parentProdCount +
-              children.reduce((sum, ch) => sum + (prodCountMap.get(ch.id) || 0), 0);
+              children.reduce((sum, ch) => {
+                const subChildren = getChildren(ch.id);
+                return (
+                  sum +
+                  (prodCountMap.get(ch.id) || 0) +
+                  subChildren.reduce((sSum, sch) => sSum + (prodCountMap.get(sch.id) || 0), 0)
+                );
+              }, 0);
 
-            const hasBannerVisual = c.banner_url || c.image_url;
+            const hasBanner = !!(c.banner_url || c.image_url);
 
             return (
               <div
                 key={c.id}
                 {...(search ? {} : getDragProps(idx))}
-                className={`${isDragging ? "opacity-50" : isOver ? "scale-[1.01]" : ""}`}
-                style={{ transition: "transform 0.15s ease" }}
+                className={`group/catblock relative rounded-2xl border border-border/80 bg-card/95 backdrop-blur-xl overflow-hidden transition-all shadow-md hover:border-primary/50 flex flex-col justify-between ${
+                  isSelected ? "ring-2 ring-primary/40 border-primary/50" : ""
+                } ${isDragging ? "opacity-50" : isOver ? "bg-muted/40" : ""}`}
               >
-                <div
-                  className={`rounded-2xl border bg-card/80 backdrop-blur-md relative overflow-hidden transition-all shadow-xs ${
-                    isSelected ? "border-primary/60 bg-primary/5" : "border-border/70 hover:border-border"
-                  }`}
-                >
-                  {/* Top Banner Visual Strip (if banner or image exists) */}
-                  {hasBannerVisual ? (
-                    <div className="h-16 w-full relative overflow-hidden bg-muted/40 cursor-pointer" onClick={() => openEdit(c)}>
-                      <img
-                        src={c.banner_url || c.image_url}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          background: `linear-gradient(to bottom, transparent 0%, rgba(15,15,15,0.7) 100%)`,
-                        }}
-                      />
-                      {/* Top Accent Strip */}
-                      <div
-                        className="absolute top-0 left-0 right-0 h-1"
-                        style={{ background: c.accent_color || "#6366f1" }}
-                      />
-                    </div>
-                  ) : (
-                    <div
-                      className="h-1 w-full"
-                      style={{ background: c.accent_color || "#6366f1" }}
+                {/* ── Banner Faded Background (top-anchored so it never shifts on expand) ── */}
+                {hasBanner && (
+                  <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+                    <img
+                      src={c.banner_url || c.image_url}
+                      alt=""
+                      className="absolute top-0 right-0 h-full w-2/3 object-cover object-left opacity-20 dark:opacity-30 filter saturate-150 scale-105 group-hover/catblock:scale-110 transition-transform duration-700"
                     />
-                  )}
+                    {/* Fade left */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-card via-card/80 to-transparent" />
+                    {/* Fade bottom */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-card/95 via-card/60 to-transparent" />
+                  </div>
+                )}
 
-                  <div className="p-3 sm:p-4 space-y-3">
-                    {/* Top Row: Grip + Checkbox + Icon + Title + Switch */}
-                    <div className="flex items-center gap-2.5">
+                {/* ── Block Content (Above Background) ── */}
+                <div className="relative z-10 flex flex-col flex-1 p-4 sm:p-5 space-y-4">
+                  {/* Main Category Header Row */}
+                  <div className="flex items-center justify-between gap-3 pb-3 border-b border-border/50">
+                    {/* Left: Drag Grip, Checkbox, Chevron, Icon Avatar, Name & Slug */}
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                       {!search && (
-                        <div className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground shrink-0">
-                          <GripVertical className="w-3.5 h-3.5" />
+                        <div
+                          className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-foreground shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <GripVertical className="w-4 h-4" />
                         </div>
                       )}
 
-                      <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <div onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={isSelected}
                           onCheckedChange={() => toggleSelect(c.id)}
                           aria-label={`Select ${c.name}`}
-                          className="h-4 w-4 rounded-md"
                         />
                       </div>
 
-                      {/* Icon Avatar */}
+                      {/* Expand / Collapse Chevron Toggle */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleExpand(c.id);
+                        }}
+                        className="w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0 border border-border/50"
+                        title={isExpanded ? "Collapse subcategories" : "Expand subcategories"}
+                      >
+                        {isExpanded ? (
+                          <ChevronDown className="w-4 h-4 text-primary" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                      </button>
+
+                      {/* Category Icon Avatar */}
                       <div
-                        className="w-10 h-10 rounded-xl bg-muted/60 border border-border/80 flex items-center justify-center shrink-0 overflow-hidden cursor-pointer"
-                        style={{ background: `${c.accent_color || "#6366f1"}15` }}
+                        className="w-10 h-10 rounded-xl border border-border/80 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs relative bg-muted/40 cursor-pointer"
+                        style={{ background: `${c.accent_color || "#6366f1"}18` }}
                         onClick={() => openEdit(c)}
                       >
-                        {c.icon_url ? (
-                          <img src={c.icon_url} alt="" className="w-full h-full object-contain" />
-                        ) : c.icon ? (
-                          <span className="text-base">{c.icon}</span>
-                        ) : (
-                          <FolderTree className="w-5 h-5 text-muted-foreground opacity-50" />
-                        )}
+                        <CategoryMonochromeIcon
+                          icon={c.icon}
+                          iconUrl={c.icon_url}
+                          className="w-5 h-5"
+                        />
                       </div>
 
-                      {/* Title & Stats */}
-                      <div
-                        className="min-w-0 flex-1 cursor-pointer"
-                        onClick={() => openEdit(c)}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <h3 className="font-bold text-xs sm:text-sm text-foreground truncate">
+                      {/* Name & Slug */}
+                      <div className="min-w-0 flex-1 cursor-pointer" onClick={() => openEdit(c)}>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-base text-foreground truncate hover:text-primary transition-colors">
                             {c.name}
-                          </h3>
+                          </span>
+                          <span className="text-[11px] font-mono text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md border border-border/50">
+                            /{c.slug || "slug"}
+                          </span>
                           {c.is_featured && (
-                            <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />
+                            <Badge variant="outline" className="px-1.5 py-0 h-4 text-[10px] font-semibold gap-1 text-amber-500 border-amber-500/30 bg-amber-500/10">
+                              <Star className="w-2.5 h-2.5 fill-amber-500" /> Featured
+                            </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5 truncate">
-                          <span className="font-mono">/{c.slug}</span>
-                          <span>·</span>
-                          <span className="font-medium text-foreground">
-                            {totalBranchProducts} {totalBranchProducts === 1 ? "product" : "products"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Quick Active Switch */}
-                      <div className="shrink-0 pl-1" onClick={(e) => e.stopPropagation()}>
-                        <Switch
-                          checked={!!c.is_active}
-                          onCheckedChange={(checked) =>
-                            toggleActiveMutation.mutate({ id: c.id, is_active: checked })
-                          }
-                          aria-label={`Toggle status for ${c.name}`}
-                          className="scale-75 origin-right"
-                        />
                       </div>
                     </div>
 
-                    {/* Subcategories Section */}
-                    {children.length > 0 && (
-                      <div className="pt-2 border-t border-border/40 space-y-1.5">
-                        <div className="flex items-center justify-between text-[10px] text-muted-foreground font-semibold uppercase tracking-wider px-0.5">
-                          <span>Subcategories ({children.length})</span>
-                          <button
-                            type="button"
-                            onClick={() => openEdit(undefined, c.id)}
-                            className="text-primary hover:underline font-bold"
-                          >
-                            + Add Sub
-                          </button>
-                        </div>
-
-                        <div className="space-y-1 max-h-36 overflow-y-auto pr-0.5 no-scrollbar">
-                          {children.map((sub) => (
-                            <div
-                              key={sub.id}
-                              className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-muted/40 hover:bg-muted/70 transition-colors border border-border/40"
+                    {/* Right Controls */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted/60 border border-border/60 text-foreground font-mono">
+                        {totalBranchProducts} <span className="text-[10px] text-muted-foreground font-normal ml-1 hidden sm:inline">prods</span>
+                      </span>
+                      <Switch
+                        checked={!!c.is_active}
+                        onCheckedChange={(checked) =>
+                          toggleActiveMutation.mutate({ id: c.id, is_active: checked })
+                        }
+                        aria-label={`Toggle ${c.name}`}
+                        className="scale-80"
+                      />
+                      <div className="flex items-center gap-0.5">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-primary cursor-pointer"
+                          onClick={() => notifyCategoryMut.mutate(c.id)}
+                          disabled={notifyCategoryMut.isPending}
+                          title="Broadcast notification"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+                          onClick={() => openEdit(c)}
+                          title="Edit category"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 rounded-lg text-destructive hover:bg-destructive/10 cursor-pointer"
+                              title="Delete category"
                             >
-                              <div
-                                className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer"
-                                onClick={() => openEdit(sub)}
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="rounded-2xl">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete category "{c.name}"?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will delete "{c.name}" and all of its subcategories. Products inside will become uncategorized.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+                                onClick={() => deleteMutation.mutate(c.id)}
                               >
-                                <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
-                                {sub.icon_url ? (
-                                  <img src={sub.icon_url} alt="" className="w-4 h-4 rounded object-contain shrink-0" />
-                                ) : sub.icon ? (
-                                  <span className="text-xs">{sub.icon}</span>
-                                ) : null}
-                                <span className="text-xs font-medium text-foreground truncate">
-                                  {sub.name}
-                                </span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  ({prodCountMap.get(sub.id) || 0})
-                                </span>
-                              </div>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  </div>
 
-                              <div className="flex items-center gap-1 shrink-0">
-                                <Switch
-                                  checked={!!sub.is_active}
-                                  onCheckedChange={(checked) =>
-                                    toggleActiveMutation.mutate({ id: sub.id, is_active: checked })
-                                  }
-                                  className="scale-60 origin-right"
-                                />
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground rounded"
-                                  onClick={() => openEdit(sub)}
-                                >
-                                  <Pencil className="w-3 h-3" />
-                                </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
+                  {/* Subcategories & Sub-subcategories Structured List Inside Block */}
+                  {isExpanded && (
+                    <div className="flex-1 space-y-2 pt-1">
+                      <div
+                        className="flex items-center justify-between px-1 cursor-pointer select-none"
+                        onClick={() => toggleExpand(c.id)}
+                      >
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground/80 flex items-center gap-1.5 hover:text-primary transition-colors">
+                          <FolderTree className="w-3 h-3 text-primary" /> Subcategories & Structure ({children.length})
+                        </span>
+                        <span className="text-[10px] font-mono text-muted-foreground/70 hover:text-foreground">
+                          Click to collapse
+                        </span>
+                      </div>
+
+                      {children.length === 0 ? (
+                        <div className="p-4 rounded-xl bg-muted/20 border border-border/40 text-center flex flex-col items-center justify-center gap-2">
+                          <span className="text-xs text-muted-foreground">No subcategories under {c.name}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-3 text-xs font-semibold rounded-lg gap-1 border-border/80 cursor-pointer"
+                            onClick={() => openEdit(undefined, c.id)}
+                          >
+                            <Plus className="w-3 h-3" /> Add Subcategory
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {children.map((sub) => {
+                            const subChildren = getChildren(sub.id);
+                            const subProdCount = prodCountMap.get(sub.id) || 0;
+                            const totalSubBranchProds =
+                              subProdCount +
+                              subChildren.reduce((sum, sch) => sum + (prodCountMap.get(sch.id) || 0), 0);
+                            const hasSubBanner = !!(sub.banner_url || sub.image_url);
+
+                            return (
+                              <div
+                                key={sub.id}
+                                className="relative rounded-xl border border-border/60 bg-background/60 hover:bg-background/80 transition-colors p-3 space-y-2 shadow-2xs group/subrow overflow-hidden"
+                              >
+                                {/* Subcategory Banner Background (if exists) */}
+                                {hasSubBanner && (
+                                  <div className="absolute inset-x-0 bottom-0 h-20 pointer-events-none overflow-hidden z-0 opacity-20">
+                                    <img src={sub.banner_url || sub.image_url} alt="" className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
+                                  </div>
+                                )}
+
+                                <div className="relative z-10 flex items-center justify-between gap-3">
+                                  {/* Left: Subcategory Icon, Name, Slug */}
+                                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                    <span className="text-muted-foreground/40 text-xs font-mono select-none">↳</span>
+                                    <div
+                                      className="w-8 h-8 rounded-lg border border-border/70 flex items-center justify-center shrink-0 overflow-hidden bg-muted/40 cursor-pointer shadow-2xs text-xs"
+                                      style={{ background: `${sub.accent_color || c.accent_color || "#6366f1"}15` }}
+                                      onClick={() => openEdit(sub)}
+                                    >
+                                      <CategoryMonochromeIcon
+                                        icon={sub.icon}
+                                        iconUrl={sub.icon_url}
+                                        className="w-4 h-4"
+                                      />
+                                    </div>
+                                    <div className="min-w-0 cursor-pointer" onClick={() => openEdit(sub)}>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-semibold text-xs sm:text-sm text-foreground hover:text-primary transition-colors truncate">
+                                          {sub.name}
+                                        </span>
+                                        <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40">
+                                          /{sub.slug}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Right: Controls */}
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-muted/60 text-foreground border border-border/50">
+                                      {totalSubBranchProds} prods
+                                    </span>
+                                    <Switch
+                                      checked={!!sub.is_active}
+                                      onCheckedChange={(checked) =>
+                                        toggleActiveMutation.mutate({ id: sub.id, is_active: checked })
+                                      }
+                                      className="scale-65 origin-right"
+                                    />
                                     <Button
                                       size="sm"
                                       variant="ghost"
-                                      className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 rounded"
+                                      className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-foreground cursor-pointer"
+                                      onClick={() => openEdit(sub)}
+                                      title="Edit subcategory"
                                     >
-                                      <Trash2 className="w-3 h-3" />
+                                      <Pencil className="w-3 h-3" />
                                     </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent className="rounded-2xl">
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Delete "{sub.name}"?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        This will permanently remove this subcategory.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
-                                        onClick={() => deleteMutation.mutate(sub.id)}
-                                      >
-                                        Delete
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-7 w-7 p-0 rounded-md text-destructive hover:bg-destructive/10 cursor-pointer"
+                                          title="Delete subcategory"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent className="rounded-2xl">
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Delete "{sub.name}"?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            This will delete this subcategory and any nested children.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+                                            onClick={() => deleteMutation.mutate(sub.id)}
+                                          >
+                                            Delete
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                </div>
 
-                    {/* Symmetrical Bottom Action Bar */}
-                    <div className="flex items-center gap-1.5 pt-2 border-t border-border/40">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 h-7 rounded-lg text-[11px] justify-center font-medium gap-1 px-2 hover:bg-primary/5 hover:text-primary hover:border-primary/40"
-                        onClick={() => openEdit(undefined, c.id)}
-                      >
-                        <Plus className="w-3 h-3 text-primary" /> Add Sub
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 rounded-lg text-[11px] font-medium gap-1 px-2.5"
-                        onClick={() => notifyCategoryMut.mutate(c.id)}
-                        disabled={notifyCategoryMut.isPending}
-                        title="Broadcast notification to subscribers"
-                      >
-                        <Mail className="w-3 h-3 text-primary" />
-                        <span className="hidden sm:inline">Notify</span>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 h-7 rounded-lg text-[11px] justify-center font-medium gap-1 px-2"
-                        onClick={() => openEdit(c)}
-                      >
-                        <Pencil className="w-3 h-3 text-primary" /> Edit
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0 text-destructive shrink-0 rounded-lg hover:bg-destructive/10"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="rounded-2xl">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete category "{c.name}"?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will delete "{c.name}" and all of its subcategories. Products inside will become uncategorized.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
-                              onClick={() => deleteMutation.mutate(c.id)}
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                                {/* Sub-subcategories List */}
+                                {subChildren.length > 0 && (
+                                  <div className="relative z-10 pt-1 flex items-center gap-1.5 flex-wrap pl-6">
+                                    {subChildren.map((subSub) => (
+                                      <div
+                                        key={subSub.id}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/60 hover:bg-muted border border-border/50 text-[11px] text-foreground transition-colors group/subsub"
+                                      >
+                                        <span className="text-muted-foreground/60 text-[10px]">↳</span>
+                                        <span
+                                          className="font-medium cursor-pointer hover:text-primary"
+                                          onClick={() => openEdit(subSub)}
+                                        >
+                                          {subSub.name}
+                                        </span>
+                                        <span className="text-[9px] text-muted-foreground font-mono">
+                                          ({prodCountMap.get(subSub.id) || 0})
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => openEdit(subSub)}
+                                          className="opacity-0 group-hover/subsub:opacity-100 text-muted-foreground hover:text-foreground transition-opacity ml-0.5"
+                                          title="Edit sub-child"
+                                        >
+                                          <Pencil className="w-2.5 h-2.5" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                    <button
+                                      type="button"
+                                      onClick={() => openEdit(undefined, sub.id)}
+                                      className="text-[10px] text-primary hover:underline font-semibold cursor-pointer ml-1"
+                                    >
+                                      + Child
+                                    </button>
+                                  </div>
+                                )}
+                                {subChildren.length === 0 && (
+                                  <div className="relative z-10 pl-6">
+                                    <button
+                                      type="button"
+                                      onClick={() => openEdit(undefined, sub.id)}
+                                      className="text-[10px] text-muted-foreground/70 hover:text-primary hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                                    >
+                                      + Add Child Category
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
+                  )}
+
+                  {/* Block Bottom Action */}
+                  <div className="pt-2 border-t border-border/40 flex items-center justify-between">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-8 px-3 text-xs font-semibold text-foreground hover:bg-muted bg-background/80 backdrop-blur-md border border-border/60 shadow-2xs rounded-xl gap-1.5 cursor-pointer"
+                      onClick={() => openEdit(undefined, c.id)}
+                    >
+                      <Plus className="w-3.5 h-3.5 text-primary" /> Add Subcategory to {c.name}
+                    </Button>
+                    {hasBanner && (
+                      <span
+                        className="text-[10px] font-mono text-muted-foreground/80 hover:text-foreground cursor-pointer flex items-center gap-1"
+                        onClick={() => openEdit(c)}
+                        title="Click to edit category banner"
+                      >
+                        <ImageIcon className="w-3 h-3 text-primary" /> Faded Banner Background
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1952,6 +2367,7 @@ export default function AdminCategories() {
               editing={editing}
               updateField={updateField}
               parentCategories={parentCategories}
+              allCategories={categories}
               saveMutation={saveMutation}
               onClose={() => setDialogOpen(false)}
             />

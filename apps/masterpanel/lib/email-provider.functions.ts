@@ -65,12 +65,16 @@ export const getEmailProviderSettings = createServerFn({ method: "GET" })
       footer_address?: string;
       tracking_opens?: boolean;
       tracking_clicks?: boolean;
+      site_url_override?: string;
+      resend_api_key?: string;
+      webhook_secret?: string;
+      senders?: Array<any>;
     };
 
-    const siteUrlInfo = resolveSiteUrl((settings as any).site_url_override);
+    const siteUrlInfo = resolveSiteUrl(settings.site_url_override);
     const siteUrl = siteUrlInfo.effective;
 
-    const rkey = process.env.RESEND_API_KEY ?? "";
+    const rkey = process.env.RESEND_API_KEY || settings?.resend_api_key || "";
     const resendKeyPreview = rkey
       ? `${rkey.slice(0, 6)}${"•".repeat(Math.max(0, rkey.length - 10))}${rkey.slice(-4)}`
       : null;
@@ -80,7 +84,8 @@ export const getEmailProviderSettings = createServerFn({ method: "GET" })
       env: {
         resendKeyConfigured: !!rkey,
         resendKeyPreview,
-        webhookSecretConfigured: !!process.env.RESEND_WEBHOOK_SECRET,
+        resendKeySource: process.env.RESEND_API_KEY ? "env" : settings?.resend_api_key ? "database" : "none",
+        webhookSecretConfigured: !!process.env.RESEND_WEBHOOK_SECRET || !!settings?.webhook_secret,
         serviceRoleConfigured: hasSupabaseAdminCredentials(),
       },
       siteUrl: siteUrlInfo,
@@ -97,7 +102,6 @@ export const updateSiteUrlOverride = createServerFn({ method: "POST" })
   .inputValidator((i) =>
     z
       .object({
-        // empty string / null clears the override
         site_url: z
           .string()
           .trim()
@@ -149,6 +153,8 @@ export const updateEmailProviderSettings = createServerFn({ method: "POST" })
         footer_address: z.string().max(500).optional().nullable(),
         tracking_opens: z.boolean().optional(),
         tracking_clicks: z.boolean().optional(),
+        resend_api_key: z.string().max(200).optional().nullable(),
+        webhook_secret: z.string().max(200).optional().nullable(),
         senders: z.array(senderSchema).max(50).optional(),
       })
       .parse(i)
@@ -180,10 +186,16 @@ export const updateEmailProviderSettings = createServerFn({ method: "POST" })
 /** Verify the Resend API key by listing domains. */
 export const verifyResendKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((i) => z.object({ apiKey: z.string().optional() }).optional())
+  .handler(async ({ context, data }) => {
     await assertAdmin(context.supabase as any, context.userId);
-    const key = process.env.RESEND_API_KEY;
-    if (!key) return { ok: false, error: "RESEND_API_KEY not set in project secrets" };
+    let key = data?.apiKey?.trim() || process.env.RESEND_API_KEY;
+    if (!key) {
+      const sb: any = admin();
+      const { data: row } = await sb.from("site_settings").select("value").eq("key", SETTINGS_KEY).maybeSingle();
+      key = (row?.value as any)?.resend_api_key;
+    }
+    if (!key) return { ok: false, error: "RESEND_API_KEY not configured in .env or database settings" };
     try {
       const res = await fetch("https://api.resend.com/domains", {
         headers: { Authorization: `Bearer ${key}` },
@@ -192,8 +204,8 @@ export const verifyResendKey = createServerFn({ method: "POST" })
         const text = await res.text().catch(() => "");
         return { ok: false, error: `Resend ${res.status}: ${text || res.statusText}` };
       }
-      const data = (await res.json()) as { data?: Array<any> };
-      const domains = (data.data ?? []).map((d) => ({
+      const resData = (await res.json()) as { data?: Array<any> };
+      const domains = (resData.data ?? []).map((d) => ({
         id: d.id,
         name: d.name,
         status: d.status,
@@ -231,8 +243,7 @@ export const sendProviderTestEmail = createServerFn({ method: "POST" })
     let fromEmail = picked?.from_email || settings.from_email || process.env.RESEND_FROM_EMAIL || "team@orizino.com";
     let fromName = picked?.from_name || settings.from_name || "Orizino";
     const replyTo = picked?.reply_to || settings.reply_to || undefined;
-    // Resolve special "admin-name@" sender: replace local part with the
-    // current admin's first name (lowercased, ascii-only, hyphen-separated).
+
     if (/^admin-name@/i.test(fromEmail)) {
       const { data: profile } = await sb
         .from("profiles")
@@ -268,149 +279,27 @@ export const sendProviderTestEmail = createServerFn({ method: "POST" })
       meta: { to: data.to, ok: !res.error, id: res.id, error: res.error },
     });
     await logDispatch({
-      purpose: "provider_test",
+      purpose: "test",
       recipient: data.to,
       subject: data.subject,
       status: res.error ? "failed" : "sent",
       provider_id: res.id ?? null,
       error: res.error ?? null,
-      meta: { from: `${fromName} <${fromEmail}>`, actor_id: context.userId },
     });
     return { ok: !res.error, id: res.id ?? null, error: res.error ?? null };
   });
 
-/** List recent email dispatch attempts (log). */
-export const listEmailDispatchLog = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z
-      .object({
-        purpose: z.string().max(40).optional(),
-        status: z.enum(["queued", "sent", "failed"]).optional(),
-        limit: z.number().min(1).max(200).default(50),
-      })
-      .parse(i ?? {}),
-  )
-  .handler(async ({ context, data }) => {
-    await assertAdmin(context.supabase as any, context.userId);
-    const sb: any = admin();
-    let q = sb
-      .from("email_dispatch_log")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(data.limit);
-    if (data.purpose) q = q.eq("purpose", data.purpose);
-    if (data.status) q = q.eq("status", data.status);
-    const { data: rows, error } = await q;
-    if (error) throw new Error(error.message);
-    return rows ?? [];
-  });
-
-/** Delete all rows from email_dispatch_log. */
-export const clearEmailDispatchLog = createServerFn({ method: "POST" })
+export const purgeEmailDispatchLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase as any, context.userId);
     const sb: any = admin();
-    const { error, count } = await sb
-      .from("email_dispatch_log")
-      .delete({ count: "exact" })
-      .not("id", "is", null);
+    const { error } = await sb.from("email_dispatch_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     if (error) throw new Error(error.message);
     await sb.from("staff_audit_log").insert({
       actor_id: context.userId,
-      action: "clear_email_dispatch_log",
+      action: "purge_email_dispatch_log",
       entity: "email_dispatch_log",
-      meta: { deleted: count ?? 0 },
     });
-    return { ok: true, deleted: count ?? 0 };
+    return { ok: true };
   });
-
-/** Read aggregated provider stats from our local recipient log. */
-export const getEmailProviderStats = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertAdmin(context.supabase as any, context.userId);
-    const sb: any = admin();
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const [{ count: sent }, { count: delivered }, { count: opened }, { count: clicked }, { count: bounced }, { count: suppressed }] =
-      await Promise.all([
-        sb.from("email_campaign_recipients").select("id", { count: "exact", head: true }).eq("status", "sent").gte("created_at", since),
-        sb.from("email_campaign_recipients").select("id", { count: "exact", head: true }).not("delivered_at", "is", null).gte("created_at", since),
-        sb.from("email_campaign_recipients").select("id", { count: "exact", head: true }).not("opened_at", "is", null).gte("created_at", since),
-        sb.from("email_campaign_recipients").select("id", { count: "exact", head: true }).not("clicked_at", "is", null).gte("created_at", since),
-        sb.from("email_campaign_recipients").select("id", { count: "exact", head: true }).not("bounced_at", "is", null).gte("created_at", since),
-        sb.from("email_suppressions").select("id", { count: "exact", head: true }),
-      ]);
-    return {
-      window_days: 30,
-      sent: sent ?? 0,
-      delivered: delivered ?? 0,
-      opened: opened ?? 0,
-      clicked: clicked ?? 0,
-      bounced: bounced ?? 0,
-      suppressed: suppressed ?? 0,
-    };
-  });
-
-/** Send a Svix-signed sample event to our own webhook to verify E2E setup. */
-export const sendSampleWebhookEvent = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z
-      .object({
-        type: z
-          .enum(["email.sent", "email.delivered", "email.opened", "email.clicked", "email.bounced", "email.complained"])
-          .default("email.delivered"),
-        to: z.string().email().default("test@example.com"),
-      })
-      .parse(i ?? {})
-  )
-  .handler(async ({ context, data }) => {
-    await assertAdmin(context.supabase as any, context.userId);
-    const secret = process.env.RESEND_WEBHOOK_SECRET;
-    if (!secret) return { ok: false, error: "RESEND_WEBHOOK_SECRET is not set" };
-
-    const sb: any = admin();
-    const { data: row } = await sb.from("site_settings").select("value").eq("key", SETTINGS_KEY).maybeSingle();
-    const siteUrl = resolveSiteUrl(row?.value?.site_url_override).effective;
-    const url = `${siteUrl}/api/public/hooks/resend-webhook`;
-
-    const payload = {
-      type: data.type,
-      created_at: new Date().toISOString(),
-      data: {
-        email_id: `sample_${crypto.randomUUID()}`,
-        from: "test@resend.dev",
-        to: [data.to],
-        subject: "Sample webhook event",
-        created_at: new Date().toISOString(),
-      },
-    };
-    const body = JSON.stringify(payload);
-
-    const { createHmac } = await import("crypto");
-    const svixId = `msg_${crypto.randomUUID()}`;
-    const svixTs = Math.floor(Date.now() / 1000).toString();
-    const rawSecret = secret.startsWith("whsec_") ? secret.slice(6) : secret;
-    const keyBuf = Buffer.from(rawSecret, "base64");
-    const sig = createHmac("sha256", keyBuf).update(`${svixId}.${svixTs}.${body}`).digest("base64");
-
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "svix-id": svixId,
-          "svix-timestamp": svixTs,
-          "svix-signature": `v1,${sig}`,
-        },
-        body,
-      });
-      const text = await res.text().catch(() => "");
-      return { ok: res.ok, status: res.status, response: text.slice(0, 500), url, type: data.type };
-    } catch (e: any) {
-      return { ok: false, error: e?.message ?? "request failed", url };
-    }
-  });
-// code:4ce0

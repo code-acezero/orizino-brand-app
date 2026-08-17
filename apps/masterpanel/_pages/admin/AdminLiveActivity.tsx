@@ -10,6 +10,7 @@ import {
   FolderTree, Bell, RotateCcw, Mail, Eye, Pause, Play, Filter,
   Radio, TrendingUp, Users, Clock, AlertCircle,
 } from "lucide-react";
+import { calculateOrderFinancials } from "@orizino/shared";
 
 type ActivityKind =
   | "order" | "user" | "support" | "support_msg" | "review"
@@ -95,7 +96,7 @@ const AdminLiveActivity = () => {
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
       const [orders, profiles, support, reviews, products, returns, campaigns, notifs, pageViews, todayOrders, openSupport, openReturns, activePV] = await Promise.all([
-        supabase.from("orders").select("id,total_amount,status,created_at,order_number").gte("created_at", since).order("created_at", { ascending: false }).limit(15),
+        supabase.from("orders").select("id,total,total_amount,status,created_at,order_number").gte("created_at", since).order("created_at", { ascending: false }).limit(15),
         supabase.from("profiles").select("id,full_name,created_at").gte("created_at", since).order("created_at", { ascending: false }).limit(10),
         supabase.from("support_conversations").select("id,subject,type,status,created_at").gte("created_at", since).order("created_at", { ascending: false }).limit(10),
         supabase.from("reviews").select("id,rating,title,created_at,product_id").gte("created_at", since).order("created_at", { ascending: false }).limit(10),
@@ -104,7 +105,7 @@ const AdminLiveActivity = () => {
         supabase.from("email_campaigns").select("id,name,status,created_at,sent_count").gte("created_at", since).order("created_at", { ascending: false }).limit(10),
         supabase.from("notifications").select("id,title,type,created_at").is("user_id", null).gte("created_at", since).order("created_at", { ascending: false }).limit(10),
         (supabase as any).from("page_analytics").select("id,event_type,page,session_id,created_at").gte("created_at", since).order("created_at", { ascending: false }).limit(20),
-        supabase.from("orders").select("total_amount,created_at", { count: "exact" }).gte("created_at", todayStart.toISOString()),
+        supabase.from("orders").select("id,total,subtotal,shipping_fee,coupon_discount,loyalty_discount,status,payment_method,is_delivery_prepaid,created_at", { count: "exact" }).gte("created_at", todayStart.toISOString()),
         supabase.from("support_conversations").select("id", { count: "exact", head: true }).eq("status", "open"),
         supabase.from("return_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
         (supabase as any).from("page_analytics").select("session_id").gte("created_at", fiveMinAgo),
@@ -115,7 +116,7 @@ const AdminLiveActivity = () => {
       orders.data?.forEach((o: any) => merged.push({
         id: `order-${o.id}`, kind: "order",
         title: `New order #${o.order_number || o.id.slice(0, 8)}`,
-        description: `${fmtMoney(o.total_amount)} • ${o.status}`,
+        description: `${fmtMoney(o.total || o.total_amount)} • ${o.status}`,
         href: `/sales/orders?id=${o.id}`, created_at: o.created_at,
       }));
       profiles.data?.forEach((p: any) => merged.push({
@@ -168,7 +169,8 @@ const AdminLiveActivity = () => {
       merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setEvents(merged.slice(0, 100));
 
-      const revenueToday = (todayOrders.data || []).reduce((sum: number, o: any) => sum + Number(o.total_amount || 0), 0);
+      const finToday = calculateOrderFinancials((todayOrders.data || []) as any[]);
+      const revenueToday = finToday.recognizedRevenue;
       const activeSessions = new Set((activePV.data || []).map((x: any) => x.session_id).filter(Boolean)).size;
 
       setStats((s) => ({

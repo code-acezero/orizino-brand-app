@@ -11,6 +11,7 @@ import { toast } from "@/lib/app-toast";
 import { Home, LayoutGrid, ShoppingCart, Heart, User, Smartphone, Tablet, Check, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { DEFAULT_PERF, type PerfSettings } from "@/hooks/use-perf-settings";
+import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
 type NavStyle = "liquid" | "notch" | "pill" | "glow" | "wave";
 
@@ -213,6 +214,16 @@ const AdminMobileUI = () => {
 
   const deviceWidth = previewDevice === "phone" ? 360 : 768;
 
+  useRegisterUniversalSave(
+    {
+      id: "mobile-ui",
+      label: "Save Mobile UI Settings",
+      onSave: () => saveMutation.mutate(),
+      isSaving: saveMutation.isPending,
+    },
+    [config, saveMutation.isPending]
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -258,10 +269,6 @@ const AdminMobileUI = () => {
           </Card>
 
           <PerfPanel />
-
-          <Button className="w-full" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-            {saveMutation.isPending ? "Saving..." : "Save Mobile UI Settings"}
-          </Button>
         </div>
 
         {/* Live Preview */}
@@ -332,9 +339,9 @@ const PerfPanel: React.FC = () => {
   useEffect(() => { if (data) setPerf({ ...DEFAULT_PERF, ...data }); }, [data]);
 
   const save = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (updatedPerf: PerfSettings) => {
       const { error } = await supabase.from("site_settings").upsert(
-        { key: "mobile_perf_settings", value: perf as any, updated_at: new Date().toISOString() },
+        { key: "mobile_perf_settings", value: updatedPerf as any, updated_at: new Date().toISOString() },
         { onConflict: "key" }
       );
       if (error) throw error;
@@ -342,7 +349,7 @@ const PerfPanel: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-mobile-perf-settings"] });
       qc.invalidateQueries({ queryKey: ["mobile-perf-settings"] });
-      toast.success("Performance settings saved");
+      toast.success("Performance settings updated");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -353,7 +360,14 @@ const PerfPanel: React.FC = () => {
         <p className="text-sm font-medium">{label}</p>
         <p className="text-xs text-muted-foreground">{desc}</p>
       </div>
-      <Switch checked={perf[k]} onCheckedChange={(v) => setPerf({ ...perf, [k]: v })} />
+      <Switch
+        checked={perf[k]}
+        onCheckedChange={(v) => {
+          const next = { ...perf, [k]: v };
+          setPerf(next);
+          save.mutate(next);
+        }}
+      />
     </div>
   );
 
@@ -376,9 +390,6 @@ const PerfPanel: React.FC = () => {
           <Row label="Disable 3D scenes" desc="Skip WebGL/three.js heroes" k="disable_3d_tablet" />
           <Row label="Lightweight mode" desc="Skip cinematic overlays & light beams" k="lightweight_mode_tablet" />
         </div>
-        <Button size="sm" className="w-full" onClick={() => save.mutate()} disabled={save.isPending}>
-          {save.isPending ? "Saving..." : "Save Performance Settings"}
-        </Button>
       </CardContent>
     </Card>
   );

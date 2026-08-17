@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Truck, X, Sparkles } from "lucide-react";
+import { Truck, X, Tag } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -57,7 +57,7 @@ const TopOfferBanner: React.FC = () => {
         <div className="max-w-[1440px] mx-auto px-4 lg:px-6 h-8 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0 flex-1 justify-center sm:justify-start">
             <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-primary text-primary-foreground">
-              <Sparkles className="w-2.5 h-2.5" /> OFFER
+              <Tag className="w-2.5 h-2.5" /> OFFER
             </span>
             <p className="truncate text-xs font-medium text-foreground leading-none">
               <span className="font-bold">{offer.title}</span>

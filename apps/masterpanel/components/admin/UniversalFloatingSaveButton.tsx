@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUniversalSave } from "@/contexts/UniversalSaveContext";
 import { Check, Loader2, Undo2, Redo2, RotateCcw } from "lucide-react";
@@ -12,6 +13,9 @@ export const UniversalFloatingSaveButton: React.FC = () => {
   const isMobile = useIsMobile();
   const [isMac, setIsMac] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isHoveredRef = useRef(false);
@@ -120,6 +124,7 @@ export const UniversalFloatingSaveButton: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [activeAction, resetActivity]);
 
+  if (!mounted) return null;
   if (!activeAction || !activeAction.onSave) return null;
 
   const hasUndo = Boolean(activeAction.onUndo);
@@ -143,7 +148,7 @@ export const UniversalFloatingSaveButton: React.FC = () => {
     resetActivity();
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isVisible && (
         <motion.div
@@ -152,7 +157,7 @@ export const UniversalFloatingSaveButton: React.FC = () => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 45, scale: 0.94 }}
           transition={{ type: "spring", stiffness: 420, damping: 28 }}
-          className={`fixed z-50 left-1/2 -translate-x-1/2 ${
+          className={`fixed z-[9999] left-1/2 -translate-x-1/2 ${
             isMobile ? "bottom-20" : "bottom-6 md:bottom-8"
           }`}
           onMouseEnter={handleMouseEnter}
@@ -246,7 +251,8 @@ export const UniversalFloatingSaveButton: React.FC = () => {
           </div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 

@@ -31,7 +31,7 @@ const AdminAppearance: React.FC = () => {
       : "storefront";
 
   const setTab = (newTab: TabKey) => {
-    navigate(`/brand/appearance?tab=${newTab}`);
+    navigate(`${location.pathname}?tab=${newTab}`);
   };
 
   return (

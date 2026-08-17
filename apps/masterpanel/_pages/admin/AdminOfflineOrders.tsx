@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/lib/app-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScanner } from "@/components/admin/products/BarcodeScanner";
@@ -14,7 +15,7 @@ import { lookupSerial } from "@/lib/serials.functions";
 import { createOfflineOrder } from "@/lib/offline-orders.functions";
 import { extractSerialCode } from "@orizino/shared";
 import { emailOrderInvoice } from "@/lib/order-invoice-email.functions";
-import { downloadInvoicePdf, type PdfBrand } from "@/lib/invoice-pdf";
+import { downloadInvoicePdf, printInvoicePdf, printThermalSlip, downloadStickerPdf, type PdfBrand } from "@/lib/invoice-pdf";
 import {
   User,
   Phone,
@@ -31,6 +32,9 @@ import {
   ArrowRight,
   Check,
   Printer,
+  Download,
+  Receipt,
+  Tag,
   CheckCircle2,
   ChevronRight,
   Package,
@@ -42,6 +46,12 @@ import {
   RotateCcw,
   Barcode,
   QrCode,
+  Pencil,
+  Percent,
+  DollarSign,
+  Truck,
+  SlidersHorizontal,
+  X,
 } from "lucide-react";
 
 type Source = "offline" | "page" | "whatsapp" | "tiktok" | "instagram";
@@ -60,7 +70,9 @@ interface ScannedUnit {
   productId: string;
   variantId: string | null;
   productName: string;
+  mainPrice: number;
   unitPrice: number;
+  discount: number;
   thumbnail?: string | null;
   sku?: string | null;
 }
@@ -176,10 +188,53 @@ export default function AdminOfflineOrders() {
   const [address, setAddress] = useState("");
   const [source, setSource] = useState<Source>("offline");
   const [notes, setNotes] = useState("");
+  const [shippingFee, setShippingFee] = useState<number>(0);
+  const [isPrepaidDelivery, setIsPrepaidDelivery] = useState<boolean>(false);
+  const [isDeliveryFeeManual, setIsDeliveryFeeManual] = useState<boolean>(false);
+
+  const calculateDeliveryFeeFromAddress = (addrText: string): number => {
+    const lower = addrText.toLowerCase();
+    if (!lower.trim()) return 70;
+    const suburbs = ["gazipur", "savar", "narayanganj", "keraniganj", "tongi", "ashulia", "dhamrai", "sreepur", "sonargaon"];
+    if (suburbs.some((s) => lower.includes(s))) return 105;
+    const insideDhaka = [
+      "dhaka", "dhanmondi", "mirpur", "gulshan", "banani", "uttara", "mohammadpur",
+      "badda", "khilgaon", "motijheel", "bashundhara", "rampura", "malibagh", "jatrabari",
+      "farmgate", "lalbagh", "old dhaka", "wari", "tejgaon", "mohakhali", "shahbagh",
+      "baridhara", "paltan", "shantinagar", "segunbagicha", "azimpur", "hazaribagh"
+    ];
+    if (insideDhaka.some((s) => lower.includes(s))) return 70;
+    return 130;
+  };
+
+  const handleAddressChange = (newAddr: string) => {
+    setAddress(newAddr);
+    if (!isDeliveryFeeManual && source !== "offline") {
+      setShippingFee(calculateDeliveryFeeFromAddress(newAddr));
+    }
+  };
+
+  const handleSourceChange = (newSource: Source) => {
+    setSource(newSource);
+    if (newSource === "offline") {
+      setShippingFee(0);
+      setIsPrepaidDelivery(false);
+    } else {
+      if (!isDeliveryFeeManual) {
+        setShippingFee(calculateDeliveryFeeFromAddress(address));
+      }
+    }
+  };
 
   // Step 2: Scanning & Cart State
   const [scannerActive, setScannerActive] = useState(true);
+  const [priceOverride, setPriceOverride] = useState<string>("");
   const [units, setUnits] = useState<ScannedUnit[]>([]);
+  const [editingSerialId, setEditingSerialId] = useState<string | null>(null);
+  const [editPriceInput, setEditPriceInput] = useState<string>("");
+  const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
+  const [editGroupPriceInput, setEditGroupPriceInput] = useState<string>("");
+
   const lookupFn = useServerFn(lookupSerial);
   const createFn = useServerFn(createOfflineOrder);
   const emailFn = useServerFn(emailOrderInvoice);
@@ -217,6 +272,13 @@ export default function AdminOfflineOrders() {
       }
 
       const variantLabel = [row.product_variants?.size, row.product_variants?.color].filter(Boolean).join(" / ");
+      const basePrice = Number(row.product_variants?.price || row.products?.price || 0);
+
+      const parsedOverride = priceOverride.trim() !== "" ? parseFloat(priceOverride) : NaN;
+      const isOverrideActive = !isNaN(parsedOverride) && parsedOverride >= 0;
+      const finalSoldPrice = isOverrideActive ? parsedOverride : basePrice;
+      const discountAmount = Math.max(0, basePrice - finalSoldPrice);
+
       const newUnit: ScannedUnit = {
         serialId: row.id,
         serialCode: row.serial_code,
@@ -225,43 +287,108 @@ export default function AdminOfflineOrders() {
         productName: variantLabel
           ? `${row.products?.name ?? "Product"} (${variantLabel})`
           : row.products?.name ?? "Product",
-        unitPrice: Number(row.products?.price ?? 0),
+        mainPrice: basePrice,
+        unitPrice: finalSoldPrice,
+        discount: discountAmount,
         thumbnail: row.products?.thumbnail ?? null,
         sku: row.products?.sku ?? null,
       };
 
       setUnits((prev) => [newUnit, ...prev]);
-      toast({ title: "Item Added", description: `${newUnit.productName} (#${newUnit.serialCode})`, type: "success" });
+      toast({
+        title: "Item Added",
+        description: isOverrideActive
+          ? `${newUnit.productName} (#${newUnit.serialCode}) • ৳${finalSoldPrice.toLocaleString()} (Saved: ৳${discountAmount.toLocaleString()})`
+          : `${newUnit.productName} (#${newUnit.serialCode}) • ৳${finalSoldPrice.toLocaleString()}`,
+        type: "success",
+      });
     } catch (e: any) {
       toast({ title: "Lookup Failed", description: e.message, type: "error" });
     }
   };
 
+  const updateUnitPrice = (serialId: string, newSoldPrice: number) => {
+    setUnits((prev) =>
+      prev.map((u) => {
+        if (u.serialId !== serialId) return u;
+        const validPrice = Math.max(0, isNaN(newSoldPrice) ? 0 : newSoldPrice);
+        return {
+          ...u,
+          unitPrice: validPrice,
+          discount: Math.max(0, u.mainPrice - validPrice),
+        };
+      })
+    );
+    setEditingSerialId(null);
+    setEditPriceInput("");
+  };
+
+  const updateGroupPrice = (productName: string, newSoldPrice: number) => {
+    setUnits((prev) =>
+      prev.map((u) => {
+        if (u.productName !== productName) return u;
+        const validPrice = Math.max(0, isNaN(newSoldPrice) ? 0 : newSoldPrice);
+        return {
+          ...u,
+          unitPrice: validPrice,
+          discount: Math.max(0, u.mainPrice - validPrice),
+        };
+      })
+    );
+    setEditingGroupName(null);
+    setEditGroupPriceInput("");
+  };
+
+  const originalSubtotal = useMemo(() => {
+    return units.reduce((sum, u) => sum + (u.mainPrice || 0), 0);
+  }, [units]);
+
+  const totalSoldAmount = useMemo(() => {
+    return units.reduce((sum, u) => sum + (u.unitPrice || 0), 0);
+  }, [units]);
+
+  const totalDiscount = useMemo(() => {
+    return Math.max(0, originalSubtotal - totalSoldAmount);
+  }, [originalSubtotal, totalSoldAmount]);
+
+  const subtotal = totalSoldAmount;
+
   const grouped = useMemo(() => {
     const map = new Map<
       string,
-      { productName: string; unitPrice: number; sku?: string | null; serialIds: string[]; serialCodes: string[] }
+      {
+        productName: string;
+        mainPrice: number;
+        unitPrice: number;
+        discount: number;
+        sku?: string | null;
+        serialIds: string[];
+        serialCodes: string[];
+        hasVaryingPrices: boolean;
+      }
     >();
     for (const u of units) {
       const key = `${u.productId}::${u.variantId ?? ""}`;
       if (!map.has(key)) {
         map.set(key, {
           productName: u.productName,
+          mainPrice: u.mainPrice,
           unitPrice: u.unitPrice,
+          discount: u.discount,
           sku: u.sku,
           serialIds: [],
           serialCodes: [],
+          hasVaryingPrices: false,
         });
       }
       const g = map.get(key)!;
+      if (g.unitPrice !== u.unitPrice && g.serialIds.length > 0) {
+        g.hasVaryingPrices = true;
+      }
       g.serialIds.push(u.serialId);
       g.serialCodes.push(u.serialCode);
     }
     return [...map.values()];
-  }, [units]);
-
-  const subtotal = useMemo(() => {
-    return units.reduce((sum, u) => sum + (u.unitPrice || 0), 0);
   }, [units]);
 
   const removeUnit = (serialId: string) => {
@@ -283,6 +410,15 @@ export default function AdminOfflineOrders() {
           source,
           notes: notes.trim() || undefined,
           serialIds: units.map((u) => u.serialId),
+          shippingFee: source === "offline" ? 0 : shippingFee,
+          isDeliveryPrepaid: source === "offline" ? false : isPrepaidDelivery,
+          deliveryPrepaidAmount: source !== "offline" && isPrepaidDelivery ? shippingFee : 0,
+          items: units.map((u) => ({
+            serialId: u.serialId,
+            soldPrice: u.unitPrice,
+            mainPrice: u.mainPrice,
+            discount: u.discount,
+          })),
         },
       }),
     onSuccess: (r: any) => {
@@ -290,7 +426,7 @@ export default function AdminOfflineOrders() {
       goToStep("done");
       toast({
         title: units.length === 0 ? "Empty Order Created" : "Order Confirmed & Serials Assigned",
-        description: `Order ${r.order.order_number}`,
+        description: `Order ${r.order.order_number} • Total: ৳${Number(r.order.total || 0).toLocaleString()}`,
         type: "success",
       });
     },
@@ -302,7 +438,27 @@ export default function AdminOfflineOrders() {
   const printInvoice = async () => {
     if (!result) return;
     const brand = await loadBrand();
+    printInvoicePdf(result.order, result.items, brand);
+  };
+
+  const exportPdf = async () => {
+    if (!result) return;
+    const brand = await loadBrand();
     downloadInvoicePdf(result.order, result.items, brand);
+    toast({ title: "Invoice Exported", description: `Saved Invoice-${result.order.order_number}.pdf`, type: "success" });
+  };
+
+  const printPosSlip = async () => {
+    if (!result) return;
+    const brand = await loadBrand();
+    printThermalSlip(result.order, result.items, brand);
+  };
+
+  const exportSticker = async () => {
+    if (!result) return;
+    const brand = await loadBrand();
+    downloadStickerPdf(result.order, brand);
+    toast({ title: "Shipping Label Exported", description: `Saved Shipping-Label-${result.order.order_number}.pdf`, type: "success" });
   };
 
   const emailInvoice = useMutation({
@@ -330,10 +486,18 @@ export default function AdminOfflineOrders() {
     setAddress("");
     setSource("offline");
     setNotes("");
+    setPriceOverride("");
     setUnits([]);
+    setEditingSerialId(null);
+    setEditPriceInput("");
+    setEditingGroupName(null);
+    setEditGroupPriceInput("");
     setResult(null);
     setEmailOverride("");
     setScannerActive(true);
+    setShippingFee(0);
+    setIsPrepaidDelivery(false);
+    setIsDeliveryFeeManual(false);
   };
 
   const selectedSource = SOURCE_OPTIONS.find((s) => s.value === source)!;
@@ -433,12 +597,48 @@ export default function AdminOfflineOrders() {
                   </Label>
                   <Textarea
                     value={address}
-                    onChange={(e) => setAddress(e.target.value)}
+                    onChange={(e) => handleAddressChange(e.target.value)}
                     placeholder="House, Road, Area, City"
                     rows={2}
                     className="rounded-xl text-xs sm:text-sm resize-none bg-secondary/30 border-border/60"
                   />
                 </div>
+
+                {source !== "offline" && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-medium text-foreground flex items-center gap-1">
+                          <Truck className="w-3.5 h-3.5 text-primary" /> Delivery Charge (৳)
+                        </Label>
+                        <span className="text-[10px] text-muted-foreground">Auto-calculated</span>
+                      </div>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={shippingFee}
+                        onChange={(e) => {
+                          setIsDeliveryFeeManual(true);
+                          setShippingFee(Math.max(0, Number(e.target.value) || 0));
+                        }}
+                        className="h-10 rounded-xl text-xs sm:text-sm font-mono bg-secondary/30 border-border/60"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 flex flex-col justify-end">
+                      <div className="flex items-center gap-2.5 p-2.5 rounded-xl border border-border/60 bg-secondary/20 h-10 cursor-pointer">
+                        <Checkbox
+                          id="prepaid-delivery"
+                          checked={isPrepaidDelivery}
+                          onCheckedChange={(v) => setIsPrepaidDelivery(!!v)}
+                        />
+                        <Label htmlFor="prepaid-delivery" className="text-xs font-medium text-foreground cursor-pointer select-none">
+                          Pre-paid Delivery Charge
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <p className="text-[11px] text-muted-foreground pt-2">
@@ -464,7 +664,7 @@ export default function AdminOfflineOrders() {
                       <button
                         key={o.value}
                         type="button"
-                        onClick={() => setSource(o.value)}
+                        onClick={() => handleSourceChange(o.value)}
                         className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all cursor-pointer ${
                           isSelected
                             ? "bg-primary/10 border-primary text-foreground font-semibold"
@@ -530,6 +730,77 @@ export default function AdminOfflineOrders() {
       ───────────────────────────────────────────────────────────── */}
       {step === "scan" && (
         <div className="space-y-4 min-w-0">
+          {/* Price Override Console */}
+          <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                  priceOverride.trim() && !isNaN(Number(priceOverride))
+                    ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                    : "bg-secondary text-muted-foreground border border-border/50"
+                }`}
+              >
+                <Tag className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-foreground">Scan Price Override (৳)</span>
+                  {priceOverride.trim() && !isNaN(Number(priceOverride)) ? (
+                    <Badge className="text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-mono font-bold">
+                      Override Active: ৳{Number(priceOverride).toLocaleString()}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] text-muted-foreground font-mono">
+                      Catalog Price
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {priceOverride.trim() && !isNaN(Number(priceOverride))
+                    ? "Any serial scanned now will register with this override price (discount calculated from main price)."
+                    : "Enter an override price to sell subsequent scanned items at a custom price, or clear it to use default."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              <div className="relative flex-1 sm:w-44">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground font-semibold">
+                  ৳
+                </span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={priceOverride}
+                  onChange={(e) => setPriceOverride(e.target.value)}
+                  placeholder="e.g. 400"
+                  className="h-9 pl-6 pr-7 text-xs font-mono bg-secondary/30 border-border/70 rounded-xl"
+                />
+                {priceOverride && (
+                  <button
+                    type="button"
+                    onClick={() => setPriceOverride("")}
+                    title="Clear override"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              {priceOverride && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPriceOverride("")}
+                  className="h-9 px-2.5 text-xs rounded-xl text-muted-foreground hover:text-foreground cursor-pointer shrink-0"
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch min-w-0">
             {/* Left Pane: Terminal Viewfinder (QR Mode default) */}
             <div className="flex flex-col h-full rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md overflow-hidden p-4 sm:p-5 space-y-4 min-w-0">
@@ -603,7 +874,7 @@ export default function AdminOfflineOrders() {
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="font-semibold text-foreground truncate">{u.productName}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                               <span className="font-mono text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
                                 {u.serialCode}
                               </span>
@@ -612,14 +883,83 @@ export default function AdminOfflineOrders() {
                                   SKU: {u.sku}
                                 </span>
                               )}
+                              {u.discount > 0 && (
+                                <span className="font-mono text-[9px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 font-semibold">
+                                  -৳{u.discount.toLocaleString()} off
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
 
+                        {/* Price & Edit Controls */}
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-mono font-bold text-foreground text-xs">
-                            ৳{u.unitPrice.toLocaleString()}
-                          </span>
+                          {editingSerialId === u.serialId ? (
+                            <div className="flex items-center gap-1">
+                              <div className="relative w-20">
+                                <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-muted-foreground">৳</span>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={editPriceInput}
+                                  onChange={(e) => setEditPriceInput(e.target.value)}
+                                  className="h-7 pl-4 pr-1 text-xs font-mono bg-background"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") updateUnitPrice(u.serialId, parseFloat(editPriceInput));
+                                    if (e.key === "Escape") setEditingSerialId(null);
+                                  }}
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => updateUnitPrice(u.serialId, parseFloat(editPriceInput))}
+                                className="w-6 h-6 rounded bg-primary text-primary-foreground flex items-center justify-center cursor-pointer"
+                                title="Save price"
+                              >
+                                <Check className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingSerialId(null)}
+                                className="w-6 h-6 rounded bg-secondary text-muted-foreground flex items-center justify-center cursor-pointer"
+                                title="Cancel"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <div className="text-right">
+                                {u.discount > 0 ? (
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="text-[10px] line-through text-muted-foreground/70 font-mono">
+                                      ৳{u.mainPrice.toLocaleString()}
+                                    </span>
+                                    <span className="font-mono font-bold text-foreground text-xs">
+                                      ৳{u.unitPrice.toLocaleString()}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="font-mono font-bold text-foreground text-xs">
+                                    ৳{u.unitPrice.toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingSerialId(u.serialId);
+                                  setEditPriceInput(String(u.unitPrice));
+                                }}
+                                title="Edit unit sold price"
+                                className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer transition-colors"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => removeUnit(u.serialId)}
@@ -635,11 +975,25 @@ export default function AdminOfflineOrders() {
                 )}
 
                 {/* Subtotal Ribbon */}
-                <div className="p-3 rounded-xl bg-secondary/50 border border-border/60 flex items-center justify-between text-xs font-medium">
-                  <span className="text-muted-foreground">Subtotal ({units.length} items):</span>
-                  <span className="font-mono font-bold text-sm text-foreground">
-                    ৳{subtotal.toLocaleString()}
-                  </span>
+                <div className="p-3 rounded-xl bg-secondary/50 border border-border/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">{units.length} item{units.length === 1 ? "" : "s"}</span>
+                    {totalDiscount > 0 && (
+                      <Badge className="text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-mono">
+                        Saved ৳{totalDiscount.toLocaleString()}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    {totalDiscount > 0 && (
+                      <span className="text-xs text-muted-foreground line-through font-mono">
+                        ৳{originalSubtotal.toLocaleString()}
+                      </span>
+                    )}
+                    <span className="font-mono font-bold text-sm text-foreground">
+                      ৳{totalSoldAmount.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -718,21 +1072,82 @@ export default function AdminOfflineOrders() {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <h4 className="text-sm font-bold text-foreground leading-snug">{g.productName}</h4>
-                          {g.sku && <p className="text-[11px] font-mono text-muted-foreground">SKU: {g.sku}</p>}
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {g.sku && <p className="text-[11px] font-mono text-muted-foreground">SKU: {g.sku}</p>}
+                            {g.discount > 0 && (
+                              <Badge className="text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-mono">
+                                ৳{g.discount.toLocaleString()} Discount / Unit
+                              </Badge>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Price & Edit Group Price */}
                         <div className="text-right shrink-0">
-                          <p className="text-sm font-mono font-bold text-foreground">
-                            ৳{(g.unitPrice * g.serialIds.length).toLocaleString()}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground font-mono">
-                            {g.serialIds.length} × ৳{g.unitPrice.toLocaleString()}
-                          </p>
+                          {editingGroupName === g.productName ? (
+                            <div className="flex items-center gap-1 justify-end">
+                              <div className="relative w-24">
+                                <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-muted-foreground">৳</span>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={editGroupPriceInput}
+                                  onChange={(e) => setEditGroupPriceInput(e.target.value)}
+                                  className="h-7 pl-4 pr-1 text-xs font-mono bg-background"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") updateGroupPrice(g.productName, parseFloat(editGroupPriceInput));
+                                    if (e.key === "Escape") setEditingGroupName(null);
+                                  }}
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => updateGroupPrice(g.productName, parseFloat(editGroupPriceInput))}
+                                className="w-6 h-6 rounded bg-primary text-primary-foreground flex items-center justify-center cursor-pointer"
+                                title="Save price"
+                              >
+                                <Check className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingGroupName(null)}
+                                className="w-6 h-6 rounded bg-secondary text-muted-foreground flex items-center justify-center cursor-pointer"
+                                title="Cancel"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5 justify-end">
+                              <div>
+                                <p className="text-sm font-mono font-bold text-foreground">
+                                  ৳{(g.unitPrice * g.serialIds.length).toLocaleString()}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground font-mono">
+                                  {g.serialIds.length} × ৳{g.unitPrice.toLocaleString()}
+                                  {g.discount > 0 && ` (Base: ৳${g.mainPrice.toLocaleString()})`}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingGroupName(g.productName);
+                                  setEditGroupPriceInput(String(g.unitPrice));
+                                }}
+                                title="Edit sold price for all units in this product"
+                                className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer transition-colors"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       <div className="pt-2 border-t border-border/40 flex flex-wrap items-center gap-1.5">
                         <span className="text-[10px] uppercase font-mono text-muted-foreground tracking-wider mr-1">
-                          Serials:
+                          Serials ({g.serialCodes.length}):
                         </span>
                         {g.serialCodes.map((c) => (
                           <span
@@ -802,12 +1217,50 @@ export default function AdminOfflineOrders() {
 
               <div className="pt-3 border-t border-border/50 space-y-1.5">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Merchandise Subtotal:</span>
+                  <span className="font-mono font-semibold text-foreground">৳{totalSoldAmount.toLocaleString()}</span>
+                </div>
+                {totalDiscount > 0 && (
+                  <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+                    <span>Discounts Given:</span>
+                    <span className="font-mono">-৳{totalDiscount.toLocaleString()}</span>
+                  </div>
+                )}
+                {source !== "offline" && (
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      Delivery Charge:
+                      {isPrepaidDelivery && (
+                        <Badge className="text-[9px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 py-0 px-1 font-mono">
+                          Pre-paid
+                        </Badge>
+                      )}
+                    </span>
+                    <span className="font-mono font-semibold text-foreground">৳{shippingFee.toLocaleString()}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Total Units:</span>
                   <span className="font-mono font-semibold text-foreground">{units.length}</span>
                 </div>
+                <div className="flex items-center justify-between text-xs font-semibold pt-1 border-t border-border/20 text-muted-foreground">
+                  <span>Total Order Value:</span>
+                  <span className="font-mono text-foreground">৳{(totalSoldAmount + (source === "offline" ? 0 : shippingFee)).toLocaleString()}</span>
+                </div>
                 <div className="flex items-center justify-between text-sm font-bold pt-1 border-t border-border/30">
-                  <span className="text-foreground">Total Amount:</span>
-                  <span className="text-emerald-500 font-mono text-base">৳{subtotal.toLocaleString()}</span>
+                  <span className="text-foreground">
+                    {source === "offline"
+                      ? "Payable at Counter:"
+                      : isPrepaidDelivery
+                      ? "COD Due on Delivery:"
+                      : "Payable on Delivery (COD):"}
+                  </span>
+                  <span className="text-emerald-500 font-mono text-base">
+                    ৳{((source === "offline" || isPrepaidDelivery)
+                      ? totalSoldAmount
+                      : totalSoldAmount + shippingFee
+                    ).toLocaleString()}
+                  </span>
                 </div>
               </div>
             </div>
@@ -834,7 +1287,7 @@ export default function AdminOfflineOrders() {
                 "Processing Order…"
               ) : (
                 <>
-                  <CheckCircle2 className="w-4 h-4 mr-2" /> Confirm &amp; Finalize Order (৳{subtotal.toLocaleString()})
+                  <CheckCircle2 className="w-4 h-4 mr-2" /> Confirm &amp; Finalize Order (৳{totalSoldAmount.toLocaleString()})
                 </>
               )}
             </Button>
@@ -877,23 +1330,55 @@ export default function AdminOfflineOrders() {
           {/* Action Dispatch Matrix */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Invoice Print & PDF Card */}
-            <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-4 sm:p-5 space-y-3 flex flex-col justify-between">
+            <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-4 sm:p-5 space-y-4 flex flex-col justify-between">
               <div>
-                <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                  Document &amp; Receipt
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Generate branded PDF tax invoice with serial barcodes for warranty and customer receipts.
+                <div className="flex items-center gap-2 mb-1">
+                  <Printer className="w-4 h-4 text-primary" />
+                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                    Invoice Slip &amp; Receipts
+                  </h3>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Print instant tax invoice slips, thermal POS customer receipts, or export PDF files for warranty and accounting.
                 </p>
               </div>
 
-              <Button
-                variant="outline"
-                onClick={printInvoice}
-                className="w-full h-10 rounded-xl text-xs font-semibold cursor-pointer"
-              >
-                <Printer className="w-4 h-4 mr-2" /> Download / Print Invoice PDF
-              </Button>
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <Button
+                    onClick={printInvoice}
+                    className="h-10 rounded-xl text-xs font-bold gap-2 cursor-pointer bg-primary text-primary-foreground shadow-sm hover:brightness-110"
+                  >
+                    <Printer className="w-4 h-4" /> Print Invoice Slip
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={exportPdf}
+                    className="h-10 rounded-xl text-xs font-semibold gap-2 border-border/70 hover:bg-secondary/60 cursor-pointer"
+                  >
+                    <Download className="w-4 h-4" /> Export Invoice PDF
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={printPosSlip}
+                    className="h-10 rounded-xl text-xs font-semibold gap-2 border-border/70 hover:bg-secondary/60 cursor-pointer"
+                  >
+                    <Receipt className="w-4 h-4" /> POS Receipt (80mm)
+                  </Button>
+                  {result.order.order_source !== "offline" && (
+                    <Button
+                      variant="outline"
+                      onClick={exportSticker}
+                      className="h-10 rounded-xl text-xs font-semibold gap-2 border-border/70 hover:bg-secondary/60 cursor-pointer"
+                    >
+                      <Tag className="w-4 h-4" /> Shipping Sticker
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Email Dispatch Card */}

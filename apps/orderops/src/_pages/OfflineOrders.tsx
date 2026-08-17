@@ -9,7 +9,7 @@ import { Badge } from "@ui/components/ui/badge";
 import { BarcodeScanner, ScannerLaunchCard } from "@/components/BarcodeScanner";
 import { lookupSerial } from "@/lib/serials";
 import { createOfflineOrder, type OfflineSource } from "@/lib/offline-orders";
-import { generateInvoice, printInvoiceHtml } from "@/lib/invoice";
+import { generateInvoice, printInvoiceHtml, printThermalSlipHtml } from "@/lib/invoice";
 import {
   ScanLine,
   Trash2,
@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Check,
   Printer,
+  Receipt,
   Mail,
   Plus,
   Store,
@@ -168,6 +169,11 @@ export function OfflineOrders() {
     if (!result) return;
     const r = await generateInvoice(result.order.id, false);
     printInvoiceHtml(r.invoice_html);
+  };
+
+  const printPosSlip = () => {
+    if (!result) return;
+    printThermalSlipHtml(result.order, result.items);
   };
 
   const emailInvoice = useMutation({
@@ -388,9 +394,14 @@ export function OfflineOrders() {
           </div>
 
           <div className="rounded-3xl border border-border/60 bg-card p-4 sm:p-5 space-y-3 shadow-sm">
-            <Button variant="outline" onClick={() => void printInvoice()} className="w-full h-11 rounded-2xl justify-center">
-              <Printer className="w-4 h-4 mr-1.5" />Print / download invoice
-            </Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Button onClick={() => void printInvoice()} className="w-full h-11 rounded-2xl justify-center font-bold">
+                <Printer className="w-4 h-4 mr-1.5" />Print / Download Invoice
+              </Button>
+              <Button variant="outline" onClick={printPosSlip} className="w-full h-11 rounded-2xl justify-center font-semibold">
+                <Receipt className="w-4 h-4 mr-1.5" />POS Receipt Slip (80mm)
+              </Button>
+            </div>
             <div className="flex flex-col sm:flex-row sm:items-end gap-2 pt-2 border-t border-border/50">
               <div className="flex-1 space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Send invoice by email</Label>

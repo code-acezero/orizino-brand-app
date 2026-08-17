@@ -14,6 +14,7 @@ import { useSeoMeta } from "@/hooks/use-seo-meta";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { BottomSheet } from "@/components/mobile";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { CategoryMonochromeIcon } from "@shared/components/CategoryMonochromeIcon";
 
 /* ─── helpers ─────────────────────────────────────────────────── */
 const getColorHex = (name: string) => name.trim().toLowerCase() || "#888";
@@ -292,7 +293,6 @@ const ShopPage: React.FC = () => {
             const children  = getChildren(cat.id);
             const isExp     = expandedParent === cat.id;
             const isSel     = selectedCategory === cat.id;
-            const iconSrc   = getCategoryIcon(cat);
             const count     = getCategoryCount(cat.id);
             return (
               <div key={cat.id}>
@@ -301,11 +301,11 @@ const ShopPage: React.FC = () => {
                   className={`flex items-center gap-2 w-full text-left px-0 py-2 text-sm transition-colors bg-transparent border-0
                     ${isSel ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"}`}
                 >
-                  {iconSrc ? (
-                    <img src={iconSrc} alt="" className="w-4 h-4 object-contain shrink-0 opacity-70" />
-                  ) : cat.icon ? (
-                    <span className="text-sm leading-none">{cat.icon}</span>
-                  ) : null}
+                  <CategoryMonochromeIcon
+                    icon={cat.icon}
+                    iconUrl={cat.icon_url}
+                    className="w-4 h-4 shrink-0"
+                  />
                   <span className="flex-1 text-left">{cat.name}</span>
                   {count > 0 && <span className="text-[10px] text-muted-foreground/60 tabular-nums">{count}</span>}
                   {children.length > 0 && (
@@ -329,9 +329,11 @@ const ShopPage: React.FC = () => {
                             className={`flex items-center gap-2 w-full text-left py-1.5 text-xs transition-colors bg-transparent border-0
                               ${selectedCategory === sub.id ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"}`}
                           >
-                            {sub.icon_url ? (
-                              <img src={sub.icon_url} alt="" className="w-3 h-3 object-contain shrink-0 opacity-60" />
-                            ) : sub.icon ? <span className="text-xs">{sub.icon}</span> : null}
+                            <CategoryMonochromeIcon
+                              icon={sub.icon}
+                              iconUrl={sub.icon_url}
+                              className="w-3.5 h-3.5 shrink-0"
+                            />
                             <span className="flex-1">{sub.name}</span>
                             {productCounts && <span className="text-[10px] text-muted-foreground/50 tabular-nums">{productCounts[sub.id] || 0}</span>}
                           </button>

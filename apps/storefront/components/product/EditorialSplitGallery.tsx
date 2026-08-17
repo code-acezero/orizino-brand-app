@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Maximize2, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Maximize2, ChevronLeft, ChevronRight, Eye, ZoomIn } from "lucide-react";
 import ProductLightboxModal from "@/components/product/ProductLightboxModal";
 
 import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
@@ -141,7 +141,7 @@ export default function EditorialSplitGallery({
           </button>
 
           <div className="absolute bottom-3.5 left-3.5 bg-background/85 backdrop-blur-md rounded-full px-3.5 py-1 text-[9.5px] font-mono text-foreground border border-border/60 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity z-20 shadow-xs">
-            <Sparkles className="w-3.5 h-3.5 text-primary" /> Detail & Craft
+            <Eye className="w-3.5 h-3.5 text-primary" /> Detail &amp; Craft
           </div>
         </div>
       </div>

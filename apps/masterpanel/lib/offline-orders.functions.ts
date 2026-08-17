@@ -4,6 +4,7 @@ import { createServerFn } from "@/lib/server-fn-compat";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { runTwoWayStockSync } from "./serials.functions";
+import { syncSerialsAndStockToSheetSilently } from "./serials-sheets.functions";
 
 /**
  * Offline / manual-channel order creation + serial reassignment.
@@ -43,7 +44,10 @@ async function recomputeOrderTotals(sb: any, orderId: string) {
   const shippingFee = Number(order?.shipping_fee || 0);
   const discounts = Number(order?.coupon_discount || 0) + Number(order?.loyalty_discount || 0);
   const total = Math.max(0, subtotal + shippingFee - discounts);
-  await sb.from("orders").update({ subtotal, total, updated_at: new Date().toISOString() }).eq("id", orderId);
+  await sb
+    .from("orders")
+    .update({ subtotal, total, updated_at: new Date().toISOString() })
+    .eq("id", orderId);
   return { subtotal, total };
 }
 
@@ -66,6 +70,19 @@ export const createOfflineOrder = createServerFn({ method: "POST" })
         source: z.enum(SOURCES).default("offline"),
         notes: z.string().max(1000).optional(),
         serialIds: z.array(z.string().uuid()).max(300).default([]),
+        shippingFee: z.number().min(0).default(0),
+        isDeliveryPrepaid: z.boolean().default(false),
+        deliveryPrepaidAmount: z.number().min(0).optional(),
+        items: z
+          .array(
+            z.object({
+              serialId: z.string().uuid(),
+              soldPrice: z.number().min(0),
+              mainPrice: z.number().min(0).optional(),
+              discount: z.number().min(0).optional(),
+            })
+          )
+          .optional(),
       })
       .parse(d),
   )
@@ -78,7 +95,7 @@ export const createOfflineOrder = createServerFn({ method: "POST" })
     if (uniqueSerialIds.length > 0) {
       const { data: rows, error: se } = await sb
         .from("product_serials")
-        .select("id, serial_code, status, product_id, variant_id, products(name, price), product_variants(size, color)")
+        .select("id, serial_code, status, product_id, variant_id, products(name, price, compare_at_price), product_variants(size, color, sku, price_override)")
         .in("id", uniqueSerialIds);
       if (se) throw new Error(se.message);
       if (!rows || rows.length !== uniqueSerialIds.length) {
@@ -91,13 +108,30 @@ export const createOfflineOrder = createServerFn({ method: "POST" })
       serialRows = rows;
     }
 
-    // Group scanned units by product+variant -> one order_items line each.
+    const itemPriceMap = new Map<string, { soldPrice: number; mainPrice?: number; discount?: number }>();
+    if (data.items) {
+      for (const it of data.items) {
+        itemPriceMap.set(it.serialId, {
+          soldPrice: it.soldPrice,
+          mainPrice: it.mainPrice,
+          discount: it.discount,
+        });
+      }
+    }
+
+    // Group scanned units by product+variant+soldPrice -> one order_items line each.
     const groups = new Map<
       string,
-      { product_id: string; variant_id: string | null; product_name: string; unit_price: number; serialIds: string[] }
+      { product_id: string; variant_id: string | null; product_name: string; unit_price: number; main_price: number; serialIds: string[] }
     >();
     for (const r of serialRows) {
-      const key = `${r.product_id}::${r.variant_id ?? ""}`;
+      const customInfo = itemPriceMap.get(r.id);
+      const mainPrice = customInfo?.mainPrice !== undefined
+        ? customInfo.mainPrice
+        : Number(r.product_variants?.price_override || r.products?.compare_at_price || r.products?.price || 0);
+      const soldPrice = customInfo?.soldPrice !== undefined ? customInfo.soldPrice : mainPrice;
+
+      const key = `${r.product_id}::${r.variant_id ?? ""}::${soldPrice}`;
       const variantLabel = [r.product_variants?.size, r.product_variants?.color].filter(Boolean).join(" / ");
       const name = variantLabel ? `${r.products?.name ?? "Product"} (${variantLabel})` : r.products?.name ?? "Product";
       if (!groups.has(key)) {
@@ -105,7 +139,8 @@ export const createOfflineOrder = createServerFn({ method: "POST" })
           product_id: r.product_id,
           variant_id: r.variant_id ?? null,
           product_name: name,
-          unit_price: Number(r.products?.price ?? 0),
+          unit_price: soldPrice,
+          main_price: mainPrice,
           serialIds: [],
         });
       }
@@ -113,6 +148,11 @@ export const createOfflineOrder = createServerFn({ method: "POST" })
     }
 
     const subtotal = [...groups.values()].reduce((sum, g) => sum + g.unit_price * g.serialIds.length, 0);
+    const originalSubtotal = [...groups.values()].reduce((sum, g) => sum + g.main_price * g.serialIds.length, 0);
+    const totalDiscount = Math.max(0, originalSubtotal - subtotal);
+    const shippingFee = data.source === "offline" ? 0 : Number(data.shippingFee || 0);
+    const total = subtotal + shippingFee;
+    const isDeliveryPrepaid = data.source !== "offline" && !!data.isDeliveryPrepaid;
     const orderNumber = `OFL-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
 
     const shippingAddress: Record<string, any> = {
@@ -121,6 +161,15 @@ export const createOfflineOrder = createServerFn({ method: "POST" })
       email: data.email || null,
       address_line: data.address || null,
     };
+
+    let paymentStatus = "unpaid";
+    if (data.source === "offline") {
+      paymentStatus = "paid";
+    } else if (isDeliveryPrepaid) {
+      paymentStatus = "partially_paid";
+    } else if (groups.size > 0) {
+      paymentStatus = "unpaid";
+    }
 
     const { data: order, error: oe } = await sb
       .from("orders")
@@ -131,13 +180,16 @@ export const createOfflineOrder = createServerFn({ method: "POST" })
         guest_email: data.email || null,
         guest_phone: data.phone || null,
         customer_name: data.customerName,
-        status: groups.size > 0 ? "confirmed" : "pending",
-        payment_status: groups.size > 0 ? "paid" : "unpaid",
-        payment_method: "cod",
+        status: data.source === "offline" ? "delivered" : groups.size > 0 ? "confirmed" : "pending",
+        payment_status: paymentStatus,
+        payment_method: data.source === "offline" ? "cash" : "cod",
         order_source: data.source,
         subtotal,
-        shipping_fee: 0,
-        total: subtotal,
+        coupon_discount: totalDiscount > 0 ? totalDiscount : 0,
+        shipping_fee: shippingFee,
+        is_delivery_prepaid: isDeliveryPrepaid,
+        delivery_prepaid_amount: isDeliveryPrepaid ? (data.deliveryPrepaidAmount ?? shippingFee) : 0,
+        total,
         shipping_address: shippingAddress,
         notes: data.notes || null,
       })
@@ -169,17 +221,38 @@ export const createOfflineOrder = createServerFn({ method: "POST" })
         .in("id", uniqueSerialIds);
       if (ue) throw new Error(ue.message);
 
-      const eventRows = serialRows.map((r: any) => ({
-        serial_id: r.id,
-        action: "sell",
-        from_status: "available",
-        to_status: "sold",
-        actor_id: context.userId,
-        order_id: order.id,
-        metadata: { source: data.source, order_number: orderNumber },
-      }));
+      const eventRows = serialRows.map((r: any) => {
+        const customInfo = itemPriceMap.get(r.id);
+        const mainPrice = customInfo?.mainPrice !== undefined
+          ? customInfo.mainPrice
+          : Number(r.product_variants?.price_override || r.products?.compare_at_price || r.products?.price || 0);
+        const normalDiscountPrice = Number(r.product_variants?.price_override || r.products?.price || mainPrice || 0);
+        const soldPrice = customInfo?.soldPrice !== undefined ? customInfo.soldPrice : normalDiscountPrice;
+        const discount = customInfo?.discount !== undefined ? customInfo.discount : Math.max(0, mainPrice - soldPrice);
+        const isOverride = customInfo?.soldPrice !== undefined ? customInfo.soldPrice !== normalDiscountPrice : false;
+        return {
+          serial_id: r.id,
+          action: "sell",
+          from_status: "available",
+          to_status: "sold",
+          actor_id: context.userId,
+          order_id: order.id,
+          metadata: {
+            source: data.source,
+            order_number: orderNumber,
+            main_price: mainPrice,
+            discounted_price: normalDiscountPrice,
+            sold_price: soldPrice,
+            discount,
+            is_override: isOverride,
+          },
+        };
+      });
       await sb.from("product_serial_events").insert(eventRows);
       await runTwoWayStockSync(sb);
+
+      // Auto-update connected Google Sheets in real-time
+      await syncSerialsAndStockToSheetSilently(sb);
     }
 
     return { order, items };

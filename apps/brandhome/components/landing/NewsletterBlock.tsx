@@ -19,13 +19,25 @@ const NewsletterBlock: React.FC = () => {
     if (!email.trim() || submitting) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from("newsletter_subscribers" as any)
-        .upsert({ email: email.trim() } as any, { onConflict: "email" });
-      if (error) throw error;
-      setDone(true);
-      setEmail("");
-      toast.success(t("newsletter.success") || "You're on the list.");
+      const res = await fetch("/api/public/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), source: "brandhome_landing" }),
+      });
+      const data = await res.json();
+
+      if (data?.status === "already_subscribed") {
+        toast.info(data.message || "You are already subscribed to ORIZINO updates.");
+        return;
+      }
+
+      if (data?.ok) {
+        setDone(true);
+        setEmail("");
+        toast.success(data.message || "Thank you for subscribing! Check your inbox for your welcome note.");
+      } else {
+        toast.error(data?.message || "Something went wrong. Try again.");
+      }
     } catch {
       toast.error("Something went wrong. Try again.");
     } finally {

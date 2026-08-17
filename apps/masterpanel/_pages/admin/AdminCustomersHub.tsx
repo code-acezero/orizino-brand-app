@@ -4,13 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "@/lib/router-compat";
 import { motion } from "framer-motion";
 import type { Variants } from "framer-motion";
-import { Users, Headphones, BarChart3, MessageSquare, Megaphone, Mail, AtSign, Send, FileText, Workflow, ChevronRight, UserCheck, Clock, TrendingUp } from "lucide-react";
+import { Users, Headphones, BarChart3, MessageSquare, Megaphone, Mail, AtSign, Send, FileText, Workflow, ChevronRight, UserCheck, Clock, TrendingUp, AppWindow, Star } from "lucide-react";
 
 const SECTIONS = [
   {
     group: "Customers",
     items: [
       { title: "Customers",          url: "/sales/customers",          icon: Users,       desc: "Accounts, contacts & purchase history" },
+      { title: "Customer Reviews",   url: "/sales/reviews",            icon: Star,        desc: "Product star ratings, reviews & moderation" },
       { title: "Customer Analytics", url: "/sales/customer-analytics", icon: BarChart3,   desc: "Cohorts, churn, retention & heatmaps" },
       { title: "Live Activity",      url: "/sales/live-activity",      icon: TrendingUp,  desc: "Realtime orders, visitors & ops" },
     ],
@@ -18,14 +19,15 @@ const SECTIONS = [
   {
     group: "Support",
     items: [
-      { title: "Support Inbox",    url: "/sales/support",            icon: Headphones,    desc: "Live chat conversations & tickets" },
-      { title: "Announcements",    url: "/marketing/announcements",        icon: Megaphone,     desc: "Site-wide banners & popups" },
+      { title: "Support Inbox",        url: "/sales/support",           icon: Headphones, desc: "Live chat conversations & tickets" },
+      { title: "Announcements",        url: "/marketing/announcements", icon: Megaphone,  desc: "Sitewide banners & alerts" },
+      { title: "Promotional Modals",   url: "/marketing/popups",        icon: AppWindow,  desc: "Modal campaigns & exit overlays" },
     ],
   },
   {
     group: "Email",
     items: [
-      { title: "Email Provider",   url: "/email/provider",       icon: Mail,          desc: "API keys, webhooks, sender identity" },
+      { title: "Email Provider",   url: "/settings-ai/email-provider",       icon: Mail,          desc: "Resend API key, sender profiles & deliverability" },
       { title: "Subscribers",      url: "/email/subscribers",    icon: AtSign,        desc: "Newsletter signup list" },
       { title: "Campaigns",        url: "/email/campaigns",      icon: Send,          desc: "Bulk email blasts" },
       { title: "Templates",        url: "/email/templates",      icon: FileText,      desc: "Reusable email designs" },

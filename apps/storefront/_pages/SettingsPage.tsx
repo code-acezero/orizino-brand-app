@@ -9,7 +9,7 @@ import {
   Coins, Type, Zap, Contrast, Maximize2, Vibrate, PlayCircle,
   Sliders, Key, Laptop, LifeBuoy, CheckCircle2, User
 } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@orizino/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useLanguage, ALL_LANGUAGES } from "@/contexts/LanguageContext";

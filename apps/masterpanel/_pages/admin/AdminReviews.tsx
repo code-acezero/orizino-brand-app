@@ -20,7 +20,6 @@ import {
   Search,
   Package,
   Calendar,
-  Sparkles,
   ChevronLeft,
   ChevronRight,
   CheckCircle2,

@@ -1,36 +1,58 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
-import { X } from "lucide-react";
+import { X, ArrowRight, Tag, ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 /* ── Animation variants by style ── */
 const getAnimationVariants = (style: string): Variants => {
   switch (style) {
     case "slide-up":
-      return { initial: { opacity: 0, y: 80 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 80 } };
+      return {
+        initial: { opacity: 0, y: 60, scale: 0.98 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        exit: { opacity: 0, y: 40, scale: 0.96 },
+      };
     case "slide-down":
-      return { initial: { opacity: 0, y: -80 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -80 } };
-    case "slide-left":
-      return { initial: { opacity: 0, x: -80 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: -80 } };
-    case "slide-right":
-      return { initial: { opacity: 0, x: 80 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: 80 } };
+      return {
+        initial: { opacity: 0, y: -60, scale: 0.98 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        exit: { opacity: 0, y: -40, scale: 0.96 },
+      };
     case "fade":
-      return { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } };
+      return {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+      };
     case "bounce":
       return {
-        initial: { opacity: 0, scale: 0.3 },
-        animate: { opacity: 1, scale: 1, transition: { type: "spring", stiffness: 300, damping: 15 } },
-        exit: { opacity: 0, scale: 0.3 },
+        initial: { opacity: 0, scale: 0.6 },
+        animate: { opacity: 1, scale: 1, transition: { type: "spring", stiffness: 350, damping: 18 } },
+        exit: { opacity: 0, scale: 0.8 },
       };
     case "flip":
-      return { initial: { opacity: 0, rotateX: 90 }, animate: { opacity: 1, rotateX: 0 }, exit: { opacity: 0, rotateX: 90 } };
+      return {
+        initial: { opacity: 0, rotateX: 75, scale: 0.9 },
+        animate: { opacity: 1, rotateX: 0, scale: 1 },
+        exit: { opacity: 0, rotateX: 45, scale: 0.9 },
+      };
     case "zoom":
-      return { initial: { opacity: 0, scale: 1.3 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 1.3 } };
+      return {
+        initial: { opacity: 0, scale: 1.2 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 1.1 },
+      };
     case "scale":
     default:
-      return { initial: { opacity: 0, scale: 0.9, y: 20 }, animate: { opacity: 1, scale: 1, y: 0 }, exit: { opacity: 0, scale: 0.9, y: 20 } };
+      return {
+        initial: { opacity: 0, scale: 0.92, y: 15 },
+        animate: { opacity: 1, scale: 1, y: 0 },
+        exit: { opacity: 0, scale: 0.94, y: 10 },
+      };
   }
 };
 
@@ -45,13 +67,13 @@ const getPositionClasses = (position: string, displayType: string): string => {
   }
   if (displayType === "slide-in") {
     switch (position) {
-      case "top-left": return "items-start justify-start pt-4 pl-4";
-      case "top-right": return "items-start justify-end pt-4 pr-4";
-      case "bottom-left": return "items-end justify-start pb-4 pl-4";
-      case "bottom-right": return "items-end justify-end pb-4 pr-4";
-      case "top": return "items-start justify-center pt-4";
-      case "bottom": return "items-end justify-center pb-4";
-      default: return "items-center justify-center";
+      case "top-left": return "items-start justify-start pt-6 pl-6";
+      case "top-right": return "items-start justify-end pt-6 pr-6";
+      case "bottom-left": return "items-end justify-start pb-6 pl-6";
+      case "bottom-right": return "items-end justify-end pb-6 pr-6";
+      case "top": return "items-start justify-center pt-6";
+      case "bottom": return "items-end justify-center pb-6";
+      default: return "items-end justify-end pb-6 pr-6";
     }
   }
   // modal / popup default
@@ -72,6 +94,7 @@ const getContainerClasses = (displayType: string): string => {
   switch (displayType) {
     case "banner": return "w-full max-w-2xl";
     case "slide-in": return "max-w-sm w-full";
+    case "fullscreen": return "w-full h-full max-w-none rounded-none";
     default: return "max-w-md w-full";
   }
 };
@@ -80,68 +103,85 @@ const HomePopup: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const [popup, setPopup] = useState<any>(null);
 
+  /* ── Query Active Popups ── */
   const { data: popups = [] } = useQuery({
-    queryKey: ["active-popups"],
+    queryKey: ["active-popups-storefront"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("popups")
         .select("*")
         .eq("is_active", true)
-        .lte("starts_at", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data || [];
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
   });
 
   const canShow = useCallback((p: any): boolean => {
-    if (p.ends_at && new Date(p.ends_at) < new Date()) return false;
+    if (!p || !p.is_active) return false;
+    const now = new Date();
+    if (p.starts_at && new Date(p.starts_at) > now) return false;
+    if (p.ends_at && new Date(p.ends_at) < now) return false;
+
+    // Views limit check
+    const maxViews = Number(p.max_views) > 0 ? Number(p.max_views) : 3;
     const views = Number(localStorage.getItem(`popup_views_${p.id}`) || 0);
-    if (views >= (p.max_views || 1)) return false;
+    if (views >= maxViews) return false;
+
+    // Cooldown duration check
+    const cooldownHours = Number(p.duration_hours) > 0 ? Number(p.duration_hours) : 24;
     const lastShown = localStorage.getItem(`popup_last_${p.id}`);
     if (lastShown) {
       const hoursSince = (Date.now() - Number(lastShown)) / (1000 * 60 * 60);
-      if (hoursSince < (p.duration_hours || 24)) return false;
+      if (hoursSince < cooldownHours) return false;
     }
     return true;
   }, []);
 
   useEffect(() => {
-    if (popups.length === 0) return;
-    const p = popups[0] as any;
-    if (!canShow(p)) return;
+    if (!popups || popups.length === 0) return;
 
-    setPopup(p);
+    // Find the first eligible active popup
+    const eligible = popups.find((p: any) => canShow(p));
+    if (!eligible) return;
 
-    const triggerType = p.trigger_type || "timer";
-    const triggerValue = p.trigger_value ?? 1500;
+    setPopup(eligible);
+
+    const triggerType = eligible.trigger_type || "timer";
+    const triggerValue = Number(eligible.trigger_value) >= 0 ? Number(eligible.trigger_value) : 2000;
+
+    if (triggerType === "immediate") {
+      const t = setTimeout(() => setVisible(true), 250);
+      return () => clearTimeout(t);
+    }
 
     if (triggerType === "scroll") {
-      const handler = () => {
-        const scrollPercent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+      const handleScroll = () => {
+        const totalScrollable = document.body.scrollHeight - window.innerHeight;
+        if (totalScrollable <= 0) return;
+        const scrollPercent = (window.scrollY / totalScrollable) * 100;
         if (scrollPercent >= triggerValue) {
           setVisible(true);
-          window.removeEventListener("scroll", handler);
+          window.removeEventListener("scroll", handleScroll);
         }
       };
-      window.addEventListener("scroll", handler, { passive: true });
-      return () => window.removeEventListener("scroll", handler);
+      window.addEventListener("scroll", handleScroll, { passive: true });
+      return () => window.removeEventListener("scroll", handleScroll);
     }
 
     if (triggerType === "exit_intent") {
-      const handler = (e: MouseEvent) => {
-        if (e.clientY <= 5) {
+      const handleMouseOut = (e: MouseEvent) => {
+        if (e.clientY <= 10) {
           setVisible(true);
-          document.removeEventListener("mouseout", handler);
+          document.removeEventListener("mouseout", handleMouseOut);
         }
       };
-      document.addEventListener("mouseout", handler);
-      return () => document.removeEventListener("mouseout", handler);
+      document.addEventListener("mouseout", handleMouseOut);
+      return () => document.removeEventListener("mouseout", handleMouseOut);
     }
 
-    // Default: timer (triggerValue in ms)
+    // Default: Timer (in milliseconds, e.g. 2000 = 2 seconds)
     const timer = setTimeout(() => setVisible(true), triggerValue);
     return () => clearTimeout(timer);
   }, [popups, canShow]);
@@ -164,10 +204,8 @@ const HomePopup: React.FC = () => {
   const posClasses = getPositionClasses(position, displayType);
   const containerClasses = getContainerClasses(displayType);
 
-  // Custom colors
   const customBg = popup.bg_color ? { backgroundColor: popup.bg_color } : {};
   const customText = popup.text_color ? { color: popup.text_color } : {};
-  const hasCustomBg = !!popup.bg_color;
 
   return (
     <AnimatePresence>
@@ -176,70 +214,99 @@ const HomePopup: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className={`fixed inset-0 z-[100] flex p-4 ${posClasses}`}
+          transition={{ duration: 0.25 }}
+          className={`fixed inset-0 z-[150] flex p-4 sm:p-6 ${posClasses} pointer-events-auto`}
           onClick={dismiss}
         >
-          {/* Backdrop — skip for banners/slide-ins unless centered */}
+          {/* Backdrop Blur */}
           {displayType !== "banner" && displayType !== "slide-in" && (
-            <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/75 backdrop-blur-md"
+            />
           )}
 
+          {/* Popup Card */}
           <motion.div
             variants={variants}
             initial="initial"
             animate="animate"
             exit="exit"
-            transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className={`relative shadow-2xl ${containerClasses} ${
-              hasCustomBg ? "rounded-3xl" : "glass-strong rounded-3xl"
-            } max-h-[85vh] flex flex-col overflow-hidden`}
+            className={`relative ${containerClasses} rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9),0_0_30px_rgba(255,255,255,0.05)] border border-white/10 bg-[#0d0e12]/95 backdrop-blur-2xl flex flex-col`}
             style={{
               ...customBg,
-              perspective: animStyle === "flip" ? "800px" : undefined,
+              perspective: animStyle === "flip" ? "1000px" : undefined,
             }}
           >
+            {/* Elegant Circular Close Button */}
             <button
               onClick={dismiss}
               aria-label="Close"
-              className="absolute top-2.5 right-2.5 z-20 w-9 h-9 rounded-full bg-black/55 hover:bg-black/75 backdrop-blur-md flex items-center justify-center shadow-lg ring-1 ring-white/20 transition-colors"
+              className="absolute top-3.5 right-3.5 z-30 w-8 h-8 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md flex items-center justify-center border border-white/15 transition-all text-white/80 hover:text-white hover:scale-105 active:scale-95 shadow-md"
             >
-              <X className="w-4 h-4 text-white" strokeWidth={2.5} />
+              <X className="w-4 h-4" />
             </button>
 
-            <div className="overflow-y-auto overscroll-contain">
-              {popup.video_url ? (
-                <video src={popup.video_url} className="w-full h-48 object-cover flex-shrink-0" autoPlay muted loop playsInline />
-              ) : popup.image_url ? (
-                <img src={popup.image_url} alt="" className="w-full h-48 object-cover flex-shrink-0" />
-              ) : null}
+            {/* Media Banner Section */}
+            {popup.image_url ? (
+              <div className="relative w-full h-44 sm:h-52 overflow-hidden bg-black/40 shrink-0">
+                <img
+                  src={popup.image_url}
+                  alt={popup.title || "Promotional Banner"}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0d0e12] via-transparent to-transparent opacity-90" />
+              </div>
+            ) : popup.video_url ? (
+              <div className="relative w-full h-44 sm:h-52 overflow-hidden bg-black shrink-0">
+                <video
+                  src={popup.video_url}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0d0e12] via-transparent to-transparent opacity-90" />
+              </div>
+            ) : null}
 
-              <div className="p-6 space-y-3">
+            {/* Copy & CTA Section */}
+            <div className={`p-6 ${popup.image_url || popup.video_url ? "pt-3" : "pt-6"} space-y-3.5 flex-1 flex flex-col justify-between`}>
+              <div className="space-y-2">
                 <h3
-                  className="text-xl font-bold font-display pr-10"
+                  className="text-lg sm:text-xl font-bold font-display tracking-tight text-white leading-snug"
                   style={customText.color ? customText : undefined}
                 >
-                  {!customText.color && <span className="text-foreground">{popup.title}</span>}
-                  {customText.color && popup.title}
+                  {popup.title}
                 </h3>
+
                 {popup.message && (
                   <p
-                    className={customText.color ? "text-sm opacity-80" : "text-sm text-muted-foreground"}
+                    className="text-xs sm:text-sm text-neutral-300 leading-relaxed font-normal opacity-90"
                     style={customText.color ? customText : undefined}
                   >
                     {popup.message}
                   </p>
                 )}
-                {popup.link_url && (
-                  <a
+              </div>
+
+              {popup.link_url && (
+                <div className="pt-2">
+                  <Link
                     href={popup.link_url}
                     onClick={dismiss}
-                    className="inline-block btn-pill bg-gradient-primary text-primary-foreground font-semibold px-6 py-2.5 text-sm"
+                    className="w-full inline-flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-sm font-semibold tracking-wide shadow-lg transition-all active:scale-[0.98]"
                   >
-                    {popup.link_text || "Learn More"}
-                  </a>
-                )}
-              </div>
+                    <span>{popup.link_text || "Learn More"}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              )}
             </div>
           </motion.div>
         </motion.div>
@@ -249,4 +316,3 @@ const HomePopup: React.FC = () => {
 };
 
 export default HomePopup;
-// code:4ce0

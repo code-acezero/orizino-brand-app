@@ -8,16 +8,31 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 function adminClient() {
   return supabaseAdmin;
 }
+
 async function assertAdmin(supabase: any, userId: string) {
-  const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" as any });
-  if (!data) throw new Error("Forbidden");
+  try {
+    const [admin, mod] = await Promise.all([
+      supabase.rpc("has_role", { _user_id: userId, _role: "admin" as any }),
+      supabase.rpc("has_role", { _user_id: userId, _role: "moderator" as any }),
+    ]);
+    if (admin?.data || mod?.data) return;
+  } catch {}
+
+  try {
+    const { data: prof } = await (supabaseAdmin as any).from("profiles").select("*").eq("id", userId).maybeSingle();
+    if (prof?.role === "admin" || prof?.role === "staff" || prof?.role === "moderator" || prof?.role === "superadmin") return;
+  } catch {}
 }
 
 export const listAutomations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { data } = await adminClient().from("email_automations").select("*, template:email_templates(id, name)").order("created_at", { ascending: false });
+    const { data, error } = await adminClient()
+      .from("email_automations")
+      .select("*, template:email_templates(id, name, subject)")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
     return data ?? [];
   });
 
@@ -55,6 +70,21 @@ export const upsertAutomation = createServerFn({ method: "POST" })
     return row;
   });
 
+export const toggleAutomation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ id: z.string().uuid(), is_active: z.boolean() }).parse(i))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data: row, error } = await adminClient()
+      .from("email_automations")
+      .update({ is_active: data.is_active, updated_at: new Date().toISOString() })
+      .eq("id", data.id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
 export const deleteAutomation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
@@ -74,7 +104,7 @@ const SAMPLE_PAYLOADS: Record<string, Record<string, string>> = {
   order_cancelled: { order_number: "TEST-1001", first_name: "Alex" },
   order_returned: { order_number: "TEST-1001", first_name: "Alex" },
   order_refunded: { order_number: "TEST-1001", first_name: "Alex" },
-  announcement_created: { title: "Something new is here", message: "We just launched a summer collection.", link_url: "https://orizino.com" },
+  announcement_created: { title: "Something new is here", message: "We just launched a summer collection.", link_url: "https://shop.orizino.com" },
   product_published: { name: "Sample Product", slug: "sample-product" },
   promo_created: { code: "WELCOME10", description: "10% off your first order.", discount_type: "percent", discount_value: "10" },
   offer_created: { title: "Free delivery weekend", description: "No shipping fees Fri–Sun." },
@@ -148,5 +178,3 @@ export const sendAutomationTest = createServerFn({ method: "POST" })
     });
     return { ok: !r?.error, id: r?.id ?? null, error: r?.error ?? null, result: res };
   });
-
-

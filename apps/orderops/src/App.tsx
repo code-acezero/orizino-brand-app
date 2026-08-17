@@ -9,6 +9,34 @@ import { Orders } from "@/_pages/Orders";
 import { OfflineOrders } from "@/_pages/OfflineOrders";
 import { Scanner } from "@/_pages/Scanner";
 import { useOrderOpsTheme } from "@/lib/theme";
+import { lazy, Suspense, useState, useEffect } from "react";
+
+const InstallAppPrompt = lazy(() =>
+  import("@/components/InstallAppPrompt").then((m) => ({ default: m.InstallAppPrompt }))
+);
+
+function DeferredWidgets() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const ric: any = (window as any).requestIdleCallback;
+    let id: any, t: any;
+    if (typeof ric === "function") {
+      id = ric(() => setReady(true), { timeout: 3000 });
+    } else {
+      t = setTimeout(() => setReady(true), 2000);
+    }
+    return () => {
+      if (id && (window as any).cancelIdleCallback) (window as any).cancelIdleCallback(id);
+      if (t) clearTimeout(t);
+    };
+  }, []);
+  if (!ready) return null;
+  return (
+    <Suspense fallback={null}>
+      <InstallAppPrompt />
+    </Suspense>
+  );
+}
 
 // HashRouter, deliberately: it needs zero server-side rewrite rules to work,
 // which matters both for a plain static host and — especially — once this
@@ -61,6 +89,7 @@ export default function App() {
               </Routes>
             </AppShell>
           </Gate>
+          <DeferredWidgets />
         </HashRouter>
         <Toaster position="top-center" richColors />
       </AuthProvider>

@@ -82,7 +82,11 @@ import {
   Palette,
   Tag,
   Boxes,
+  Link2,
+  UploadCloud,
+  Printer,
 } from "lucide-react";
+import VideoUpload from "@/components/VideoUpload";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import PageHeader from "@/components/admin/PageHeader";
 import { TableLoadingRow, TableEmptyRow } from "@/components/admin/TableStates";
@@ -941,11 +945,13 @@ export default function AdminProducts() {
     toast.success(`Copied SKU "${sku}"`);
   };
 
-  const price = Number(editing?.price || 0);
-  const comparePrice = Number(editing?.compare_at_price || 0);
+  const regularPrice = Number(editing?.compare_at_price || editing?.price || 0);
+  const discountPrice = editing?.compare_at_price ? Number(editing?.price || 0) : null;
+  const discountSavings =
+    discountPrice != null && discountPrice < regularPrice ? regularPrice - discountPrice : 0;
   const discountPercent =
-    comparePrice > price && price > 0
-      ? Math.round(((comparePrice - price) / comparePrice) * 100)
+    discountPrice != null && discountPrice < regularPrice && regularPrice > 0
+      ? Math.round(((regularPrice - discountPrice) / regularPrice) * 100)
       : 0;
 
   const selectedCategoryId = editing?.category_id;
@@ -1073,79 +1079,110 @@ export default function AdminProducts() {
               />
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
-              <div className="flex items-center bg-muted/40 p-1 rounded-xl border border-border/50 text-xs overflow-x-auto w-full no-scrollbar">
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("all")}
-                  className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-medium text-center whitespace-nowrap transition-all ${
-                    statusFilter === "all"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
+            {/* ── 1-Button Consolidated Filter ── */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={`h-10 px-3.5 rounded-xl border text-xs font-semibold gap-2 transition-all cursor-pointer ${
+                    statusFilter !== "all" || categoryFilter !== "all"
+                      ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                      : "bg-background/80 border-border/80 text-foreground hover:bg-card hover:border-border"
                   }`}
                 >
-                  All ({products.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("active")}
-                  className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-medium text-center whitespace-nowrap transition-all ${
-                    statusFilter === "active"
-                      ? "bg-background text-emerald-600 dark:text-emerald-400 shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Active ({stats.active})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("draft")}
-                  className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-medium text-center whitespace-nowrap transition-all ${
-                    statusFilter === "draft"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Draft ({stats.total - stats.active})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("low_stock")}
-                  className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-medium text-center whitespace-nowrap transition-all ${
-                    statusFilter === "low_stock"
-                      ? "bg-background text-amber-600 shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Low ({stats.lowStock})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("out_of_stock")}
-                  className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-medium text-center whitespace-nowrap transition-all ${
-                    statusFilter === "out_of_stock"
-                      ? "bg-background text-rose-600 shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Out ({stats.outOfStock})
-                </button>
-              </div>
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>
+                    {statusFilter !== "all"
+                      ? `Status: ${statusFilter === "active" ? "Active" : statusFilter === "draft" ? "Draft" : statusFilter === "low_stock" ? "Low Stock" : "Out of Stock"}`
+                      : categoryFilter !== "all"
+                      ? `Category: ${categories.find((c) => c.id === categoryFilter)?.name || "Selected"}`
+                      : "Filter Products"}
+                  </span>
+                  {(statusFilter !== "all" || categoryFilter !== "all") && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />
+                  )}
+                  <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl border-border/80 bg-popover/95 backdrop-blur-xl shadow-xl space-y-2">
+                <div className="flex items-center justify-between px-2 pt-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Filter Catalog</span>
+                  {(statusFilter !== "all" || categoryFilter !== "all") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStatusFilter("all");
+                        setCategoryFilter("all");
+                      }}
+                      className="text-[10px] font-semibold text-primary hover:underline cursor-pointer"
+                    >
+                      Reset All
+                    </button>
+                  )}
+                </div>
 
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full sm:w-[160px] h-10 rounded-xl text-xs bg-background/80">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {parentCategories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
+                {/* Status Options */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-semibold text-muted-foreground px-2">Status</span>
+                  {[
+                    { key: "all" as const, label: `All Products (${products.length})` },
+                    { key: "active" as const, label: `Active (${stats.active})`, dot: "bg-emerald-500" },
+                    { key: "draft" as const, label: `Draft (${stats.total - stats.active})`, dot: "bg-muted-foreground" },
+                    { key: "low_stock" as const, label: `Low Stock ≤ 5 (${stats.lowStock})`, dot: "bg-amber-500" },
+                    { key: "out_of_stock" as const, label: `Out of Stock (${stats.outOfStock})`, dot: "bg-rose-500" },
+                  ].map((s) => (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => setStatusFilter(s.key)}
+                      className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-left flex items-center justify-between transition-colors cursor-pointer ${
+                        statusFilter === s.key
+                          ? "bg-primary text-primary-foreground font-semibold"
+                          : "text-foreground hover:bg-muted/60"
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        {s.dot && <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />}
+                        <span>{s.label}</span>
+                      </span>
+                      {statusFilter === s.key && <Check className="w-3.5 h-3.5" />}
+                    </button>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
+                </div>
+
+                {/* Categories */}
+                <div className="space-y-1 pt-1 border-t border-border/40">
+                  <span className="text-[10px] font-semibold text-muted-foreground px-2">Category</span>
+                  <button
+                    type="button"
+                    onClick={() => setCategoryFilter("all")}
+                    className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      categoryFilter === "all"
+                        ? "bg-primary text-primary-foreground font-semibold"
+                        : "text-foreground hover:bg-muted/60"
+                    }`}
+                  >
+                    <span>All Categories</span>
+                    {categoryFilter === "all" && <Check className="w-3.5 h-3.5" />}
+                  </button>
+                  {parentCategories.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setCategoryFilter(c.id)}
+                      className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-left flex items-center justify-between transition-colors cursor-pointer ${
+                        categoryFilter === c.id
+                          ? "bg-primary text-primary-foreground font-semibold"
+                          : "text-foreground hover:bg-muted/60"
+                      }`}
+                    >
+                      <span className="truncate">{c.name}</span>
+                      {categoryFilter === c.id && <Check className="w-3.5 h-3.5" />}
+                    </button>
+                  ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* ── High-Density Desktop Product Table ── */}
@@ -1752,17 +1789,79 @@ export default function AdminProducts() {
                       </div>
                     )}
 
-                    <div className="pt-2 border-t border-border/50 space-y-3">
-                      <div>
-                        <Label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                          <Film className="w-3.5 h-3.5 text-primary" /> Video Showcase URL (YouTube or MP4)
+                    {/* Video Showcase: Direct Video Upload + Embed Link */}
+                    <div className="pt-3 border-t border-border/50 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <Film className="w-4 h-4 text-primary" /> Product Video Showcase
                         </Label>
-                        <Input
-                          value={editing.video_url ?? ""}
-                          onChange={(e) => updateField("video_url", e.target.value)}
-                          placeholder="https://youtube.com/watch?v=... or direct MP4 URL"
-                          className="rounded-xl h-9 mt-1.5 text-xs"
-                        />
+                        {editing.video_url && (
+                          <button
+                            type="button"
+                            onClick={() => updateField("video_url", "")}
+                            className="text-[11px] text-destructive hover:underline flex items-center gap-1 font-medium transition"
+                          >
+                            <Trash2 className="w-3 h-3" /> Remove Video
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {/* Option 1: Direct Video Upload to Database / Storage */}
+                        <div className="rounded-xl border border-border/70 bg-muted/20 p-3 space-y-2 flex flex-col justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                                <UploadCloud className="w-3.5 h-3.5 text-primary" /> Direct Video Upload
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">MP4, WebM (Storage)</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground leading-relaxed">
+                              Upload a video directly to storage. It will be served directly from your media CDN.
+                            </p>
+                          </div>
+                          <VideoUpload
+                            bucket="banners"
+                            folder="product-videos"
+                            value={
+                              editing.video_url &&
+                              !editing.video_url.includes("youtube.com") &&
+                              !editing.video_url.includes("youtu.be") &&
+                              !editing.video_url.includes("vimeo.com")
+                                ? editing.video_url
+                                : ""
+                            }
+                            onUploaded={(url) => updateField("video_url", url)}
+                          />
+                        </div>
+
+                        {/* Option 2: Video Embed Link / External URL */}
+                        <div className="rounded-xl border border-border/70 bg-muted/20 p-3 space-y-2 flex flex-col justify-between">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                                <Link2 className="w-3.5 h-3.5 text-primary" /> Embed Video Link
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">YouTube, Vimeo, MP4</span>
+                            </div>
+                            <Input
+                              value={editing.video_url ?? ""}
+                              onChange={(e) => updateField("video_url", e.target.value)}
+                              placeholder="https://youtube.com/watch?v=... or direct MP4 URL"
+                              className="rounded-xl h-9 text-xs bg-background"
+                            />
+                            <p className="text-[10px] text-muted-foreground leading-relaxed">
+                              Paste an embeddable YouTube, Vimeo, or CDN video URL. It will automatically stream on the product page.
+                            </p>
+                          </div>
+
+                          {editing.video_url && (
+                            <div className="text-[11px] text-emerald-500 font-mono truncate flex items-center gap-1 pt-1 border-t border-border/40">
+                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate">{editing.video_url}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2187,36 +2286,60 @@ export default function AdminProducts() {
                   <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-4 shadow-sm">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-primary" /> Standard Base Pricing
+                        <TrendingUp className="w-4 h-4 text-primary" /> Pricing &amp; Discount
                       </h3>
                       {discountPercent > 0 && (
-                        <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 text-xs font-bold">
-                          {discountPercent}% OFF
+                        <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 text-xs font-bold font-mono">
+                          {discountPercent}% OFF {discountSavings > 0 ? `(Save ৳${discountSavings.toLocaleString()})` : ""}
                         </Badge>
                       )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label className="text-xs font-semibold text-muted-foreground">Selling Price (৳) *</Label>
+                        <Label className="text-xs font-semibold text-muted-foreground">Price (৳) *</Label>
                         <Input
                           type="number"
-                          value={editing.price ?? 0}
-                          onChange={(e) => updateField("price", +e.target.value)}
+                          value={editing.compare_at_price || editing.price || 0}
+                          onChange={(e) => {
+                            const val = e.target.value ? +e.target.value : 0;
+                            if (editing.compare_at_price) {
+                              updateField("compare_at_price", val);
+                            } else {
+                              updateField("price", val);
+                            }
+                          }}
+                          placeholder="e.g. 850"
                           className="rounded-xl h-10 mt-1 font-bold text-sm"
                         />
+                        <p className="text-[10px] text-muted-foreground mt-1">Main / regular catalog price</p>
                       </div>
                       <div>
-                        <Label className="text-xs font-semibold text-muted-foreground">Compare-At Price (৳)</Label>
+                        <Label className="text-xs font-semibold text-muted-foreground">Discount Price (৳)</Label>
                         <Input
                           type="number"
-                          value={editing.compare_at_price ?? ""}
-                          onChange={(e) =>
-                            updateField("compare_at_price", e.target.value ? +e.target.value : null)
-                          }
-                          placeholder="Original price"
-                          className="rounded-xl h-10 mt-1 text-sm"
+                          value={editing.compare_at_price ? editing.price : ""}
+                          onChange={(e) => {
+                            const val = e.target.value ? +e.target.value : null;
+                            const mainPrice = editing.compare_at_price || editing.price || 0;
+                            if (val != null && val > 0) {
+                              setEditing((prev: any) => ({
+                                ...prev,
+                                compare_at_price: mainPrice,
+                                price: val,
+                              }));
+                            } else {
+                              setEditing((prev: any) => ({
+                                ...prev,
+                                price: mainPrice,
+                                compare_at_price: null,
+                              }));
+                            }
+                          }}
+                          placeholder="Optional (e.g. 550)"
+                          className="rounded-xl h-10 mt-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400"
                         />
+                        <p className="text-[10px] text-muted-foreground mt-1">Discounted selling price</p>
                       </div>
                     </div>
                   </div>

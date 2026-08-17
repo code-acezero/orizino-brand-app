@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Gift, Copy, Check, Sparkles, ShoppingBag, ArrowRight, Tag } from "lucide-react";
+import { X, Gift, Copy, Check, ShoppingBag, ArrowRight, Tag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -250,7 +250,7 @@ const PromoPopup: React.FC = () => {
               ) : (
                 <div className="pt-6 pb-2 text-center">
                   <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center mx-auto text-primary shadow-inner">
-                    <Sparkles className="w-6 h-6" />
+                    <Gift className="w-6 h-6" />
                   </div>
                 </div>
               )}

@@ -94,16 +94,17 @@ export interface EmailDesign {
 
 export const defaultDesign = (): EmailDesign => ({
   version: 1,
-  bodyBackground: "#f4f5f7",
-  containerBackground: "#ffffff",
-  textColor: "#1f2937",
-  accentColor: "#6366f1",
+  bodyBackground: "#0d0c0e",
+  containerBackground: "#151418",
+  textColor: "#FAF6EE",
+  accentColor: "#9a0002",
   fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
   blocks: [
-    { id: "h1", type: "heading", level: 1, text: "Hello {{name}}", align: "left", color: "#0f172a" },
-    { id: "p1", type: "paragraph", text: "Welcome — this is a fresh email built from blocks. Replace this with your own message.", size: 15 },
-    { id: "sp1", type: "spacer", height: 12 },
-    { id: "btn1", type: "button", text: "Open the app", href: "https://example.com", align: "left", background: "#6366f1", color: "#ffffff", radius: 10 },
+    { id: "img0", type: "image", src: "https://shop.orizino.com/apple-touch-icon.png", alt: "ORIZINO", width: 52, radius: 12, align: "center", href: "https://shop.orizino.com" },
+    { id: "h1", type: "heading", level: 1, text: "ORIZINO", align: "center", color: "#FAF6EE" },
+    { id: "p1", type: "paragraph", text: "Welcome — this is a fresh email built with the ORIZINO Cherry Vanilla luxury template engine. Customize this block with your content.", size: 15, color: "#9E9A92" },
+    { id: "sp1", type: "spacer", height: 16 },
+    { id: "btn1", type: "button", text: "Explore Collection", href: "https://shop.orizino.com", align: "center", background: "#9a0002", color: "#FAF6EE", radius: 10 },
   ],
 });
 

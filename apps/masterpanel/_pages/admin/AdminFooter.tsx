@@ -16,6 +16,7 @@ import {
 import { Instagram, Facebook, Twitter, Youtube } from "@/components/ui/social-icons";
 import { useServerFn } from "@/lib/server-fn-compat";
 import { upsertSiteSettings } from "@/lib/admin-data.functions";
+import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
 export interface NavLinkItem {
   label: string;
@@ -265,10 +266,20 @@ const AdminFooter: React.FC = () => {
     },
   ];
 
+  useRegisterUniversalSave(
+    {
+      id: "admin-footer",
+      label: "Save Footer Config",
+      onSave: () => saveMutation.mutate(),
+      isSaving: saveMutation.isPending,
+    },
+    [saveMutation.isPending]
+  );
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-8">
-      {/* Top Header & Sticky Action Bar */}
-      <div className="flex items-center justify-between gap-4 border-b border-border/50 pb-6 flex-wrap sticky top-0 bg-background/90 backdrop-blur-md z-10 pt-2">
+      {/* Top Header */}
+      <div className="flex items-center justify-between gap-4 border-b border-border/50 pb-6 flex-wrap">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
             <Layout className="w-6 h-6" />
@@ -282,17 +293,6 @@ const AdminFooter: React.FC = () => {
             </h1>
             <p className="text-xs text-muted-foreground">Manage storefront & BrandHome footer layouts, CTA buttons, column links & contacts all in one page.</p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending}
-            className="rounded-xl gap-2 font-bold text-xs px-5 shadow-sm"
-          >
-            {saveMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            Save Footer Config
-          </Button>
         </div>
       </div>
 

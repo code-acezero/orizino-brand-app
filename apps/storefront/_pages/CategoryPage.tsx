@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCategorySeoMeta } from "@/hooks/use-category-seo-meta";
 import ProductCard from "@/components/ProductCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { CategoryMonochromeIcon } from "@shared/components/CategoryMonochromeIcon";
 
 const sortOptions = [
   { label: "Newest", value: "newest" },
@@ -178,8 +179,14 @@ const CategoryPage: React.FC = () => {
         {/* Category info overlay */}
         <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 xl:px-10 flex flex-col justify-end h-full pb-8 pt-20">
           <div className="flex items-center gap-4">
-            {category.icon_url && (
-              <img src={category.icon_url} alt="" className="w-14 h-14 rounded-2xl object-contain bg-background/50 p-2" />
+            {(category.icon_url || category.icon) && (
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-background/60 p-2 border border-border/40 backdrop-blur-md shrink-0 shadow-sm">
+                <CategoryMonochromeIcon
+                  icon={category.icon}
+                  iconUrl={category.icon_url}
+                  className="w-8 h-8"
+                />
+              </div>
             )}
             <div>
               <h1 className="text-3xl md:text-5xl font-bold text-foreground drop-shadow-lg" style={{ fontFamily: 'var(--font-title, var(--font-display))' }}>
@@ -219,11 +226,11 @@ const CategoryPage: React.FC = () => {
                 }`}
                 style={selectedSub === sub.id ? { background: accentColor } : undefined}
               >
-                {sub.icon_url ? (
-                  <img src={sub.icon_url} alt="" className="w-4 h-4 object-contain" />
-                ) : sub.icon ? (
-                  <span>{sub.icon}</span>
-                ) : null}
+                <CategoryMonochromeIcon
+                  icon={sub.icon}
+                  iconUrl={sub.icon_url}
+                  className="w-4 h-4 shrink-0"
+                />
                 {sub.name}
               </button>
             ))}

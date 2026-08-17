@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LayoutGrid } from "lucide-react";
+import { CategoryMonochromeIcon } from "@shared/components/CategoryMonochromeIcon";
 
 import catElectronics from "@/assets/icons/cat-electronics.png";
 import catFashion from "@/assets/icons/cat-fashion.png";
@@ -90,20 +91,27 @@ const CategoryGrid: React.FC = () => {
                 >
                   <motion.div
                     whileHover={{ scale: 1.1, rotate: 5 }}
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden"
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden border border-border/40"
                     style={{
-                      background: `linear-gradient(135deg, ${color}33, ${color}11)`,
+                      background: `linear-gradient(135deg, ${color}25, ${color}0a)`,
                     }}
                   >
-                    {cat.icon_url ? (
-                      <img src={cat.icon_url} alt={cat.name} className="w-8 h-8 object-contain" />
-                    ) : fallbackIcons[cat.slug] ? (
-                      <img src={fallbackIcons[cat.slug]} alt={cat.name} className="w-8 h-8 object-contain" />
-                    ) : cat.icon ? (
-                      <span className="text-2xl">{cat.icon}</span>
-                    ) : (
-                      <LayoutGrid className="w-7 h-7" style={{ color }} />
-                    )}
+                    <CategoryMonochromeIcon
+                      icon={cat.icon}
+                      iconUrl={cat.icon_url}
+                      className="w-7 h-7"
+                      fallbackIcon={
+                        fallbackIcons[cat.slug] ? (
+                          <img
+                            src={fallbackIcons[cat.slug]}
+                            alt={cat.name}
+                            className="w-8 h-8 object-contain brightness-0 dark:invert"
+                          />
+                        ) : (
+                          <LayoutGrid className="w-7 h-7 stroke-[1.8]" />
+                        )
+                      }
+                    />
                   </motion.div>
                   <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                     {cat.name}

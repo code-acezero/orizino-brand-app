@@ -5,6 +5,12 @@ import Providers from "./providers";
 export const metadata: Metadata = {
   title: "Orizino Admin Panel",
   description: "Orizino enterprise management & control panel",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Master Panel",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

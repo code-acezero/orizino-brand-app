@@ -23,7 +23,7 @@ import {
   KeyRound,
   Copy,
   Check,
-  Sparkles,
+  Wand2,
   ShieldCheck,
   Globe,
   Wallet,
@@ -53,6 +53,8 @@ export interface PersonalAccount {
 export interface PaymentConfig {
   mfs_system_enabled: boolean;
   cod_enabled: boolean;
+  prepay_cod_delivery_charge?: boolean;
+  cod_prepay_instructions?: string;
   gateways_enabled: string[];
   stripe: {
     enabled: boolean;
@@ -82,6 +84,8 @@ export interface PaymentConfig {
 const DEFAULT_CONFIG: PaymentConfig = {
   mfs_system_enabled: true,
   cod_enabled: true,
+  prepay_cod_delivery_charge: false,
+  cod_prepay_instructions: "Please send the advance delivery fee to one of our official MFS numbers below, then input your Transaction ID to place your order.",
   gateways_enabled: ["cod"],
   stripe: {
     enabled: false,
@@ -453,7 +457,7 @@ const MFSAccountCard: React.FC<{
                       className="h-6 px-2 text-[10px] rounded-md gap-1 font-semibold text-white shadow-xs"
                       style={{ backgroundColor: theme.brandColor }}
                     >
-                      {generatingQR ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      {generatingQR ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
                       <span>Auto-Generate {label} QR</span>
                     </Button>
                     <Button
@@ -666,6 +670,59 @@ const AdminPaymentGateways: React.FC = () => {
               <Building2 className="w-4 h-4" />
             </div>
           </CardContent>
+        </Card>
+      </div>
+
+      {/* ── SECTION: CASH ON DELIVERY (COD) & PRE-PAID DELIVERY FEE ── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Wallet className="w-4 h-4 text-emerald-500" />
+            <h2 className="text-sm font-bold text-foreground">Cash on Delivery (COD) &amp; Pre-paid Delivery Policy</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">COD Enabled</span>
+            <Switch
+              checked={form.cod_enabled !== false}
+              onCheckedChange={(v) => setForm({ ...form, cod_enabled: v })}
+            />
+          </div>
+        </div>
+
+        <Card className="border-border/60 bg-card/60 backdrop-blur-md p-4 space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-foreground">Require Pre-paid Delivery Charge for COD</span>
+                <Badge variant="outline" className="text-[10px] font-semibold border-primary/30 text-primary">
+                  Anti-RTO Protection
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                When enabled, customers selecting Cash on Delivery must pre-pay the delivery charge via your active MFS accounts (bKash, Nagad, Rocket, Upay) and provide their Transaction ID before their order can be confirmed.
+              </p>
+            </div>
+            <Switch
+              checked={!!form.prepay_cod_delivery_charge}
+              onCheckedChange={(v) => setForm({ ...form, prepay_cod_delivery_charge: v })}
+            />
+          </div>
+
+          {form.prepay_cod_delivery_charge && (
+            <div className="pt-2 border-t border-border/40 space-y-2">
+              <Label className="text-[11px] font-semibold text-foreground">Customer Advance Payment Instructions (shown on Checkout)</Label>
+              <Textarea
+                rows={2}
+                value={form.cod_prepay_instructions ?? ""}
+                onChange={(e) => setForm({ ...form, cod_prepay_instructions: e.target.value })}
+                placeholder="Please send the advance delivery fee to one of our official MFS numbers below, then input your Transaction ID to place your order."
+                className="text-xs rounded-xl"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                The customer will see your active MFS accounts below, the exact calculated delivery charge, and a transaction ID input that unlocks the order placement button.
+              </p>
+            </div>
+          )}
         </Card>
       </div>
 

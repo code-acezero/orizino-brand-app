@@ -22,7 +22,7 @@ export interface EmailPreset {
   build: () => EmailDesign;
 }
 
-const wrap = (subject: string, blocks: Block[], accent = "#6366f1"): EmailDesign => ({
+const wrap = (subject: string, blocks: Block[], accent = "#9a0002"): EmailDesign => ({
   ...defaultDesign(),
   accentColor: accent,
   blocks,

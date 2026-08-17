@@ -17,7 +17,7 @@ import {
   Copy,
   Check,
   Search,
-  Sparkles,
+  Star,
   Gift,
   Layers,
   TrendingUp,
@@ -65,7 +65,7 @@ const CONDITION_TYPES = [
   { value: "first_time_buyer", label: "First-Time Buyer", desc: "Users who haven't placed an order yet", icon: Zap },
   { value: "order_count", label: "Order Count", desc: "Users with X+ orders", icon: Package },
   { value: "total_spent", label: "Total Spent", desc: "Users who spent ৳X+ total", icon: DollarSign },
-  { value: "review_count", label: "Review Count", desc: "Users with X+ approved reviews", icon: Sparkles },
+  { value: "review_count", label: "Review Count", desc: "Users with X+ approved reviews", icon: Star },
   { value: "premium_buyer", label: "VIP Buyer", desc: "Top spenders (auto-detected)", icon: Flame },
   { value: "most_visited", label: "Most Visited", desc: "Frequent visitors (by page views)", icon: Eye },
 ];

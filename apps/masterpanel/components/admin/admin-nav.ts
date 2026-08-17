@@ -16,9 +16,9 @@ import {
   Tag,
   Truck,
   Headphones,
-  Key,
   KeyRound,
   Bot,
+  Printer,
   Gift,
   Percent,
   Palette,
@@ -58,6 +58,8 @@ import {
   Send,
   AppWindow,
   Compass,
+  Clock,
+  Wallet,
   LayoutGrid,
   ExternalLink,
   Users2,
@@ -68,10 +70,13 @@ import {
   Store,
   type LucideIcon,
 } from "lucide-react";
+import { Sparkle } from "@/components/icons/Sparkle";
 
 export interface AdminNavChild {
   title: string;
   url: string;
+  icon?: LucideIcon;
+  section?: StaffSectionKey;
   description?: string;
   keywords?: string;
   children?: AdminNavChild[];
@@ -110,37 +115,88 @@ export interface AdminNavSection {
 
 export const adminNav: AdminNavSection[] = [
   // ─────────────────────────────────────────────────────────────────
-  // Overview  (shown at /)
+  // Master Controls  (shown at /)
   // ─────────────────────────────────────────────────────────────────
   {
-    label: "Overview",
+    label: "Master Controls",
     items: [
       {
-        title: "Master Controls",
+        title: "Overview",
         url: "/",
         icon: LayoutGrid,
-        description: "Section navigator & KPIs",
-        children: [
-          { title: "Overview",                     url: "/" },
-          { title: "Customer & Sales",             url: "/sales" },
-          { title: "Products, Shipping & Offers",   url: "/sales/products-management?tab=products" },
-          { title: "Marketing",           url: "/marketing" },
-          { title: "Email",               url: "/email" },
-          { title: "Affiliate",           url: "/affiliate" },
-          { title: "Public Contents & UI",url: "/brand" },
-          { title: "Backend",             url: "/system" },
-          { title: "Settings",            url: "/settings-ai" },
-          { title: "Corporate",           url: "/team" },
-        ],
+        description: "Master Panel overview, vital metrics & stats",
+      },
+      {
+        title: "Sales & Customers",
+        url: "/sales",
+        icon: ShoppingCart,
+        section: "orders",
+        description: "Sales overview, revenue volume & quick stats",
+      },
+      {
+        title: "PSO Management",
+        url: "/sales/products-management?tab=products",
+        icon: Package,
+        section: "products",
+        description: "Product catalogue, variant matrix, pricing & bulk upload",
+      },
+      {
+        title: "SEO & Ads Management",
+        url: "/marketing",
+        icon: Search,
+        section: "seo",
+        description: "Search engine optimization, ads tracking & analytics",
+      },
+      {
+        title: "Emails & Marketing",
+        url: "/email",
+        icon: Send,
+        section: "customers",
+        description: "Audience, subscribers, campaigns & automations",
+      },
+      {
+        title: "Affiliate Program",
+        url: "/affiliate",
+        icon: Tag,
+        section: "affiliate",
+        description: "Partners, referral links & commission payouts",
+      },
+      {
+        title: "Public Contents & UI",
+        url: "/brand",
+        icon: Palette,
+        section: "storefront_ui",
+        description: "Storefront, BrandHome landing, CMS & public pages",
+      },
+      {
+        title: "Backend & System",
+        url: "/system",
+        icon: Activity,
+        section: "settings",
+        description: "Database health, cron jobs & system diagnostics",
+      },
+      {
+        title: "Settings & AI",
+        url: "/settings-ai",
+        icon: Settings,
+        section: "settings",
+        description: "Brand identity, appearance, AI agent & integrations",
+      },
+      {
+        title: "Team & Access",
+        url: "/team",
+        icon: Users2,
+        section: "employees",
+        description: "Employees, team roles & section access manager",
       },
     ],
   },
 
   // ─────────────────────────────────────────────────────────────────
-  // 1. Customer & Sales — sales management, orders & support
+  // 1. Sales & Customers — sales management, orders & support
   // ─────────────────────────────────────────────────────────────────
   {
-    label: "Customer & Sales",
+    label: "Sales & Customers",
     items: [
       {
         title: "Sales Dashboard",
@@ -148,6 +204,21 @@ export const adminNav: AdminNavSection[] = [
         icon: LayoutDashboard,
         section: "orders",
         description: "Sales overview, revenue volume & quick stats",
+      },
+      {
+        title: "OrderOps Hub",
+        url: "/sales/orderops",
+        icon: AppWindow,
+        section: "orders",
+        description: "Order fulfillment queue, live barcode scanner terminal, courier booking & return intake",
+        keywords: "orderops orders fulfillment scanner barcode pos dispatch shipping returns labels",
+        children: [
+          { title: "Fulfillment Queue", url: "/sales/orderops" },
+          { title: "Scanner Terminal",  url: "/sales/orderops" },
+          { title: "Courier Dispatch",  url: "/sales/orderops" },
+          { title: "Slips & 4x6 Labels",url: "/sales/orderops" },
+          { title: "Returns Intake",    url: "/sales/orderops" },
+        ],
       },
       {
         title: "Orders & Returns",
@@ -191,14 +262,21 @@ export const adminNav: AdminNavSection[] = [
           { title: "Announcements",      url: "/marketing/announcements" },
         ],
       },
+      {
+        title: "Customer Reviews",
+        url: "/sales/reviews",
+        icon: Star,
+        section: "customers",
+        description: "Product star ratings, customer feedback & moderation",
+      },
     ],
   },
 
   // ─────────────────────────────────────────────────────────────────
-  // 2. Products, Shipping & Offers — catalogue, stock, shipping & offers
+  // 2. PSO Management — catalogue, stock, shipping & offers
   // ─────────────────────────────────────────────────────────────────
   {
-    label: "Products, Shipping & Offers",
+    label: "PSO Management",
     items: [
       {
         title: "Products",
@@ -222,13 +300,6 @@ export const adminNav: AdminNavSection[] = [
         description: "Global two-way stock sync, serial logs & inventory movement",
       },
       {
-        title: "Customer Reviews",
-        url: "/sales/reviews",
-        icon: Star,
-        section: "products",
-        description: "Product star ratings, customer feedback & moderation",
-      },
-      {
         title: "Wishlists & Demand",
         url: "/sales/requests",
         icon: Heart,
@@ -238,7 +309,7 @@ export const adminNav: AdminNavSection[] = [
       {
         title: "Invoice & Stickers",
         url: "/sales/invoice-stickers",
-        icon: Receipt,
+        icon: Printer,
         section: "orders",
         description: "Invoice & POS slip designer, and product serial stickers",
         children: [
@@ -262,17 +333,17 @@ export const adminNav: AdminNavSection[] = [
   },
 
   // ─────────────────────────────────────────────────────────────────
-  // SEO  /seo — marketing & search
+  // SEO & ADS MANAGEMENT  /marketing
   // ─────────────────────────────────────────────────────────────────
   {
-    label: "Marketing Management",
+    label: "SEO & Ads Management",
     items: [
       {
-        title: "Marketing Dashboard",
+        title: "SEO & Ads Dashboard",
         url: "/marketing",
         icon: LayoutDashboard,
         section: "seo",
-        description: "Overview of SEO, tracking & announcements",
+        description: "Overview of SEO visibility, tracking & search metrics",
       },
       {
         title: "SEO Control Center",
@@ -283,12 +354,12 @@ export const adminNav: AdminNavSection[] = [
         description: "Search optimization, schema & audit",
         keywords: "seo search meta og structured data sitemap robots schema audit",
         children: [
-          { title: "Dashboard",           url: "/marketing/seo?tab=dashboard" },
-          { title: "Pages",               url: "/marketing/seo?tab=pages" },
-          { title: "Audit",               url: "/marketing/seo?tab=audit" },
-          { title: "Global & Verification", url: "/marketing/seo?tab=global" },
-          { title: "Schema library",      url: "/marketing/seo?tab=schema" },
-          { title: "Tools",               url: "/marketing/seo?tab=tools" },
+          { title: "Overview & Health",        url: "/marketing/seo?tab=dashboard" },
+          { title: "Page-Wise Metadata",       url: "/marketing/seo?tab=pages" },
+          { title: "Live Technical Audit",     url: "/marketing/seo?tab=audit" },
+          { title: "Global & Verification",    url: "/marketing/seo?tab=global" },
+          { title: "Rich Snippets & Schema",   url: "/marketing/seo?tab=schema" },
+          { title: "Sitemap & Crawlers",       url: "/marketing/seo?tab=tools" },
         ],
       },
       {
@@ -297,33 +368,22 @@ export const adminNav: AdminNavSection[] = [
         icon: TrendingUp,
         adminOnly: true,
         section: "seo",
-        description: "Analytics & pixels",
+        description: "Analytics, Meta CAPI & conversion pixels",
         children: [
-          { title: "Facebook Pixel",  url: "/marketing/tracking?tab=facebook" },
-          { title: "Google Ads",      url: "/marketing/tracking?tab=google-ads" },
-          { title: "Search Console",  url: "/marketing/tracking?tab=search-console" },
-          { title: "Ad Setup",        url: "/marketing/tracking?tab=ad-setup" },
-        ],
-      },
-      {
-        title: "Announcements",
-        url: "/marketing/announcements",
-        icon: Megaphone,
-        section: "customers",
-        description: "Site-wide banners",
-        children: [
-          { title: "Announcements", url: "/marketing/announcements?tab=announcements" },
-          { title: "Popups",        url: "/marketing/announcements?tab=popups" },
+          { title: "Meta Pixel & CAPI",      url: "/marketing/tracking?tab=facebook" },
+          { title: "Google Ads & GTM",       url: "/marketing/tracking?tab=google-ads" },
+          { title: "Search Console",         url: "/marketing/tracking?tab=search-console" },
+          { title: "Ad Networks & Pixels",   url: "/marketing/tracking?tab=ad-setup" },
         ],
       },
     ],
   },
 
   // ─────────────────────────────────────────────────────────────────
-  // EMAIL  /email
+  // EMAILS & MARKETING  /email
   // ─────────────────────────────────────────────────────────────────
   {
-    label: "Email Marketing",
+    label: "Emails & Marketing",
     items: [
       {
         title: "Email Dashboard",
@@ -333,28 +393,12 @@ export const adminNav: AdminNavSection[] = [
         description: "Reach, deliverability & campaigns overview",
       },
       {
-        title: "Email Provider",
-        url: "/email/provider",
-        icon: KeyRound,
-        adminOnly: true,
-        section: "customers",
-        description: "API keys, webhooks, sender identity",
-        keywords: "resend api key webhook smtp",
-        children: [
-          { title: "Sender identity", url: "/email/provider?tab=sender" },
-          { title: "Senders",         url: "/email/provider?tab=senders" },
-          { title: "API & webhooks",  url: "/email/provider?tab=keys" },
-          { title: "Send test",       url: "/email/provider?tab=test" },
-          { title: "Stats",           url: "/email/provider?tab=stats" },
-          { title: "Dispatch log",    url: "/email/provider?tab=log" },
-        ],
-      },
-      {
-        title: "Subscribers",
+        title: "Audience & Subscribers",
         url: "/email/subscribers",
-        icon: AtSign,
+        icon: Users,
         section: "customers",
-        description: "Newsletter signups",
+        description: "Unified subscribers, segments & Google Sheets 2-way sync",
+        keywords: "audience subscribers emails contacts sheets sync newsletter lists",
       },
       {
         title: "Campaigns",
@@ -362,10 +406,6 @@ export const adminNav: AdminNavSection[] = [
         icon: Send,
         section: "customers",
         description: "Bulk email blasts",
-        children: [
-          { title: "HTML",    url: "/email/campaigns?panel=html" },
-          { title: "Preview", url: "/email/campaigns?panel=preview" },
-        ],
       },
       {
         title: "Templates",
@@ -381,6 +421,17 @@ export const adminNav: AdminNavSection[] = [
         section: "customers",
         description: "Event-driven emails",
       },
+      {
+        title: "Announcements & Modals",
+        url: "/marketing/announcements",
+        icon: Megaphone,
+        section: "customers",
+        description: "Sitewide announcements, marquee tickers & promotional modals",
+        children: [
+          { title: "Announcements",        url: "/marketing/announcements" },
+          { title: "Promotional Modals",   url: "/marketing/popups" },
+        ],
+      },
     ],
   },
 
@@ -388,36 +439,33 @@ export const adminNav: AdminNavSection[] = [
   // AFFILIATE  /affiliate
   // ─────────────────────────────────────────────────────────────────
   {
-    label: "Affiliate Program",
+    label: "Affiliate Hub",
     items: [
-      {
-        title: "Affiliate Dashboard",
-        url: "/affiliate",
-        icon: LayoutDashboard,
-        section: "affiliate",
-        description: "Partners, clicks & payouts overview",
-      },
-      {
-        title: "Affiliate Hub",
-        url: "/affiliate/overview",
-        icon: Briefcase,
-        section: "affiliate",
-        adminOnly: true,
-        description: "Partner programs, referral links & commissions",
-        keywords: "affiliate referral commission payout marketing hub",
-      },
+      { title: "Dashboard",      url: "/affiliate?tab=dashboard",    icon: LayoutDashboard, section: "affiliate", adminOnly: true, keywords: "affiliate overview stats" },
+      { title: "Applications",   url: "/affiliate?tab=applications", icon: Clock,           section: "affiliate", adminOnly: true, keywords: "affiliate apply pending approve" },
+      { title: "Affiliates",     url: "/affiliate?tab=affiliates",   icon: Users,           section: "affiliate", adminOnly: true, keywords: "affiliate partners members list" },
+      { title: "Commissions",    url: "/affiliate?tab=commissions",  icon: DollarSign,      section: "affiliate", adminOnly: true, keywords: "affiliate commission earnings referral" },
+      { title: "Payouts",        url: "/affiliate?tab=payouts",      icon: Wallet,          section: "affiliate", adminOnly: true, keywords: "affiliate payout withdraw payment" },
+      { title: "Products",       url: "/affiliate?tab=products",     icon: Package,         section: "affiliate", adminOnly: true, keywords: "affiliate products catalog enroll" },
+      { title: "Category Rates", url: "/affiliate?tab=categories",   icon: Percent,         section: "affiliate", adminOnly: true, keywords: "affiliate category rate commission percent" },
+      { title: "Creatives",      url: "/affiliate?tab=creatives",    icon: Image,           section: "affiliate", adminOnly: true, keywords: "affiliate banner creative assets" },
+      { title: "Settings",       url: "/affiliate?tab=settings",     icon: Settings,        section: "affiliate", adminOnly: true, keywords: "affiliate settings config program" },
     ],
   },
 
   // ─────────────────────────────────────────────────────────────────
-  // BRANDCONFIG  /brandconfig — branding & UI
+  // PUBLIC CONTENTS & UI  /brand — public pages & interface builders
   // ─────────────────────────────────────────────────────────────────
   {
     label: "Public Contents & UI",
     items: [
-      // ─────────────────────────────────────────────────────────────
-      // APP-WISE REORGANIZED UI SECTIONS
-      // ─────────────────────────────────────────────────────────────
+      {
+        title: "Public UI Dashboard",
+        url: "/brand",
+        icon: LayoutDashboard,
+        section: "storefront_ui",
+        description: "Public pages, storefront, explore feed & mobile interface hub",
+      },
       {
         title: "Storefront UI",
         url: "/brand/home",
@@ -437,29 +485,6 @@ export const adminNav: AdminNavSection[] = [
           { title: "Banners & Promos",   url: "/brand/banners" },
           { title: "Footer Config",      url: "/brand/footer" },
         ],
-      },
-      {
-        title: "Appearance & Typography",
-        url: "/brand/appearance",
-        icon: Palette,
-        adminOnly: true,
-        section: "storefront_ui",
-        description: "Typography pairings, marquee ticker studio, layout & auth styling",
-        children: [
-          { title: "Storefront Typography", url: "/brand/appearance?tab=storefront" },
-          { title: "Marquee Ticker Studio", url: "/brand/appearance?tab=marquee" },
-          { title: "Product Detail Layout", url: "/brand/appearance?tab=product" },
-          { title: "Profile Appearance",   url: "/brand/appearance?tab=profile" },
-          { title: "Auth Page Styling",    url: "/brand/appearance?tab=auth" },
-        ],
-      },
-      {
-        title: "Branding & Assets",
-        url: "/brand/branding",
-        icon: Paintbrush,
-        adminOnly: true,
-        section: "storefront_ui",
-        description: "Logo, favicon, icons, color tokens & brand voice",
       },
       {
         title: "BrandHome UI",
@@ -495,11 +520,11 @@ export const adminNav: AdminNavSection[] = [
       },
       {
         title: "OrderOps UI",
-        url: "/brand/mobile-ui?app=orderops",
+        url: "/brand/orderops",
         icon: AppWindow,
         adminOnly: true,
         section: "storefront_ui",
-        description: "OrderOps app interface & scanner controls (Placeholder)",
+        description: "OrderOps app interface, live scanner terminal & fulfillment controls",
       },
       {
         title: "Explore / Social UI",
@@ -507,7 +532,7 @@ export const adminNav: AdminNavSection[] = [
         icon: Compass,
         adminOnly: true,
         section: "storefront_ui",
-        description: "Explore feed & social app UI controls (Placeholder)",
+        description: "Explore discovery feed, universes, connect grid & inquiries studio",
       },
     ],
   },
@@ -531,11 +556,11 @@ export const adminNav: AdminNavSection[] = [
         icon: Activity,
         section: "settings",
         adminOnly: true,
-        description: "Disk IO, seq scans, cron runs & alerts",
+        description: "Disk IO, sequential scans, cron runs & alerts",
         children: [
-          { title: "Table stats", url: "/system/db-health?tab=tables" },
-          { title: "Cron runs",   url: "/system/db-health?tab=cron" },
-          { title: "Alerts",      url: "/system/db-health?tab=alerts" },
+          { title: "Table Stats & IO",      url: "/system/db-health?tab=tables" },
+          { title: "Cron Schedules & Runs", url: "/system/db-health?tab=cron" },
+          { title: "System Alerts & Logs",  url: "/system/db-health?tab=alerts" },
         ],
       },
       {
@@ -544,60 +569,62 @@ export const adminNav: AdminNavSection[] = [
         icon: Bug,
         adminOnly: true,
         section: "settings",
-        description: "Developer tools",
+        description: "Developer tools & network diagnostics",
         children: [
-          { title: "Push",           url: "/system/debug?tab=push" },
-          { title: "Calls",          url: "/system/debug?tab=calls" },
-          { title: "Edge functions", url: "/system/debug?tab=edge" },
-          { title: "Realtime",       url: "/system/debug?tab=realtime" },
+          { title: "Web Push Diagnostics",   url: "/system/debug?tab=push" },
+          { title: "Call Signaling (WebRTC)", url: "/system/debug?tab=calls" },
+          { title: "Edge Function Probes",    url: "/system/debug?tab=edge" },
+          { title: "Realtime WebSockets",     url: "/system/debug?tab=realtime" },
         ],
       },
     ],
   },
 
   // ─────────────────────────────────────────────────────────────────
-  // SETTINGS  /settings — site configuration
+  // SETTINGS  /settings — site configuration, branding & integrations
   // ─────────────────────────────────────────────────────────────────
   {
     label: "Settings & AI",
     items: [
       {
-        title: "Dashboard",
+        title: "Settings Dashboard",
         url: "/settings-ai",
         icon: LayoutDashboard,
         section: "settings",
         description: "Brand identity, appearance, AI & system overview",
       },
       {
-        title: "Branding",
-        url: "/brand/branding",
-        icon: Palette,
+        title: "Branding & Assets",
+        url: "/settings-ai/branding",
+        icon: Paintbrush,
         adminOnly: true,
-        section: "storefront_ui",
-        description: "Theme & brand identity",
+        section: "settings",
+        description: "Logo, favicon, icons, color tokens & brand voice",
+        keywords: "branding logo icon assets favicon tokens colors voice typography",
         children: [
-          { title: "Overview",         url: "/brand/branding" },
-          { title: "Logo & icon",      url: "/brand/branding?tab=logo" },
-          { title: "Shape & effects",  url: "/brand/branding?tab=shape" },
-          { title: "Color filter",     url: "/brand/branding?tab=color" },
-          { title: "Typography",       url: "/brand/branding?tab=typography" },
-          { title: "Brand voice",      url: "/brand/branding?tab=voice" },
-          { title: "Site theme",       url: "/brand/branding?tab=theme" },
+          { title: "Overview",         url: "/settings-ai/branding" },
+          { title: "Logo & icon",      url: "/settings-ai/branding?tab=logo" },
+          { title: "Shape & effects",  url: "/settings-ai/branding?tab=shape" },
+          { title: "Color filter",     url: "/settings-ai/branding?tab=color" },
+          { title: "Typography",       url: "/settings-ai/branding?tab=typography" },
+          { title: "Brand voice",      url: "/settings-ai/branding?tab=voice" },
+          { title: "Site theme",       url: "/settings-ai/branding?tab=theme" },
         ],
       },
       {
-        title: "Appearance",
-        url: "/brand/appearance",
+        title: "Appearance & Surfaces",
+        url: "/settings-ai/appearance",
         icon: Layout,
         adminOnly: true,
-        section: "storefront_ui",
-        description: "Typography & layout for every surface",
-        keywords: "appearance typography layout fonts storefront profile auth signin",
+        section: "settings",
+        description: "Typography pairings, marquee ticker studio, layout & auth styling",
+        keywords: "appearance typography layout fonts storefront profile auth signin surfaces",
         children: [
-          { title: "Storefront",           url: "/brand/appearance?tab=storefront" },
-          { title: "Product details",      url: "/brand/appearance?tab=product" },
-          { title: "Profile & Settings",   url: "/brand/appearance?tab=profile" },
-          { title: "Sign-in / Sign-up",    url: "/brand/appearance?tab=auth" },
+          { title: "Storefront Typography", url: "/settings-ai/appearance?tab=storefront" },
+          { title: "Marquee Ticker Studio", url: "/settings-ai/appearance?tab=marquee" },
+          { title: "Product Detail Layout", url: "/settings-ai/appearance?tab=product" },
+          { title: "Profile Appearance",   url: "/settings-ai/appearance?tab=profile" },
+          { title: "Auth Page Styling",    url: "/settings-ai/appearance?tab=auth" },
         ],
       },
       {
@@ -606,27 +633,19 @@ export const adminNav: AdminNavSection[] = [
         icon: Settings,
         adminOnly: true,
         section: "settings",
-        description: "Global preferences",
+        description: "Global preferences, localization, customizer tokens & currency",
+        keywords: "general settings preferences customizer currency localization business",
         children: [
-          { title: "General",    url: "/settings-ai/general?tab=general" },
-          {
-            title: "Customizer",
-            url: "/settings-ai/general?tab=customizer",
-            children: [
-              { title: "Type",   url: "/settings-ai/general?tab=customizer&panel=typography" },
-              { title: "Space",  url: "/settings-ai/general?tab=customizer&panel=spacing" },
-              { title: "Nav",    url: "/settings-ai/general?tab=customizer&panel=navbar" },
-              { title: "UI",     url: "/settings-ai/general?tab=customizer&panel=components" },
-              { title: "Motion", url: "/settings-ai/general?tab=customizer&panel=animations" },
-            ],
-          },
-          { title: "Currency",   url: "/settings-ai/general?tab=currency" },
+          { title: "General & Business", url: "/settings-ai/general?tab=general" },
+          { title: "UI Customizer",      url: "/settings-ai/general?tab=customizer" },
+          { title: "Currency & Rates",   url: "/settings-ai/general?tab=currency" },
+          { title: "Maintenance & State",url: "/settings-ai/general?tab=maintenance" },
         ],
       },
       {
         title: "AI Agent",
         url: "/settings-ai/ai-settings",
-        icon: Bot,
+        icon: Sparkle,
         section: "ai",
         adminOnly: true,
         description: "AI assistant config",
@@ -634,11 +653,29 @@ export const adminNav: AdminNavSection[] = [
       {
         title: "Recommendations",
         url: "/settings-ai/recommendations",
-        icon: Wand2,
+        icon: Sparkle,
         section: "ai",
         adminOnly: true,
         description: "Discover engine & AI rerank",
         keywords: "recommendations discover personalization ai rerank",
+      },
+      {
+        title: "WhatsApp Cloud API",
+        url: "/settings-ai/whatsapp",
+        icon: Smartphone,
+        section: "settings",
+        adminOnly: true,
+        description: "Official Meta WhatsApp Cloud API credentials & notification templates",
+        keywords: "whatsapp cloud api meta waba phone templates",
+      },
+      {
+        title: "SMS Gateway",
+        url: "/settings-ai/sms",
+        icon: MessageSquare,
+        section: "settings",
+        adminOnly: true,
+        description: "BulkSMSBD & Twilio SMS provider configurations",
+        keywords: "sms bulksmsbd twilio gateway messages otp",
       },
       {
         title: "Call Center",
@@ -649,13 +686,22 @@ export const adminNav: AdminNavSection[] = [
         description: "Voice / call routing",
       },
       {
-        title: "Telegram",
+        title: "Email Provider (Resend)",
+        url: "/settings-ai/email-provider",
+        icon: Mail,
+        section: "settings",
+        adminOnly: true,
+        description: "Resend API key, sender identities, webhook events & deliverability stats",
+        keywords: "email provider resend smtp sender identity webhook deliverability",
+      },
+      {
+        title: "Telegram Bot Studio",
         url: "/settings-ai/telegram",
         icon: Send,
         section: "settings",
         adminOnly: true,
-        description: "Bot chats & notification routing",
-        keywords: "telegram bot chat notifications",
+        description: "Bot credentials, interactive commands, channel routing & broadcast studio",
+        keywords: "telegram bot studio chat notifications webhook commands broadcast",
       },
       {
         title: "Payment Gateways",
@@ -667,13 +713,13 @@ export const adminNav: AdminNavSection[] = [
         keywords: "payments payment gateways bkash nagad rocket upay stripe cod qr code merchant",
       },
       {
-        title: "Redirects",
+        title: "Apps Redirection",
         url: "/settings-ai/redirects",
         icon: ExternalLink,
         section: "settings",
         adminOnly: true,
-        description: "Cross-app URLs and CTA targets (Shop, Start Shopping, Explore Categories)",
-        keywords: "redirects urls links storefront shop back to shop start shopping explore categories cta",
+        description: "Cross-app domain gateway, CTA button destinations, route aliases & UTM tracking",
+        keywords: "apps redirection redirects urls domains gateway storefront brandhome explore orderops shop cta utm",
       },
     ],
   },
@@ -779,6 +825,4 @@ export const mobilePrimary: Array<{ title: string; url: string; icon: LucideIcon
   { title: "Support",   url: "/sales/support",             icon: Headphones,      section: "customers" },
   { title: "Settings",  url: "/settings-ai",                  icon: Settings,        section: "settings" },
 ];
-
-export { Eye, BarChart3, Search, Type, Paintbrush, Layout, Receipt, Mail, Send, AtSign, ShieldCheck, ClipboardList, Briefcase };
 // code:4ce0

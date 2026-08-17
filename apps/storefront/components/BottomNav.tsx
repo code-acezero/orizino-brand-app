@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { guestCartCount as guestCartCountFn } from "@/lib/guest-cart";
 import { motion, AnimatePresence } from "framer-motion";
+import { CategoryMonochromeIcon } from "@shared/components/CategoryMonochromeIcon";
 
 export interface BottomNavProductTray {
   product: {
@@ -319,14 +320,12 @@ const BottomNav: React.FC<BottomNavProps> = ({ onSearchClick, onAuthClick, produ
               <div className="grid grid-cols-3 gap-2">
                 {parentCategories.map((cat) => (
                   <Link key={cat.id} to={`/categories/${cat.slug}`} onClick={() => setCatOpen(false)}
-                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors">
-                    {cat.icon_url ? (
-                      <img src={cat.icon_url} alt="" className="w-8 h-8 rounded-lg object-contain" />
-                    ) : cat.icon ? (
-                      <span className="text-2xl">{cat.icon}</span>
-                    ) : (
-                      <LayoutGrid className="w-6 h-6 text-muted-foreground" />
-                    )}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors border border-border/30">
+                    <CategoryMonochromeIcon
+                      icon={cat.icon}
+                      iconUrl={cat.icon_url}
+                      className="w-7 h-7"
+                    />
                     <span className="text-[11px] font-medium text-foreground text-center leading-tight line-clamp-2">{cat.name}</span>
                   </Link>
                 ))}

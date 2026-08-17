@@ -17,6 +17,9 @@ export interface CreateOfflineOrderInput {
   source: OfflineSource;
   notes?: string;
   serialIds: string[];
+  shippingFee?: number;
+  isDeliveryPrepaid?: boolean;
+  deliveryPrepaidAmount?: number;
 }
 
 /**
@@ -62,6 +65,9 @@ export async function createOfflineOrder(input: CreateOfflineOrderInput) {
   }
 
   const subtotal = [...groups.values()].reduce((sum, g) => sum + g.unit_price * g.serialIds.length, 0);
+  const shippingFee = input.source === "offline" ? 0 : Number(input.shippingFee || 0);
+  const isDeliveryPrepaid = input.source !== "offline" && !!input.isDeliveryPrepaid;
+  const total = subtotal + shippingFee;
   const orderNumber = `OFL-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
 
   const shippingAddress: Record<string, any> = {
@@ -70,6 +76,15 @@ export async function createOfflineOrder(input: CreateOfflineOrderInput) {
     email: input.email || null,
     address_line: input.address || null,
   };
+
+  let paymentStatus = "unpaid";
+  if (input.source === "offline") {
+    paymentStatus = "paid";
+  } else if (isDeliveryPrepaid) {
+    paymentStatus = "partially_paid";
+  } else if (groups.size > 0) {
+    paymentStatus = "unpaid";
+  }
 
   const { data: order, error: oe } = await sb
     .from("orders")
@@ -80,13 +95,15 @@ export async function createOfflineOrder(input: CreateOfflineOrderInput) {
       guest_email: input.email || null,
       guest_phone: input.phone || null,
       customer_name: input.customerName,
-      status: "confirmed",
-      payment_status: "paid",
-      payment_method: "cod",
+      status: input.source === "offline" ? "delivered" : groups.size > 0 ? "confirmed" : "pending",
+      payment_status: paymentStatus,
+      payment_method: input.source === "offline" ? "cash" : "cod",
       order_source: input.source,
       subtotal,
-      shipping_fee: 0,
-      total: subtotal,
+      shipping_fee: shippingFee,
+      is_delivery_prepaid: isDeliveryPrepaid,
+      delivery_prepaid_amount: isDeliveryPrepaid ? (input.deliveryPrepaidAmount ?? shippingFee) : 0,
+      total,
       shipping_address: shippingAddress,
       notes: input.notes || null,
     })

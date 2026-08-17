@@ -30,6 +30,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { calculateOrderFinancials } from "@orizino/shared";
 
 /* ── Executive Stat Card ── */
 const StatCard = ({
@@ -134,20 +135,24 @@ const SalesDashboard = () => {
     queryFn: async () => {
       const [products, orders, profiles, reviews, recentOrders, previousOrders] = await Promise.all([
         supabase.from("products").select("id", { count: "exact", head: true }),
-        supabase.from("orders").select("id, total, status, created_at"),
+        supabase.from("orders" as any).select("id, total, subtotal, shipping_fee, coupon_discount, loyalty_discount, status, payment_method, is_delivery_prepaid, created_at"),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("reviews").select("id", { count: "exact", head: true }),
-        supabase.from("orders").select("id, total, created_at").gte("created_at", dateRange.from).lte("created_at", dateRange.to),
-        supabase.from("orders").select("id, total, created_at").gte("created_at", prevRange.from).lt("created_at", prevRange.to),
+        supabase.from("orders" as any).select("id, total, subtotal, shipping_fee, coupon_discount, loyalty_discount, status, payment_method, is_delivery_prepaid, created_at").gte("created_at", dateRange.from).lte("created_at", dateRange.to),
+        supabase.from("orders" as any).select("id, total, subtotal, shipping_fee, coupon_discount, loyalty_discount, status, payment_method, is_delivery_prepaid, created_at").gte("created_at", prevRange.from).lt("created_at", prevRange.to),
       ]);
 
       const allOrders = orders.data ?? [];
-      const totalRevenue = allOrders.reduce((sum, o) => sum + Number(o.total), 0);
-      const pendingOrders = allOrders.filter((o) => o.status === "pending").length;
-      const deliveredOrders = allOrders.filter((o) => o.status === "delivered").length;
+      const financialSummary = calculateOrderFinancials(allOrders as any[]);
+      const totalRevenue = financialSummary.recognizedRevenue;
+      const netRevenue = financialSummary.netProductRevenue;
+      const pendingOrders = financialSummary.pendingOrdersCount;
+      const deliveredOrders = financialSummary.deliveredOrdersCount;
 
-      const recentRevenue = (recentOrders.data ?? []).reduce((s, o) => s + Number(o.total), 0);
-      const prevRevenue = (previousOrders.data ?? []).reduce((s, o) => s + Number(o.total), 0);
+      const recentFin = calculateOrderFinancials((recentOrders.data ?? []) as any[]);
+      const prevFin = calculateOrderFinancials((previousOrders.data ?? []) as any[]);
+      const recentRevenue = recentFin.recognizedRevenue;
+      const prevRevenue = prevFin.recognizedRevenue;
       const revenueTrend = prevRevenue > 0 ? Math.round(((recentRevenue - prevRevenue) / prevRevenue) * 100) : 0;
 
       const recentOrderCount = recentOrders.data?.length ?? 0;
@@ -155,17 +160,18 @@ const SalesDashboard = () => {
       const orderTrend = prevOrderCount > 0 ? Math.round(((recentOrderCount - prevOrderCount) / prevOrderCount) * 100) : 0;
 
       const statusBreakdown: Record<string, number> = {};
-      allOrders.forEach((o) => {
+      (allOrders as any[]).forEach((o) => {
         statusBreakdown[o.status] = (statusBreakdown[o.status] || 0) + 1;
       });
 
-      const rangeOrders = allOrders.filter(o => {
+      const rangeOrders = (allOrders as any[]).filter(o => {
         const d = new Date(o.created_at);
         return d >= new Date(dateRange.from) && d <= new Date(dateRange.to);
       });
 
       // Advanced calculated KPIs
-      const aov = allOrders.length > 0 ? totalRevenue / allOrders.length : 0;
+      const eligibleCount = financialSummary.confirmedOrdersCount;
+      const aov = eligibleCount > 0 ? totalRevenue / eligibleCount : 0;
       const fulfillmentRate = allOrders.length > 0 ? Math.round((deliveredOrders / allOrders.length) * 100) : 0;
 
       return {
@@ -174,6 +180,11 @@ const SalesDashboard = () => {
         users: profiles.count ?? 0,
         reviews: reviews.count ?? 0,
         revenue: totalRevenue,
+        netRevenue,
+        shippingCollected: financialSummary.shippingFeesCollected,
+        shippingLoss: financialSummary.shippingLossOnReturns,
+        returnedValue: financialSummary.returnedProductsValue,
+        pendingCodRevenue: financialSummary.pendingCodRevenue,
         pendingOrders,
         deliveredOrders,
         revenueTrend,

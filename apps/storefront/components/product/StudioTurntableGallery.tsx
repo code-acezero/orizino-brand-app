@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RotateCw, Maximize2, Compass, Sparkles, Play, Pause, ChevronLeft, ChevronRight } from "lucide-react";
+import { RotateCw, Maximize2, Compass, Play, Pause, ChevronLeft, ChevronRight } from "lucide-react";
 import ProductLightboxModal from "@/components/product/ProductLightboxModal";
 
 import { useImageDominantColor } from "@/hooks/use-image-dominant-color";

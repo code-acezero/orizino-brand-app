@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { themeMap, allThemeVars, themePalettes } from "@/lib/theme-palettes";
-import { useTheme } from "next-themes";
+import { useTheme } from "@orizino/ui";
 import { getStorefrontTypographyPair } from "@orizino/shared/lib/storefront-appearance";
 
 /* Map old theme IDs to new ones for backward compat */

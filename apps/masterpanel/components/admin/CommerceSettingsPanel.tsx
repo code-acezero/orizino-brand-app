@@ -490,7 +490,7 @@ export default function CommerceSettingsPanel() {
               <div className="font-medium">Brand Identity</div>
               <div className="text-xs text-muted-foreground">Used on invoices</div>
             </a>
-            <a href="/email/provider" className="p-3 rounded-xl border border-border/30 hover:bg-secondary/40 transition">
+            <a href="/settings-ai/email-provider" className="p-3 rounded-xl border border-border/30 hover:bg-secondary/40 transition">
               <Mail className="w-4 h-4 mb-1.5 text-primary" />
               <div className="font-medium">Email Provider</div>
               <div className="text-xs text-muted-foreground">Sends invoices</div>

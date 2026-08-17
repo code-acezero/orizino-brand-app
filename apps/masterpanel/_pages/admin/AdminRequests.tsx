@@ -25,7 +25,6 @@ import {
   CheckCircle2,
   Filter,
   MessageSquare,
-  Sparkles,
   ShoppingBag,
   RotateCcw,
   X,

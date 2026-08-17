@@ -1,13 +1,16 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "@/lib/router-compat";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Mail, MapPin, Phone, CreditCard, Truck, Shield, RefreshCcw, ChevronDown } from "lucide-react";
 import CurrencyMenu from "@/components/footer/CurrencyMenu";
 import LanguageMenu from "@/components/footer/LanguageMenu";
+import { useLanguage, getLocalizedBrandName, getLocalizedBrandSuffix } from "@/contexts/LanguageContext";
 import BrandLogo from "@/components/BrandLogo";
 import { brandHomeHref } from "@/lib/cross-app-urls";
+import { loadGoogleFont } from "@orizino/shared/lib/brand-title";
+import { toast } from "@/lib/app-toast";
 
 
 
@@ -19,6 +22,7 @@ const TRUST_BADGES = [
 ];
 
 const Footer: React.FC = () => {
+  const { language } = useLanguage();
   const year = new Date().getFullYear();
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
@@ -34,7 +38,7 @@ const Footer: React.FC = () => {
       const { data } = await supabase
         .from("site_settings")
         .select("key, value")
-        .in("key", ["site_name", "brand_suffix", "title_font", "logo_url", "site_icon_url", "social_instagram", "social_facebook", "footer_config", "contact_email", "contact_phone", "contact_address", "footer_navs"]);
+        .in("key", ["site_name", "brand_suffix", "title_font", "logo_url", "site_icon_url", "brand_logo_title_ratio", "social_instagram", "social_facebook", "footer_config", "contact_email", "contact_phone", "contact_address", "footer_navs"]);
       const map: Record<string, any> = {};
       data?.forEach((s) => {
         const val = s.value;
@@ -45,10 +49,17 @@ const Footer: React.FC = () => {
     staleTime: 0,
   });
 
-  const siteName = (siteSettings?.site_name as string) || "Orizino";
-  const brandSuffix = (siteSettings?.brand_suffix as string) || "co.";
+  const rawSiteName = (siteSettings?.site_name as string) || "ORIZINO";
+  const siteName = getLocalizedBrandName(rawSiteName, language);
+  const rawBrandSuffix = (siteSettings?.brand_suffix as string) || "co.";
+  const brandSuffix = getLocalizedBrandSuffix(rawBrandSuffix, language);
   const titleFont = (siteSettings?.title_font as string) || "";
   const logoUrl = (siteSettings?.logo_url as string) || (siteSettings?.site_icon_url as string) || "";
+  const brandLogoTitleRatio = Number(siteSettings?.brand_logo_title_ratio) || 1.0;
+
+  useEffect(() => {
+    if (titleFont) loadGoogleFont(titleFont);
+  }, [titleFont]);
   const footerCfg = (siteSettings?.footer_config as any) || {};
   const instagramUrl = footerCfg?.social_instagram || (siteSettings?.social_instagram as string) || "";
   const contactEmail = footerCfg?.contact_email || (siteSettings?.contact_email as string) || "";
@@ -190,10 +201,26 @@ const Footer: React.FC = () => {
     e.preventDefault();
     if (!email.trim()) return;
     try {
-      await (supabase.from as any)("newsletter_subscribers").upsert({ email: email.trim() }, { onConflict: "email" });
-      setSubscribed(true);
-      setEmail("");
-    } catch { }
+      const res = await fetch("/api/public/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), source: "storefront_footer" }),
+      });
+      const data = await res.json();
+      if (data?.status === "already_subscribed") {
+        toast.info(data.message || "You are already subscribed to ORIZINO updates.");
+        return;
+      }
+      if (data?.ok) {
+        setSubscribed(true);
+        setEmail("");
+        toast.success(data.message || "Thank you for subscribing! Check your inbox for your welcome note.");
+      } else {
+        toast.error(data?.message || "Something went wrong. Please try again.");
+      }
+    } catch {
+      toast.error("Subscription failed. Please try again.");
+    }
   };
 
   return (
@@ -259,7 +286,16 @@ const Footer: React.FC = () => {
               <div className="w-fit flex flex-col gap-1 group shrink-0">
                 <Link href="/" className="inline-flex items-center gap-2.5 sm:gap-3">
                   {logoUrl && (
-                    <BrandLogo logoUrl={logoUrl} alt={siteName} className="h-6 w-8 sm:h-7 sm:w-9 lg:h-10 lg:w-13 transition-all duration-300 group-hover:scale-105" />
+                    <BrandLogo
+                      logoUrl={logoUrl}
+                      alt={siteName}
+                      className="w-auto transition-all duration-300 group-hover:scale-105"
+                      style={{
+                        height: `${Math.round(36 * brandLogoTitleRatio)}px`,
+                        maxHeight: "64px",
+                        minHeight: "20px",
+                      }}
+                    />
                   )}
                   <div className="flex items-baseline gap-1.5 sm:gap-2">
                     <span
@@ -275,7 +311,10 @@ const Footer: React.FC = () => {
                       {siteName}
                     </span>
                     {brandSuffix && (
-                      <span className="text-xs lg:text-sm font-bold tracking-widest text-primary/80 uppercase transition-colors group-hover:text-primary">
+                      <span
+                        translate="no"
+                        className="brand-suffix notranslate skiptranslate text-xs lg:text-sm font-bold tracking-widest text-primary/80 uppercase transition-colors group-hover:text-primary"
+                      >
                         {brandSuffix}
                       </span>
                     )}
@@ -346,7 +385,16 @@ const Footer: React.FC = () => {
               <div className="w-fit flex flex-col gap-0.5 group shrink-0">
                 <Link href="/" className="inline-flex items-center gap-1.5">
                   {logoUrl && (
-                    <BrandLogo logoUrl={logoUrl} alt={siteName} className="h-4 w-5 transition-all duration-300 group-hover:scale-105" />
+                    <BrandLogo
+                      logoUrl={logoUrl}
+                      alt={siteName}
+                      className="w-auto transition-all duration-300 group-hover:scale-105"
+                      style={{
+                        height: `${Math.round(20 * brandLogoTitleRatio)}px`,
+                        maxHeight: "36px",
+                        minHeight: "14px",
+                      }}
+                    />
                   )}
                   <div className="flex items-baseline gap-1">
                     <span
@@ -362,7 +410,10 @@ const Footer: React.FC = () => {
                       {siteName}
                     </span>
                     {brandSuffix && (
-                      <span className="text-[8px] font-bold tracking-widest text-primary/80 uppercase transition-colors group-hover:text-primary">
+                      <span
+                        translate="no"
+                        className="brand-suffix notranslate skiptranslate text-[8px] font-bold tracking-widest text-primary/80 uppercase transition-colors group-hover:text-primary"
+                      >
                         {brandSuffix}
                       </span>
                     )}
@@ -546,7 +597,7 @@ const Footer: React.FC = () => {
         <div className="hidden lg:flex items-center justify-between py-4 lg:py-5 w-full font-sans-brand text-xs">
           {/* Left: Copyright text and CTA links */}
           <div className="flex items-center gap-x-3 text-foreground/60 shrink-0">
-            <span>© {year} <span className="notranslate skiptranslate" translate="no">{siteName}</span>. All rights reserved.</span>
+            <span>© {year} {siteName}. All rights reserved.</span>
             <span className="text-foreground/20">•</span>
             <div className="flex items-center gap-x-3">
               {LEGAL_LINKS.map((l, idx) => (
@@ -598,7 +649,7 @@ const Footer: React.FC = () => {
         <div className="lg:hidden relative w-full flex flex-col sm:flex-row items-center justify-center py-1 overflow-x-auto scrollbar-none text-center">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-x-2.5 gap-y-1 font-sans-brand text-[8.5px] sm:text-[9px] text-foreground/40 leading-none">
             {/* Copyright text */}
-            <span className="inline-flex items-center shrink-0">© {year} <span className="notranslate skiptranslate" translate="no">{siteName}</span>. All rights reserved.</span>
+            <span className="inline-flex items-center shrink-0">© {year} {siteName}. All rights reserved.</span>
 
             {/* Separator dot — visible on sm+ screens */}
             <span className="hidden sm:inline-flex items-center text-foreground/20 text-[7px] shrink-0">•</span>

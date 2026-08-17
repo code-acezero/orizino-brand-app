@@ -13,6 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@/lib/server-fn-compat";
 import { notifyNewOrder } from "@/lib/order-notifications.functions";
+import { attributeOrderCommission } from "@/lib/affiliate.functions";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/lib/app-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -157,6 +158,7 @@ const CheckoutPage: React.FC = () => {
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState<string | null>(null);
   const [mfsProofData, setMfsProofData] = useState<{ screenshotUrl: string; transactionId: string } | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+  const attributeCommission = useServerFn(attributeOrderCommission);
 
   // Generate or rehydrate unique checkout session serial
   const [checkoutSerial] = useState<string>(() => {
@@ -697,7 +699,11 @@ const CheckoutPage: React.FC = () => {
   // (Maintained even when delivery fee is free)
   const codExtraFee = paymentMethod === "cod" ? courierRateInfo.appliedCodFee : 0;
   const codMode = paymentConfig?.cod_mode || "normal"; // "normal" | "advance_delivery_charge"
-  const isAdvanceCodMode = paymentMethod === "cod" && codMode === "advance_delivery_charge";
+  const isAdvanceCodMode = paymentMethod === "cod" && (
+    paymentConfig?.prepay_cod_delivery_charge === true ||
+    codMode === "advance_delivery_charge"
+  );
+  const [selectedCodMfsMethod, setSelectedCodMfsMethod] = useState<string>("bkash");
 
   const total = Math.max(
     0,
@@ -787,10 +793,48 @@ const CheckoutPage: React.FC = () => {
         .eq("id", orderRow.id);
     }
 
+    if (orderRow?.id && isAdvanceCodMode) {
+      await supabase
+        .from("orders")
+        .update({
+          is_delivery_prepaid: true,
+          delivery_prepaid_amount: shippingFee,
+          delivery_prepaid_trx: mfsProofData?.transactionId || null,
+        } as any)
+        .eq("id", orderRow.id);
+    }
+
     if (orderRow?.id) {
       notifyOrder({ order_id: orderRow.id }).catch((e) =>
         console.warn("[checkout] notifyNewOrder failed", e),
       );
+
+      // Attribute affiliate commission if referral cookie is present
+      try {
+        const affRaw = typeof window !== "undefined" ? localStorage.getItem("aff_ref") : null;
+        if (affRaw) {
+          const affData = JSON.parse(affRaw);
+          if (affData?.code && (!affData.expires || Date.now() < affData.expires)) {
+            attributeCommission({
+              data: {
+                order_id: orderRow.id,
+                order_number: data.order_number,
+                ref_code: affData.code,
+                order_subtotal: subtotal,
+                customer_id: user?.id ?? null,
+                items: (cartItems || []).map((i: any) => ({
+                  product_id: i.product_id,
+                  category_id: i.category_id || (i.products as any)?.category_id,
+                  price: Number((i.product_variants as any)?.price_override ?? (i.products as any)?.price ?? 0),
+                  quantity: Number(i.quantity ?? 1),
+                })),
+              },
+            }).catch((err) => console.warn("[affiliate] Commission attribution failed:", err));
+          }
+        }
+      } catch (e) {
+        console.warn("[affiliate] error reading referral cookie:", e);
+      }
     }
 
     // Clear session and cart state on successful order placement
@@ -1396,10 +1440,34 @@ const CheckoutPage: React.FC = () => {
                               </p>
                             </div>
                           </div>
-                          {mfsAccountInfo && (
+
+                          {/* MFS Selector for Advance Delivery Fee */}
+                          <div className="flex gap-2 flex-wrap pt-1">
+                            {(["bkash", "nagad", "rocket", "upay"] as const).map((mfsKey) => {
+                              const acc = paymentConfig?.[`personal_${mfsKey}`];
+                              if (!acc?.enabled) return null;
+                              const isSelected = selectedCodMfsMethod === mfsKey;
+                              return (
+                                <button
+                                  key={mfsKey}
+                                  type="button"
+                                  onClick={() => setSelectedCodMfsMethod(mfsKey)}
+                                  className={`px-3 py-1.5 rounded-lg border text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+                                    isSelected
+                                      ? "bg-foreground text-background border-foreground font-bold shadow-xs"
+                                      : "bg-background border-border/60 text-muted-foreground hover:text-foreground"
+                                  }`}
+                                >
+                                  {mfsKey}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {paymentConfig?.[`personal_${selectedCodMfsMethod}`] && (
                             <MFSPaymentProof
-                              method="bkash"
-                              accountInfo={mfsAccountInfo}
+                              method={selectedCodMfsMethod}
+                              accountInfo={paymentConfig?.[`personal_${selectedCodMfsMethod}`]}
                               amount={shippingFee}
                               formatPrice={formatPrice}
                               onProofSubmitted={(screenshotUrl, transactionId) => {

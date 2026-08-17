@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
 interface DocItem {
   id: string;
@@ -145,6 +146,16 @@ export default function AdminBrandHomeDocs() {
     );
   }
 
+  useRegisterUniversalSave(
+    {
+      id: "brandhome-docs",
+      label: "Save Docs & Policies",
+      onSave: () => saveMutation.mutate(draft),
+      isSaving: saveMutation.isPending,
+    },
+    [draft, saveMutation.isPending]
+  );
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
       {/* Header */}
@@ -161,9 +172,6 @@ export default function AdminBrandHomeDocs() {
         <div className="flex items-center gap-2">
           <Button onClick={openNewDoc} variant="outline" className="rounded-xl gap-2 text-xs font-semibold">
             <Plus className="w-3.5 h-3.5" /> Add Document
-          </Button>
-          <Button onClick={() => saveMutation.mutate(draft)} disabled={saveMutation.isPending} className="rounded-xl gap-2 text-xs font-bold">
-            {saveMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save Settings
           </Button>
         </div>
       </div>

@@ -7,7 +7,7 @@ import { CompanyNav } from "@/components/nav/CompanyNav";
 import Footer from "@/components/Footer";
 import ReactMarkdown from "react-markdown";
 import { motion } from "framer-motion";
-import { ShieldCheck, FileText, RefreshCw, Cookie, Sparkles, Lock, ArrowUpRight, Loader2 } from "lucide-react";
+import { ShieldCheck, FileText, RefreshCw, Cookie, Lock, ArrowUpRight, Loader2 } from "lucide-react";
 import BlockRenderer, { type PageBlock } from "@/components/BlockRenderer";
 import { Link } from "@/lib/router-compat";
 
@@ -125,7 +125,7 @@ export default function CmsPage({ slug }: CmsPageProps) {
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="space-y-2 max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase tracking-widest font-sans-brand">
-                <Sparkles className="w-3 h-3" /> Official Disclosure
+                <ShieldCheck className="w-3 h-3" /> Official Disclosure
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-editorial font-extrabold tracking-tight text-foreground">
                 {title}

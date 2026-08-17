@@ -59,7 +59,7 @@ import {
   X,
   Compass,
   ArrowRight,
-  Sparkles,
+  Zap,
   Sliders,
   ShieldCheck,
   Check,
@@ -470,7 +470,7 @@ const AdminDeliveryOffers = () => {
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
-              <Sparkles className="w-3 h-3 text-primary" /> Delivery Promotion Engine
+              <Zap className="w-3 h-3 text-primary" /> Delivery Promotion Engine
             </span>
             <Badge variant="outline" className="text-[10px] font-mono border-border/60 text-muted-foreground">
               64 Districts Ready

@@ -5,15 +5,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, ShoppingCart, Heart, User, X, Menu, LogOut, Settings, LayoutGrid, ChevronDown, Bell, Sun, Moon, MoreVertical, Globe, Monitor } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useTheme } from "next-themes";
+import { useTheme } from "@orizino/ui";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { guestCartCount as guestCartCountFn } from "@/lib/guest-cart";
 import BottomNav, { type BottomNavProductTray } from "@/components/BottomNav";
 import NotificationBell from "@/components/NotificationBell";
+import { useLanguage, getLocalizedBrandName } from "@/contexts/LanguageContext";
 import BrandLogo from "@/components/BrandLogo";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import LanguageMenu from "@/components/footer/LanguageMenu";
+import { BrandTitle, loadGoogleFont } from "@orizino/shared/lib/brand-title";
 
 interface NavbarProps {
   bottomNavProductTray?: BottomNavProductTray;
@@ -64,6 +66,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
   const currencyMenuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
+  const { language } = useLanguage();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -149,7 +152,12 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
       const { data } = await supabase
         .from("site_settings")
         .select("key, value")
-        .in("key", ["site_name", "logo_url", "title_image_url", "title_source", "site_icon_url", "logo_display_style", "title_font"]);
+        .in("key", [
+          "site_name", "logo_url", "title_image_url", "title_source",
+          "site_icon_url", "logo_display_style", "title_font",
+          "brand_title_size_nav", "brand_logo_title_ratio",
+          "title_group_mode", "title_letter_colors", "title_group_custom"
+        ]);
       const map: Record<string, any> = {};
       data?.forEach((s) => {
         const val = s.value;
@@ -162,12 +170,19 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
     refetchOnMount: 'always',
   });
 
-  const siteName = (siteSettings?.site_name as string) || "ORIZINO";
+  const rawSiteName = (siteSettings?.site_name as string) || "ORIZINO";
+  const siteName = getLocalizedBrandName(rawSiteName, language);
   const logoUrl = (siteSettings?.logo_url as string) || "";
   const titleImageUrl = (siteSettings?.title_image_url as string) || "";
   const titleSource = (siteSettings?.title_source as string) || "text";
   const displayStyle = (siteSettings?.logo_display_style as string) || "both";
   const titleFont = (siteSettings?.title_font as string) || "";
+  const brandTitleSizeNav = Number(siteSettings?.brand_title_size_nav) || 20;
+  const brandLogoTitleRatio = Number(siteSettings?.brand_logo_title_ratio) || 1.0;
+
+  useEffect(() => {
+    if (titleFont) loadGoogleFont(titleFont);
+  }, [titleFont]);
 
   const showLogo = (displayStyle === "logo" || displayStyle === "both") && Boolean(logoUrl);
   const showTitle = displayStyle === "title" || displayStyle === "both" || Boolean(siteName);
@@ -264,7 +279,16 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
               <div className="flex items-center gap-2.5 my-auto shrink-0">
                 {showLogo && (
                   <Link href="/" className="shrink-0 flex items-center group">
-                    <BrandLogo logoUrl={logoUrl} alt={siteName} className="h-6 sm:h-7 w-8 sm:w-10 transition-transform duration-300 group-hover:scale-105" />
+                    <BrandLogo
+                      logoUrl={logoUrl}
+                      alt={siteName}
+                      className="w-auto transition-transform duration-300 group-hover:scale-105"
+                      style={{
+                        height: `${Math.round((brandTitleSizeNav * 1.35) * brandLogoTitleRatio)}px`,
+                        maxHeight: "44px",
+                        minHeight: "20px",
+                      }}
+                    />
                   </Link>
                 )}
                 {showTitle && (
@@ -276,22 +300,19 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                       <img
                         src={titleImageUrl}
                         alt={siteName}
-                        className="h-6 sm:h-7 w-auto object-contain shrink-0 transition-transform duration-300 group-hover:scale-105"
+                        className="w-auto object-contain shrink-0 transition-transform duration-300 group-hover:scale-105"
+                        style={{
+                          height: `${Math.round((brandTitleSizeNav * 1.35) * brandLogoTitleRatio)}px`,
+                          maxHeight: "44px",
+                          minHeight: "20px",
+                        }}
                       />
                     ) : (
-                      <span
-                        translate="no"
-                        data-brand="orizino"
-                        className="inline-flex items-center brand-name notranslate skiptranslate text-lg sm:text-xl md:text-2xl tracking-[0.16em] uppercase text-foreground group-hover:text-primary transition-colors duration-300 font-bold leading-none select-none"
-                        style={{
-                          fontFamily: titleFont
-                            ? `'${titleFont}', var(--font-title, var(--font-display))`
-                            : 'var(--font-title, var(--font-display))',
-                          fontSize: siteName.length <= 5 ? "1.25em" : "1.05em",
-                        }}
-                      >
-                        {siteName}
-                      </span>
+                      <BrandTitle
+                        className="brand-name notranslate skiptranslate uppercase text-foreground group-hover:text-primary transition-colors duration-300 font-bold leading-none select-none tracking-[0.16em]"
+                        fontSize={brandTitleSizeNav}
+                        fallback="ORIZINO"
+                      />
                     )}
                   </Link>
                 )}

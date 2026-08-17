@@ -5,6 +5,7 @@ import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { trackClick } from "@/hooks/use-analytics";
+import { useLanguage, getLocalizedBrandName } from "@/contexts/LanguageContext";
 
 interface Slide {
   id: string;
@@ -83,30 +84,37 @@ const KineticTitle = ({
 
   return (
     <h1 className={`${className || ''} overflow-visible py-1`} style={customStyle}>
-      {words.map((word, i) => (
-        <motion.span
-          key={i}
-          className="inline-block mr-[0.25em] py-0.5 overflow-visible"
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{
-            duration: 0.55,
-            delay: i * 0.06,
-            ease: [0.16, 1, 0.3, 1],
-          }}
-        >
-          {word}
-        </motion.span>
-      ))}
+      {words.map((word, i) => {
+        const isBrandWord = /^\W*orizino/i.test(word);
+        return (
+          <motion.span
+            key={i}
+            translate={isBrandWord ? "no" : undefined}
+            className={`inline-block mr-[0.25em] py-0.5 overflow-visible ${isBrandWord ? "notranslate skiptranslate brand-name" : ""}`}
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.55,
+              delay: i * 0.06,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+          >
+            {word}
+          </motion.span>
+        );
+      })}
     </h1>
   );
 };
 
 const CinematicHero: React.FC = () => {
+  const { language } = useLanguage();
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(1);
   const [paused, setPaused] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const brandName = getLocalizedBrandName("ORIZINO", language);
 
   const { data: slidesRaw = [], isLoading } = useQuery({
     queryKey: ["showcase-slides"],
@@ -408,12 +416,10 @@ const CinematicHero: React.FC = () => {
             >
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden px-4" aria-hidden="true">
                 <span
-                  translate="no"
-                  data-brand="orizino"
-                  className="font-editorial brand-title notranslate skiptranslate text-foreground/8 dark:text-foreground/15 font-extrabold max-w-full text-center tracking-tight select-none uppercase transition-colors"
+                  className="font-editorial brand-title text-foreground/8 dark:text-foreground/15 font-extrabold max-w-full text-center tracking-tight select-none uppercase transition-colors"
                   style={{ fontSize: "clamp(3.5rem, 14vw, 14rem)", lineHeight: 1 }}
                 >
-                  ORIZINO
+                  {brandName}
                 </span>
               </div>
               <div

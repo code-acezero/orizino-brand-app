@@ -140,6 +140,25 @@ const SiteThemeProvider = () => {
       html.classList.remove("light");
     }
 
+    // Fast reactive listener for instant 1-click topbar toggle
+    const handleInstantModeChange = (e: any) => {
+      const targetMode = e.detail?.mode || (html.classList.contains("light") ? "light" : "dark");
+      const isAutoNow = targetMode === "auto" || targetMode === "system";
+      const sysIsDark = typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)").matches : true;
+      const effectiveMode = isAutoNow ? (sysIsDark ? "dark" : "light") : targetMode;
+
+      if (palette) {
+        const vars = effectiveMode === "light" ? palette.light : palette.dark;
+        Object.entries(vars).forEach(([k, v]) => html.style.setProperty(k, v));
+      }
+      if (effectiveMode === "light") {
+        html.classList.add("light");
+      } else {
+        html.classList.remove("light");
+      }
+    };
+    window.addEventListener("site-mode-change", handleInstantModeChange);
+
     // If auto, listen for device OS theme changes
     let cleanupMedia: (() => void) | undefined;
     if (isAuto && typeof window !== "undefined" && window.matchMedia) {

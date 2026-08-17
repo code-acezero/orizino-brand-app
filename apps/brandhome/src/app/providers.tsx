@@ -10,7 +10,7 @@ import SiteThemeProvider from "@/components/SiteThemeProvider";
 import TrackingPixels from "@/components/TrackingPixels";
 import { Toaster } from "@/components/ui/toaster";
 import FaviconSync from "@/components/FaviconSync";
-import { ThemeProvider } from "next-themes";
+import { ThemeProvider } from "@orizino/ui";
 
 function makeQueryClient() {
   return new QueryClient({

@@ -172,8 +172,6 @@ const HomePage: React.FC = () => {
         </div>
       )}
 
-      <HomePopup />
-
       {/* ── 1. Cinematic Hero (full viewport, edge-to-edge — navbar is transparent) ── */}
       <div className="w-full m-0 p-0">
         <CinematicHero />

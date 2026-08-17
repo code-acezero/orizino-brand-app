@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
 interface ScannerConfig {
   headline: string;
@@ -74,6 +75,16 @@ export default function AdminBrandHomeScanner() {
     );
   }
 
+  useRegisterUniversalSave(
+    {
+      id: "brandhome-scanner",
+      label: "Save Scanner Settings",
+      onSave: () => saveMutation.mutate(draft),
+      isSaving: saveMutation.isPending,
+    },
+    [draft, saveMutation.isPending]
+  );
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         {/* Header */}
@@ -87,9 +98,6 @@ export default function AdminBrandHomeScanner() {
               <p className="text-xs text-muted-foreground">Configure NFC chip, QR code & physical garment authentication experience.</p>
             </div>
           </div>
-          <Button onClick={() => saveMutation.mutate(draft)} disabled={saveMutation.isPending} className="rounded-xl gap-2 text-xs font-bold">
-            {saveMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save Settings
-          </Button>
         </div>
 
         {/* Global Scanner Headers */}

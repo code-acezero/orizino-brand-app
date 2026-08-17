@@ -24,6 +24,7 @@ import {
   Zap, LifeBuoy, PackageCheck, AlertCircle, Clock, Ticket, Plus, Lock,
   CheckCircle2, Filter, AlertTriangle, ChevronLeft
 } from "lucide-react";
+import { Sparkle } from "@/components/icons/Sparkle";
 
 interface Msg {
   role: "user" | "assistant";
@@ -836,7 +837,7 @@ const SupportPage: React.FC = () => {
                 : "text-muted-foreground hover:text-foreground hover:bg-card/50"
             }`}
           >
-            <MessageSquare className={`w-3.5 h-3.5 ${tab === "chat" ? "text-primary" : ""}`} />
+            <Sparkle className={`w-3.5 h-3.5 ${tab === "chat" ? "text-primary" : ""}`} />
             <span>AI Concierge</span>
             <span className="hidden md:inline-block ml-auto text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               24/7
@@ -923,14 +924,14 @@ const SupportPage: React.FC = () => {
                       <img src={aiConfig.avatar_url} alt={agentName} className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-cover" />
                     ) : (
                       <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-                        {aiConfig?.avatar_emoji ? <span className="text-sm sm:text-base">{aiConfig.avatar_emoji}</span> : <Bot className="w-4 h-4" />}
+                        {aiConfig?.avatar_emoji ? <span className="text-sm sm:text-base">{aiConfig.avatar_emoji}</span> : <Sparkle className="w-4 h-4" />}
                       </div>
                     )}
                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
                   </div>
                   <div>
                     <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
-                      {agentName} <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground font-mono uppercase">AI Assistant</span>
+                      {agentName} <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-mono uppercase inline-flex items-center gap-1"><Sparkle className="w-2.5 h-2.5" /> AI Assistant</span>
                     </h3>
                     <p className="text-[10px] sm:text-[11px] text-muted-foreground">Product & Order Specialist</p>
                   </div>

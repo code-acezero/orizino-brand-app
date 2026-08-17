@@ -155,7 +155,13 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
 
   const isActive = (url: string) => {
     const { path, query } = splitNavUrl(url);
-    if (query) return pathMatches(path, true) && searchMatches(query);
+    if (query) {
+      if (pathMatches(path, true)) {
+        if (searchMatches(query)) return true;
+        if ((!location.search || location.search === "?") && query === "tab=dashboard") return true;
+      }
+      return false;
+    }
     if (SECTION_LANDING_PATHS.has(path)) return pathMatches(path, true);
     return pathMatches(path);
   };
@@ -219,7 +225,6 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
       clean.startsWith("/sales/stock") ||
       clean.startsWith("/sales/invoice-stickers") ||
       clean.startsWith("/sales/coupons") ||
-      clean.startsWith("/sales/reviews") ||
       clean.startsWith("/sales/requests") ||
       clean.startsWith("/sales/user-promos") ||
       clean.startsWith("/sales/showcase") ||
@@ -239,10 +244,10 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
     if (clean === "/settings-ai" || clean.startsWith("/settings-ai") || clean === "/settings" || clean.startsWith("/settings") || clean.startsWith("/sales/payment-gateways")) {
       return ["Settings & AI"];
     }
-    if (isProductShippingPaymentsRoute) return ["Products, Shipping & Offers"];
+    if (isProductShippingPaymentsRoute) return ["PSO Management"];
     const seg = clean.split("/")[1] ?? "";
-    if (seg === "sales") return ["Customer & Sales"];
-    return SEGMENT_TO_NAV_LABELS[seg] ?? ["Overview"];
+    if (seg === "sales") return ["Sales & Customers"];
+    return SEGMENT_TO_NAV_LABELS[seg] ?? ["Master Controls"];
   }, [location.pathname, isProductShippingPaymentsRoute, query]);
 
   const isMasterPanelHome = location.pathname === "/";
@@ -251,9 +256,8 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
     const isAdmin = !!staff?.isAdmin || role === "admin";
     const hasAnyGrant = (staff?.accessible?.length ?? 0) > 0;
     const sectionFiltered = items.filter((i) => {
-      if (i.url === "/") return false;
       if (isAdmin) return true;
-      if (i.url === "/master") return canSeeMasterControl;
+      if (i.url === "/" || i.url === "/master") return true;
       if (i.section) return staff?.hasAccess(i.section) ?? false;
       return hasAnyGrant ? false : !i.adminOnly;
     });

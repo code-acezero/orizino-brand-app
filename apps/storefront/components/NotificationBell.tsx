@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { Bell, X, CheckCheck, Info, AlertTriangle, CheckCircle, XCircle, Trash2, Globe } from "lucide-react";
+import { Bell, X, CheckCheck, Info, AlertTriangle, CheckCircle, XCircle, Trash2, Globe, Download, Smartphone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { playNotificationSound } from "@/lib/sounds";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAdaptivePolling } from "@/hooks/use-adaptive-polling";
 import { toast } from "@/lib/app-toast";
+import { pushSupported, requestPushPermission, subscribeToPush } from "@/lib/push";
 
 interface Notification {
   id: string;
@@ -29,6 +30,8 @@ const typeConfig: Record<string, { icon: React.ComponentType<React.SVGProps<SVGS
   warning: { icon: AlertTriangle, color: "text-yellow-400" },
   general: { icon: Globe, color: "text-primary" },
   info: { icon: Info, color: "text-blue-400" },
+  system: { icon: Bell, color: "text-primary" },
+  pwa: { icon: Download, color: "text-primary" },
 };
 
 interface IslandItem {
@@ -170,6 +173,106 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ adminMode = false }
     });
     return unsub;
   }, []);
+
+  // ── Push & PWA Prompts in Notification Island ─────────────────────────────
+  useEffect(() => {
+    if (typeof window === "undefined" || adminMode) return;
+
+    // 1. Push Prompt in Island (after 4s if permission is default)
+    const pushTimer = setTimeout(() => {
+      try {
+        const lastDismissed = localStorage.getItem("orizino_island_push_dismissed");
+        if (lastDismissed && Date.now() - Number(lastDismissed) < 7 * 86400000) return;
+      } catch {}
+
+      if (pushSupported() && typeof Notification !== "undefined" && Notification.permission === "default") {
+        showIsland({
+          id: "island-push-prompt",
+          title: "Get Drop & Order Alerts",
+          message: "Enable instant notifications for new streetwear drops and delivery tracking.",
+          type: "system",
+          source: "notification",
+          duration: 14000,
+          actions: [
+            {
+              label: "Allow",
+              primary: true,
+              onClick: async () => {
+                try {
+                  const perm = await requestPushPermission();
+                  if (perm === "granted" && user?.id) {
+                    await subscribeToPush(user.id);
+                  }
+                } catch {}
+              },
+            },
+            {
+              label: "Later",
+              onClick: () => {
+                try {
+                  localStorage.setItem("orizino_island_push_dismissed", Date.now().toString());
+                } catch {}
+              },
+            },
+          ],
+        });
+      }
+    }, 4000);
+
+    // 2. PWA Install Prompt in Island (after 10s if install prompt is available)
+    const installTimer = setTimeout(() => {
+      try {
+        const lastDismissed = localStorage.getItem("orizino_island_pwa_dismissed");
+        if (lastDismissed && Date.now() - Number(lastDismissed) < 7 * 86400000) return;
+      } catch {}
+
+      const isStandalone =
+        window.matchMedia?.("(display-mode: standalone)")?.matches ||
+        (window.navigator as any)?.standalone === true;
+
+      const def = (window as any).__deferredPWAInstallPrompt;
+      if (def && !isStandalone) {
+        showIsland({
+          id: "island-pwa-prompt",
+          title: "Install Orizino App",
+          message: "Faster browsing & seamless shopping experience.",
+          type: "pwa",
+          source: "notification",
+          duration: 14000,
+          actions: [
+            {
+              label: "Install",
+              primary: true,
+              onClick: async () => {
+                try {
+                  if (def.prompt) {
+                    await def.prompt();
+                    const choice = await def.userChoice;
+                    if (choice?.outcome === "accepted") {
+                      (window as any).__deferredPWAInstallPrompt = null;
+                    }
+                  }
+                } catch {}
+              },
+            },
+            {
+              label: "Dismiss",
+              onClick: () => {
+                try {
+                  localStorage.setItem("orizino_island_pwa_dismissed", Date.now().toString());
+                } catch {}
+              },
+            },
+          ],
+        });
+      }
+    }, 10000);
+
+    return () => {
+      clearTimeout(pushTimer);
+      clearTimeout(installTimer);
+    };
+  }, [user?.id, adminMode]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

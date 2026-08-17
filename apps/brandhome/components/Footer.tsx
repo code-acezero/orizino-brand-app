@@ -9,6 +9,7 @@ import { toast } from "@/lib/app-toast";
 import CurrencyMenu from "@/components/footer/CurrencyMenu";
 import LanguageMenu from "@/components/footer/LanguageMenu";
 import ThemeToggle from "@/components/footer/ThemeToggle";
+import { useLanguage, getLocalizedBrandName, getLocalizedBrandSuffix } from "@/contexts/LanguageContext";
 import { storefrontHref } from "@/lib/cross-app-urls";
 
 type FooterStyle = "minimal" | "expanded" | "editorial";
@@ -50,6 +51,7 @@ interface FooterProps {
 }
 
 const Footer: React.FC<FooterProps> = ({ variantOverride }) => {
+  const { language } = useLanguage();
   const year = new Date().getFullYear();
 
   const { data: siteSettings, isLoading: isLoadingSettings } = useQuery({
@@ -78,10 +80,12 @@ const Footer: React.FC<FooterProps> = ({ variantOverride }) => {
   const cfg = { ...merged, footer_style: styleId };
 
   const rawName = siteSettings?.site_name;
-  const siteName = String(typeof rawName === "object" && rawName !== null ? (rawName as any).value ?? "" : rawName ?? "");
+  const rawSiteName = String(typeof rawName === "object" && rawName !== null ? (rawName as any).value ?? "" : rawName ?? "ORIZINO");
+  const siteName = getLocalizedBrandName(rawSiteName, language);
   const tagline = String(siteSettings?.site_description || "");
   const logoUrl = (siteSettings?.logo_url as string) || (siteSettings?.site_icon_url as string) || "/orizino-logo.svg";
-  const brandSuffix = String(siteSettings?.brand_suffix || "").trim();
+  const rawSuffix = String(siteSettings?.brand_suffix || "").trim();
+  const brandSuffix = getLocalizedBrandSuffix(rawSuffix, language);
   const brandPrefix = String(siteSettings?.brand_prefix || "").trim();
 
   const titleSource = (siteSettings?.title_source as string) || "text";
@@ -233,7 +237,13 @@ const Footer: React.FC<FooterProps> = ({ variantOverride }) => {
                       <span className="text-foreground/80 ml-1 text-[10px] font-medium tracking-tight align-baseline lowercase" style={{ fontFamily: titleFont ? `'${titleFont}', var(--font-title, var(--font-display))` : 'var(--font-title, var(--font-display))' }}>{brandPrefix}</span>
                     )}
                     {brandSuffix && (
-                      <span className="text-foreground/80 ml-1 text-[10px] font-medium tracking-tight align-baseline" style={{ fontFamily: titleFont ? `'${titleFont}', var(--font-title, var(--font-display))` : 'var(--font-title, var(--font-display))' }}>{brandSuffix}</span>
+                      <span
+                        translate="no"
+                        className="brand-suffix notranslate skiptranslate text-foreground/80 ml-1 text-[10px] font-medium tracking-tight align-baseline"
+                        style={{ fontFamily: titleFont ? `'${titleFont}', var(--font-title, var(--font-display))` : 'var(--font-title, var(--font-display))' }}
+                      >
+                        {brandSuffix}
+                      </span>
                     )}
                   </h2>
                 )}
@@ -320,7 +330,11 @@ const Footer: React.FC<FooterProps> = ({ variantOverride }) => {
                         </span>
                       )}
                       {brandSuffix && (
-                        <span className="text-foreground/80 ml-1.5 font-medium tracking-tight align-baseline" style={{ fontSize: "clamp(11px, 0.9vw, 14px)", fontFamily: titleFont ? `'${titleFont}', var(--font-title, var(--font-display))` : 'var(--font-title, var(--font-display))' }}>
+                        <span
+                          translate="no"
+                          className="brand-suffix notranslate skiptranslate text-foreground/80 ml-1.5 font-medium tracking-tight align-baseline"
+                          style={{ fontSize: "clamp(11px, 0.9vw, 14px)", fontFamily: titleFont ? `'${titleFont}', var(--font-title, var(--font-display))` : 'var(--font-title, var(--font-display))' }}
+                        >
                           {brandSuffix}
                         </span>
                       )}

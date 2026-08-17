@@ -635,6 +635,23 @@ export function BarcodeScanner({ onScan, active, onToggle, hidWedge = true, over
 
             {/* In-viewfinder quick control buttons */}
             <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-10">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSound(!sound);
+                }}
+                aria-label={sound ? "Mute scanner sound" : "Unmute scanner sound"}
+                title={sound ? "Mute scan sound" : "Unmute scan sound"}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors backdrop-blur-md cursor-pointer ${
+                  sound
+                    ? "bg-black/60 text-amber-400 hover:bg-black/80 border border-white/10"
+                    : "bg-black/60 text-white/40 hover:text-white border border-white/10"
+                }`}
+              >
+                {sound ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+              </button>
+
               {zoomSupported && (
                 <button
                   type="button"

@@ -27,6 +27,7 @@ export * from "./components/ui/alert-dialog";
 export * from "./components/ui/popover";
 export * from "./components/ui/form";
 export * from "./components/ui/table";
+export * from "./components/ui/theme-provider";
 
 // Mobile primitives
 export * from "./components/mobile/index";
@@ -36,3 +37,6 @@ export * from "./components/skeletons/index";
 
 // Payment & MFS Logos
 export * from "./components/PaymentLogos";
+
+// Icons
+export * from "./components/Sparkle";

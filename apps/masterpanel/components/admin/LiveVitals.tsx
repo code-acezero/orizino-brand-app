@@ -9,6 +9,7 @@ import {
   Radio, ShoppingCart, ShieldCheck, Headphones, ArrowUpRight,
   AlertTriangle, Activity,
 } from "lucide-react";
+import { calculateOrderFinancials } from "@orizino/shared";
 
 function todayISO() {
   const d = new Date();
@@ -92,11 +93,11 @@ export default function LiveVitals() {
     queryKey: ["vitals", "orders-today"],
     queryFn: async () => {
       const { data, count } = await supabase
-        .from("orders")
-        .select("total", { count: "exact" })
+        .from("orders" as any)
+        .select("id, total, subtotal, shipping_fee, coupon_discount, loyalty_discount, status, payment_method, is_delivery_prepaid", { count: "exact" })
         .gte("created_at", todayISO());
-      const revenue = (data ?? []).reduce((sum: number, r: any) => sum + Number(r.total ?? 0), 0);
-      return { count: count ?? 0, revenue };
+      const financials = calculateOrderFinancials((data ?? []) as any[]);
+      return { count: count ?? 0, revenue: financials.recognizedRevenue };
     },
     refetchInterval: 60_000,
   });
@@ -163,40 +164,40 @@ export default function LiveVitals() {
     };
   }, [qc]);
 
-  const currency = (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+  const formatCurrency = (n: number) =>
+    "৳" + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
 
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
-        <Activity className="w-4 h-4 text-primary" />
-        <p className="text-xs font-semibold tracking-[0.02em] text-muted-foreground">Live Vitals</p>
+        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <p className="text-xs font-semibold tracking-[0.02em] text-foreground/80">Realtime Operational Vitals</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <VitalCard
-          title="Visitors"
+          title="Visitors Online"
           value={visitors ?? 0}
-          sub={`${activeSessions} active session${activeSessions === 1 ? "" : "s"} · last 5 min`}
+          sub={`${activeSessions} active session${activeSessions === 1 ? "" : "s"} · last 5m`}
           icon={Radio}
           color="#38bdf8"
-          href="/sales/customer-analytics"
+          href="/sales/live-activity"
         />
         <VitalCard
-          title="Orders today"
+          title="Today's Orders"
           value={ordersToday?.count ?? 0}
-          sub={`Revenue ${currency(ordersToday?.revenue ?? 0)}`}
+          sub={`Today's Rev: ${formatCurrency(ordersToday?.revenue ?? 0)}`}
           icon={ShoppingCart}
           color="#f59e0b"
           href="/sales/orders"
         />
         <VitalCard
-          title="System health"
-          value={health?.errorCount ? `${health.errorCount} err` : "OK"}
+          title="System Health"
+          value={health?.errorCount ? `${health.errorCount} Alerts` : "All OK"}
           sub={
             health?.summary
-              ? `${health.summary.cron_jobs_active ?? 0} cron · ${health.summary.recent_alerts_24h ?? 0} alerts 24h`
-              : "Loading…"
+              ? `${health.summary.cron_jobs_active ?? 0} crons · ${health.summary.recent_alerts_24h ?? 0} alerts 24h`
+              : "Telemetry synced"
           }
           icon={ShieldCheck}
           color={health?.errorCount ? "#ef4444" : "#10b981"}
@@ -204,12 +205,12 @@ export default function LiveVitals() {
           href="/system/db-health"
         />
         <VitalCard
-          title="Live support"
+          title="Live Support"
           value={(support?.openConversations ?? 0) + (support?.activeCalls ?? 0)}
-          sub={`${support?.openConversations ?? 0} open chat · ${support?.activeCalls ?? 0} on call`}
+          sub={`${support?.openConversations ?? 0} open chats · ${support?.activeCalls ?? 0} calls`}
           icon={Headphones}
           color="#a855f7"
-          href="/sales/support"
+          href="/sales/customers-hub"
         />
       </div>
     </div>

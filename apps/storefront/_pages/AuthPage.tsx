@@ -183,10 +183,11 @@ const AuthPage: React.FC = () => {
         return;
       }
       if (subscribeEmails) {
-        supabase
-          .from("email_subscriptions")
-          .insert({ email, name: fullName, source: "signup", is_active: true })
-          .then(() => {});
+        fetch("/api/public/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, name: fullName, source: "signup" }),
+        }).catch(() => {});
       }
       toast({ title: "Welcome to ORIZINO! 🎉", description: "Your account is active." });
       persistRemember();

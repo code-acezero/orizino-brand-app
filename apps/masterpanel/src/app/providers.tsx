@@ -11,6 +11,8 @@ import TrackingPixels from "@/components/TrackingPixels";
 import { useDynamicFavicon } from "@/hooks/use-dynamic-favicon";
 import { Toaster } from "@/components/ui/toaster";
 
+const InstallAppPrompt = React.lazy(() => import("@/components/InstallAppPrompt"));
+
 // ─── matchMedia polyfill ────────────────────────────────────────────────────
 // Some @orizino/shared hooks call window.matchMedia(...).addListener(fn) during
 // module initialisation or at the top of a render, before useEffect guards run.
@@ -74,6 +76,30 @@ function AppContent() {
   return null;
 }
 
+function DeferredWidgets() {
+  const [ready, setReady] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ric: any = (window as any).requestIdleCallback;
+    let id: any, t: any;
+    if (typeof ric === "function") {
+      id = ric(() => setReady(true), { timeout: 3000 });
+    } else {
+      t = setTimeout(() => setReady(true), 2000);
+    }
+    return () => {
+      if (id && (window as any).cancelIdleCallback) (window as any).cancelIdleCallback(id);
+      if (t) clearTimeout(t);
+    };
+  }, []);
+  if (!ready) return null;
+  return (
+    <React.Suspense fallback={null}>
+      <InstallAppPrompt />
+    </React.Suspense>
+  );
+}
+
 export default function Providers({ children }: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
   return (
@@ -85,6 +111,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
               <SiteThemeProvider />
               <TrackingPixels />
               <AppContent />
+              <DeferredWidgets />
               {children}
               <Toaster />
             </CurrencyProvider>

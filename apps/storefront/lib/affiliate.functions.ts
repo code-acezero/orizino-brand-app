@@ -7,14 +7,35 @@ import { hashIp, parseUA } from "./affiliate.server";
 
 // ============ PUBLIC ============
 
+const DEFAULT_AFFILIATE_SETTINGS = {
+  enabled: true,
+  status_message: "Affiliate program is currently active",
+  program_name: "Orizino Partner Program",
+  program_description: "Earn commission by referring customers to our brand.",
+  commission_rate: 10,
+  min_payout: 50,
+  cookie_days: 30,
+  auto_approve: false,
+  terms_md: "# Affiliate Terms & Conditions\n\nWelcome to our partner program. By participating, you agree to earn standard referral commissions on qualified sales.",
+  referral_bonus: 0,
+  holding_period_days: 14,
+  allow_self_referral: false,
+  attribution_model: "last_click",
+  payout_methods: ["bkash", "nagad", "bank_transfer"],
+  display_style: "console",
+};
+
 export const getAffiliateSettings = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await supabaseAdmin
     .from("affiliate_settings")
     .select("*")
     .limit(1)
     .maybeSingle();
-  if (error) throw new Error(error.message);
-  return data;
+  if (error) {
+    console.error("Error fetching affiliate_settings:", error);
+    return DEFAULT_AFFILIATE_SETTINGS;
+  }
+  return data ?? DEFAULT_AFFILIATE_SETTINGS;
 });
 
 export const trackAffiliateClick = createServerFn({ method: "POST" })
@@ -636,4 +657,190 @@ export const adminAdjustCommission = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const attributeOrderCommission = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({
+    order_id: z.string().uuid(),
+    order_number: z.string().optional(),
+    ref_code: z.string().min(1).max(64),
+    order_subtotal: z.number().nonnegative(),
+    customer_id: z.string().uuid().nullable().optional(),
+    items: z.array(z.object({
+      product_id: z.string().uuid().optional(),
+      category_id: z.string().uuid().optional(),
+      price: z.number().nonnegative(),
+      quantity: z.number().int().positive().default(1),
+    })).optional(),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const { data: affiliate } = await supabaseAdmin
+      .from("affiliate_accounts")
+      .select("id, user_id, code, status, custom_rate, tier, available_balance, pending_balance, total_orders, total_earnings")
+      .eq("code", data.ref_code)
+      .eq("status", "approved")
+      .maybeSingle();
+
+    if (!affiliate) return { ok: false, reason: "affiliate_not_found" };
+    if (data.customer_id && affiliate.user_id === data.customer_id) {
+      return { ok: false, reason: "self_referral_prevented" };
+    }
+
+    const { data: existing } = await supabaseAdmin
+      .from("affiliate_commissions")
+      .select("id")
+      .eq("order_id", data.order_id)
+      .maybeSingle();
+
+    if (existing) return { ok: false, reason: "already_attributed" };
+
+    const { data: settings } = await supabaseAdmin
+      .from("affiliate_settings")
+      .select("commission_rate, enabled")
+      .limit(1)
+      .maybeSingle();
+
+    if (!settings?.enabled) return { ok: false, reason: "program_disabled" };
+
+    const baseRate = Number(affiliate.custom_rate ?? settings.commission_rate ?? 10);
+    let totalCommission = 0;
+
+    if (data.items && data.items.length > 0) {
+      for (const item of data.items) {
+        let itemRate = baseRate;
+        if (item.product_id) {
+          const { data: prodRate } = await supabaseAdmin
+            .from("affiliate_products")
+            .select("override_rate, is_active")
+            .eq("product_id", item.product_id)
+            .eq("is_active", true)
+            .maybeSingle();
+          if (prodRate?.override_rate != null) itemRate = Number(prodRate.override_rate);
+        }
+        if (itemRate === baseRate && item.category_id) {
+          const { data: catRate } = await supabaseAdmin
+            .from("affiliate_category_rates")
+            .select("rate, is_active")
+            .eq("category_id", item.category_id)
+            .eq("is_active", true)
+            .maybeSingle();
+          if (catRate?.rate != null) itemRate = Number(catRate.rate);
+        }
+        const itemSubtotal = item.price * item.quantity;
+        totalCommission += (itemSubtotal * itemRate) / 100;
+      }
+    } else {
+      totalCommission = (data.order_subtotal * baseRate) / 100;
+    }
+
+    totalCommission = Math.round(totalCommission * 100) / 100;
+
+    const { data: commissionRow, error: commErr } = await supabaseAdmin
+      .from("affiliate_commissions")
+      .insert({
+        affiliate_id: affiliate.id,
+        order_id: data.order_id,
+        order_amount: data.order_subtotal,
+        commission_rate: baseRate,
+        commission_amount: totalCommission,
+        status: "pending",
+        notes: `Attributed from ref ${data.ref_code} for order ${data.order_number || data.order_id}`,
+      })
+      .select()
+      .single();
+
+    if (commErr) throw new Error(commErr.message);
+
+    await supabaseAdmin
+      .from("affiliate_accounts")
+      .update({
+        pending_balance: Number(affiliate.pending_balance ?? 0) + totalCommission,
+        total_orders: (affiliate.total_orders ?? 0) + 1,
+        total_earnings: Number(affiliate.total_earnings ?? 0) + totalCommission,
+      })
+      .eq("id", affiliate.id);
+
+    return { ok: true, commission_id: commissionRow.id, commission_amount: totalCommission };
+  });
+
+export const releaseOrderCommission = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ order_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data: commission } = await supabaseAdmin
+      .from("affiliate_commissions")
+      .select("id, affiliate_id, commission_amount, status")
+      .eq("order_id", data.order_id)
+      .eq("status", "pending")
+      .maybeSingle();
+
+    if (!commission) return { ok: false, reason: "no_pending_commission" };
+
+    const { data: acct } = await supabaseAdmin
+      .from("affiliate_accounts")
+      .select("id, available_balance, pending_balance")
+      .eq("id", commission.affiliate_id)
+      .single();
+
+    if (!acct) return { ok: false, reason: "account_not_found" };
+
+    const amt = Number(commission.commission_amount);
+
+    await supabaseAdmin.from("affiliate_commissions")
+      .update({ status: "approved" } as any)
+      .eq("id", commission.id);
+
+    await supabaseAdmin.from("affiliate_accounts")
+      .update({
+        available_balance: Number(acct.available_balance ?? 0) + amt,
+        pending_balance: Math.max(0, Number(acct.pending_balance ?? 0) - amt),
+      })
+      .eq("id", acct.id);
+
+    return { ok: true, released_amount: amt };
+  });
+
+export const reverseOrderCommission = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ order_id: z.string().uuid(), reason: z.string().optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data: commission } = await supabaseAdmin
+      .from("affiliate_commissions")
+      .select("id, affiliate_id, commission_amount, status")
+      .eq("order_id", data.order_id)
+      .maybeSingle();
+
+    if (!commission || commission.status === "reversed") return { ok: false };
+
+    const { data: acct } = await supabaseAdmin
+      .from("affiliate_accounts")
+      .select("id, available_balance, pending_balance, total_earnings")
+      .eq("id", commission.affiliate_id)
+      .single();
+
+    if (!acct) return { ok: false };
+
+    const amt = Number(commission.commission_amount);
+
+    if (commission.status === "pending") {
+      await supabaseAdmin.from("affiliate_accounts").update({
+        pending_balance: Math.max(0, Number(acct.pending_balance ?? 0) - amt),
+        total_earnings: Math.max(0, Number(acct.total_earnings ?? 0) - amt),
+      }).eq("id", acct.id);
+    } else if (commission.status === "approved") {
+      await supabaseAdmin.from("affiliate_accounts").update({
+        available_balance: Math.max(0, Number(acct.available_balance ?? 0) - amt),
+        total_earnings: Math.max(0, Number(acct.total_earnings ?? 0) - amt),
+      }).eq("id", acct.id);
+    }
+
+    await supabaseAdmin.from("affiliate_commissions").update({
+      status: "reversed",
+      notes: data.reason || "Order cancelled/refunded",
+    } as any).eq("id", commission.id);
+
+    return { ok: true, reversed_amount: amt };
+  });
+
 

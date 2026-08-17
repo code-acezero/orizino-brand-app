@@ -167,7 +167,7 @@ const RotatedTitleMarquee = ({ title }: { title: string }) => {
   return (
     <div
       ref={containerRef}
-      className="absolute right-1 sm:right-2 top-0 bottom-20 overflow-hidden flex items-start justify-center rotate-180 z-10 pointer-events-auto"
+      className="absolute right-1 sm:right-2 top-0 bottom-20 overflow-hidden flex items-start justify-center z-10 pointer-events-auto"
     >
       <motion.h3
         ref={textRef}
@@ -188,6 +188,10 @@ const RotatedTitleMarquee = ({ title }: { title: string }) => {
             : { type: "spring", stiffness: 300, damping: 30 }
         }
         className="heading-editorial text-2xl sm:text-3xl lg:text-4xl text-foreground font-black tracking-wider uppercase whitespace-nowrap [writing-mode:vertical-rl] group-hover:text-cherry transition-colors duration-300 shrink-0"
+        style={{
+          writingMode: "vertical-rl",
+          textOrientation: "mixed",
+        }}
       >
         {title}
       </motion.h3>
@@ -339,7 +343,13 @@ const BentoCard = ({
           {/* Static Subtitle */}
           {subtitle && (
             <div className="absolute right-9 sm:right-11 top-12 max-h-[calc(100%-140px)] overflow-hidden z-10 pointer-events-auto">
-              <span className="font-mono text-[10px] sm:text-xs font-bold text-foreground/75 uppercase tracking-[0.2em] whitespace-nowrap [writing-mode:vertical-rl] rotate-180 truncate block max-h-full">
+              <span
+                className="font-mono text-[10px] sm:text-xs font-bold text-foreground/75 uppercase tracking-[0.2em] whitespace-nowrap [writing-mode:vertical-rl] truncate block max-h-full"
+                style={{
+                  writingMode: "vertical-rl",
+                  textOrientation: "mixed",
+                }}
+              >
                 {subtitle}
               </span>
             </div>

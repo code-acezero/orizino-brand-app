@@ -81,7 +81,13 @@ export default function AdminProductsManagement() {
       {tab !== "products" && tab !== "categories" && (
         <div className="flex flex-col gap-2">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-bold flex items-center gap-2">
-            <Package className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            {tab === "sticker" ? (
+              <Printer className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            ) : tab === "scanner" ? (
+              <ScanLine className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            ) : (
+              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            )}
             {meta.title}
           </h1>
           <p className="text-sm text-muted-foreground">{meta.desc}</p>
@@ -316,7 +322,7 @@ function StockAndSerialsTab() {
           <div className="flex items-center justify-between">
             <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Tracked</span>
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <Boxes className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
           <div className="mt-1.5 sm:mt-2">

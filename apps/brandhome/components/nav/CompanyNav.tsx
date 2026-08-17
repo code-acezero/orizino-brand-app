@@ -64,7 +64,8 @@ export function CompanyNav({ variant }: CompanyNavProps) {
         .in("key", [
           "logo_url", "site_icon_url", "site_name",
           "title_source", "title_image_url", "logo_display_style",
-          "title_font", "brand_prefix", "brand_suffix"
+          "title_font", "brand_prefix", "brand_suffix",
+          "brand_title_size_nav", "brand_logo_title_ratio"
         ]);
       const m: Record<string, any> = {};
       data?.forEach((s) => {
@@ -80,6 +81,8 @@ export function CompanyNav({ variant }: CompanyNavProps) {
         titleFont: m.title_font || "",
         brandPrefix: m.brand_prefix || "",
         brandSuffix: m.brand_suffix || "",
+        brandTitleSizeNav: Number(m.brand_title_size_nav) || 20,
+        brandLogoTitleRatio: Number(m.brand_logo_title_ratio) || 1.0,
       };
     },
   });
@@ -142,23 +145,41 @@ export function CompanyNav({ variant }: CompanyNavProps) {
 
         {/* Middle: Centered Logo & Brand Title (No Suffix) */}
         <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex items-center justify-center z-10">
-          <a href="/" className="flex items-center gap-2 group" aria-label={`${brand?.name || "Orizino"} Home`}>
-            {brand?.titleSource === "image" && brand?.titleImageUrl ? (
-              <img src={brand.titleImageUrl} alt={brand?.name || "Orizino"} className="h-5 sm:h-6 w-auto object-contain shrink-0" />
-            ) : (
-              <h2
-                className="font-bold tracking-[0.16em] leading-none text-foreground transition-opacity hover:opacity-80 text-sm sm:text-base uppercase flex items-center gap-1.5"
+          <a href="/" className="flex items-center gap-2.5 group" aria-label={`${brand?.name || "Orizino"} Home`}>
+            {brand?.logo && (brand.displayStyle === "logo" || brand.displayStyle === "both") && (
+              <img
+                src={brand.logo}
+                alt={brand?.name || "Orizino"}
+                className="w-auto object-contain shrink-0 transition-transform duration-300 group-hover:scale-105"
                 style={{
-                  fontFamily: brand?.titleFont
-                    ? `'${brand.titleFont}', var(--font-title, var(--font-display))`
-                    : 'var(--font-title, var(--font-display))'
+                  height: `${Math.round(((brand.brandTitleSizeNav || 20) * 1.35) * (brand.brandLogoTitleRatio || 1.0))}px`,
+                  maxHeight: "44px",
+                  minHeight: "20px",
                 }}
-              >
+              />
+            )}
+            {brand?.titleSource === "image" && brand?.titleImageUrl ? (
+              <img
+                src={brand.titleImageUrl}
+                alt={brand?.name || "Orizino"}
+                className="w-auto object-contain shrink-0 transition-transform duration-300 group-hover:scale-105"
+                style={{
+                  height: `${Math.round(((brand.brandTitleSizeNav || 20) * 1.35) * (brand.brandLogoTitleRatio || 1.0))}px`,
+                  maxHeight: "44px",
+                  minHeight: "20px",
+                }}
+              />
+            ) : (
+              <div className="flex items-baseline gap-1">
                 {brand?.brandPrefix && (
-                  <span className="opacity-80 font-medium lowercase tracking-tight" style={{ fontFamily: brand?.titleFont ? `'${brand.titleFont}', var(--font-title, var(--font-display))` : 'var(--font-title, var(--font-display))' }}>{brand.brandPrefix}</span>
+                  <span className="opacity-80 font-medium lowercase tracking-tight text-xs">{brand.brandPrefix}</span>
                 )}
-                {brand?.name || "Orizino"}
-              </h2>
+                <BrandTitle
+                  className="font-bold tracking-[0.16em] leading-none text-foreground transition-opacity group-hover:opacity-80 uppercase select-none"
+                  fontSize={brand?.brandTitleSizeNav || 20}
+                  fallback="Orizino"
+                />
+              </div>
             )}
           </a>
         </div>

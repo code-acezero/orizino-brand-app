@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ZoomIn, Maximize2, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { ZoomIn, Maximize2, ChevronLeft, ChevronRight } from "lucide-react";
 import ProductLightboxModal from "@/components/product/ProductLightboxModal";
 
 interface ImmersiveZoomGalleryProps {
@@ -93,7 +93,7 @@ export default function ImmersiveZoomGallery({
         {/* Header Badges */}
         <div className="absolute top-3 left-3 flex items-center gap-2 z-10">
           <span className="text-[9px] font-mono px-3 py-1 rounded-full bg-black/70 text-white backdrop-blur-md uppercase tracking-wider border border-white/15 flex items-center gap-1.5">
-            <Sparkles className="w-3 h-3 text-primary" /> Macro Lens 2.5x
+            <ZoomIn className="w-3 h-3 text-primary" /> Macro Lens 2.5x
           </span>
           {discount > 0 && (
             <span className="text-[9px] font-mono px-2.5 py-1 rounded-full bg-rose-500 text-white font-bold">
