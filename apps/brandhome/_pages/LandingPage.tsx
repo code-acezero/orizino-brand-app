@@ -12,6 +12,7 @@ import BrandStoryBlock from "@/components/landing/BrandStoryBlock";
 import Footer from "@/components/Footer";
 import { CompanyNav } from "@/components/nav/CompanyNav";
 import { shopHref, storefrontHref, getShopLabel } from "@/lib/cross-app-urls";
+import { BrandTitle, loadGoogleFont } from "@orizino/shared";
 
 const FALLBACK_STATS = [
   { value: "10K+", label: "HAPPY CUSTOMERS" },
@@ -70,6 +71,12 @@ const LandingPage: React.FC = () => {
 
   const showLogo = displayStyle !== "title" && displayStyle !== "none";
   const showTitle = displayStyle !== "logo" && displayStyle !== "none" && Boolean(siteName);
+
+  React.useEffect(() => {
+    if (titleFont) {
+      loadGoogleFont(titleFont);
+    }
+  }, [titleFont]);
 
   const [liveDraft, setLiveDraft] = React.useState<Record<string, any> | null>(null);
 
@@ -193,37 +200,15 @@ const LandingPage: React.FC = () => {
               transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
             >
               {titleSource === "image" && titleImageUrl ? (
-                <img src={titleImageUrl} alt={siteName} className="h-10 sm:h-16 lg:h-20 w-auto object-contain animate-slow-draw-short-cooldown" />
+                <img src={titleImageUrl} alt={siteName} className="h-10 sm:h-16 lg:h-20 w-auto object-contain" />
               ) : (
-                <svg viewBox="0 0 1000 130" className="w-full max-w-3xl h-auto mx-auto overflow-visible select-none my-2">
-                  <defs>
-                    <linearGradient id="monochromeStrokeShimmer" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.1" />
-                      <stop offset="35%" stopColor="hsl(var(--foreground))" stopOpacity="0.85" />
-                      <stop offset="50%" stopColor="var(--theme-shine)" stopOpacity="1" />
-                      <stop offset="65%" stopColor="hsl(var(--foreground))" stopOpacity="0.85" />
-                      <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.1" />
-                    </linearGradient>
-                  </defs>
-                  {/* Animated Stroke Layer */}
-                  <text
-                    x="50%"
-                    y="50%"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                    className="font-editorial text-[64px] sm:text-[76px] lg:text-[84px] fill-none animate-slow-draw-short-cooldown"
-                    style={{
-                      stroke: "url(#monochromeStrokeShimmer)",
-                      strokeWidth: "2px",
-                      letterSpacing: "0.05em",
-                      fontFamily: titleFont ? `'${titleFont}', var(--font-title, var(--font-display))` : 'var(--font-title, var(--font-display))'
-                    }}
-                  >
-                    {siteName}
-                  </text>
-                </svg>
+                <div className="flex items-center justify-center text-center my-2">
+                  <BrandTitle
+                    className="brand-name uppercase text-foreground font-bold tracking-[0.14em] leading-none select-none drop-shadow-sm transition-transform duration-300 hover:scale-[1.01]"
+                    fontSize="clamp(2.4rem, 6.5vw, 5.2rem)"
+                    fallback="ORIZINO"
+                  />
+                </div>
               )}
             </motion.div>
           )}

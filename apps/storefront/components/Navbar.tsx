@@ -184,8 +184,8 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
     if (titleFont) loadGoogleFont(titleFont);
   }, [titleFont]);
 
-  const showLogo = (displayStyle === "logo" || displayStyle === "both") && Boolean(logoUrl);
-  const showTitle = displayStyle === "title" || displayStyle === "both" || Boolean(siteName);
+  const showLogo = displayStyle !== "title" && displayStyle !== "none";
+  const showTitle = displayStyle !== "logo" && displayStyle !== "none";
 
   const { data: categories = [], isLoading: isCategoriesLoading } = useQuery({
     queryKey: ["nav-categories"],

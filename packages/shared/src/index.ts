@@ -1,5 +1,6 @@
 // Contexts
 export * from "./hooks/use-online-status";
+export * from "./hooks/use-pwa";
 export * from "./components/OfflinePage";
 export * from "./components/SnakeGame";
 export * from "./contexts/AuthContext";
