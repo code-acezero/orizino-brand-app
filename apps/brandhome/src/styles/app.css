@@ -67,71 +67,84 @@
   @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
   @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
   @keyframes pulse_glow { 0%, 100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.2); } 50% { box-shadow: 0 0 40px hsl(var(--primary) / 0.4); } }
+}
 
-  @keyframes slowDrawShortCooldown {
-    0% {
-      stroke-dasharray: 1200 1200;
-      stroke-dashoffset: 1200;
-      stroke-width: 2px;
-    }
-    48% {
-      stroke-dasharray: 1200 1200;
-      stroke-dashoffset: 0;
-      stroke-width: 2px;
-    }
-    52% {
-      stroke-dasharray: 1200 1200;
-      stroke-dashoffset: 0;
-      stroke-width: 2px;
-    }
-    100% {
-      stroke-dasharray: 1200 1200;
-      stroke-dashoffset: -1200;
-      stroke-width: 2px;
-    }
+/* ─────────────────────────────────────────────────────────────
+   PERFECT LOOP STROKE DRAW & FILL ANIMATIONS
+───────────────────────────────────────────────────────────── */
+
+@keyframes logoSlowStrokeFill {
+  0% {
+    stroke: url(#logoMetallicGrad);
+    stroke-width: 3.5px;
+    stroke-dasharray: 1200;
+    stroke-dashoffset: 1200;
+    fill-opacity: 0;
   }
+  38% {
+    stroke: url(#logoMetallicGrad);
+    stroke-width: 2px;
+    stroke-dashoffset: 0;
+    fill-opacity: 0.4;
+  }
+  55% {
+    stroke: url(#logoMetallicGrad);
+    stroke-width: 0px;
+    stroke-dashoffset: 0;
+    fill-opacity: 1;
+  }
+  85% {
+    stroke: url(#logoMetallicGrad);
+    stroke-width: 0px;
+    stroke-dashoffset: 0;
+    fill-opacity: 1;
+  }
+  100% {
+    stroke: url(#logoMetallicGrad);
+    stroke-width: 3.5px;
+    stroke-dasharray: 1200;
+    stroke-dashoffset: 1200;
+    fill-opacity: 0;
+  }
+}
 
-  @keyframes logoSlowStrokeFill {
-    0% {
-      stroke: url(#logoMetallicGrad);
-      stroke-width: 3px;
-      stroke-dasharray: 1200;
-      stroke-dashoffset: 1200;
-      fill-opacity: 0;
-    }
-    45% {
-      stroke: url(#logoMetallicGrad);
-      stroke-width: 2px;
-      stroke-dashoffset: 0;
-      fill-opacity: 0.4;
-    }
-    70% {
-      stroke: url(#logoMetallicGrad);
-      stroke-width: 0px;
-      stroke-dashoffset: 0;
-      fill-opacity: 1;
-    }
-    85% {
-      stroke: url(#logoMetallicGrad);
-      stroke-width: 0px;
-      stroke-dashoffset: 0;
-      fill-opacity: 1;
-    }
-    100% {
-      stroke: url(#logoMetallicGrad);
-      stroke-width: 3px;
-      stroke-dasharray: 1200;
-      stroke-dashoffset: 1200;
-      fill-opacity: 0;
-    }
+@keyframes slowDrawShortCooldown {
+  0% {
+    stroke-dasharray: 1200 1200;
+    stroke-dashoffset: 1200;
+    stroke-width: 2.5px;
+    fill-opacity: 0;
+  }
+  38% {
+    stroke-dasharray: 1200 1200;
+    stroke-dashoffset: 0;
+    stroke-width: 2px;
+    fill-opacity: 0.35;
+  }
+  55% {
+    stroke-dashoffset: 0;
+    stroke-width: 0px;
+    fill-opacity: 1;
+  }
+  85% {
+    stroke-dashoffset: 0;
+    stroke-width: 0px;
+    fill-opacity: 1;
+  }
+  100% {
+    stroke-dasharray: 1200 1200;
+    stroke-dashoffset: 1200;
+    stroke-width: 2.5px;
+    fill-opacity: 0;
   }
 }
 
 .animate-slow-draw-short-cooldown {
-  animation: slowDrawShortCooldown 10s ease-in-out infinite;
+  animation: slowDrawShortCooldown 6.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .animate-logo-stroke-fill {
+  stroke: url(#logoMetallicGrad);
   animation: logoSlowStrokeFill 6.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
