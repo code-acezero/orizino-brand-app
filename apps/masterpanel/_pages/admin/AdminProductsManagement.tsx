@@ -2175,13 +2175,16 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
   const qc = useQueryClient();
   const { data: activeSettings, refetch: refetchSettings } = useQuery({ queryKey: ["sticker-settings"], queryFn: () => settingsFn() });
   const { data: presets = [], refetch: refetchPresets } = useQuery<any[]>({ queryKey: ["sticker-presets", "product_serial"], queryFn: () => listPresetsFn({ data: { kind: "product_serial" } }) });
-  const { data: rows = [] } = useQuery({
+  // Fetch full rows including print_count and last_printed_at for smart filtering
+  const { data: allRows = [] } = useQuery({
     queryKey: ["print-serials", codes],
     queryFn: async () =>
       (await (supabase.from as any)("product_serials")
-        .select("serial_code, products(name, sku, price, compare_at_price, sticker_preset_id), product_variants(size, color, sku)")
+        .select("serial_code, print_count, last_printed_at, products(name, sku, price, compare_at_price, sticker_preset_id), product_variants(size, color, sku)")
         .in("serial_code", codes)).data ?? [],
   });
+  // Keep 'rows' as alias for backward compat with the rest of this function
+  const rows = allRows;
 
   const { data: brandLogoUrl } = useQuery({
     queryKey: ["site-logo-url"],
@@ -2196,9 +2199,40 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
   const [exporting, setExporting] = useState<"pdf" | "jpg" | null>(null);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
-
-  // Default to 1 column for POS roll printer
   const [columns, setColumns] = useState(1);
+
+  // ── Filter & selection state ───────────────────────────────────────────────
+  type FilterMode = "unprinted" | "never" | "most" | "all" | "manual";
+  const [filterMode, setFilterMode] = useState<FilterMode>("never");
+  const [quantity, setQuantity] = useState<number | "">(codes.length);
+  const [manualSelected, setManualSelected] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (allRows.length > 0 && (quantity === "" || quantity === codes.length)) {
+      const neverCount = allRows.filter((r: any) => !r.last_printed_at && (r.print_count ?? 0) === 0).length;
+      setQuantity(neverCount > 0 ? neverCount : allRows.length);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allRows.length]);
+
+  const neverPrintedCount = useMemo(() => allRows.filter((r: any) => !r.last_printed_at && (r.print_count ?? 0) === 0).length, [allRows]);
+  const printedOnceCount = useMemo(() => allRows.filter((r: any) => (r.print_count ?? 0) > 0).length, [allRows]);
+
+  // ── Filtered rows based on mode + quantity cap ─────────────────────────────
+  const filteredRows = useMemo(() => {
+    let sorted = [...allRows] as any[];
+    if (filterMode === "never") {
+      sorted = sorted.filter(r => !r.last_printed_at && (r.print_count ?? 0) === 0);
+    } else if (filterMode === "unprinted") {
+      sorted = sorted.sort((a, b) => (a.print_count ?? 0) - (b.print_count ?? 0));
+    } else if (filterMode === "most") {
+      sorted = sorted.sort((a, b) => (b.print_count ?? 0) - (a.print_count ?? 0));
+    } else if (filterMode === "manual") {
+      sorted = sorted.filter(r => manualSelected.has(r.serial_code));
+    }
+    const qty = typeof quantity === "number" && quantity > 0 ? quantity : sorted.length;
+    return sorted.slice(0, qty);
+  }, [allRows, filterMode, quantity, manualSelected]);
 
   const presetsById = useMemo(() => {
     const m = new Map<string, any>();
@@ -2223,7 +2257,7 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
   }
 
   const stickerItems = useMemo<StickerData[]>(() => {
-    return rows.map((r: any) => {
+    return filteredRows.map((r: any) => {
       const variantLabel = [r.product_variants?.color, r.product_variants?.size].filter(Boolean).join(" · ");
       return {
         serialCode: r.serial_code,
@@ -2236,12 +2270,15 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
         config: configFor(r),
       };
     });
-  }, [rows, selectedPresetId, presetsById, activePreset, brandLogoUrl]);
+  }, [filteredRows, selectedPresetId, presetsById, activePreset, brandLogoUrl]);
+
+  const printedCodes = filteredRows.map((r: any) => r.serial_code);
 
   async function markPrinted() {
     try {
-      await markPrintedFn({ data: { codes } });
+      await markPrintedFn({ data: { codes: printedCodes } });
       qc.invalidateQueries({ queryKey: ["serials"] });
+      qc.invalidateQueries({ queryKey: ["print-serials"] });
     } catch { /* best-effort — never block the export on this */ }
   }
 
@@ -2252,7 +2289,7 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
       const blob = await stickersToPdfBlob(stickerItems);
       downloadBlob(blob, `stickers-${new Date().toISOString().slice(0, 10)}.pdf`);
       await markPrinted();
-      toast({ title: "Stickers PDF exported (Vector 300 DPI)" });
+      toast({ title: `${stickerItems.length} Stickers PDF exported (Vector 300 DPI)` });
     } catch (e: any) {
       toast({ title: "PDF export failed", description: e.message, variant: "destructive" });
     } finally {
@@ -2280,18 +2317,30 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
     window.print();
   }
 
+  // Filter mode options
+  const filterOptions: { value: FilterMode; label: string; icon: string; desc: string }[] = [
+    { value: "never", label: "Never Printed", icon: "✨", desc: `Only serials with 0 prints (${neverPrintedCount})` },
+    { value: "unprinted", label: "Least Printed", icon: "📋", desc: "Lowest print count first" },
+    { value: "most", label: "Most Printed", icon: "🔁", desc: "Highest print count first" },
+    { value: "all", label: "All Stock", icon: "📦", desc: "All serials in order" },
+    { value: "manual", label: "Manual Pick", icon: "☑️", desc: "Select specific ones" },
+  ];
+
   return (
     <>
       <Dialog open onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pb-2 border-b border-border/50">
+        <DialogContent className="sm:max-w-3xl max-h-[95vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pb-2 border-b border-border/50 shrink-0">
             <div className="pr-6 sm:pr-0">
               <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
                 <Printer className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                Print Stickers ({rows.length})
+                Print Stickers
+                <Badge variant="secondary" className="text-[11px] font-mono">{filteredRows.length}/{allRows.length}</Badge>
               </DialogTitle>
-              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
-                Single-column continuous roll (POS ready) or multi-column label sheets.
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2">
+                Single-column roll (POS) or multi-column sheet.
+                <span className="text-emerald-500 font-medium">✨ {neverPrintedCount} never printed</span>
+                {printedOnceCount > 0 && <span className="text-amber-500 font-medium">· 🔁 {printedOnceCount} already printed</span>}
               </p>
             </div>
             <Button
@@ -2305,132 +2354,191 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
             </Button>
           </DialogHeader>
 
-          {/* Controls Bar: Layout selector + Preset selector */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 text-sm bg-muted/40 p-2.5 rounded-lg border border-border/50">
-            {/* Columns selector */}
-            <div className="flex items-center justify-between sm:justify-start gap-2">
-              <Label className="text-xs font-semibold text-foreground shrink-0">Layout:</Label>
-              <div className="grid grid-cols-4 sm:inline-flex rounded-md border border-input p-0.5 bg-background text-[11px] sm:text-xs">
+          {/* ── Smart Filter + Controls Bar ─────────────────────────────── */}
+          <div className="space-y-2 shrink-0">
+            {/* Filter mode tabs */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest shrink-0 mr-1">Filter:</span>
+              {filterOptions.map(opt => (
                 <button
+                  key={opt.value}
                   type="button"
-                  onClick={() => setColumns(1)}
-                  className={`px-2 py-1 rounded transition-colors font-medium flex items-center justify-center gap-1 ${
-                    columns === 1 ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                  title={opt.desc}
+                  onClick={() => setFilterMode(opt.value as FilterMode)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
+                    filterMode === opt.value
+                      ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                      : "bg-background border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
                   }`}
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                  <span className="truncate">1 Col (Roll)</span>
+                  <span>{opt.icon}</span> {opt.label}
+                  {opt.value === "never" && neverPrintedCount > 0 && (
+                    <span className={`text-[9px] font-mono rounded px-1 ${filterMode === "never" ? "bg-primary-foreground/20 text-primary-foreground" : "bg-emerald-500/15 text-emerald-600"}` }>
+                      {neverPrintedCount}
+                    </span>
+                  )}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setColumns(2)}
-                  className={`px-2 py-1 rounded transition-colors text-center ${
-                    columns === 2 ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  2 Col
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setColumns(3)}
-                  className={`px-2 py-1 rounded transition-colors text-center ${
-                    columns === 3 ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  3 Col
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setColumns(4)}
-                  className={`px-2 py-1 rounded transition-colors text-center ${
-                    columns === 4 ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  4 Col
-                </button>
-              </div>
+              ))}
             </div>
 
-            {/* Preset Selector */}
-            {presets.length > 0 && (
-              <div className="flex items-center justify-between sm:justify-end gap-2 text-xs">
-                <Label className="text-muted-foreground shrink-0">Preset:</Label>
-                <Select
-                  value={selectedPresetId ?? presets.find((p: any) => p.is_active)?.id ?? presets[0]?.id ?? ""}
-                  onValueChange={(val) => setSelectedPresetId(val)}
-                >
-                  <SelectTrigger className="h-7 text-xs flex-1 sm:w-[180px] bg-background">
-                    <SelectValue placeholder="Select preset..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {presets.map((p: any) => (
-                      <SelectItem key={p.id} value={p.id} className="text-xs">
-                        {p.name} {p.is_active ? "(Active)" : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Quantity + Layout + Preset row */}
+            <div className="flex flex-wrap items-center gap-2 bg-muted/30 rounded-lg border border-border/50 p-2">
+              <Label className="text-xs font-semibold text-foreground whitespace-nowrap shrink-0">Qty:</Label>
+              <div className="flex items-center gap-1 shrink-0">
+                <button type="button" onClick={() => setQuantity(q => Math.max(1, (typeof q === "number" ? q : allRows.length) - 1))} className="w-6 h-6 rounded border border-border/60 bg-background flex items-center justify-center text-xs text-muted-foreground hover:text-foreground cursor-pointer">−</button>
+                <input
+                  type="number" min={1} max={allRows.length} value={quantity}
+                  onChange={e => { const v = parseInt(e.target.value); setQuantity(isNaN(v) ? "" : Math.min(Math.max(1, v), allRows.length)); }}
+                  className="w-12 h-6 text-center text-xs font-mono rounded border border-border/60 bg-background text-foreground focus:outline-none focus:border-primary"
+                />
+                <button type="button" onClick={() => setQuantity(q => Math.min(allRows.length, (typeof q === "number" ? q : 1) + 1))} className="w-6 h-6 rounded border border-border/60 bg-background flex items-center justify-center text-xs text-muted-foreground hover:text-foreground cursor-pointer">+</button>
+                <button type="button" onClick={() => setQuantity(filterMode === "never" ? neverPrintedCount : allRows.length)} className="text-[10px] text-primary underline underline-offset-2 cursor-pointer ml-1 hover:no-underline whitespace-nowrap">Max</button>
+              </div>
+              <div className="h-4 w-px bg-border/50 shrink-0" />
+              <Label className="text-xs font-semibold text-foreground shrink-0">Layout:</Label>
+              <div className="inline-flex rounded-md border border-input p-0.5 bg-background text-[10px]">
+                {[{ v: 1, l: "1 Col" }, { v: 2, l: "2 Col" }, { v: 3, l: "3 Col" }, { v: 4, l: "4 Col" }].map(({ v, l }) => (
+                  <button key={v} type="button" onClick={() => setColumns(v)} className={`px-2 py-0.5 rounded transition-colors font-medium flex items-center gap-1 cursor-pointer ${ columns === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground" }`}>
+                    {v === 1 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />}{l}
+                  </button>
+                ))}
+              </div>
+              {presets.length > 0 && (
+                <>
+                  <div className="h-4 w-px bg-border/50 shrink-0" />
+                  <Label className="text-[10px] text-muted-foreground shrink-0">Preset:</Label>
+                  <Select value={selectedPresetId ?? presets.find((p: any) => p.is_active)?.id ?? presets[0]?.id ?? ""} onValueChange={(val) => setSelectedPresetId(val)}>
+                    <SelectTrigger className="h-6 text-[10px] w-[140px] bg-background">
+                      <SelectValue placeholder="Preset..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {presets.map((p: any) => <SelectItem key={p.id} value={p.id} className="text-xs">{p.name} {p.is_active ? "(Active)" : ""}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+            </div>
+
+            {/* Manual Picker Panel */}
+            {filterMode === "manual" && (
+              <div className="border border-primary/30 rounded-xl bg-card/60 overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/40 bg-muted/30">
+                  <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <CheckSquare className="w-3.5 h-3.5 text-primary" />
+                    Pick Stickers
+                    <Badge variant="outline" className="text-[9px] font-mono">{manualSelected.size} selected</Badge>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setManualSelected(new Set(allRows.map((r: any) => r.serial_code)))} className="text-[10px] text-primary underline underline-offset-2 cursor-pointer hover:no-underline">All</button>
+                    <span className="text-border">·</span>
+                    <button type="button" onClick={() => setManualSelected(new Set())} className="text-[10px] text-muted-foreground underline underline-offset-2 cursor-pointer hover:no-underline">None</button>
+                  </div>
+                </div>
+                <div className="max-h-[22vh] overflow-y-auto divide-y divide-border/20">
+                  {allRows.map((r: any) => {
+                    const isChecked = manualSelected.has(r.serial_code);
+                    const printCnt = r.print_count ?? 0;
+                    const variantLabel = [r.product_variants?.color, r.product_variants?.size].filter(Boolean).join(" · ");
+                    return (
+                      <button
+                        key={r.serial_code} type="button"
+                        onClick={() => setManualSelected(prev => { const next = new Set(prev); if (next.has(r.serial_code)) next.delete(r.serial_code); else next.add(r.serial_code); return next; })}
+                        className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left transition-colors cursor-pointer ${ isChecked ? "bg-primary/8 hover:bg-primary/12" : "hover:bg-muted/40" }`}
+                      >
+                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${ isChecked ? "bg-primary border-primary" : "border-border" }`}>
+                          {isChecked && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-mono text-foreground truncate">{r.serial_code}</span>
+                            {variantLabel && <span className="text-[9px] text-muted-foreground shrink-0">{variantLabel}</span>}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground truncate block">{r.products?.name}</span>
+                        </div>
+                        <div className="shrink-0">
+                          {printCnt === 0
+                            ? <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20">New</Badge>
+                            : <Badge variant="outline" className={`text-[9px] ${printCnt >= 3 ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}`}>×{printCnt}</Badge>
+                          }
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
 
-          {/* Sticker Preview Container */}
+          {/* Sticker Preview — white background so stickers are visible in dark mode */}
           <div
             ref={sheetRef}
-            className={`print-sheet bg-muted/20 border border-border/60 rounded-xl p-4 max-h-[48vh] sm:max-h-[52vh] overflow-y-auto ${
-              columns === 1
-                ? "flex flex-col items-center gap-3"
-                : "grid gap-2"
+            className={`print-sheet bg-white border border-border/60 rounded-xl p-3 max-h-[35vh] overflow-y-auto shadow-inner ${
+              columns === 1 ? "flex flex-col items-center gap-2" : "grid gap-2"
             }`}
             style={columns > 1 ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}
           >
-            {columns === 1 && (
-              <div className="text-[11px] text-muted-foreground font-mono flex items-center gap-1.5 mb-1 print:hidden select-none">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                POS Thermal Roll View · {rows.length} {rows.length === 1 ? "sticker" : "stickers"}
+            {filteredRows.length === 0 ? (
+              <div className="py-8 text-center text-gray-400 text-xs">
+                <span className="text-2xl block mb-1">
+                  {filterMode === "never" ? "✅" : filterMode === "manual" ? "☑️" : "🔍"}
+                </span>
+                {filterMode === "never" ? "All stock has been printed at least once." :
+                 filterMode === "manual" && manualSelected.size === 0 ? "Select stickers from the list above." :
+                 "No stickers match the current filter."}
               </div>
+            ) : (
+              <>
+                {columns === 1 && (
+                  <div className="text-[10px] text-gray-400 font-mono flex items-center gap-1.5 mb-1 print:hidden select-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                    POS Roll · {filteredRows.length} {filteredRows.length === 1 ? "sticker" : "stickers"}
+                  </div>
+                )}
+                {filteredRows.map((r: any) => {
+                  const cfg = configFor(r);
+                  return (
+                    <Sticker
+                      key={r.serial_code}
+                      data={{
+                        serialCode: r.serial_code,
+                        productName: r.products?.name ?? "",
+                        size: r.product_variants?.size,
+                        price: r.products?.price ?? 0,
+                        compareAtPrice: r.products?.compare_at_price,
+                        brand: cfg.brand_name,
+                        brandLogoUrl: brandLogoUrl || undefined,
+                        currency: cfg.currency_symbol,
+                        showSize: cfg.show_size,
+                        showOriginalPrice: cfg.show_original_price,
+                        config: cfg,
+                      }}
+                    />
+                  );
+                })}
+              </>
             )}
-            {rows.map((r: any) => {
-              const cfg = configFor(r);
-              return (
-                <Sticker
-                  key={r.serial_code}
-                  data={{
-                    serialCode: r.serial_code,
-                    productName: r.products?.name ?? "",
-                    size: r.product_variants?.size,
-                    price: r.products?.price ?? 0,
-                    compareAtPrice: r.products?.compare_at_price,
-                    brand: cfg.brand_name,
-                    brandLogoUrl: brandLogoUrl || undefined,
-                    currency: cfg.currency_symbol,
-                    showSize: cfg.show_size,
-                    showOriginalPrice: cfg.show_original_price,
-                    config: cfg,
-                  }}
-                />
-              );
-            })}
           </div>
 
-          <DialogFooter className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-border/40">
-            <div className="text-[11px] sm:text-xs text-muted-foreground flex items-center justify-center sm:justify-start gap-1.5">
+          <DialogFooter className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-border/40 shrink-0">
+            <div className="text-[11px] sm:text-xs text-muted-foreground flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
               <span>Size: <strong>{activePreset?.width_in || 2}in × {activePreset?.height_in || 0.6}in</strong></span>
               <span>·</span>
               <span>Format: <strong>{activePreset?.barcode_format === "code128" ? "Barcode 128" : "QR Code (Auth URL)"}</strong></span>
+              <span>·</span>
+              <span className="text-primary font-medium">{filteredRows.length} stickers queued</span>
             </div>
             <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
-              <Button variant="outline" size="sm" onClick={exportJpg} disabled={!!exporting || !rows.length} className="text-xs h-9">
+              <Button variant="outline" size="sm" onClick={exportJpg} disabled={!!exporting || !filteredRows.length} className="text-xs h-9">
                 <FileImage className="w-3.5 h-3.5 mr-1" />
                 {exporting === "jpg" ? "JPG…" : "Export JPG"}
               </Button>
-              <Button variant="outline" size="sm" onClick={exportPdf} disabled={!!exporting || !rows.length} className="text-xs h-9">
+              <Button variant="outline" size="sm" onClick={exportPdf} disabled={!!exporting || !filteredRows.length} className="text-xs h-9">
                 <FileDown className="w-3.5 h-3.5 mr-1" />
                 {exporting === "pdf" ? "PDF…" : "Export PDF"}
               </Button>
-              <Button size="sm" onClick={doPrint} disabled={!rows.length} className="col-span-2 sm:col-span-1 text-xs h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
+              <Button size="sm" onClick={doPrint} disabled={!filteredRows.length} className="col-span-2 sm:col-span-1 text-xs h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
                 <Printer className="w-3.5 h-3.5 mr-1.5" />
-                Print
+                Print {filteredRows.length > 0 ? `(${filteredRows.length})` : ""}
               </Button>
             </div>
           </DialogFooter>
