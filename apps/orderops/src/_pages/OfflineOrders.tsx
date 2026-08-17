@@ -67,12 +67,16 @@ const STEPS: Step[] = ["form", "scan", "review", "done"];
 function StepPills({ step }: { step: Step }) {
   const idx = STEPS.indexOf(step);
   return (
-    <div className="flex items-center gap-1.5 rounded-2xl bg-muted/60 p-1 overflow-x-auto no-scrollbar">
+    <div className="flex items-center gap-1.5 rounded-2xl bg-secondary/60 border border-border/70 p-1 overflow-x-auto no-scrollbar shadow-2xs">
       {STEPS.map((s, i) => (
         <div
           key={s}
-          className={`flex-1 min-w-[76px] text-center text-[11px] font-medium py-2 rounded-xl transition-all duration-200 ${
-            i === idx ? "bg-background shadow-sm text-foreground" : i < idx ? "text-primary/80" : "text-muted-foreground"
+          className={`flex-1 min-w-[72px] text-center text-xs font-bold py-2 rounded-xl transition-all duration-200 ${
+            i === idx
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : i < idx
+              ? "text-primary bg-primary/10 font-semibold"
+              : "text-muted-foreground"
           }`}
         >
           {STEP_LABEL[s]}
@@ -85,8 +89,7 @@ function StepPills({ step }: { step: Step }) {
 function BottomBar({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="sticky bottom-16 md:bottom-0 -mx-4 sm:mx-0 mt-4 flex items-center gap-2 border-t border-border/60 bg-background/85 backdrop-blur-xl px-4 py-3 md:static md:border-0 md:bg-transparent md:backdrop-blur-none md:p-0"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)" }}
+      className="sticky bottom-0 -mx-3 sm:mx-0 mt-4 flex items-center gap-2 border-t border-border/70 bg-card/90 backdrop-blur-xl px-4 py-3 shadow-xl z-30 rounded-t-3xl sm:rounded-2xl"
     >
       {children}
     </div>

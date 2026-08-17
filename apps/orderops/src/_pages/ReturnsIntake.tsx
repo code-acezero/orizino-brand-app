@@ -65,7 +65,7 @@ export function ReturnsIntake() {
     try {
       const { data, error } = await (supabase as any)
         .from("orders")
-        .select("id, order_number, customer_name, guest_phone, total, status, tracking_code, courier_name, created_at, order_items(id, product_name, quantity, unit_price)")
+        .select("id, order_number, customer_name, guest_phone, total, status, tracking_code, courier_name, created_at, order_items(id, quantity, unit_price, products(name))")
         .or(`order_number.ilike.%${q}%,tracking_code.ilike.%${q}%,consignment_id.ilike.%${q}%`)
         .limit(1)
         .maybeSingle();
@@ -199,7 +199,7 @@ export function ReturnsIntake() {
                 <div className="divide-y divide-border/50 border border-border/50 rounded-2xl overflow-hidden bg-background">
                   {foundOrder.order_items.map((item: any) => (
                     <div key={item.id} className="p-2.5 flex justify-between text-xs">
-                      <span className="truncate">{item.product_name}</span>
+                      <span className="truncate">{item.products?.name || item.product_name || "Item"}</span>
                       <span className="font-mono font-medium">×{item.quantity}</span>
                     </div>
                   ))}

@@ -18,6 +18,7 @@ export interface OrderRow {
   order_source: string;
   total: number;
   created_at: string;
+  shipping_address?: any;
 }
 
 export interface OrderFilters {
@@ -30,12 +31,12 @@ export interface OrderFilters {
 export async function listOrders(filters: OrderFilters = {}): Promise<OrderRow[]> {
   let q = sb
     .from("orders")
-    .select("id, order_number, customer_name, guest_email, guest_phone, status, payment_status, order_source, total, created_at")
+    .select("id, order_number, customer_name, guest_email, guest_phone, status, payment_status, order_source, total, created_at, shipping_address")
     .order("created_at", { ascending: false })
     .limit(filters.limit ?? 50);
   if (filters.status && filters.status !== "all") q = q.eq("status", filters.status);
   if (filters.source && filters.source !== "all") q = q.eq("order_source", filters.source);
-  if (filters.search) q = q.or(`order_number.ilike.%${filters.search}%,customer_name.ilike.%${filters.search}%`);
+  if (filters.search) q = q.or(`order_number.ilike.%${filters.search}%,customer_name.ilike.%${filters.search}%,guest_phone.ilike.%${filters.search}%`);
   const { data, error } = await q;
   if (error) throw new Error(error.message);
   return (data ?? []) as OrderRow[];
