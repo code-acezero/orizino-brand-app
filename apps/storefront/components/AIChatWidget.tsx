@@ -602,8 +602,8 @@ const AIChatWidget: React.FC = () => {
   const callChannelRef = useRef<any>(null);
   const pendingOfferRef = useRef<string | null>(null);
 
-  // Smart positioning
-  const [mascotBottomPx, setMascotBottomPx] = useState(80);
+  // Smart positioning — default well above mobile bottom nav (~60px bar + safe area)
+  const [mascotBottomPx, setMascotBottomPx] = useState(115);
   useEffect(() => {
     let ticking = false;
     let last = -1;
@@ -618,7 +618,7 @@ const AIChatWidget: React.FC = () => {
       let highestTop = window.innerHeight - 64;
       if (bottomNavTray) highestTop = Math.min(highestTop, bottomNavTray.getBoundingClientRect().top);
       if (stickyBar) highestTop = Math.min(highestTop, stickyBar.getBoundingClientRect().top);
-      const offset = Math.max(window.innerHeight - highestTop + 12, 80);
+      const offset = Math.max(window.innerHeight - highestTop + 24, 115);
       if (Math.abs(offset - last) > 1) { last = offset; setMascotBottomPx(offset); }
     };
     const schedule = () => {
@@ -629,13 +629,35 @@ const AIChatWidget: React.FC = () => {
     compute();
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule, { passive: true });
-    // Light fallback poll (2s) for layout shifts that don't trigger scroll/resize
-    // — e.g. sticky bars appearing. Much cheaper than 1s.
     const interval = setInterval(schedule, 2000);
     return () => {
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
       clearInterval(interval);
+    };
+  }, []);
+
+  // 30-second inactivity auto-hide on mobile (slow fade out, returns when screen is touched/tapped)
+  const [isMascotIdle, setIsMascotIdle] = useState(false);
+  useEffect(() => {
+    let idleTimer: NodeJS.Timeout;
+
+    const handleUserActivity = () => {
+      setIsMascotIdle(false);
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        setIsMascotIdle(true);
+      }, 30000); // 30s inactivity auto-hide
+    };
+
+    handleUserActivity();
+
+    const events = ["touchstart", "touchmove", "pointerdown", "click", "keydown", "scroll"];
+    events.forEach((ev) => window.addEventListener(ev, handleUserActivity, { passive: true }));
+
+    return () => {
+      clearTimeout(idleTimer);
+      events.forEach((ev) => window.removeEventListener(ev, handleUserActivity));
     };
   }, []);
 
@@ -651,12 +673,90 @@ const AIChatWidget: React.FC = () => {
     } catch {}
     return { edge: "right", yPercent: null };
   });
+
+  const launcherBtnRef = useRef<HTMLButtonElement | null>(null);
   const dragRef = useRef<{ moved: boolean } | null>(null);
   const [dragging, setDragging] = useState(false);
   const [dragXY, setDragXY] = useState<{ x: number; y: number } | null>(null);
 
+  // Attach non-passive native touch listeners to prevent browser page scrolling during drag
+  useEffect(() => {
+    const el = launcherBtnRef.current;
+    if (!el) return;
+
+    let startX = 0;
+    let startY = 0;
+    let moved = false;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      startX = touch.clientX;
+      startY = touch.clientY;
+      moved = false;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - startX;
+      const dy = touch.clientY - startY;
+
+      if (!moved && Math.hypot(dx, dy) > 6) {
+        moved = true;
+        setDragging(true);
+      }
+
+      if (moved) {
+        e.preventDefault(); // Stop mobile page scroll!
+        const x = Math.max(28, Math.min(window.innerWidth - 28, touch.clientX));
+        const y = Math.max(50, Math.min(window.innerHeight - 70, touch.clientY));
+        setDragXY({ x, y });
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (moved) {
+        const lastTouch = e.changedTouches[0];
+        const clientX = lastTouch ? lastTouch.clientX : startX;
+        const clientY = lastTouch ? lastTouch.clientY : startY;
+        const edge: "left" | "right" = clientX < window.innerWidth / 2 ? "left" : "right";
+        const margin = 80;
+        const clampedY = Math.max(margin, Math.min(window.innerHeight - margin, clientY));
+        const yPercent = clampedY / window.innerHeight;
+        const next = { edge, yPercent };
+        setLauncherPos(next);
+        try { localStorage.setItem("ai-launcher-pos", JSON.stringify(next)); } catch {}
+
+        dragRef.current = { moved: true };
+        setTimeout(() => {
+          dragRef.current = null;
+          setDragging(false);
+          setDragXY(null);
+        }, 150);
+      } else {
+        dragRef.current = null;
+        setDragging(false);
+        setDragXY(null);
+      }
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    el.addEventListener("touchcancel", onTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, []);
+
+  // Desktop Pointer Drag Handlers
   const handleLauncherPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    // Only primary button / single touch
+    if (e.pointerType === "touch") return; // Touch is handled by native touch listeners with passive: false
     if (e.button !== 0) return;
     const startX = e.clientX;
     const startY = e.clientY;
@@ -703,7 +803,7 @@ const AIChatWidget: React.FC = () => {
       }
     };
 
-    window.addEventListener("pointermove", onPointerMove, { passive: false });
+    window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
     window.addEventListener("pointercancel", onPointerUp);
   };
@@ -1572,32 +1672,41 @@ const AIChatWidget: React.FC = () => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.4, opacity: 0, filter: "blur(6px)" }}
             transition={{ type: "spring", stiffness: 320, damping: 22, mass: 0.7 }}
+            ref={launcherBtnRef}
             onClick={(e) => {
               if (dragRef.current?.moved) { e.preventDefault(); e.stopPropagation(); return; }
               if (incomingCall) { acceptCall(); return; }
               setOpen(true);
             }}
             onPointerDown={handleLauncherPointerDown}
-            className={`fixed z-[10001] group touch-none select-none ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
+            className={`fixed z-[10001] group touch-none select-none ${dragging ? "cursor-grabbing" : "cursor-grab"} ${
+              isMascotIdle && !open ? "opacity-0 pointer-events-none scale-95" : "opacity-100 scale-100"
+            }`}
             style={
               dragging && dragXY
                 ? {
                     left: `${dragXY.x}px`,
                     top: `${dragXY.y}px`,
+                    right: "auto",
+                    bottom: "auto",
                     transform: "translate(-50%, -50%)",
                     transition: "none",
                   }
                 : launcherPos.yPercent != null
                 ? {
                     [launcherPos.edge]: "clamp(16px, 2.5vw, 40px)",
-                    top: `${Math.max(8, Math.min(92, launcherPos.yPercent * 100))}%`,
+                    top: `${Math.max(8, Math.min(88, launcherPos.yPercent * 100))}%`,
                     transform: "translateY(-50%)",
-                    transition: "top 0.35s cubic-bezier(0.16, 1, 0.3, 1), left 0.35s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
+                    transition: isMascotIdle
+                      ? "opacity 1.5s ease-out, transform 1.5s ease-out"
+                      : "opacity 0.3s ease-in, transform 0.3s ease-in, top 0.35s cubic-bezier(0.16, 1, 0.3, 1), left 0.35s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
                   } as React.CSSProperties
                 : {
                     [launcherPos.edge]: "clamp(16px, 2.5vw, 40px)",
-                    bottom: mascotBottomPx,
-                    transition: "bottom 0.35s cubic-bezier(0.16, 1, 0.3, 1), left 0.35s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
+                    bottom: `${mascotBottomPx}px`,
+                    transition: isMascotIdle
+                      ? "opacity 1.5s ease-out, transform 1.5s ease-out"
+                      : "opacity 0.3s ease-in, transform 0.3s ease-in, bottom 0.35s cubic-bezier(0.16, 1, 0.3, 1), left 0.35s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
                   }
             }
             aria-label="Open support chat (drag to reposition)"
