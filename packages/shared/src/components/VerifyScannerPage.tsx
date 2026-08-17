@@ -6,7 +6,8 @@ import {
   Package, X, ArrowLeft, Search, Copy, Check,
   BadgeCheck, AlertCircle, RefreshCw, Eye, ExternalLink, Fingerprint,
   Lock, Shield, Award, QrCode, Barcode, SwitchCamera, Volume2, VolumeX, Flashlight,
-  FlaskConical, HelpCircle, ShieldAlert, CheckCircle, Zap, Unlock, Printer, Download, FileText
+  FlaskConical, HelpCircle, ShieldAlert, CheckCircle, Zap, Unlock, Printer, Download, FileText,
+  ShoppingBag, Phone, MessageSquareWarning, AlertTriangle, MapPin
 } from "lucide-react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { DecodeHintType, BarcodeFormat } from "@zxing/library";
@@ -646,8 +647,8 @@ function ResultView({
           </motion.div>
         )}
 
-        {/* 3. CASE B: GENUINE PRODUCT OR ORDER VERIFIED */}
-        {!state.loading && r && r.found && !r.is_sample && (
+        {/* 3a. CASE B: GENUINE — SOLD (Status: sold or order_verified) */}
+        {!state.loading && r && r.found && !r.is_sample && (r.status === "sold" || r.status === "order_verified") && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             {/* Genuine Royal Banner */}
             <div className="border border-emerald-500/40 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -884,6 +885,122 @@ function ResultView({
                   )}
                 </div>
               )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* 3b. CASE B2: GENUINE — UNSOLD / AVAILABLE PRODUCT */}
+        {!state.loading && r && r.found && !r.is_sample && r.status !== "sold" && r.status !== "order_verified" && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+
+            {/* Authentic But Unsold Banner */}
+            <div className="border border-amber-500/50 bg-amber-500/8 dark:bg-amber-500/12 rounded-3xl p-6 sm:p-8 shadow-xs space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-amber-500/25 pb-5">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
+                    <ShoppingBag className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-xl sm:text-2xl font-bold font-display text-foreground">
+                        Genuine Orizino Product — Not Yet Sold
+                      </h2>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-mono mt-1">Serial Code: {code}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="px-3 py-1.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold flex items-center gap-1.5">
+                    <BadgeCheck className="w-3.5 h-3.5" /> Authentic Orizino
+                  </span>
+                  <span className="px-3 py-1.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[11px] font-bold flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5" /> Unsold Stock
+                  </span>
+                </div>
+              </div>
+
+              {/* Product Info */}
+              {r.product && (
+                <div className="flex items-center gap-4 p-4 rounded-2xl bg-background/60 border border-border/50">
+                  {r.product.thumbnail ? (
+                    <img src={r.product.thumbnail} alt="" className="w-14 h-14 rounded-xl object-cover border border-border/40 shrink-0" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center shrink-0 text-muted-foreground">
+                      <Package className="w-6 h-6" />
+                    </div>
+                  )}
+                  <div className="space-y-0.5">
+                    <h4 className="text-sm font-bold text-foreground">{r.product.name || "Orizino Atelier Piece"}</h4>
+                    {r.product.category && (
+                      <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{r.product.category}</p>
+                    )}
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">✓ Registered in Orizino Atelier Database</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Warning Panel */}
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 space-y-3">
+                <div className="flex items-start gap-3">
+                  <MessageSquareWarning className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-amber-800 dark:text-amber-200">Important Notice</h3>
+                    <p className="text-xs text-amber-800/80 dark:text-amber-200/80 leading-relaxed">
+                      This product is registered in the Orizino Atelier database as{" "}
+                      <strong>genuine and authentic</strong>, but has <strong>not been sold</strong> through
+                      any official Orizino channel. If you physically possess this item without having
+                      purchased it from an authorised Orizino outlet, please be advised:
+                    </p>
+                    <ul className="text-xs text-amber-800/80 dark:text-amber-200/80 space-y-1 ml-2">
+                      <li className="flex items-start gap-1.5"><span className="text-amber-500 shrink-0 mt-0.5">•</span> This item may have been <strong>misplaced, stolen, or obtained from an unauthorised source.</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-amber-500 shrink-0 mt-0.5">•</span> Purchasing or holding unregistered sold goods may carry <strong>legal implications.</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-amber-500 shrink-0 mt-0.5">•</span> Orizino reserves the right to trace and recover unregistered inventory.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* CTA: Contact Support */}
+              <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">What should you do?</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <a
+                    href="https://wa.me/8801XXXXXXXXX?text=I+scanned+an+unsold+Orizino+product+with+serial+code+" // TODO: Replace with real WhatsApp/phone
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 hover:border-emerald-500/50 transition-all group cursor-pointer"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0 text-emerald-600 group-hover:bg-emerald-500/25 transition-colors">
+                      <Phone className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-foreground">Contact Orizino Support</p>
+                      <p className="text-muted-foreground text-[10px] mt-0.5">Report this item via WhatsApp or call our helpline</p>
+                    </div>
+                  </a>
+                  <a
+                    href="/"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-primary/10 border border-primary/25 hover:border-primary/50 transition-all group cursor-pointer"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0 text-primary group-hover:bg-primary/25 transition-colors">
+                      <MapPin className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-foreground">Visit Official Orizino Store</p>
+                      <p className="text-muted-foreground text-[10px] mt-0.5">Purchase authentic Orizino pieces from authorised channels only</p>
+                    </div>
+                  </a>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                <Link
+                  to={entryPath as any}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-foreground text-background font-bold text-xs hover:opacity-90 transition-all shadow-xs"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Scan Another Item
+                </Link>
+              </div>
             </div>
           </motion.div>
         )}
