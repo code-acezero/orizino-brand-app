@@ -195,31 +195,47 @@ const LandingPage: React.FC = () => {
           
           {showTitle && (
             <motion.div
-              className="relative mb-8 flex flex-col items-center justify-center w-full max-w-4xl mx-auto select-none"
+              className="relative mb-8 flex flex-col items-center justify-center w-full max-w-5xl mx-auto select-none"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
             >
-              {/* Foreshadowed Brand Title (Background Layer) */}
-              <div className="w-full flex items-center justify-center opacity-25 dark:opacity-20 pointer-events-none transition-opacity duration-500 scale-105 sm:scale-110 select-none">
+              {/* Foreshadowed Brand Title (Ghost Background Layer) */}
+              <div
+                className="w-full flex items-center justify-center pointer-events-none select-none"
+                style={{
+                  opacity: 0.13,
+                  filter: "grayscale(1) blur(0.5px)",
+                  transform: "scaleX(1.08) scaleY(1.04)",
+                }}
+              >
                 {titleSource === "image" && titleImageUrl ? (
-                  <img src={titleImageUrl} alt={siteName} className="h-16 sm:h-24 lg:h-32 w-auto object-contain filter grayscale contrast-50 opacity-30" />
+                  <img
+                    src={titleImageUrl}
+                    alt={siteName}
+                    className="h-20 sm:h-28 lg:h-36 w-auto object-contain"
+                  />
                 ) : (
                   <BrandTitle
-                    className="brand-name uppercase text-muted-foreground/60 font-black tracking-[0.16em] leading-none select-none drop-shadow-none"
-                    fontSize="clamp(3.2rem, 9.5vw, 7.5rem)"
+                    className="brand-name uppercase font-black tracking-[0.12em] leading-none select-none"
+                    fontSize="clamp(4rem, 11vw, 9rem)"
                     fallback="ORIZINO"
                   />
                 )}
               </div>
 
               {/* Center-aligned Tagline Overlay (Foreground Layer) */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-auto px-4">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-auto px-6">
                 <motion.h2
-                  className="font-sans-brand text-foreground/90 text-center font-medium tracking-[0.24em] sm:tracking-[0.32em] lg:tracking-[0.38em] uppercase text-sm sm:text-lg md:text-xl lg:text-2xl drop-shadow-md backdrop-blur-[0.5px]"
-                  initial={{ opacity: 0, scale: 0.96 }}
+                  className="font-sans-brand text-foreground text-center font-semibold uppercase drop-shadow-sm"
+                  style={{
+                    fontSize: "clamp(0.85rem, 2.2vw, 1.6rem)",
+                    letterSpacing: "clamp(0.22em, 0.6vw, 0.5em)",
+                    textShadow: "0 1px 12px hsl(var(--background) / 0.5)",
+                  }}
+                  initial={{ opacity: 0, scale: 0.97 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.8, delay: 0.25 }}
+                  transition={{ duration: 0.8, delay: 0.28 }}
                 >
                   {siteTagline}
                 </motion.h2>

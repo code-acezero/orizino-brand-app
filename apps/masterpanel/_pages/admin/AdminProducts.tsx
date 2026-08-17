@@ -85,6 +85,8 @@ import {
   Link2,
   UploadCloud,
   Printer,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 import VideoUpload from "@/components/VideoUpload";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -150,6 +152,7 @@ export default function AdminProducts() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Record<string, any> | null>(null);
+  const [modalTab, setModalTab] = useState<"info" | "media" | "pricing" | "variants">("info");
 
   const rawTab = new URLSearchParams(location.search).get("tab") || "list";
   const urlTab = ["list", "settings", "commerce"].includes(rawTab) ? rawTab : "list";
@@ -392,8 +395,12 @@ export default function AdminProducts() {
       };
       delete payload.categories;
 
-      if (!payload.thumbnail && Array.isArray(payload.images) && payload.images.length > 0) {
-        payload.thumbnail = payload.images[0];
+      if (Array.isArray(payload.images) && payload.images.length > 0) {
+        if (!payload.thumbnail || !payload.images.includes(payload.thumbnail)) {
+          payload.thumbnail = payload.images[0];
+        }
+      } else {
+        payload.thumbnail = null;
       }
 
       let productId = product.id as string | undefined;
@@ -477,6 +484,10 @@ export default function AdminProducts() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-products"] });
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["featured-products"] });
+      qc.invalidateQueries({ queryKey: ["new-arrival-products"] });
+      qc.invalidateQueries({ queryKey: ["company-featured"] });
+      qc.invalidateQueries({ queryKey: ["company-featured-products"] });
       qc.invalidateQueries({ queryKey: ["product"] });
       qc.invalidateQueries({ queryKey: ["product-card-data"] });
       qc.invalidateQueries({ queryKey: ["all-product-variants-summary"] });
@@ -603,6 +614,7 @@ export default function AdminProducts() {
     setCustomSizeInput("");
     setBulkPriceValue("");
     setBulkStockValue("");
+    setModalTab("info");
     setDialogOpen(true);
   };
 
@@ -1670,42 +1682,89 @@ export default function AdminProducts() {
         </TabsContent>
       </Tabs>
 
-      {/* ── Unified Product Studio (Modal/Drawer) ── */}
+      {/* ── Unified Product Studio (Fixed Tab-Switched Modal) ── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="w-full sm:max-w-4xl max-h-[96vh] sm:max-h-[92vh] overflow-hidden p-0 rounded-2xl sm:rounded-3xl border border-border/80 shadow-2xl flex flex-col bg-card">
-          {/* Studio Header */}
-          <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-border/70 flex items-center justify-between bg-muted/20 shrink-0">
-            <div>
-              <DialogTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
-                <Package className="w-4 h-4 text-primary" />
-                {editing?.id ? `Edit: ${editing.name || "Product"}` : "Create New Product"}
-              </DialogTitle>
-              <DialogDescription className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
-                Set up visuals, pricing, inventory barcodes, and color/size variations.
-              </DialogDescription>
+        <DialogContent className="w-full sm:max-w-4xl h-[92vh] sm:h-[88vh] max-h-[92vh] overflow-hidden p-0 rounded-2xl sm:rounded-3xl border border-border/80 shadow-2xl flex flex-col bg-card">
+          {/* Studio Header with Center-Aligned Tab Pills */}
+          <div className="px-4 sm:px-6 py-3.5 border-b border-border/70 bg-muted/20 shrink-0 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <Package className="w-4 h-4" />
+                </div>
+                <div>
+                  <DialogTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
+                    {editing?.id ? `Edit: ${editing.name || "Product"}` : "Create New Product"}
+                  </DialogTitle>
+                  <DialogDescription className="text-[11px] text-muted-foreground">
+                    Step through each tab to configure details, visuals, pricing, and variants.
+                  </DialogDescription>
+                </div>
+              </div>
+              {editing?.slug && (
+                <a
+                  href={`/product/${editing.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hidden sm:flex items-center gap-1.5 text-xs text-primary hover:underline font-semibold bg-primary/10 px-2.5 py-1 rounded-lg"
+                >
+                  Storefront Preview <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
             </div>
-            {editing?.slug && (
-              <a
-                href={`/product/${editing.slug}`}
-                target="_blank"
-                rel="noreferrer"
-                className="hidden sm:flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
-              >
-                Storefront Preview <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
+
+            {/* Small center-aligned tab navigation pills */}
+            <div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap pt-0.5">
+              {[
+                { id: "info", label: "Basic Info", icon: Box },
+                { id: "media", label: "Visuals & Media", icon: Images },
+                { id: "pricing", label: "Pricing & Stock", icon: TrendingUp },
+                { id: "variants", label: "Options & Variations", icon: Layers },
+              ].map((tab, idx) => {
+                const Icon = tab.icon;
+                const isActive = modalTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setModalTab(tab.id as any)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/20 scale-[1.02]"
+                        : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/50"
+                    }`}
+                  >
+                    <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold bg-black/15 dark:bg-white/15">
+                      {idx + 1}
+                    </span>
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{tab.label}</span>
+                    {tab.id === "media" && (editing?.images?.length || 0) > 0 && (
+                      <span className="text-[10px] px-1 py-0 rounded-full bg-background/20 font-mono">
+                        {editing.images.length}
+                      </span>
+                    )}
+                    {tab.id === "variants" && hasVariantsMode && variants.length > 0 && (
+                      <span className="text-[10px] px-1 py-0 rounded-full bg-background/20 font-mono">
+                        {variants.length}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Studio Body Scrollable */}
+          {/* Studio Body Fixed Height Scrollable */}
           {editing && (
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* ── Left Main Column (7 Cols) ── */}
-                <div className="lg:col-span-7 space-y-6">
-                  {/* Card 1: Core Information */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-card">
+              {/* ── TAB 1: BASIC INFO & PLACEMENT ── */}
+              {modalTab === "info" && (
+                <div className="max-w-3xl mx-auto space-y-5">
+                  {/* Card: Core Details */}
                   <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-4 shadow-sm">
                     <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Box className="w-4 h-4 text-primary" /> Core Information
+                      <Box className="w-4 h-4 text-primary" /> Product Identity & Details
                     </h3>
 
                     <div>
@@ -1714,7 +1773,7 @@ export default function AdminProducts() {
                         value={editing.name ?? ""}
                         onChange={(e) => handleNameChange(e.target.value)}
                         placeholder="e.g. Premium Oversized Graphic T-Shirt"
-                        className="rounded-xl h-10 mt-1.5 font-medium"
+                        className="rounded-xl h-10 mt-1.5 font-medium text-sm"
                       />
                     </div>
 
@@ -1751,15 +1810,122 @@ export default function AdminProducts() {
                     </div>
                   </div>
 
-                  {/* Card 2: Visual Gallery Multi-Upload */}
+                  {/* Card: Categorization & Placement */}
+                  <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-4 shadow-sm">
+                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-primary" /> Category & Placement
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs font-semibold text-muted-foreground">Product Type</Label>
+                        <Select
+                          value={productType}
+                          onValueChange={(v) => updateSpec("product_type", v)}
+                        >
+                          <SelectTrigger className="rounded-xl h-9 mt-1 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            {PRODUCT_TYPES.map((t) => (
+                              <SelectItem key={t.value} value={t.value}>
+                                {t.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs font-semibold text-muted-foreground">Parent Category</Label>
+                        <Select
+                          value={effectiveParentId ?? "none"}
+                          onValueChange={(v) => updateField("category_id", v === "none" ? null : v)}
+                        >
+                          <SelectTrigger className="rounded-xl h-9 mt-1 text-xs">
+                            <SelectValue placeholder="Select Category" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="none">Uncategorized</SelectItem>
+                            {parentCategories.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs font-semibold text-muted-foreground">Subcategory</Label>
+                        <Select
+                          value={isSubcategory ? selectedCategoryId : "none"}
+                          onValueChange={(v) => updateField("category_id", v === "none" ? effectiveParentId : v)}
+                          disabled={!effectiveParentId || effectiveParentId === "none"}
+                        >
+                          <SelectTrigger className="rounded-xl h-9 mt-1 text-xs">
+                            <SelectValue placeholder="Select Subcategory" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="none">None</SelectItem>
+                            {effectiveParentId &&
+                              effectiveParentId !== "none" &&
+                              getChildren(effectiveParentId).map((c) => (
+                                <SelectItem key={c.id} value={c.id}>
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card: Visibility & Publishing */}
+                  <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-3 shadow-sm">
+                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <Eye className="w-4 h-4 text-primary" /> Storefront Visibility
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-muted/20">
+                        <div>
+                          <p className="text-xs font-semibold text-foreground">Active in Storefront</p>
+                          <p className="text-[10px] text-muted-foreground">Visible to customers for purchase</p>
+                        </div>
+                        <Switch
+                          checked={editing.is_active ?? true}
+                          onCheckedChange={(v) => updateField("is_active", v)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-muted/20">
+                        <div>
+                          <p className="text-xs font-semibold text-foreground">Featured Product</p>
+                          <p className="text-[10px] text-muted-foreground">Show in hero & featured grids</p>
+                        </div>
+                        <Switch
+                          checked={editing.is_featured ?? false}
+                          onCheckedChange={(v) => updateField("is_featured", v)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── TAB 2: VISUALS & MEDIA ── */}
+              {modalTab === "media" && (
+                <div className="max-w-3xl mx-auto space-y-5">
+                  {/* Photo Gallery Multi-Upload */}
                   <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-4 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                          <Images className="w-4 h-4 text-primary" /> Product Visuals ({editing.images?.length || 0}/8)
+                          <Images className="w-4 h-4 text-primary" /> Product Photos ({editing.images?.length || 0}/8)
                         </h3>
                         <p className="text-[11px] text-muted-foreground">
-                          Drop multiple photos at once. Click ⭐ to set any photo as cover thumbnail.
+                          Upload high-resolution apparel images. Click ⭐ to set any photo as the cover thumbnail.
                         </p>
                       </div>
                     </div>
@@ -1776,7 +1942,7 @@ export default function AdminProducts() {
                         handleBatchImageUpload(e.dataTransfer.files);
                       }}
                       onClick={() => galleryInputRef.current?.click()}
-                      className={`border-2 border-dashed rounded-2xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+                      className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
                         dragActive
                           ? "border-primary bg-primary/10 scale-[0.99]"
                           : "border-border/80 hover:border-primary/50 hover:bg-muted/30"
@@ -1784,13 +1950,13 @@ export default function AdminProducts() {
                     >
                       {galleryUploading ? (
                         <div className="flex flex-col items-center gap-2">
-                          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                          <Loader2 className="w-7 h-7 animate-spin text-primary" />
                           <p className="text-xs font-medium">Uploading images…</p>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-1.5">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-1">
-                            <Upload className="w-5 h-5" />
+                          <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-1">
+                            <Upload className="w-6 h-6" />
                           </div>
                           <p className="text-xs font-bold text-foreground">
                             Click or drag & drop product photos here
@@ -1814,13 +1980,13 @@ export default function AdminProducts() {
                     </div>
 
                     {Array.isArray(editing.images) && editing.images.length > 0 && (
-                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 pt-1">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
                         {editing.images.map((imgUrl: string, idx: number) => {
                           const isCover = (editing.thumbnail || editing.images[0]) === imgUrl;
                           return (
                             <div
                               key={idx}
-                              className={`relative group rounded-xl overflow-hidden border-2 aspect-square bg-muted ${
+                              className={`relative group rounded-xl overflow-hidden border-2 aspect-square bg-muted shadow-sm ${
                                 isCover ? "border-primary ring-2 ring-primary/20" : "border-border/60"
                               }`}
                             >
@@ -1840,7 +2006,7 @@ export default function AdminProducts() {
                                     title="Set as Cover"
                                     className="p-1.5 rounded-lg bg-primary text-primary-foreground text-[10px] font-semibold flex items-center gap-1 shadow hover:scale-105 active:scale-95 transition"
                                   >
-                                    <Star className="w-3 h-3" />
+                                    <Star className="w-3 h-3" /> Cover
                                   </button>
                                 )}
                                 <button
@@ -1857,93 +2023,264 @@ export default function AdminProducts() {
                         })}
                       </div>
                     )}
+                  </div>
 
-                    {/* Video Showcase: Direct Video Upload + Embed Link */}
-                    <div className="pt-3 border-t border-border/50 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                          <Film className="w-4 h-4 text-primary" /> Product Video Showcase
-                        </Label>
-                        {editing.video_url && (
-                          <button
-                            type="button"
-                            onClick={() => updateField("video_url", "")}
-                            className="text-[11px] text-destructive hover:underline flex items-center gap-1 font-medium transition"
-                          >
-                            <Trash2 className="w-3 h-3" /> Remove Video
-                          </button>
-                        )}
+                  {/* Video Showcase */}
+                  <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <Film className="w-4 h-4 text-primary" /> Product Video Showcase
+                      </h3>
+                      {editing.video_url && (
+                        <button
+                          type="button"
+                          onClick={() => updateField("video_url", "")}
+                          className="text-[11px] text-destructive hover:underline flex items-center gap-1 font-medium transition"
+                        >
+                          <Trash2 className="w-3 h-3" /> Remove Video
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Option 1: Direct Video Upload */}
+                      <div className="rounded-xl border border-border/70 bg-muted/20 p-3.5 space-y-2 flex flex-col justify-between">
+                        <div className="space-y-1">
+                          <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                            <UploadCloud className="w-3.5 h-3.5 text-primary" /> Direct Video Upload
+                          </span>
+                          <p className="text-[10px] text-muted-foreground leading-relaxed">
+                            Upload MP4 or WebM video directly to CDN storage.
+                          </p>
+                        </div>
+                        <VideoUpload
+                          bucket="banners"
+                          folder="product-videos"
+                          value={
+                            editing.video_url &&
+                            !editing.video_url.includes("youtube.com") &&
+                            !editing.video_url.includes("youtu.be") &&
+                            !editing.video_url.includes("vimeo.com")
+                              ? editing.video_url
+                              : ""
+                          }
+                          onUploaded={(url) => updateField("video_url", url)}
+                        />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {/* Option 1: Direct Video Upload to Database / Storage */}
-                        <div className="rounded-xl border border-border/70 bg-muted/20 p-3 space-y-2 flex flex-col justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
-                                <UploadCloud className="w-3.5 h-3.5 text-primary" /> Direct Video Upload
-                              </span>
-                              <span className="text-[10px] text-muted-foreground">MP4, WebM (Storage)</span>
-                            </div>
-                            <p className="text-[10px] text-muted-foreground leading-relaxed">
-                              Upload a video directly to storage. It will be served directly from your media CDN.
-                            </p>
-                          </div>
-                          <VideoUpload
-                            bucket="banners"
-                            folder="product-videos"
-                            value={
-                              editing.video_url &&
-                              !editing.video_url.includes("youtube.com") &&
-                              !editing.video_url.includes("youtu.be") &&
-                              !editing.video_url.includes("vimeo.com")
-                                ? editing.video_url
-                                : ""
-                            }
-                            onUploaded={(url) => updateField("video_url", url)}
+                      {/* Option 2: Embed Video Link */}
+                      <div className="rounded-xl border border-border/70 bg-muted/20 p-3.5 space-y-2 flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                            <Link2 className="w-3.5 h-3.5 text-primary" /> Embed Video Link
+                          </span>
+                          <Input
+                            value={editing.video_url ?? ""}
+                            onChange={(e) => updateField("video_url", e.target.value)}
+                            placeholder="https://youtube.com/watch?v=... or direct MP4 URL"
+                            className="rounded-xl h-9 text-xs bg-background"
                           />
+                          <p className="text-[10px] text-muted-foreground leading-relaxed">
+                            Paste an embeddable YouTube, Vimeo, or CDN URL.
+                          </p>
                         </div>
 
-                        {/* Option 2: Video Embed Link / External URL */}
-                        <div className="rounded-xl border border-border/70 bg-muted/20 p-3 space-y-2 flex flex-col justify-between">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
-                                <Link2 className="w-3.5 h-3.5 text-primary" /> Embed Video Link
-                              </span>
-                              <span className="text-[10px] text-muted-foreground">YouTube, Vimeo, MP4</span>
-                            </div>
-                            <Input
-                              value={editing.video_url ?? ""}
-                              onChange={(e) => updateField("video_url", e.target.value)}
-                              placeholder="https://youtube.com/watch?v=... or direct MP4 URL"
-                              className="rounded-xl h-9 text-xs bg-background"
-                            />
-                            <p className="text-[10px] text-muted-foreground leading-relaxed">
-                              Paste an embeddable YouTube, Vimeo, or CDN video URL. It will automatically stream on the product page.
-                            </p>
+                        {editing.video_url && (
+                          <div className="text-[11px] text-emerald-500 font-mono truncate flex items-center gap-1 pt-1 border-t border-border/40">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">{editing.video_url}</span>
                           </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-                          {editing.video_url && (
-                            <div className="text-[11px] text-emerald-500 font-mono truncate flex items-center gap-1 pt-1 border-t border-border/40">
-                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                              <span className="truncate">{editing.video_url}</span>
-                            </div>
-                          )}
-                        </div>
+              {/* ── TAB 3: PRICING & INVENTORY ── */}
+              {modalTab === "pricing" && (
+                <div className="max-w-3xl mx-auto space-y-5">
+                  {/* Card: Pricing & Discounts */}
+                  <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-primary" /> Pricing &amp; Discounts
+                      </h3>
+                      {discountPercent > 0 && (
+                        <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 text-xs font-bold font-mono">
+                          {discountPercent}% OFF {discountSavings > 0 ? `(Save ৳${discountSavings.toLocaleString()})` : ""}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs font-semibold text-muted-foreground">Regular Price (৳) *</Label>
+                        <Input
+                          type="number"
+                          value={editing.compare_at_price || editing.price || 0}
+                          onChange={(e) => {
+                            const val = e.target.value ? +e.target.value : 0;
+                            if (editing.compare_at_price) {
+                              updateField("compare_at_price", val);
+                            } else {
+                              updateField("price", val);
+                            }
+                          }}
+                          placeholder="e.g. 850"
+                          className="rounded-xl h-10 mt-1 font-bold text-sm"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">Main / regular catalog price</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold text-muted-foreground">Discount Price (৳)</Label>
+                        <Input
+                          type="number"
+                          value={editing.compare_at_price ? editing.price : ""}
+                          onChange={(e) => {
+                            const val = e.target.value ? +e.target.value : null;
+                            const mainPrice = editing.compare_at_price || editing.price || 0;
+                            if (val != null && val > 0) {
+                              setEditing((prev: any) => ({
+                                ...prev,
+                                compare_at_price: mainPrice,
+                                price: val,
+                              }));
+                            } else {
+                              setEditing((prev: any) => ({
+                                ...prev,
+                                price: mainPrice,
+                                compare_at_price: null,
+                              }));
+                            }
+                          }}
+                          placeholder="Optional (e.g. 550)"
+                          className="rounded-xl h-10 mt-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">Discounted selling price</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Card 3: Unified Options & Variants Studio (Grouped by Color) */}
+                  {/* Card: Inventory SKU & Barcodes */}
+                  <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-4 shadow-sm">
+                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <Box className="w-4 h-4 text-primary" /> Inventory Barcode & SKU
+                    </h3>
+
+                    <div>
+                      <Label className="text-xs font-semibold text-muted-foreground">Base SKU Barcode</Label>
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <Input
+                          value={skuPrefix}
+                          onChange={(e) => setSkuPrefix(e.target.value.toUpperCase().slice(0, 6))}
+                          onBlur={handleSavePrefix}
+                          title="Default Brand Prefix (e.g. ORZ)"
+                          className="w-16 h-10 text-center font-mono font-bold uppercase rounded-xl"
+                        />
+                        <Input
+                          value={editing.sku ?? ""}
+                          onChange={(e) => {
+                            updateField("sku", e.target.value.toUpperCase());
+                            setSkuStatus("idle");
+                          }}
+                          onBlur={() => handleCheckSku()}
+                          placeholder="ORZ-PRD001"
+                          className="font-mono uppercase h-10 rounded-xl flex-1 text-xs"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleGenerateSku}
+                          disabled={skuStatus === "checking"}
+                          className="h-10 px-3 rounded-xl gap-1 shrink-0 text-xs font-semibold"
+                        >
+                          {skuStatus === "checking" ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Wand2 className="w-3.5 h-3.5 text-primary" />
+                          )}
+                          Auto SKU
+                        </Button>
+                      </div>
+
+                      {skuStatus === "available" && (editing.sku ?? "").trim() && (
+                        <p className="text-xs text-emerald-600 flex items-center gap-1 mt-1.5 font-medium">
+                          <CircleCheck className="w-3.5 h-3.5" /> SKU Available
+                        </p>
+                      )}
+                      {skuStatus === "taken" && (
+                        <p className="text-xs text-rose-600 flex items-center gap-1 mt-1.5 font-medium">
+                          <CircleAlert className="w-3.5 h-3.5" /> Already in use{skuTakenBy ? ` by "${skuTakenBy}"` : ""}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-semibold text-muted-foreground">Total Stock Units</Label>
+                          {hasVariantsMode && (
+                            <Badge variant="secondary" className="text-[10px] text-primary">
+                              Sum of all sizes
+                            </Badge>
+                          )}
+                        </div>
+                        <Input
+                          type="number"
+                          value={totalStockComputed}
+                          onChange={(e) => {
+                            if (!hasVariantsMode) {
+                              updateField("stock_quantity", +e.target.value);
+                            }
+                          }}
+                          disabled={hasVariantsMode}
+                          className={`rounded-xl h-10 mt-1 font-bold text-sm ${
+                            hasVariantsMode ? "bg-muted/60 text-primary cursor-not-allowed" : ""
+                          }`}
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          {hasVariantsMode
+                            ? `Calculated from ${variants.length} color & size combinations.`
+                            : "Direct single inventory quantity."}
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs font-semibold text-muted-foreground">Sticker Barcode Preset</Label>
+                        <Select
+                          value={editing.sticker_preset_id ?? "__default__"}
+                          onValueChange={(v) => updateField("sticker_preset_id", v === "__default__" ? null : v)}
+                        >
+                          <SelectTrigger className="rounded-xl h-10 mt-1 text-xs">
+                            <SelectValue placeholder="Default active preset" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="__default__">Default active preset</SelectItem>
+                            {stickerPresets.map((p: any) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name} {p.is_active ? "• active" : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── TAB 4: OPTIONS & VARIATIONS ── */}
+              {modalTab === "variants" && (
+                <div className="max-w-3xl mx-auto space-y-5">
                   <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-5 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                          <Layers className="w-4 h-4 text-primary" /> Product Options & Variations
+                          <Layers className="w-4 h-4 text-primary" /> Product Options & Variations Studio
                         </h3>
                         <p className="text-[11px] text-muted-foreground">
-                          Enable if this item comes in different colors or sizes.
+                          Turn on to configure color & size variations matrix with individual stock tracking.
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1964,11 +2301,11 @@ export default function AdminProducts() {
 
                     {hasVariantsMode ? (
                       <div className="space-y-5 pt-2 border-t border-border/50">
-                        {/* Step A: Pick Option 1 (Colors) */}
+                        {/* Step A: Colors */}
                         <div className="space-y-2 p-3.5 rounded-2xl bg-muted/30 border border-border/60">
                           <div className="flex items-center justify-between">
                             <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                              <Palette className="w-3.5 h-3.5 text-primary" /> Option 1: Available Colors ({selectedColors.length})
+                              <Palette className="w-3.5 h-3.5 text-primary" /> Step 1: Available Colors ({selectedColors.length})
                             </Label>
                             <span className="text-[11px] text-muted-foreground">Click chips to toggle</span>
                           </div>
@@ -2011,16 +2348,16 @@ export default function AdminProducts() {
                               }}
                             />
                             <Button type="button" size="sm" variant="outline" onClick={addCustomColor} className="h-8 text-xs rounded-lg">
-                              Add
+                              Add Color
                             </Button>
                           </div>
                         </div>
 
-                        {/* Step B: Pick Option 2 (Sizes) */}
+                        {/* Step B: Sizes */}
                         <div className="space-y-2 p-3.5 rounded-2xl bg-muted/30 border border-border/60">
                           <div className="flex items-center justify-between">
                             <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                              <Tag className="w-3.5 h-3.5 text-primary" /> Option 2: Available Sizes ({selectedSizes.length})
+                              <Tag className="w-3.5 h-3.5 text-primary" /> Step 2: Available Sizes ({selectedSizes.length})
                             </Label>
                             <span className="text-[11px] text-muted-foreground">Clothing & footwear presets</span>
                           </div>
@@ -2059,15 +2396,15 @@ export default function AdminProducts() {
                               }}
                             />
                             <Button type="button" size="sm" variant="outline" onClick={addCustomSize} className="h-8 text-xs rounded-lg">
-                              Add
+                              Add Size
                             </Button>
                           </div>
                         </div>
 
-                        {/* Action: Generate Combinations Matrix */}
+                        {/* Action: Generate Matrix */}
                         <div className="flex items-center justify-between p-3 rounded-2xl bg-primary/10 border border-primary/20">
                           <div>
-                            <p className="text-xs font-bold text-primary">Generate Combinations Matrix</p>
+                            <p className="text-xs font-bold text-primary">Combinations Matrix</p>
                             <p className="text-[11px] text-muted-foreground">
                               Produces {selectedColors.length || 1} color(s) × {selectedSizes.length || 1} size(s) ={" "}
                               <strong>{(selectedColors.length || 1) * (selectedSizes.length || 1)} variations</strong>
@@ -2083,19 +2420,19 @@ export default function AdminProducts() {
                           </Button>
                         </div>
 
-                        {/* Step C: Hierarchical Combinations Matrix (Grouped by Color) */}
+                        {/* Step C: Variations Grouped by Color */}
                         {variants.length > 0 && (
                           <div className="space-y-4 pt-2">
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-foreground">
-                                Active Variations Matrix ({variants.length} options)
+                                Active Variations Matrix ({variants.length} combinations)
                               </span>
                               <Button
                                 type="button"
                                 size="sm"
                                 variant="outline"
                                 onClick={autoGenerateAllSkus}
-                                className="h-7 text-xs rounded-lg gap-1"
+                                className="h-7 text-xs rounded-lg gap-1 font-semibold"
                               >
                                 <Wand2 className="w-3 h-3 text-primary" /> Auto-SKUs
                               </Button>
@@ -2130,7 +2467,7 @@ export default function AdminProducts() {
                                         </Badge>
                                       </div>
 
-                                      {/* Color-level photo preview & gallery picker */}
+                                      {/* Color photo picker */}
                                       <div className="flex items-center gap-2">
                                         {Array.isArray(editing.images) && editing.images.length > 0 && (
                                           <Popover>
@@ -2183,7 +2520,7 @@ export default function AdminProducts() {
                                             key={itemIdx}
                                             className="flex flex-col sm:grid sm:grid-cols-[80px_1fr_100px_90px_40px] gap-2 p-2.5 sm:p-2 rounded-xl bg-background border border-border/60"
                                           >
-                                            {/* Size Chip + Mobile Top Row */}
+                                            {/* Size Chip */}
                                             <div className="flex items-center gap-2">
                                               <div className="font-bold text-xs text-foreground px-2.5 py-1 rounded-lg bg-muted/60 text-center min-w-[50px] sm:min-w-0 sm:w-full">
                                                 {v.size || "Standard"}
@@ -2287,299 +2624,30 @@ export default function AdminProducts() {
                         )}
                       </div>
                     ) : (
-                      <div className="rounded-2xl border border-dashed border-border/80 p-5 text-center text-xs text-muted-foreground space-y-2">
+                      <div className="rounded-2xl border border-dashed border-border/80 p-6 text-center text-xs text-muted-foreground space-y-2">
                         <p className="font-semibold text-foreground">
                           This product is currently configured as a Simple Item (Single Variation).
                         </p>
                         <p>
-                          Total stock is tracked directly via the <strong>Global Stock Units</strong> input on the right.
+                          Total stock is tracked directly via the <strong>Global Stock Units</strong> input on the Pricing &amp; Stock tab.
                           Turn on the switch above if you need color/size variations.
                         </p>
                       </div>
                     )}
                   </div>
                 </div>
-
-                {/* ── Right Sidebar Column (5 Cols) ── */}
-                <div className="lg:col-span-5 space-y-6">
-                  {/* Card: Status & Publishing */}
-                  <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-4 shadow-sm">
-                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Eye className="w-4 h-4 text-primary" /> Status & Publishing
-                    </h3>
-
-                    <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-muted/20">
-                      <div>
-                        <p className="text-xs font-semibold text-foreground">Active in Storefront</p>
-                        <p className="text-[10px] text-muted-foreground">Visible to customers for purchase</p>
-                      </div>
-                      <Switch
-                        checked={editing.is_active ?? true}
-                        onCheckedChange={(v) => updateField("is_active", v)}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-muted/20">
-                      <div>
-                        <p className="text-xs font-semibold text-foreground">Featured Product</p>
-                        <p className="text-[10px] text-muted-foreground">Show in hero banners & featured carousels</p>
-                      </div>
-                      <Switch
-                        checked={editing.is_featured ?? false}
-                        onCheckedChange={(v) => updateField("is_featured", v)}
-                      />
-                    </div>
-
-                    <div>
-                      <Label className="text-xs font-semibold text-muted-foreground">Sticker Barcode Preset</Label>
-                      <Select
-                        value={editing.sticker_preset_id ?? "__default__"}
-                        onValueChange={(v) => updateField("sticker_preset_id", v === "__default__" ? null : v)}
-                      >
-                        <SelectTrigger className="rounded-xl h-9 mt-1.5 text-xs">
-                          <SelectValue placeholder="Default active preset" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          <SelectItem value="__default__">Default active preset</SelectItem>
-                          {stickerPresets.map((p: any) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.name} {p.is_active ? "• active" : ""}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Card: Pricing & Margin */}
-                  <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-4 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-primary" /> Pricing &amp; Discount
-                      </h3>
-                      {discountPercent > 0 && (
-                        <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 text-xs font-bold font-mono">
-                          {discountPercent}% OFF {discountSavings > 0 ? `(Save ৳${discountSavings.toLocaleString()})` : ""}
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs font-semibold text-muted-foreground">Price (৳) *</Label>
-                        <Input
-                          type="number"
-                          value={editing.compare_at_price || editing.price || 0}
-                          onChange={(e) => {
-                            const val = e.target.value ? +e.target.value : 0;
-                            if (editing.compare_at_price) {
-                              updateField("compare_at_price", val);
-                            } else {
-                              updateField("price", val);
-                            }
-                          }}
-                          placeholder="e.g. 850"
-                          className="rounded-xl h-10 mt-1 font-bold text-sm"
-                        />
-                        <p className="text-[10px] text-muted-foreground mt-1">Main / regular catalog price</p>
-                      </div>
-                      <div>
-                        <Label className="text-xs font-semibold text-muted-foreground">Discount Price (৳)</Label>
-                        <Input
-                          type="number"
-                          value={editing.compare_at_price ? editing.price : ""}
-                          onChange={(e) => {
-                            const val = e.target.value ? +e.target.value : null;
-                            const mainPrice = editing.compare_at_price || editing.price || 0;
-                            if (val != null && val > 0) {
-                              setEditing((prev: any) => ({
-                                ...prev,
-                                compare_at_price: mainPrice,
-                                price: val,
-                              }));
-                            } else {
-                              setEditing((prev: any) => ({
-                                ...prev,
-                                price: mainPrice,
-                                compare_at_price: null,
-                              }));
-                            }
-                          }}
-                          placeholder="Optional (e.g. 550)"
-                          className="rounded-xl h-10 mt-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400"
-                        />
-                        <p className="text-[10px] text-muted-foreground mt-1">Discounted selling price</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card: Inventory & SKU */}
-                  <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-4 shadow-sm">
-                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Box className="w-4 h-4 text-primary" /> Inventory & SKU Code
-                    </h3>
-
-                    <div>
-                      <Label className="text-xs font-semibold text-muted-foreground">Base SKU Barcode</Label>
-                      <div className="flex items-center gap-1.5 mt-1.5">
-                        <Input
-                          value={skuPrefix}
-                          onChange={(e) => setSkuPrefix(e.target.value.toUpperCase().slice(0, 6))}
-                          onBlur={handleSavePrefix}
-                          title="Default Brand Prefix (e.g. ORZ)"
-                          className="w-16 h-10 text-center font-mono font-bold uppercase rounded-xl"
-                        />
-                        <Input
-                          value={editing.sku ?? ""}
-                          onChange={(e) => {
-                            updateField("sku", e.target.value.toUpperCase());
-                            setSkuStatus("idle");
-                          }}
-                          onBlur={() => handleCheckSku()}
-                          placeholder="ORZ-PRD001"
-                          className="font-mono uppercase h-10 rounded-xl flex-1 text-xs"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleGenerateSku}
-                          disabled={skuStatus === "checking"}
-                          className="h-10 px-3 rounded-xl gap-1 shrink-0 text-xs font-semibold"
-                        >
-                          {skuStatus === "checking" ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Wand2 className="w-3.5 h-3.5 text-primary" />
-                          )}
-                          Auto
-                        </Button>
-                      </div>
-
-                      {skuStatus === "available" && (editing.sku ?? "").trim() && (
-                        <p className="text-xs text-emerald-600 flex items-center gap-1 mt-1.5 font-medium">
-                          <CircleCheck className="w-3.5 h-3.5" /> SKU Available
-                        </p>
-                      )}
-                      {skuStatus === "taken" && (
-                        <p className="text-xs text-rose-600 flex items-center gap-1 mt-1.5 font-medium">
-                          <CircleAlert className="w-3.5 h-3.5" /> Already in use{skuTakenBy ? ` by "${skuTakenBy}"` : ""}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs font-semibold text-muted-foreground">Total Stock Units</Label>
-                        {hasVariantsMode && (
-                          <Badge variant="secondary" className="text-[10px] text-primary">
-                            Sum of all sizes
-                          </Badge>
-                        )}
-                      </div>
-                      <Input
-                        type="number"
-                        value={totalStockComputed}
-                        onChange={(e) => {
-                          if (!hasVariantsMode) {
-                            updateField("stock_quantity", +e.target.value);
-                          }
-                        }}
-                        disabled={hasVariantsMode}
-                        className={`rounded-xl h-10 mt-1 font-bold text-sm ${
-                          hasVariantsMode ? "bg-muted/60 text-primary cursor-not-allowed" : ""
-                        }`}
-                      />
-                      <p className="text-[11px] text-muted-foreground mt-1">
-                        {hasVariantsMode
-                          ? `Calculated from ${variants.length} color & size combinations.`
-                          : "Direct single inventory quantity."}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Card: Categories & Placement */}
-                  <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-4 shadow-sm">
-                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-primary" /> Category & Placement
-                    </h3>
-
-                    <div className="space-y-3">
-                      <div>
-                        <Label className="text-xs font-semibold text-muted-foreground">Product Type</Label>
-                        <Select
-                          value={productType}
-                          onValueChange={(v) => updateSpec("product_type", v)}
-                        >
-                          <SelectTrigger className="rounded-xl h-9 mt-1 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            {PRODUCT_TYPES.map((t) => (
-                              <SelectItem key={t.value} value={t.value}>
-                                {t.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-xs font-semibold text-muted-foreground">Parent Category</Label>
-                        <Select
-                          value={effectiveParentId ?? "none"}
-                          onValueChange={(v) => updateField("category_id", v === "none" ? null : v)}
-                        >
-                          <SelectTrigger className="rounded-xl h-9 mt-1 text-xs">
-                            <SelectValue placeholder="Select Category" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="none">Uncategorized</SelectItem>
-                            {parentCategories.map((c) => (
-                              <SelectItem key={c.id} value={c.id}>
-                                {c.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-xs font-semibold text-muted-foreground">Subcategory</Label>
-                        <Select
-                          value={isSubcategory ? selectedCategoryId : "none"}
-                          onValueChange={(v) => updateField("category_id", v === "none" ? effectiveParentId : v)}
-                          disabled={!effectiveParentId || effectiveParentId === "none"}
-                        >
-                          <SelectTrigger className="rounded-xl h-9 mt-1 text-xs">
-                            <SelectValue placeholder="Select Subcategory" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="none">None</SelectItem>
-                            {effectiveParentId &&
-                              effectiveParentId !== "none" &&
-                              getChildren(effectiveParentId).map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
-          {/* Studio Sticky Footer Bar */}
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border/70 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-muted/30 shrink-0">
-            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+          {/* Studio Fixed Footer Navigation Bar */}
+          <div className="px-4 sm:px-6 py-3 sm:py-3.5 border-t border-border/70 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-muted/30 shrink-0">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
-                className="rounded-xl h-10 px-4 text-xs font-semibold w-full sm:w-auto justify-center"
+                className="rounded-xl h-10 px-4 text-xs font-semibold flex-1 sm:flex-initial"
               >
                 Cancel
               </Button>
@@ -2601,34 +2669,70 @@ export default function AdminProducts() {
                     }
                     setPrintProduct({ id: editing.id, codes });
                   }}
-                  className="rounded-xl h-10 px-4 text-xs font-semibold gap-1.5 w-full sm:w-auto justify-center"
+                  className="rounded-xl h-10 px-4 text-xs font-semibold gap-1.5 flex-1 sm:flex-initial"
                 >
                   <Package className="w-3.5 h-3.5 text-primary" /> Print Stickers
                 </Button>
               )}
             </div>
-            <Button
-              type="button"
-              onClick={() => {
-                if (!editing?.name?.trim()) {
-                  toast.error("Please provide a product title");
-                  return;
-                }
-                saveMutation.mutate({ product: editing, variantList: variants });
-              }}
-              disabled={saveMutation.isPending}
-              className="rounded-xl h-10 px-6 text-xs font-bold bg-primary text-primary-foreground shadow-md hover:shadow-lg active:scale-95 transition-all gap-2 w-full sm:w-auto justify-center"
-            >
-              {saveMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Saving…
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4" /> Save Product
-                </>
+
+            {/* Step Navigation & Save Action */}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {modalTab !== "info" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    const order = ["info", "media", "pricing", "variants"] as const;
+                    const idx = order.indexOf(modalTab);
+                    if (idx > 0) setModalTab(order[idx - 1]);
+                  }}
+                  className="rounded-xl h-10 px-3 text-xs font-semibold gap-1 text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" /> Back
+                </Button>
               )}
-            </Button>
+
+              {modalTab !== "variants" && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    const order = ["info", "media", "pricing", "variants"] as const;
+                    const idx = order.indexOf(modalTab);
+                    if (idx < order.length - 1) setModalTab(order[idx + 1]);
+                  }}
+                  className="rounded-xl h-10 px-4 text-xs font-semibold gap-1.5 border border-border/60"
+                >
+                  <span>Next Step</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              )}
+
+              <Button
+                type="button"
+                onClick={() => {
+                  if (!editing?.name?.trim()) {
+                    toast.error("Please provide a product title");
+                    setModalTab("info");
+                    return;
+                  }
+                  saveMutation.mutate({ product: editing, variantList: variants });
+                }}
+                disabled={saveMutation.isPending}
+                className="rounded-xl h-10 px-6 text-xs font-bold bg-primary text-primary-foreground shadow-md hover:shadow-lg active:scale-95 transition-all gap-2 flex-1 sm:flex-initial"
+              >
+                {saveMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Saving…
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" /> Save Product
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

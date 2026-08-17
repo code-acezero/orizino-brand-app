@@ -107,7 +107,7 @@ const HomePage: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, compare_at_price, thumbnail, avg_rating, review_count, slug")
+        .select("id, name, price, compare_at_price, thumbnail, images, avg_rating, review_count, slug")
         .eq("is_active", true)
         .eq("is_featured", true)
         .order("created_at", { ascending: false })
@@ -115,7 +115,7 @@ const HomePage: React.FC = () => {
       if (error) throw error;
       return data;
     },
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   // New arrivals
@@ -124,7 +124,7 @@ const HomePage: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, compare_at_price, thumbnail, avg_rating, review_count, slug")
+        .select("id, name, price, compare_at_price, thumbnail, images, avg_rating, review_count, slug")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(8);

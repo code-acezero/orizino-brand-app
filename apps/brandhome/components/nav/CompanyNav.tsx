@@ -131,6 +131,7 @@ export function CompanyNav({ variant }: CompanyNavProps) {
               <a
                 key={link.label}
                 href={link.href!}
+                translate="no"
                 className={`text-[11px] uppercase tracking-[0.14em] transition-colors ${
                   isCurrent
                     ? "font-bold text-primary border-b-2 border-primary pb-0.5"
@@ -234,6 +235,7 @@ export function CompanyNav({ variant }: CompanyNavProps) {
                   href={shopUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  translate="no"
                   onClick={() => setOpen(false)}
                   className="text-sm uppercase tracking-[0.14em] font-medium text-foreground hover:opacity-70 transition-opacity py-2"
                 >
@@ -243,6 +245,7 @@ export function CompanyNav({ variant }: CompanyNavProps) {
                 <a
                   key={link.label}
                   href={link.href!}
+                  translate="no"
                   onClick={() => setOpen(false)}
                   className="text-sm uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground transition-colors py-2"
                 >

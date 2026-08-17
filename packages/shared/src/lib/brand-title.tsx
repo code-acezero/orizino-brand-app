@@ -214,6 +214,7 @@ export function BrandTitle({
       <span
         className={(className ?? "") + " inline-block"}
         style={{ ...style, color: singleColor || undefined }}
+        translate="no"
       >
         {siteName}
       </span>
@@ -226,6 +227,7 @@ export function BrandTitle({
     <span
       className={(className ?? "") + " inline-flex items-baseline " + gapClassName}
       style={style}
+      translate="no"
     >
       {chunks.map((chunk, ci) => {
         const c = colors[ci];

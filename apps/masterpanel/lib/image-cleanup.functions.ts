@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 
 /** Extract bucket name and storage path from a Supabase public or authenticated URL */
-export function parseSupabaseStorageUrl(url: string): { bucket: string; path: string } | null {
+function parseSupabaseStorageUrl(url: string): { bucket: string; path: string } | null {
   if (!url || typeof url !== "string") return null;
 
   try {

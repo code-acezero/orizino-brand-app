@@ -192,6 +192,7 @@ const CinematicHero: React.FC = () => {
                 <span
                   className="font-editorial text-cream font-bold"
                   style={{ fontSize: "clamp(5rem, 18vw, 18rem)", letterSpacing: "-0.04em", lineHeight: 1 }}
+                  translate="no"
                 >
                   ORIZINO
                 </span>

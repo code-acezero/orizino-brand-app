@@ -550,7 +550,7 @@ export default function AdminTelegram() {
 
               <div className="flex items-center gap-2">
                 <Input
-                  placeholder="https://shop.orizino.com/api/webhooks/telegram"
+                  placeholder="https://your-domain.com/api/public/hooks/telegram"
                   value={config.webhook_url || ""}
                   onChange={(e) => setConfig((c) => ({ ...c, webhook_url: e.target.value }))}
                   className="h-10 rounded-xl text-xs font-mono bg-background border-border/70 flex-1"
@@ -559,9 +559,12 @@ export default function AdminTelegram() {
                   type="button"
                   size="sm"
                   variant="secondary"
-                  onClick={() => setConfig((c) => ({ ...c, webhook_url: "https://shop.orizino.com/api/webhooks/telegram" }))}
+                  onClick={() => {
+                    const origin = typeof window !== "undefined" ? window.location.origin : "https://admin.orizino.com";
+                    setConfig((c) => ({ ...c, webhook_url: `${origin}/api/public/hooks/telegram` }));
+                  }}
                   className="h-10 rounded-xl text-xs font-semibold px-3 border border-border/60"
-                  title="Auto-fill production webhook URL"
+                  title="Auto-fill webhook URL using this panel's domain"
                 >
                   Use Default
                 </Button>

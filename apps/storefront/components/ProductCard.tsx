@@ -93,19 +93,21 @@ const ProductCard: React.FC<ProductCardProps> = ({
       const [variantsRes, productRes] = await Promise.all([
         supabase
           .from("product_variants")
-          .select("color, size, stock_quantity")
+          .select("color, size, stock_quantity, image_url")
           .eq("product_id", id)
           .eq("is_active", true),
-        supabase.from("products").select("images").eq("id", id).maybeSingle(),
+        supabase.from("products").select("thumbnail, images").eq("id", id).maybeSingle(),
       ]);
       const variantRows = variantsRes.data || [];
       const colors = [...new Set(variantRows.map((v) => v.color).filter(Boolean))] as string[];
       const sizes = [...new Set(variantRows.map((v) => v.size).filter(Boolean))] as string[];
       const totalStock = variantRows.reduce((s, v) => s + (v.stock_quantity || 0), 0);
-      const secondaryImage = (productRes.data?.images as string[] | null)?.[1] ?? null;
-      return { hasVariants: variantRows.length > 0, colors, sizes, totalStock, secondaryImage };
+      const prodImages = Array.isArray(productRes.data?.images) ? (productRes.data.images as string[]).filter(Boolean) : [];
+      const freshThumbnail = (productRes.data?.thumbnail as string | null) || prodImages[0] || thumbnail;
+      const secondaryImage = prodImages[1] ?? (variantRows.find((v) => v.image_url && v.image_url !== freshThumbnail)?.image_url ?? null);
+      return { hasVariants: variantRows.length > 0, colors, sizes, totalStock, thumbnail: freshThumbnail, secondaryImage };
     },
-    staleTime: 30 * 1000,
+    staleTime: 10 * 1000,
     refetchOnWindowFocus: true,
   });
 
@@ -114,6 +116,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const totalStock = cardData?.hasVariants ? cardData.totalStock : undefined;
   const isSoldOut = totalStock !== undefined && totalStock <= 0;
   const isLowStock = totalStock !== undefined && totalStock > 0 && totalStock <= 5;
+  const displayThumbnail = cardData?.thumbnail || thumbnail;
   const secondaryImage = cardData?.secondaryImage ?? null;
 
   // Wishlist state
@@ -278,7 +281,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {/* Primary image */}
           <ImageWithFallback
             ref={imgRef}
-            src={thumbnail}
+            src={displayThumbnail}
             alt={name}
             className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${
               hovered && secondaryImage ? "opacity-0 scale-105" : "opacity-100 scale-100 group-hover:scale-105"
