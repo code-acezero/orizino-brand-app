@@ -656,15 +656,15 @@ const ProductDetailPage: React.FC = () => {
 
       {/* Price & Share — full width alignment with subtle hairline border */}
       <div className="flex items-center justify-between gap-3 w-full py-2.5 border-y border-border/30">
-        <div className="flex items-baseline gap-2.5 flex-wrap">
-          <span className={cfg.priceClass}>{formatPrice(effectivePrice)}</span>
+        <div className="flex items-baseline gap-2.5 flex-wrap notranslate skiptranslate" translate="no">
+          <span className={`${cfg.priceClass} notranslate`} translate="no">{formatPrice(effectivePrice)}</span>
           {product.compare_at_price && (
-            <span className="text-sm sm:text-base text-muted-foreground line-through">{formatPrice(product.compare_at_price)}</span>
+            <span className="text-sm sm:text-base text-muted-foreground line-through notranslate" translate="no">{formatPrice(product.compare_at_price)}</span>
           )}
           {discount > 0 && (
-            <span className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 rounded-full ${
+            <span className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 rounded-full notranslate ${
               layout === "neon" ? "bg-primary/20 text-primary border border-primary/30" : "bg-primary/10 text-primary border border-primary/20"
-            }`}>
+            }`} translate="no">
               {layout === "neon" && <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 inline mr-0.5 sm:mr-1" />}
               Save {discount}%
             </span>

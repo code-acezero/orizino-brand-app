@@ -13,22 +13,32 @@ const CurrencyMenu: React.FC<{ variant?: "footer" | "default" }> = ({ variant = 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-medium transition-colors ${variant === "footer" ? "border border-border/40 hover:border-primary/40 text-muted-foreground hover:text-foreground" : "bg-secondary/50 hover:bg-secondary"}`}>
+        <button
+          translate="no"
+          className={`notranslate skiptranslate inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-medium transition-colors ${
+            variant === "footer"
+              ? "border border-border/40 hover:border-primary/40 text-muted-foreground hover:text-foreground"
+              : "bg-secondary/50 hover:bg-secondary"
+          }`}
+        >
           <Coins className="w-3 h-3" />
           <span className="font-mono">{active?.symbol}</span>
-          <span>{currency}</span>
+          <span className="font-semibold">{currency}</span>
           <ChevronDown className="w-2.5 h-2.5 opacity-60" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-56 p-1 rounded-2xl">
+      <PopoverContent align="end" className="w-56 p-1 rounded-2xl notranslate skiptranslate" translate="no">
         <div className="max-h-64 overflow-y-auto">
           {list.map((c) => {
             const isActive = c.code === currency;
             return (
               <button
                 key={c.code}
+                translate="no"
                 onClick={() => { setCurrency(c.code); setOpen(false); }}
-                className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs transition-colors ${isActive ? "bg-primary/10 text-primary" : "hover:bg-muted/60"}`}
+                className={`notranslate skiptranslate w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs transition-colors ${
+                  isActive ? "bg-primary/10 text-primary" : "hover:bg-muted/60"
+                }`}
               >
                 <span className="flex items-center gap-2 min-w-0">
                   <span className="font-mono w-6 text-center">{c.symbol}</span>

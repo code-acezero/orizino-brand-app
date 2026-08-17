@@ -17,7 +17,7 @@ const CurrencyWidget: React.FC<CurrencyWidgetProps> = ({ price }) => {
       <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
         <Globe className="w-3.5 h-3.5" /> Price in other currencies
       </p>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 notranslate skiptranslate" translate="no">
         {enabledCurrencies
           .filter((c) => c.code !== currency)
           .map((c) => {
@@ -28,8 +28,9 @@ const CurrencyWidget: React.FC<CurrencyWidgetProps> = ({ price }) => {
             return (
               <button
                 key={c.code}
+                translate="no"
                 onClick={() => setCurrency(c.code)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/40 bg-background/50 hover:border-primary/40 hover:bg-primary/5 transition-all text-sm"
+                className="notranslate skiptranslate flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/40 bg-background/50 hover:border-primary/40 hover:bg-primary/5 transition-all text-sm"
               >
                 <span className="font-display">{c.symbol}</span>
                 <span className="text-foreground font-medium">

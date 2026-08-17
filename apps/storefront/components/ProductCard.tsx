@@ -474,12 +474,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </div>
 
           {/* Price display with consistent fixed height */}
-          <div className="flex items-baseline justify-center gap-1.5 h-5 sm:h-6">
-            <span className="text-xs sm:text-sm md:text-base font-bold text-foreground tracking-tight">
+          <div className="flex items-baseline justify-center gap-1.5 h-5 sm:h-6 notranslate skiptranslate" translate="no">
+            <span className="text-xs sm:text-sm md:text-base font-bold text-foreground tracking-tight notranslate" translate="no">
               {formatPrice(price)}
             </span>
             {compareAtPrice && compareAtPrice > price && (
-              <span className="text-[10px] sm:text-xs text-muted-foreground/60 line-through font-medium">
+              <span className="text-[10px] sm:text-xs text-muted-foreground/60 line-through font-medium notranslate" translate="no">
                 {formatPrice(compareAtPrice)}
               </span>
             )}

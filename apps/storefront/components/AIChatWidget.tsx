@@ -651,36 +651,61 @@ const AIChatWidget: React.FC = () => {
     } catch {}
     return { edge: "right", yPercent: null };
   });
-  const dragRef = useRef<{ active: boolean; moved: boolean; startX: number; startY: number; curX: number; curY: number } | null>(null);
+  const dragRef = useRef<{ moved: boolean } | null>(null);
   const [dragging, setDragging] = useState(false);
   const [dragXY, setDragXY] = useState<{ x: number; y: number } | null>(null);
 
   const handleLauncherPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-    dragRef.current = { active: true, moved: false, startX: e.clientX, startY: e.clientY, curX: e.clientX, curY: e.clientY };
-  };
-  const handleLauncherPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
-    const d = dragRef.current; if (!d || !d.active) return;
-    const dx = e.clientX - d.startX, dy = e.clientY - d.startY;
-    if (!d.moved && Math.hypot(dx, dy) > 6) { d.moved = true; setDragging(true); }
-    if (d.moved) { d.curX = e.clientX; d.curY = e.clientY; setDragXY({ x: e.clientX, y: e.clientY }); }
-  };
-  const handleLauncherPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
-    const d = dragRef.current; if (!d) return;
-    if (d.moved) {
-      const edge: "left" | "right" = d.curX < window.innerWidth / 2 ? "left" : "right";
-      const margin = 80;
-      const y = Math.max(margin, Math.min(window.innerHeight - margin, d.curY));
-      const yPercent = y / window.innerHeight;
-      const next = { edge, yPercent };
-      setLauncherPos(next);
-      try { localStorage.setItem("ai-launcher-pos", JSON.stringify(next)); } catch {}
-      // suppress click
-      setTimeout(() => { dragRef.current = null; setDragging(false); setDragXY(null); }, 0);
-      e.preventDefault();
-      return;
-    }
-    dragRef.current = null; setDragging(false); setDragXY(null);
+    // Only primary button / single touch
+    if (e.button !== 0) return;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let hasMoved = false;
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      if (!hasMoved && Math.hypot(dx, dy) > 6) {
+        hasMoved = true;
+        setDragging(true);
+      }
+      if (hasMoved) {
+        const x = Math.max(28, Math.min(window.innerWidth - 28, moveEvent.clientX));
+        const y = Math.max(50, Math.min(window.innerHeight - 60, moveEvent.clientY));
+        setDragXY({ x, y });
+      }
+    };
+
+    const onPointerUp = (upEvent: PointerEvent) => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+
+      if (hasMoved) {
+        const edge: "left" | "right" = upEvent.clientX < window.innerWidth / 2 ? "left" : "right";
+        const margin = 70;
+        const y = Math.max(margin, Math.min(window.innerHeight - margin, upEvent.clientY));
+        const yPercent = y / window.innerHeight;
+        const next = { edge, yPercent };
+        setLauncherPos(next);
+        try { localStorage.setItem("ai-launcher-pos", JSON.stringify(next)); } catch {}
+
+        dragRef.current = { moved: true };
+        setTimeout(() => {
+          dragRef.current = null;
+          setDragging(false);
+          setDragXY(null);
+        }, 120);
+      } else {
+        dragRef.current = null;
+        setDragging(false);
+        setDragXY(null);
+      }
+    };
+
+    window.addEventListener("pointermove", onPointerMove, { passive: false });
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
   };
 
 
@@ -1553,20 +1578,27 @@ const AIChatWidget: React.FC = () => {
               setOpen(true);
             }}
             onPointerDown={handleLauncherPointerDown}
-            onPointerMove={handleLauncherPointerMove}
-            onPointerUp={handleLauncherPointerUp}
-            onPointerCancel={handleLauncherPointerUp}
-            className={`fixed z-[10001] group ${dragging ? "" : "transition-all duration-300"} touch-none select-none ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
+            className={`fixed z-[10001] group touch-none select-none ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
             style={
               dragging && dragXY
-                ? { left: dragXY.x - 32, top: dragXY.y - 32 }
+                ? {
+                    left: `${dragXY.x}px`,
+                    top: `${dragXY.y}px`,
+                    transform: "translate(-50%, -50%)",
+                    transition: "none",
+                  }
                 : launcherPos.yPercent != null
                 ? {
                     [launcherPos.edge]: "clamp(16px, 2.5vw, 40px)",
                     top: `${Math.max(8, Math.min(92, launcherPos.yPercent * 100))}%`,
                     transform: "translateY(-50%)",
+                    transition: "top 0.35s cubic-bezier(0.16, 1, 0.3, 1), left 0.35s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
                   } as React.CSSProperties
-                : { [launcherPos.edge]: "clamp(16px, 2.5vw, 40px)", bottom: mascotBottomPx }
+                : {
+                    [launcherPos.edge]: "clamp(16px, 2.5vw, 40px)",
+                    bottom: mascotBottomPx,
+                    transition: "bottom 0.35s cubic-bezier(0.16, 1, 0.3, 1), left 0.35s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
+                  }
             }
             aria-label="Open support chat (drag to reposition)"
           >

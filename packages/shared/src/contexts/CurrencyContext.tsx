@@ -90,19 +90,73 @@ const CurrencyContext = createContext<CurrencyContextType>({
 
 export const useCurrency = () => useContext(CurrencyContext);
 
-/** Detect user's country from geo IP (cached in sessionStorage) */
-const detectCountry = async (): Promise<string | null> => {
-  const cached = sessionStorage.getItem("user_country");
-  if (cached) return cached;
+/** Detect user's country code from timezone or fast Geo-IP APIs (cached in sessionStorage and localStorage) */
+export const detectCountry = async (): Promise<string | null> => {
+  if (typeof window === "undefined") return null;
+
+  const cached = sessionStorage.getItem("user_country") || localStorage.getItem("user_country_cached");
+  if (cached && cached.length === 2) return cached.toUpperCase();
+
+  // 1. Fast zero-latency Timezone mapping
   try {
-    const res = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(3000) });
-    const data = await res.json();
-    const code = data.country_code || data.country || null;
-    if (code) sessionStorage.setItem("user_country", code);
-    return code;
-  } catch {
-    return null;
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    if (/dhaka/i.test(tz)) return "BD";
+    if (/kolkata|calcutta/i.test(tz)) return "IN";
+    if (/karachi/i.test(tz)) return "PK";
+    if (/dubai/i.test(tz)) return "AE";
+    if (/riyadh/i.test(tz)) return "SA";
+    if (/qatar|doha/i.test(tz)) return "QA";
+    if (/kuwait/i.test(tz)) return "KW";
+    if (/bahrain/i.test(tz)) return "BH";
+    if (/muscat/i.test(tz)) return "OM";
+    if (/kuala_lumpur/i.test(tz)) return "MY";
+    if (/singapore/i.test(tz)) return "SG";
+    if (/bangkok/i.test(tz)) return "TH";
+    if (/tokyo/i.test(tz)) return "JP";
+    if (/seoul/i.test(tz)) return "KR";
+    if (/london/i.test(tz)) return "GB";
+    if (/new_york|chicago|los_angeles|denver|phoenix/i.test(tz)) return "US";
+    if (/toronto|vancouver|montreal/i.test(tz)) return "CA";
+    if (/sydney|melbourne|brisbane/i.test(tz)) return "AU";
+    if (/berlin|frankfurt/i.test(tz)) return "DE";
+    if (/paris/i.test(tz)) return "FR";
+    if (/rome/i.test(tz)) return "IT";
+    if (/madrid/i.test(tz)) return "ES";
+    if (/amsterdam/i.test(tz)) return "NL";
+  } catch {}
+
+  // 2. High-speed Geo-IP lookups with race/fallback
+  const endpoints = [
+    async () => {
+      const res = await fetch("https://api.country.is/", { signal: AbortSignal.timeout(2500) });
+      const data = await res.json();
+      return (data?.country as string) || null;
+    },
+    async () => {
+      const res = await fetch("https://ipwho.is/", { signal: AbortSignal.timeout(3000) });
+      const data = await res.json();
+      return (data?.country_code as string) || null;
+    },
+    async () => {
+      const res = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(3000) });
+      const data = await res.json();
+      return (data?.country_code as string) || (data?.country as string) || null;
+    },
+  ];
+
+  for (const fetcher of endpoints) {
+    try {
+      const code = await fetcher();
+      if (code && typeof code === "string" && code.length === 2) {
+        const upper = code.toUpperCase();
+        sessionStorage.setItem("user_country", upper);
+        localStorage.setItem("user_country_cached", upper);
+        return upper;
+      }
+    } catch {}
   }
+
+  return null;
 };
 
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -134,26 +188,43 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [config.enabled_currencies]
   );
 
-  // Detect user country and auto-select currency
+  // Auto-detect visitor's country and auto-select currency if available in settings
   useEffect(() => {
     const saved = localStorage.getItem("preferred_currency");
+    // If user has explicitly selected a valid enabled currency, honor their manual choice
     if (saved && config.enabled_currencies.includes(saved)) {
       setCurrencyState(saved);
       return;
     }
 
+    let isMounted = true;
+
     detectCountry().then((country) => {
+      if (!isMounted) return;
       setDetectedCountry(country);
+
       if (!country) {
-        setCurrencyState(config.default_currency);
+        setCurrencyState(config.default_currency || "BDT");
         return;
       }
-      // Find a matching enabled currency for this country
+
+      // Find matching currency for user's visiting country that is actively enabled in settings
       const match = ALL_CURRENCIES.find(
         (c) => c.countries.includes(country) && config.enabled_currencies.includes(c.code)
       );
-      setCurrencyState(match?.code || config.default_currency);
+
+      if (match) {
+        // Auto-select user's native currency
+        setCurrencyState(match.code);
+      } else {
+        // If native currency is not enabled in settings, use default store currency
+        setCurrencyState(config.default_currency || "BDT");
+      }
     });
+
+    return () => {
+      isMounted = false;
+    };
   }, [config]);
 
   const setCurrency = useCallback((code: string) => {
