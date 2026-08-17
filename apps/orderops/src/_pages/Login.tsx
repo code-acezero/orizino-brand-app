@@ -4,7 +4,7 @@ import { useBrandSettings } from "@/lib/brand";
 import { Button } from "@ui/components/ui/button";
 import { Input } from "@ui/components/ui/input";
 import { Label } from "@ui/components/ui/label";
-import { Package, Eye, EyeOff, ShieldCheck, ArrowRight, Sparkles, Lock } from "lucide-react";
+import { Package, Eye, EyeOff, ArrowRight, Lock } from "lucide-react";
 
 export function Login() {
   const { signIn } = useAuth();
@@ -25,11 +25,6 @@ export function Login() {
     setLoading(false);
   };
 
-  const handleAdminPrefill = (adminEmail: string) => {
-    setEmail(adminEmail);
-    setError(null);
-  };
-
   return (
     <div
       className="min-h-screen flex items-center justify-center bg-background px-4 relative overflow-hidden selection:bg-primary selection:text-primary-foreground"
@@ -45,36 +40,27 @@ export function Login() {
       <div className="w-full max-w-md space-y-6 relative z-10">
         {/* Brand Header */}
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="relative group">
-            <div className="w-18 h-18 rounded-3xl bg-secondary/60 border border-border/80 flex items-center justify-center shadow-xl shadow-black/40 overflow-hidden backdrop-blur-md p-3">
-              {brand.logoUrl ? (
-                <img
-                  src={brand.logoUrl}
-                  alt={brand.siteName}
-                  className="w-full h-full object-contain filter drop-shadow-sm"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = "none";
-                  }}
-                />
-              ) : (
-                <Package className="w-8 h-8 text-primary" />
-              )}
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-md">
-              <ShieldCheck className="w-3.5 h-3.5" />
-            </div>
+          <div className="w-18 h-18 rounded-3xl bg-secondary/60 border border-border/80 flex items-center justify-center shadow-xl shadow-black/40 overflow-hidden backdrop-blur-md p-3">
+            {brand.logoUrl ? (
+              <img
+                src={brand.logoUrl}
+                alt={brand.siteName}
+                className="w-full h-full object-contain filter drop-shadow-sm"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = "none";
+                }}
+              />
+            ) : (
+              <Package className="w-8 h-8 text-primary" />
+            )}
           </div>
 
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[11px] font-semibold mb-1.5">
-              <Sparkles className="w-3 h-3" />
-              <span>Operations & Fulfillment Hub</span>
-            </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground font-display">
               {brand.siteName} OrderOps
             </h1>
             <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
-              {brand.brandTagline || "Sign in with your staff account to manage orders, scanning & dispatch"}
+              {brand.brandTagline || "The mark of what's next."}
             </p>
           </div>
         </div>
