@@ -106,7 +106,6 @@ export const ADMIN_DOMAIN_GROUPS: AdminDomainGroup[] = [
     sections: ["orders", "offline_orders", "customers", "analytics"],
     items: [
       { label: "Sales Dashboard",      url: "/sales",                      icon: LayoutGrid,  section: "orders" },
-      { label: "OrderOps Hub",         url: "/sales/orderops",             icon: ScanLine,    section: "orders", badge: "HUB", featured: true, keywords: ["pack", "ship", "scanner", "dispatch", "courier", "steadfast", "pathao"] },
       { label: "Orders & Returns",     url: "/sales/orders",               icon: ShoppingCart,section: "orders", keywords: ["returns", "exchange", "refund"] },
       { label: "Offline Orders (POS)", url: "/sales/offline-orders",       icon: CreditCard,  section: "offline_orders", badge: "POS", keywords: ["cash", "counter", "in-person", "receipt"] },
       { label: "Product Scanner",      url: "/sales/products-management?tab=scanner", icon: ScanLine, section: "products", badge: "SCAN", keywords: ["camera", "barcode", "serial", "verification"] },
@@ -201,7 +200,6 @@ export const ADMIN_DOMAIN_GROUPS: AdminDomainGroup[] = [
       { label: "BrandHome UI",          url: "/brand/landing",              icon: Presentation, section: "portfolio", keywords: ["corporate site", "landing page", "news", "docs"] },
       { label: "CMS & Legal Pages",     url: "/brand/cms-pages",            icon: FileText, section: "storefront_ui", keywords: ["custom pages", "markdown", "privacy", "terms"] },
       { label: "Mobile UI",             url: "/brand/mobile-ui",            icon: Smartphone, section: "storefront_ui", badge: "APP", keywords: ["pwa", "bottom navigation", "app theme"] },
-      { label: "OrderOps UI",           url: "/brand/orderops",             icon: AppWindow, section: "storefront_ui" },
       { label: "Explore / Social UI",   url: "/brand/explore-ui",           icon: Compass, section: "storefront_ui", keywords: ["social feed", "explore tabs"] },
     ],
   },
@@ -480,16 +478,6 @@ function DesktopMasterPanel() {
 
         {/* Quick Action Launchers */}
         <div className="flex items-center gap-2 shrink-0">
-          {(isAdmin || staff?.hasAccess("orders")) && (
-            <button
-              onClick={() => navigate({ to: "/sales/orderops" })}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-amber-500/50 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-all cursor-pointer"
-            >
-              <ScanLine className="w-3.5 h-3.5" />
-              <span>OrderOps Hub</span>
-            </button>
-          )}
-
           {(isAdmin || staff?.hasAccess("offline_orders")) && (
             <button
               onClick={() => navigate({ to: "/sales/offline-orders" })}

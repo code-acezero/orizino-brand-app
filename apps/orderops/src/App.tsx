@@ -8,6 +8,9 @@ import { Dashboard } from "@/_pages/Dashboard";
 import { Orders } from "@/_pages/Orders";
 import { OfflineOrders } from "@/_pages/OfflineOrders";
 import { Scanner } from "@/_pages/Scanner";
+import { CourierDispatch } from "@/_pages/CourierDispatch";
+import { LabelsAndSlips } from "@/_pages/LabelsAndSlips";
+import { ReturnsIntake } from "@/_pages/ReturnsIntake";
 import { useOrderOpsTheme } from "@/lib/theme";
 import { lazy, Suspense, useState, useEffect } from "react";
 
@@ -83,8 +86,11 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/orders" element={<Orders />} />
-                <Route path="/offline" element={<OfflineOrders />} />
                 <Route path="/scanner" element={<Scanner />} />
+                <Route path="/dispatch" element={<CourierDispatch />} />
+                <Route path="/labels" element={<LabelsAndSlips />} />
+                <Route path="/returns" element={<ReturnsIntake />} />
+                <Route path="/offline" element={<OfflineOrders />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </AppShell>

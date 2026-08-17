@@ -16,6 +16,7 @@ export * from "./components/NotFoundPage";
 export * from "./components/VerifyScannerPage";
 export * from "./types/verify";
 export * from "./lib/courier-locations";
+export * from "./lib/bangladesh-address-parser";
 export * from "./lib/app-urls";
 export * from "./lib/cross-app-urls";
 export * from "./lib/scanner-utils";

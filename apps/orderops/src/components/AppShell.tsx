@@ -1,14 +1,26 @@
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
-import { LayoutGrid, PackageSearch, ScanLine, Store, LogOut } from "lucide-react";
+import {
+  LayoutGrid,
+  PackageSearch,
+  ScanLine,
+  Store,
+  LogOut,
+  Truck,
+  Printer,
+  RotateCcw,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutGrid, end: true },
-  { to: "/orders", label: "Orders", icon: PackageSearch },
-  { to: "/offline", label: "Offline", icon: Store },
-  { to: "/scanner", label: "Scanner", icon: ScanLine },
+  { to: "/orders", label: "Fulfillment Queue", icon: PackageSearch },
+  { to: "/scanner", label: "Scanner Terminal", icon: ScanLine },
+  { to: "/dispatch", label: "Courier Dispatch", icon: Truck },
+  { to: "/labels", label: "Slips & 4x6 Labels", icon: Printer },
+  { to: "/returns", label: "Returns Intake", icon: RotateCcw },
+  { to: "/offline", label: "Offline POS", icon: Store },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -16,31 +28,37 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="h-screen flex overflow-hidden bg-background">
-      {/* h-screen + overflow-hidden: body never scrolls → Radix gap=0 → no layout shift on dropdowns */}
       {/* macOS-style sidebar — desktop only */}
-      <aside className="hidden md:flex md:w-60 md:flex-col md:border-r md:border-border/60 md:bg-sidebar md:shrink-0">
+      <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border/60 md:bg-sidebar md:shrink-0">
         <div className="px-5 pt-6 pb-4">
-          <p className="text-[15px] font-semibold tracking-tight">Order Ops</p>
-          <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+          <p className="text-[16px] font-bold tracking-tight text-foreground flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            OrderOps Station
+          </p>
+          <p className="text-xs text-muted-foreground truncate mt-0.5">{user?.email}</p>
         </div>
-        <nav className="flex-1 px-3 space-y-0.5">
+
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
           {NAV.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors ${
-                  isActive ? "bg-primary/10 text-primary font-medium" : "text-foreground/80 hover:bg-muted/60"
+                `flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs sm:text-sm transition-colors ${
+                  isActive
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-foreground/80 hover:bg-muted/60"
                 }`
               }
             >
-              <item.icon className="w-4.5 h-4.5" />
-              {item.label}
+              <item.icon className="w-4 h-4 shrink-0" />
+              <span className="truncate">{item.label}</span>
             </NavLink>
           ))}
         </nav>
-        <div className="p-3 space-y-2">
+
+        <div className="p-3 space-y-2 border-t border-border/40">
           <div className="px-1">
             <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-1.5">Appearance</p>
             <ThemeToggle />
@@ -48,7 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button
             type="button"
             onClick={() => void signOut()}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-muted-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs sm:text-sm text-muted-foreground hover:bg-muted/60 transition-colors cursor-pointer"
           >
             <LogOut className="w-4 h-4" /> Sign out
           </button>
@@ -60,19 +78,19 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Mobile top bar with theme toggle */}
         <header className="md:hidden flex items-center justify-between px-4 py-2.5 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-30">
           <div>
-            <p className="text-xs font-bold tracking-tight">Order Ops</p>
+            <p className="text-xs font-bold tracking-tight">OrderOps Station</p>
             <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{user?.email}</p>
           </div>
           <ThemeToggle compact />
         </header>
 
-        <main className="flex-1 min-h-0 overflow-y-auto px-4 pt-4 pb-24 md:pb-8 md:px-8 md:pt-8">
-          <div className="mx-auto w-full max-w-3xl">{children}</div>
+        <main className="flex-1 min-h-0 overflow-y-auto px-4 pt-4 pb-24 md:pb-8 md:px-8 md:pt-6">
+          <div className="mx-auto w-full max-w-5xl">{children}</div>
         </main>
 
         {/* iOS-style bottom tab bar — mobile only */}
         <nav
-          className="md:hidden fixed bottom-0 inset-x-0 ios-blur border-t border-border/60 flex items-stretch z-40"
+          className="md:hidden fixed bottom-0 inset-x-0 bg-background/90 backdrop-blur-xl border-t border-border/60 flex items-stretch overflow-x-auto no-scrollbar z-40"
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
           {NAV.map((item) => (
@@ -81,15 +99,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
-                  isActive ? "text-primary" : "text-muted-foreground"
+                `flex-1 min-w-[56px] flex flex-col items-center justify-center gap-0.5 py-2 text-[9px] font-medium transition-colors ${
+                  isActive ? "text-primary font-semibold" : "text-muted-foreground"
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <item.icon className={`w-5.5 h-5.5 ${isActive ? "scale-105" : ""} transition-transform`} strokeWidth={isActive ? 2.4 : 2} />
-                  {item.label}
+                  <item.icon className={`w-4.5 h-4.5 ${isActive ? "scale-110 text-primary" : ""} transition-transform`} />
+                  <span className="truncate max-w-[50px]">{item.label.split(" ")[0]}</span>
                 </>
               )}
             </NavLink>

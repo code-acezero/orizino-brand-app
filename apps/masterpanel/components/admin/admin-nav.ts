@@ -206,21 +206,6 @@ export const adminNav: AdminNavSection[] = [
         description: "Sales overview, revenue volume & quick stats",
       },
       {
-        title: "OrderOps Hub",
-        url: "/sales/orderops",
-        icon: AppWindow,
-        section: "orders",
-        description: "Order fulfillment queue, live barcode scanner terminal, courier booking & return intake",
-        keywords: "orderops orders fulfillment scanner barcode pos dispatch shipping returns labels",
-        children: [
-          { title: "Fulfillment Queue", url: "/sales/orderops" },
-          { title: "Scanner Terminal",  url: "/sales/orderops" },
-          { title: "Courier Dispatch",  url: "/sales/orderops" },
-          { title: "Slips & 4x6 Labels",url: "/sales/orderops" },
-          { title: "Returns Intake",    url: "/sales/orderops" },
-        ],
-      },
-      {
         title: "Orders & Returns",
         url: "/sales/orders",
         icon: ShoppingCart,
@@ -517,14 +502,6 @@ export const adminNav: AdminNavSection[] = [
         adminOnly: true,
         section: "storefront_ui",
         description: "Mobile-only widgets & mobile layout controls",
-      },
-      {
-        title: "OrderOps UI",
-        url: "/brand/orderops",
-        icon: AppWindow,
-        adminOnly: true,
-        section: "storefront_ui",
-        description: "OrderOps app interface, live scanner terminal & fulfillment controls",
       },
       {
         title: "Explore / Social UI",

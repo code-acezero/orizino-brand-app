@@ -1,6 +1,5 @@
-"use client";
 import { useMemo, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@/lib/server-fn-compat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +12,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScanner } from "@/components/admin/products/BarcodeScanner";
 import { lookupSerial } from "@/lib/serials.functions";
 import { createOfflineOrder } from "@/lib/offline-orders.functions";
-import { extractSerialCode } from "@orizino/shared";
+import {
+  extractSerialCode,
+  parseChatForCustomerInfo,
+  detectLocationFromAddress,
+  calculateCourierRate,
+  BD_COURIER_LOCATIONS,
+  BD_ALL_DISTRICTS,
+  getThanasForDistrict,
+  type ParsedCustomerInfo,
+} from "@orizino/shared";
 import { emailOrderInvoice } from "@/lib/order-invoice-email.functions";
 import { downloadInvoicePdf, printInvoicePdf, printThermalSlip, downloadStickerPdf, type PdfBrand } from "@/lib/invoice-pdf";
 import {
@@ -52,6 +60,9 @@ import {
   Truck,
   SlidersHorizontal,
   X,
+  Sparkles,
+  ClipboardPaste,
+  Compass,
 } from "lucide-react";
 
 type Source = "offline" | "page" | "whatsapp" | "tiktok" | "instagram";
@@ -186,31 +197,174 @@ export default function AdminOfflineOrders() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
+  const [district, setDistrict] = useState("Dhaka");
+  const [thana, setThana] = useState("Dhanmondi");
+  const [postalCode, setPostalCode] = useState("");
   const [source, setSource] = useState<Source>("offline");
   const [notes, setNotes] = useState("");
   const [shippingFee, setShippingFee] = useState<number>(0);
   const [isPrepaidDelivery, setIsPrepaidDelivery] = useState<boolean>(false);
   const [isDeliveryFeeManual, setIsDeliveryFeeManual] = useState<boolean>(false);
 
-  const calculateDeliveryFeeFromAddress = (addrText: string): number => {
-    const lower = addrText.toLowerCase();
-    if (!lower.trim()) return 70;
-    const suburbs = ["gazipur", "savar", "narayanganj", "keraniganj", "tongi", "ashulia", "dhamrai", "sreepur", "sonargaon"];
-    if (suburbs.some((s) => lower.includes(s))) return 105;
-    const insideDhaka = [
-      "dhaka", "dhanmondi", "mirpur", "gulshan", "banani", "uttara", "mohammadpur",
-      "badda", "khilgaon", "motijheel", "bashundhara", "rampura", "malibagh", "jatrabari",
-      "farmgate", "lalbagh", "old dhaka", "wari", "tejgaon", "mohakhali", "shahbagh",
-      "baridhara", "paltan", "shantinagar", "segunbagicha", "azimpur", "hazaribagh"
-    ];
-    if (insideDhaka.some((s) => lower.includes(s))) return 70;
-    return 130;
-  };
+  // Chat / Message Quick-Paste Parser State
+  const [chatPasteText, setChatPasteText] = useState("");
+  const [isChatBoxOpen, setIsChatBoxOpen] = useState(true);
+  const [parsedChatInfo, setParsedChatInfo] = useState<ParsedCustomerInfo | null>(null);
 
+  // Dynamic Logistics & Tariff Configuration Query
+  const { data: shippingSettings } = useQuery({
+    queryKey: ["site-shipping-settings"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("key, value")
+        .in("key", [
+          "shipping_fee",
+          "shipping_fee_suburbs",
+          "shipping_fee_outside_sadar",
+          "shipping_fee_outside",
+          "shipping_fee_inter_district",
+          "shipping_fee_same_city_osd",
+          "shipping_fee_intra_suburbs",
+          "shipping_fee_sameday",
+          "shipping_extra_kg_fee",
+          "free_shipping_threshold",
+          "free_shipping_enabled",
+          "cod_fee",
+          "cod_enabled",
+          "delivery_partners_config",
+        ]);
+      const map: Record<string, any> = {};
+      data?.forEach((s) => {
+        const val = s.value;
+        map[s.key] = typeof val === "object" && val !== null ? (val as any).value ?? val : val;
+      });
+      return map;
+    },
+    staleTime: 60 * 1000,
+  });
+
+  // Step 2: Scanning & Cart State
+  const [scannerActive, setScannerActive] = useState(true);
+  const [priceOverride, setPriceOverride] = useState<string>("");
+  const [units, setUnits] = useState<ScannedUnit[]>([]);
+  const [editingSerialId, setEditingSerialId] = useState<string | null>(null);
+  const [editPriceInput, setEditPriceInput] = useState<string>("");
+  const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
+  const [editGroupPriceInput, setEditGroupPriceInput] = useState<string>("");
+
+  const originalSubtotal = useMemo(() => {
+    return units.reduce((sum, u) => sum + (u.mainPrice || 0), 0);
+  }, [units]);
+
+  const totalSoldAmount = useMemo(() => {
+    return units.reduce((sum, u) => sum + (u.unitPrice || 0), 0);
+  }, [units]);
+
+  const totalDiscount = useMemo(() => {
+    return Math.max(0, originalSubtotal - totalSoldAmount);
+  }, [originalSubtotal, totalSoldAmount]);
+
+  const subtotal = totalSoldAmount;
+
+  const grouped = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        productName: string;
+        mainPrice: number;
+        unitPrice: number;
+        discount: number;
+        sku?: string | null;
+        serialIds: string[];
+        serialCodes: string[];
+        hasVaryingPrices: boolean;
+      }
+    >();
+    for (const u of units) {
+      const key = `${u.productId}::${u.variantId ?? ""}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          productName: u.productName,
+          mainPrice: u.mainPrice,
+          unitPrice: u.unitPrice,
+          discount: u.discount,
+          sku: u.sku,
+          serialIds: [u.serialId],
+          serialCodes: [u.serialCode],
+          hasVaryingPrices: false,
+        });
+      } else {
+        const item = map.get(key)!;
+        item.serialIds.push(u.serialId);
+        item.serialCodes.push(u.serialCode);
+        if (item.unitPrice !== u.unitPrice) {
+          item.hasVaryingPrices = true;
+        }
+      }
+    }
+    return Array.from(map.values());
+  }, [units]);
+
+  // Real-time location auto-detection from address string
+  const detectedLocation = useMemo(() => {
+    return detectLocationFromAddress(address);
+  }, [address]);
+
+  // Synchronized active district & thana
+  const effectiveDistrict = district || detectedLocation.district || "Dhaka";
+  const effectiveThana = thana || detectedLocation.thana || "Dhanmondi";
+
+  // Official Steadfast / Pathao dynamic courier rate calculation
+  const courierRateResult = useMemo(() => {
+    const defaultPartner = shippingSettings?.delivery_partners_config?.default_partner || "steadfast";
+    return calculateCourierRate({
+      originDistrict: "Dhaka",
+      district: effectiveDistrict,
+      thana: effectiveThana,
+      defaultPartner,
+      itemSubtotal: totalSoldAmount,
+      insideDhakaRate: Number(shippingSettings?.shipping_fee ?? 70),
+      sameCityOsdRate: Number(shippingSettings?.shipping_fee_same_city_osd ?? 60),
+      intraSuburbsRate: Number(shippingSettings?.shipping_fee_intra_suburbs ?? 60),
+      suburbsRate: Number(shippingSettings?.shipping_fee_suburbs ?? 105),
+      outsideDhakaSadarRate: Number(shippingSettings?.shipping_fee_outside_sadar ?? 115),
+      outsideDhakaRate: Number(shippingSettings?.shipping_fee_outside ?? 130),
+      interDistrictRate: Number(shippingSettings?.shipping_fee_inter_district ?? 135),
+      sameDayRate: Number(shippingSettings?.shipping_fee_sameday ?? 105),
+      extraKgFee: Number(shippingSettings?.shipping_extra_kg_fee ?? 20),
+      freeShippingThreshold: Number(shippingSettings?.free_shipping_threshold ?? 2500),
+      freeShippingEnabled: shippingSettings?.free_shipping_enabled !== false,
+      universalCodEnabled: true,
+      codFee: 0,
+      codPercentage: 0,
+      isCod: false,
+    });
+  }, [effectiveDistrict, effectiveThana, totalSoldAmount, shippingSettings]);
+
+  // Auto-update shipping fee when address or source changes
   const handleAddressChange = (newAddr: string) => {
     setAddress(newAddr);
+    const loc = detectLocationFromAddress(newAddr);
+    if (loc.district) setDistrict(loc.district);
+    if (loc.thana) setThana(loc.thana);
+    if (loc.postalCode) setPostalCode(loc.postalCode);
+
     if (!isDeliveryFeeManual && source !== "offline") {
-      setShippingFee(calculateDeliveryFeeFromAddress(newAddr));
+      const rate = calculateCourierRate({
+        originDistrict: "Dhaka",
+        district: loc.district,
+        thana: loc.thana,
+        itemSubtotal: totalSoldAmount,
+        insideDhakaRate: Number(shippingSettings?.shipping_fee ?? 70),
+        suburbsRate: Number(shippingSettings?.shipping_fee_suburbs ?? 105),
+        outsideDhakaSadarRate: Number(shippingSettings?.shipping_fee_outside_sadar ?? 115),
+        outsideDhakaRate: Number(shippingSettings?.shipping_fee_outside ?? 130),
+        interDistrictRate: Number(shippingSettings?.shipping_fee_inter_district ?? 135),
+        freeShippingThreshold: Number(shippingSettings?.free_shipping_threshold ?? 2500),
+        freeShippingEnabled: shippingSettings?.free_shipping_enabled !== false,
+      });
+      setShippingFee(rate.effectiveDeliveryFee);
     }
   };
 
@@ -221,19 +375,61 @@ export default function AdminOfflineOrders() {
       setIsPrepaidDelivery(false);
     } else {
       if (!isDeliveryFeeManual) {
-        setShippingFee(calculateDeliveryFeeFromAddress(address));
+        setShippingFee(courierRateResult.effectiveDeliveryFee);
       }
     }
   };
 
-  // Step 2: Scanning & Cart State
-  const [scannerActive, setScannerActive] = useState(true);
-  const [priceOverride, setPriceOverride] = useState<string>("");
-  const [units, setUnits] = useState<ScannedUnit[]>([]);
-  const [editingSerialId, setEditingSerialId] = useState<string | null>(null);
-  const [editPriceInput, setEditPriceInput] = useState<string>("");
-  const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
-  const [editGroupPriceInput, setEditGroupPriceInput] = useState<string>("");
+  const handleChatTextChange = (text: string) => {
+    setChatPasteText(text);
+    if (text.trim().length > 5) {
+      const parsed = parseChatForCustomerInfo(text);
+      setParsedChatInfo(parsed);
+    } else {
+      setParsedChatInfo(null);
+    }
+  };
+
+  const applyParsedChatInfo = (parsedToApply?: ParsedCustomerInfo | null) => {
+    const info = parsedToApply || parsedChatInfo || parseChatForCustomerInfo(chatPasteText);
+    if (!info) return;
+
+    if (info.name) setCustomerName(info.name);
+    if (info.phone) setPhone(info.phone);
+    if (info.email) setEmail(info.email);
+    if (info.fullAddress) {
+      setAddress(info.fullAddress);
+      const loc = detectLocationFromAddress(info.fullAddress);
+      if (loc.district) setDistrict(loc.district);
+      if (loc.thana) setThana(loc.thana);
+      if (loc.postalCode) setPostalCode(loc.postalCode);
+
+      if (!isDeliveryFeeManual && source !== "offline") {
+        const rate = calculateCourierRate({
+          originDistrict: "Dhaka",
+          district: loc.district,
+          thana: loc.thana,
+          itemSubtotal: totalSoldAmount,
+          insideDhakaRate: Number(shippingSettings?.shipping_fee ?? 70),
+          suburbsRate: Number(shippingSettings?.shipping_fee_suburbs ?? 105),
+          outsideDhakaSadarRate: Number(shippingSettings?.shipping_fee_outside_sadar ?? 115),
+          outsideDhakaRate: Number(shippingSettings?.shipping_fee_outside ?? 130),
+          interDistrictRate: Number(shippingSettings?.shipping_fee_inter_district ?? 135),
+          freeShippingThreshold: Number(shippingSettings?.free_shipping_threshold ?? 2500),
+          freeShippingEnabled: shippingSettings?.free_shipping_enabled !== false,
+        });
+        setShippingFee(rate.effectiveDeliveryFee);
+      }
+    }
+    if (info.notes) setNotes((prev) => (prev ? `${prev} · ${info.notes}` : info.notes));
+    if (info.detectedSource) setSource(info.detectedSource as Source);
+
+    toast({
+      title: "Customer Info Extracted",
+      description: `Filled: ${info.matchedFields.join(", ")} (${info.confidenceScore}% confidence)`,
+      type: "success",
+    });
+  };
 
   const lookupFn = useServerFn(lookupSerial);
   const createFn = useServerFn(createOfflineOrder);
@@ -338,58 +534,6 @@ export default function AdminOfflineOrders() {
     setEditingGroupName(null);
     setEditGroupPriceInput("");
   };
-
-  const originalSubtotal = useMemo(() => {
-    return units.reduce((sum, u) => sum + (u.mainPrice || 0), 0);
-  }, [units]);
-
-  const totalSoldAmount = useMemo(() => {
-    return units.reduce((sum, u) => sum + (u.unitPrice || 0), 0);
-  }, [units]);
-
-  const totalDiscount = useMemo(() => {
-    return Math.max(0, originalSubtotal - totalSoldAmount);
-  }, [originalSubtotal, totalSoldAmount]);
-
-  const subtotal = totalSoldAmount;
-
-  const grouped = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        productName: string;
-        mainPrice: number;
-        unitPrice: number;
-        discount: number;
-        sku?: string | null;
-        serialIds: string[];
-        serialCodes: string[];
-        hasVaryingPrices: boolean;
-      }
-    >();
-    for (const u of units) {
-      const key = `${u.productId}::${u.variantId ?? ""}`;
-      if (!map.has(key)) {
-        map.set(key, {
-          productName: u.productName,
-          mainPrice: u.mainPrice,
-          unitPrice: u.unitPrice,
-          discount: u.discount,
-          sku: u.sku,
-          serialIds: [],
-          serialCodes: [],
-          hasVaryingPrices: false,
-        });
-      }
-      const g = map.get(key)!;
-      if (g.unitPrice !== u.unitPrice && g.serialIds.length > 0) {
-        g.hasVaryingPrices = true;
-      }
-      g.serialIds.push(u.serialId);
-      g.serialCodes.push(u.serialCode);
-    }
-    return [...map.values()];
-  }, [units]);
 
   const removeUnit = (serialId: string) => {
     setUnits((prev) => prev.filter((u) => u.serialId !== serialId));
@@ -540,6 +684,105 @@ export default function AdminOfflineOrders() {
       ───────────────────────────────────────────────────────────── */}
       {step === "form" && (
         <div className="space-y-4 min-w-0">
+          {/* Smart Chat / WhatsApp / Social Auto-Extractor Card */}
+          <div className="rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/10 via-card/70 to-secondary/30 backdrop-blur-md p-4 sm:p-5 space-y-3.5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-2">
+                    Quick Chat / Message Auto-Extractor
+                    <Badge variant="outline" className="text-[10px] bg-primary/15 text-primary border-primary/30 font-mono">
+                      SMART PARSER
+                    </Badge>
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    Paste any raw conversation from WhatsApp, Facebook Page, TikTok, Instagram or SMS.
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsChatBoxOpen((o) => !o)}
+                className="text-xs h-8 text-primary hover:bg-primary/10 rounded-xl"
+              >
+                {isChatBoxOpen ? "Collapse" : "Open Chat Box"}
+              </Button>
+            </div>
+
+            {isChatBoxOpen && (
+              <div className="space-y-3 pt-1">
+                <Textarea
+                  value={chatPasteText}
+                  onChange={(e) => handleChatTextChange(e.target.value)}
+                  placeholder="Paste WhatsApp, Messenger, TikTok, or Instagram chat here...&#10;e.g. 'নাম: মো: রহিম, মোবাইল: 01712345678, ঠিকানা: বাসা ১২, রোড ৫, সেক্টর ৩, উত্তরা, ঢাকা ১২৩০, নোট: বিকেলে ডেলিভারি করবেন'"
+                  rows={3}
+                  className="rounded-xl text-xs sm:text-sm bg-background/90 border-primary/30 focus:border-primary resize-none font-mono"
+                />
+
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                    {parsedChatInfo?.name && (
+                      <Badge variant="secondary" className="text-[10px] gap-1 bg-secondary/80">
+                        👤 {parsedChatInfo.name}
+                      </Badge>
+                    )}
+                    {parsedChatInfo?.phone && (
+                      <Badge variant="secondary" className="text-[10px] gap-1 bg-secondary/80 font-mono">
+                        📱 {parsedChatInfo.phone}
+                      </Badge>
+                    )}
+                    {parsedChatInfo?.email && (
+                      <Badge variant="secondary" className="text-[10px] gap-1 bg-secondary/80">
+                        📧 {parsedChatInfo.email}
+                      </Badge>
+                    )}
+                    {parsedChatInfo?.district && (
+                      <Badge variant="secondary" className="text-[10px] gap-1 bg-primary/15 text-primary border-primary/20">
+                        📍 {parsedChatInfo.district} → {parsedChatInfo.thana}
+                      </Badge>
+                    )}
+                    {parsedChatInfo && (
+                      <span className="text-[10px] text-muted-foreground ml-1">
+                        ({parsedChatInfo.confidenceScore}% confidence)
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {chatPasteText.trim() && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setChatPasteText("");
+                          setParsedChatInfo(null);
+                        }}
+                        className="text-xs h-8 text-muted-foreground"
+                      >
+                        Clear
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => applyParsedChatInfo()}
+                      disabled={!chatPasteText.trim()}
+                      className="text-xs h-8 gap-1.5 rounded-xl bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs"
+                    >
+                      <ClipboardPaste className="w-3.5 h-3.5" /> Auto-Fill Customer Form
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
             {/* Customer Information Card */}
             <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-4 sm:p-5 space-y-4 flex flex-col justify-between">
@@ -592,16 +835,37 @@ export default function AdminOfflineOrders() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-foreground flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-muted-foreground" /> Delivery / Billing Address
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium text-foreground flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-muted-foreground" /> Delivery / Billing Address
+                    </Label>
+                    {address.trim() && (
+                      <Badge variant="outline" className="text-[10px] font-medium border-primary/30 text-primary bg-primary/5">
+                        📍 {detectedLocation.formattedLocation}
+                      </Badge>
+                    )}
+                  </div>
                   <Textarea
                     value={address}
                     onChange={(e) => handleAddressChange(e.target.value)}
-                    placeholder="House, Road, Area, City"
+                    placeholder="House, Road, Area, Thana/Police Station, District, Zip Code"
                     rows={2}
                     className="rounded-xl text-xs sm:text-sm resize-none bg-secondary/30 border-border/60"
                   />
+                  {address.trim() && source !== "offline" && (
+                    <div className="p-2.5 rounded-xl bg-secondary/30 border border-border/50 text-xs flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Compass className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-muted-foreground">
+                          Detected: <strong className="text-foreground">{effectiveDistrict}</strong> → <strong className="text-foreground">{effectiveThana}</strong>
+                        </span>
+                      </div>
+                      <div className="text-right font-medium text-foreground">
+                        Official Tariff: <strong className="text-primary font-bold">৳{courierRateResult.effectiveDeliveryFee}</strong>
+                        <span className="text-[10px] text-muted-foreground ml-1">({courierRateResult.deliveryDays})</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {source !== "offline" && (

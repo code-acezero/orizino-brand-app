@@ -45,7 +45,6 @@ import AdminReturns from "@/_pages/admin/AdminReturns";
 import AdminShipping from "@/_pages/admin/AdminShipping";
 import AdminCouriers from "@/_pages/admin/AdminCouriers";
 import AdminCourierManagement from "@/_pages/admin/AdminCourierManagement";
-import AdminOrderOps from "@/_pages/admin/AdminOrderOps";
 
 // Marketing & Email pages
 import AdminSeo from "@/_pages/admin/AdminSeo";
@@ -129,9 +128,6 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/sales/payments-couriers": AdminPaymentsCouriers,
   "/sales/payment-gateways": AdminPaymentGateways,
   "/sales/orders": AdminOrders,
-  "/sales/orderops": AdminOrderOps,
-  "/sales/order-ops": AdminOrderOps,
-  "/orderops": AdminOrderOps,
   "/sales/returns": AdminReturns,
   "/sales/shipping": AdminShipping,
   "/sales/couriers": AdminCouriers,
@@ -171,7 +167,6 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/brand/banners": AdminBanners,
   "/brand/footer": AdminFooter,
   "/brand/mobile-ui": AdminMobileUI,
-  "/brand/orderops": AdminOrderOps,
   "/brand/landing": AdminCompanyLanding,
   "/brand/news": AdminBrandHomeNews,
   "/brand/docs": AdminBrandHomeDocs,
