@@ -45,29 +45,33 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className = "" }) => {
   }, [items]);
 
   return (
-    <nav aria-label="Breadcrumb" className={`flex items-center text-sm ${className}`}>
-      <ol className="flex items-center gap-1 flex-wrap">
+    <nav aria-label="Breadcrumb" className={`w-full overflow-x-auto scrollbar-none ${className}`}>
+      <ol className="inline-flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap select-none py-0.5">
         {items.map((item, i) => {
           const isLast = i === items.length - 1;
+          const isFirst = i === 0;
           return (
-            <li key={i} className="flex items-center gap-1">
-              {i === 0 && (
-                <Home className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              )}
+            <li key={i} className="inline-flex items-center gap-1.5 shrink-0">
               {isLast || !item.href ? (
-                <span className="text-foreground font-medium truncate max-w-[200px]">
-                  {item.label}
+                <span className="inline-flex items-center gap-1.5 text-foreground font-medium truncate max-w-[180px] sm:max-w-[260px] leading-none">
+                  {isFirst && (
+                    <Home className="w-3.5 h-3.5 text-muted-foreground shrink-0" strokeWidth={1.75} />
+                  )}
+                  <span className="truncate">{item.label}</span>
                 </span>
               ) : (
                 <Link
                   to={item.href}
-                  className="text-muted-foreground hover:text-primary transition-colors truncate max-w-[200px]"
+                  className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors truncate max-w-[180px] sm:max-w-[260px] leading-none group"
                 >
-                  {item.label}
+                  {isFirst && (
+                    <Home className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" strokeWidth={1.75} />
+                  )}
+                  <span className="truncate">{item.label}</span>
                 </Link>
               )}
               {!isLast && (
-                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+                <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground/45 shrink-0 select-none" strokeWidth={2} />
               )}
             </li>
           );
