@@ -364,21 +364,32 @@ const ProductDetailPage: React.FC = () => {
   const hasVariants = variants.length > 0;
   const availableSizes = [...new Set(variants.filter(v => v.size).map(v => v.size))] as string[];
   const availableColors = [...new Set(variants.filter(v => v.color).map(v => v.color))] as string[];
-  const needsSize = availableSizes.length > 0 && !selectedSize;
-  const needsColor = availableColors.length > 0 && !selectedColor;
-  const requiresSelection = hasVariants && (needsSize || needsColor);
+  const sizeRequired = availableSizes.length > 0;
+  const colorRequired = availableColors.length > 0;
+  const hasCompleteSelection = (!sizeRequired || !!selectedSize) && (!colorRequired || !!selectedColor);
+  const requiresSelection = hasVariants && !hasCompleteSelection;
+
+  const selectedVariant = hasVariants && hasCompleteSelection
+    ? variants.find(v => (!sizeRequired || v.size === selectedSize) && (!colorRequired || v.color === selectedColor)) || null
+    : null;
+
+  const totalProductStock = hasVariants
+    ? variants.reduce((sum, v) => sum + (v.stock_quantity || 0), 0)
+    : (product?.stock_quantity ?? 0);
 
   const effectiveStock = hasVariants
     ? (() => {
-        const match = variants.find(v => (!selectedSize || v.size === selectedSize) && (!selectedColor || v.color === selectedColor));
-        if (selectedSize || selectedColor) return match?.stock_quantity ?? 0;
-        return variants.reduce((sum, v) => sum + v.stock_quantity, 0);
+        if (hasCompleteSelection) return selectedVariant?.stock_quantity ?? 0;
+        if (selectedColor && !selectedSize) {
+          return variants.filter(v => v.color === selectedColor).reduce((sum, v) => sum + (v.stock_quantity || 0), 0);
+        }
+        if (selectedSize && !selectedColor) {
+          return variants.filter(v => v.size === selectedSize).reduce((sum, v) => sum + (v.stock_quantity || 0), 0);
+        }
+        return totalProductStock;
       })()
-    : product?.stock_quantity ?? 0;
+    : (product?.stock_quantity ?? 0);
 
-  const selectedVariant = hasVariants
-    ? variants.find(v => (!selectedSize || v.size === selectedSize) && (!selectedColor || v.color === selectedColor))
-    : null;
   const effectivePrice = selectedVariant?.price_override ?? product?.price ?? 0;
 
   // Build selection guide for the buy box + disabled reason for the dynamic island
@@ -714,17 +725,18 @@ const ProductDetailPage: React.FC = () => {
       )}
 
       <ProductActions
-        quantity={quantity} setQuantity={setQuantity} maxQuantity={effectiveStock}
+        quantity={quantity} setQuantity={setQuantity} maxQuantity={Math.max(1, effectiveStock)}
         onAddToCart={addToCart} onBuyNow={buyNow} onToggleWishlist={toggleWishlist}
         inWishlist={inWishlist}
-        addingToCart={addingToCart} inStock={effectiveStock > 0}
+        addingToCart={addingToCart}
+        inStock={hasCompleteSelection ? effectiveStock > 0 : totalProductStock > 0}
         layout={layout === "minimal" ? "minimal" : "premium"}
         disabled={requiresSelection}
         disabledReason={disabledReason}
         selectionSteps={selectionSteps}
       />
 
-      {effectiveStock === 0 && (
+      {hasCompleteSelection && effectiveStock === 0 && (
         <NotifyWhenAvailable productId={product.id} variantId={selectedVariant?.id}
           variantLabel={[selectedSize, selectedColor].filter(Boolean).join(" / ") || undefined} />
       )}

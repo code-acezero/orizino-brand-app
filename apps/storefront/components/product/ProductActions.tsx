@@ -39,9 +39,9 @@ const ProductActions: React.FC<ProductActionsProps> = ({
               : "bg-destructive/10 text-destructive border-destructive/25"
           }`}>
             {inStock ? <Check className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
-            {inStock ? "In Stock" : "Out of Stock"}
+            {inStock ? (disabled ? "In Stock" : "In Stock") : "Out of Stock"}
           </span>
-          {inStock && maxQuantity <= 10 && (
+          {inStock && !disabled && maxQuantity <= 10 && (
             <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/8 border border-amber-500/20 px-2.5 py-1 rounded-xl">
               Only {maxQuantity} left
             </span>

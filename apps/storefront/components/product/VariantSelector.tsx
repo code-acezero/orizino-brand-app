@@ -79,12 +79,30 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
     }
   }, [variants, selectedSize, selectedColor, onSizeChange, onColorChange]);
 
-  const isComboInStock = (s: string | null, c: string | null) =>
-    variants.some(v => (s === null || v.size === s) && (c === null || v.color === c) && v.stock_quantity > 0);
+  const isComboInStock = (s: string | null, c: string | null) => {
+    return variants.some(v => {
+      const matchSize = s === null || v.size === s;
+      const matchColor = c === null || v.color === c;
+      return matchSize && matchColor && (v.stock_quantity || 0) > 0;
+    });
+  };
 
-  const getComboStock = (s: string | null, c: string | null) =>
-    variants.find(v => (s === null || v.size === s) && (c === null || v.color === c))?.stock_quantity ?? 0;
+  const getComboStock = (s: string | null, c: string | null) => {
+    if (s !== null && c !== null) {
+      return variants.find(v => v.size === s && v.color === c)?.stock_quantity ?? 0;
+    }
+    if (s !== null && c === null) {
+      return variants.filter(v => v.size === s).reduce((sum, v) => sum + (v.stock_quantity || 0), 0);
+    }
+    if (s === null && c !== null) {
+      return variants.filter(v => v.color === c).reduce((sum, v) => sum + (v.stock_quantity || 0), 0);
+    }
+    return variants.reduce((sum, v) => sum + (v.stock_quantity || 0), 0);
+  };
 
+  const sizeRequired = sizes.length > 0;
+  const colorRequired = colors.length > 0;
+  const hasCompleteSelection = (!sizeRequired || !!selectedSize) && (!colorRequired || !!selectedColor);
   const stock = getComboStock(selectedSize, selectedColor);
 
   return (
@@ -204,19 +222,27 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
       {/* ── Stock status pill ── */}
       {(selectedSize || selectedColor) && (
         <div className={cn(
-          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border shadow-xs",
+          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border shadow-xs transition-all",
           stock === 0
             ? "bg-destructive/10 text-destructive border-destructive/20"
             : stock <= 5
               ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
               : "bg-primary/10 text-primary border-primary/20"
         )}>
-          {stock === 0 ? (
-            <><AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Out of stock for this selection</>
-          ) : stock <= 5 ? (
-            <><AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Only {stock} left — order soon</>
+          {hasCompleteSelection ? (
+            stock === 0 ? (
+              <><AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Out of stock for this selection</>
+            ) : stock <= 5 ? (
+              <><AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Only {stock} left — order soon</>
+            ) : (
+              <><Check className="w-3.5 h-3.5 shrink-0" /> {stock} units available</>
+            )
           ) : (
-            <><Check className="w-3.5 h-3.5 shrink-0" /> {stock} units available</>
+            stock === 0 ? (
+              <><AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Out of stock in {selectedColor || selectedSize}</>
+            ) : (
+              <><Check className="w-3.5 h-3.5 shrink-0" /> {stock} units available in {selectedColor || selectedSize} — Select a {sizeRequired && !selectedSize ? "Size" : "Color"}</>
+            )
           )}
         </div>
       )}
