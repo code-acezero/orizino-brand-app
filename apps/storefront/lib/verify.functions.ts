@@ -183,7 +183,7 @@ export const verifyPublicSerial = createServerFn({ method: "POST" })
     const rawCode = data.code.trim();
     const cleanCode = extractSerialCode(rawCode);
 
-    // 1. Check Product Serials first
+    // 1. Check Product Serials first via SQL query
     const row = await loadSerialCore(cleanCode);
 
     if (row) {
@@ -234,6 +234,19 @@ export const verifyPublicSerial = createServerFn({ method: "POST" })
         };
       }
       return base;
+    }
+
+    // 1b. Check via dedicated PostgreSQL SECURITY DEFINER RPC function
+    try {
+      const sb: any = supabaseAdmin;
+      const { data: rpcData, error: rpcError } = await sb.rpc("verify_public_serial", {
+        lookup_code: cleanCode || rawCode,
+      });
+      if (!rpcError && rpcData && rpcData.found) {
+        return rpcData as VerifyResult;
+      }
+    } catch (rpcErr) {
+      console.error("[verifyPublicSerial] RPC error:", rpcErr);
     }
 
     // 2. If not found in serials, check if cleanCode is an Order Number

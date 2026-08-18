@@ -28,12 +28,31 @@ function VerifyContent() {
   const lookup = async (codeToLookup: string) => {
     if (user) {
       try {
-        return await ownedFn({ data: { code: codeToLookup } });
+        const owned = await ownedFn({ data: { code: codeToLookup } });
+        if (owned && owned.found) return owned;
       } catch {
         /* fall through to public */
       }
     }
-    return await publicFn({ data: { code: codeToLookup } });
+    try {
+      const res = await publicFn({ data: { code: codeToLookup } });
+      if (res && res.found) return res;
+    } catch {
+      /* fall through to API endpoint fallback */
+    }
+
+    // Direct HTTP API fallback (handles edge/network/Server Action edge cases)
+    try {
+      const resp = await fetch(`/api/verify?code=${encodeURIComponent(codeToLookup)}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data) return data;
+      }
+    } catch (e) {
+      console.error("[verify] API fallback error:", e);
+    }
+
+    return { found: false, genuine: false, serial_code: codeToLookup };
   };
 
   const unlockInvoice = async (codeOrOrder: string, customerName: string, customerPhoneOrEmail: string) => {
