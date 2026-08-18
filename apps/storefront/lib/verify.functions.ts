@@ -46,7 +46,7 @@ async function loadSerialCore(code: string) {
   const raw = (code || "").trim();
   if (!raw) return null;
 
-  const selectFields = "serial_code, status, sold_at, sold_order_id, products(name, slug, thumbnail, images, category)";
+  const selectFields = "serial_code, status, sold_at, sold_order_id, products(name, slug, thumbnail, images, categories(name))";
 
   // 1. Direct exact match
   const { data: exact } = await sb
@@ -111,7 +111,7 @@ async function loadProductBySku(code: string) {
   // Try exact SKU match first, then partial ilike for flexibility
   const { data: exact } = await sb
     .from("products")
-    .select("id, name, slug, sku, thumbnail, images, category")
+    .select("id, name, slug, sku, thumbnail, images, categories(name)")
     .eq("is_active", true)
     .ilike("sku", code)
     .maybeSingle();
@@ -163,7 +163,7 @@ export const verifyPublicSerial = createServerFn({ method: "POST" })
               slug: row.products.slug,
               thumbnail: row.products.thumbnail,
               images: row.products.images,
-              category: row.products.category,
+              category: (row.products as any)?.categories?.name || null,
             }
           : undefined,
       };
@@ -271,7 +271,7 @@ export const verifyPublicSerial = createServerFn({ method: "POST" })
           slug: productBySku.slug,
           thumbnail: productBySku.thumbnail,
           images: productBySku.images,
-          category: productBySku.category,
+          category: (productBySku as any)?.categories?.name || null,
         },
       };
     }
@@ -427,7 +427,7 @@ export const verifyOwnedSerial = createServerFn({ method: "POST" })
             slug: row.products.slug,
             thumbnail: row.products.thumbnail,
             images: row.products.images,
-            category: row.products.category,
+            category: (row.products as any)?.categories?.name || null,
           }
         : undefined,
     };
