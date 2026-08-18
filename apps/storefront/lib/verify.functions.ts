@@ -48,58 +48,74 @@ async function loadSerialCore(code: string) {
 
   const selectFields = "serial_code, status, sold_at, sold_order_id, products(name, slug, thumbnail, images, categories(name))";
 
-  // 1. Direct exact match
-  const { data: exact } = await sb
-    .from("product_serials")
-    .select(selectFields)
-    .eq("serial_code", raw)
-    .maybeSingle();
-
-  if (exact) return exact;
-
-  // 2. Normalized hyphens & stripped prefixes (e.g. "ORZ ORZGAC 000005" -> "ORZ-ORZGAC-000005")
-  const hyphenated = raw
-    .replace(/^SN:?\s*/i, "")
-    .replace(/^S\/N:?\s*/i, "")
-    .replace(/^SERIAL:?\s*/i, "")
-    .replace(/^CODE:?\s*/i, "")
-    .replace(/^#/, "")
-    .trim()
-    .replace(/[\s_.]+/g, "-")
-    .toUpperCase();
-
-  if (hyphenated && hyphenated !== raw) {
-    const { data: hypData } = await sb
+  try {
+    // 1. Direct exact match
+    const { data: exact, error: err1 } = await sb
       .from("product_serials")
       .select(selectFields)
-      .eq("serial_code", hyphenated)
+      .eq("serial_code", raw)
       .maybeSingle();
-    if (hypData) return hypData;
-  }
 
-  // 3. Case-insensitive ilike match
-  const { data: ilikeData } = await sb
-    .from("product_serials")
-    .select(selectFields)
-    .ilike("serial_code", hyphenated || raw)
-    .maybeSingle();
-  if (ilikeData) return ilikeData;
+    if (err1) {
+      console.error("[loadSerialCore] Exact match error:", err1);
+    }
+    if (exact) return exact;
 
-  // 4. Match with flexible delimiters (e.g., ORZ%ORZGAC%000005)
-  const flexiblePattern = raw
-    .replace(/^SN:?\s*/i, "")
-    .replace(/^S\/N:?\s*/i, "")
-    .replace(/[^A-Za-z0-9]/g, "%")
-    .replace(/%+/, "%");
+    // 2. Normalized hyphens & stripped prefixes (e.g. "ORZ ORZGAC 000005" -> "ORZ-ORZGAC-000005")
+    const hyphenated = raw
+      .replace(/^SN:?\s*/i, "")
+      .replace(/^S\/N:?\s*/i, "")
+      .replace(/^SERIAL:?\s*/i, "")
+      .replace(/^CODE:?\s*/i, "")
+      .replace(/^#/, "")
+      .trim()
+      .replace(/[\s_.]+/g, "-")
+      .toUpperCase();
 
-  if (flexiblePattern && flexiblePattern.length >= 4) {
-    const { data: flexData } = await sb
+    if (hyphenated && hyphenated !== raw) {
+      const { data: hypData, error: err2 } = await sb
+        .from("product_serials")
+        .select(selectFields)
+        .eq("serial_code", hyphenated)
+        .maybeSingle();
+      if (err2) {
+        console.error("[loadSerialCore] Hyphenated match error:", err2);
+      }
+      if (hypData) return hypData;
+    }
+
+    // 3. Case-insensitive ilike match
+    const { data: ilikeData, error: err3 } = await sb
       .from("product_serials")
       .select(selectFields)
-      .ilike("serial_code", `%${flexiblePattern}%`)
-      .limit(1)
+      .ilike("serial_code", hyphenated || raw)
       .maybeSingle();
-    if (flexData) return flexData;
+    if (err3) {
+      console.error("[loadSerialCore] ilike match error:", err3);
+    }
+    if (ilikeData) return ilikeData;
+
+    // 4. Match with flexible delimiters (e.g., ORZ%ORZGAC%000005)
+    const flexiblePattern = raw
+      .replace(/^SN:?\s*/i, "")
+      .replace(/^S\/N:?\s*/i, "")
+      .replace(/[^A-Za-z0-9]/g, "%")
+      .replace(/%+/, "%");
+
+    if (flexiblePattern && flexiblePattern.length >= 4) {
+      const { data: flexData, error: err4 } = await sb
+        .from("product_serials")
+        .select(selectFields)
+        .ilike("serial_code", `%${flexiblePattern}%`)
+        .limit(1)
+        .maybeSingle();
+      if (err4) {
+        console.error("[loadSerialCore] Flexible match error:", err4);
+      }
+      if (flexData) return flexData;
+    }
+  } catch (e) {
+    console.error("[loadSerialCore] Unexpected error:", e);
   }
 
   return null;
@@ -108,41 +124,61 @@ async function loadSerialCore(code: string) {
 /** Fallback: try to find an Orizino product by SKU (handles retail barcode / SKU label scans) */
 async function loadProductBySku(code: string) {
   const sb: any = supabaseAdmin;
-  // Try exact SKU match first, then partial ilike for flexibility
-  const { data: exact } = await sb
-    .from("products")
-    .select("id, name, slug, sku, thumbnail, images, categories(name)")
-    .eq("is_active", true)
-    .ilike("sku", code)
-    .maybeSingle();
-  if (exact) return exact;
+  try {
+    // Try exact SKU match first, then partial ilike for flexibility
+    const { data: exact, error } = await sb
+      .from("products")
+      .select("id, name, slug, sku, thumbnail, images, categories(name)")
+      .eq("is_active", true)
+      .ilike("sku", code)
+      .maybeSingle();
+    if (error) console.error("[loadProductBySku] Error:", error);
+    if (exact) return exact;
+  } catch (e) {
+    console.error("[loadProductBySku] Unexpected error:", e);
+  }
   return null;
 }
 
 async function loadOrder(orderId: string) {
   const sb: any = supabaseAdmin;
-  const { data } = await sb
-    .from("orders")
-    .select("id, user_id, order_number, total, subtotal, shipping_fee, coupon_discount, customer_name, customer_email, customer_phone, shipping_address, payment_method, payment_status, created_at, guest_email, is_guest, order_items(id, name, sku, quantity, unit_price, total_price, image_url)")
-    .eq("id", orderId)
-    .maybeSingle();
-  return data;
+  try {
+    const { data, error } = await sb
+      .from("orders")
+      .select("id, user_id, order_number, total, subtotal, shipping_fee, coupon_discount, customer_name, customer_email, customer_phone, shipping_address, payment_method, payment_status, created_at, guest_email, is_guest, order_items(id, name, sku, quantity, unit_price, total_price, image_url)")
+      .eq("id", orderId)
+      .maybeSingle();
+    if (error) console.error("[loadOrder] Error:", error);
+    return data;
+  } catch (e) {
+    console.error("[loadOrder] Unexpected error:", e);
+    return null;
+  }
 }
 
 async function loadOrderByNumber(orderNumber: string) {
   const sb: any = supabaseAdmin;
   const clean = orderNumber.replace(/^#/, "").trim();
-  const { data } = await sb
-    .from("orders")
-    .select("id, user_id, order_number, total, subtotal, shipping_fee, coupon_discount, customer_name, customer_email, customer_phone, shipping_address, payment_method, payment_status, created_at, guest_email, is_guest, order_items(id, name, sku, quantity, unit_price, total_price, image_url)")
-    .ilike("order_number", `%${clean}%`)
-    .maybeSingle();
-  return data;
+  try {
+    const { data, error } = await sb
+      .from("orders")
+      .select("id, user_id, order_number, total, subtotal, shipping_fee, coupon_discount, customer_name, customer_email, customer_phone, shipping_address, payment_method, payment_status, created_at, guest_email, is_guest, order_items(id, name, sku, quantity, unit_price, total_price, image_url)")
+      .ilike("order_number", `%${clean}%`)
+      .maybeSingle();
+    if (error) console.error("[loadOrderByNumber] Error:", error);
+    return data;
+  } catch (e) {
+    console.error("[loadOrderByNumber] Unexpected error:", e);
+    return null;
+  }
 }
 
 /** PUBLIC: Authenticity lookup supporting both Product Serials and Order Numbers */
 export const verifyPublicSerial = createServerFn({ method: "POST" })
-  .inputValidator((d: { code: string }) => z.object({ code: z.string().min(1).max(256) }).parse(d))
+  .inputValidator((d: any) => {
+    const code = typeof d === "string" ? d : (d?.code ?? d?.serial ?? d?.data?.code ?? "");
+    return z.object({ code: z.string().min(1).max(256) }).parse({ code });
+  })
   .handler(async ({ data }): Promise<VerifyResult> => {
     const rawCode = data.code.trim();
     const cleanCode = extractSerialCode(rawCode);
@@ -391,7 +427,10 @@ export const unlockOrderInvoice = createServerFn({ method: "POST" })
 /** AUTHED: reveals full order breakdown if the caller owns the sold order */
 export const verifyOwnedSerial = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { code: string }) => z.object({ code: z.string().min(1).max(256) }).parse(d))
+  .inputValidator((d: any) => {
+    const code = typeof d === "string" ? d : (d?.code ?? d?.serial ?? d?.data?.code ?? "");
+    return z.object({ code: z.string().min(1).max(256) }).parse({ code });
+  })
   .handler(async ({ data, context }): Promise<VerifyResult> => {
     const rawCode = data.code.trim();
     const cleanCode = extractSerialCode(rawCode);

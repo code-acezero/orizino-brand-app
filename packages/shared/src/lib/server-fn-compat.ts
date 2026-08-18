@@ -65,13 +65,14 @@ export function createServerFn(options?: any) {
       const serverAction = async (inputArgs?: any) => {
         // 1. Normalize data argument
         let rawData = inputArgs;
-        if (
-          inputArgs &&
-          typeof inputArgs === "object" &&
-          "data" in inputArgs &&
-          Object.keys(inputArgs).length === 1
-        ) {
-          rawData = inputArgs.data;
+        if (inputArgs !== undefined && inputArgs !== null) {
+          if (
+            typeof inputArgs === "object" &&
+            "data" in inputArgs &&
+            inputArgs.data !== undefined
+          ) {
+            rawData = inputArgs.data;
+          }
         }
 
         // 2. Validate input if validator provided
@@ -80,6 +81,7 @@ export function createServerFn(options?: any) {
           try {
             validatedData = validatorFn(rawData);
           } catch (err: any) {
+            console.error("[server-fn-compat] Validation error:", err);
             throw new Error(err?.message || "Invalid input parameters");
           }
         }
