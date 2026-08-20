@@ -27,7 +27,7 @@ import {
   ArrowLeft,
   User,
 } from "lucide-react";
-import { adminNav, mobilePrimary, allAdminItems, type AdminNavItem } from "./admin-nav";
+import { adminNav, mobilePrimary, allAdminItems, allAdminDestinations, type AdminNavItem } from "./admin-nav";
 import { AdminCommandPalette } from "./AdminCommandPalette";
 import { useStaffSections } from "@/hooks/use-staff-sections";
 import { LayoutGrid } from "lucide-react";
@@ -116,13 +116,13 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
 
   const pageMeta = useMemo(() => {
     const normalisedPath = location.pathname.replace(/\/+$/, "") || "/";
-    const match = [...allAdminItems]
+    const match = [...allAdminDestinations]
       .sort((a, b) => splitNavUrl(b.url).path.length - splitNavUrl(a.url).path.length)
       .find((i) => {
         const { path } = splitNavUrl(i.url);
         return path === "/" ? normalisedPath === "/" : normalisedPath === path || normalisedPath.startsWith(path + "/");
       });
-    return match ?? { title: "Admin", description: "" };
+    return match ?? { title: "Admin", description: "", icon: undefined };
   }, [location.pathname]);
 
   const isRoot = location.pathname === "/";
@@ -341,25 +341,25 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
             className="w-[320px] p-0 flex flex-col bg-background border-r border-border/60"
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
-            <div className="px-4 py-4 border-b border-border/40 flex items-center gap-3">
+            <div className="px-4 py-3.5 border-b border-border/40 flex items-center gap-2.5">
               {logoUrl ? (
                 <img
                   src={logoUrl}
                   alt={siteName}
-                  className="w-10 h-10 rounded-2xl object-cover ring-1 ring-border/40"
+                  className="w-7 h-7 object-contain shrink-0"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center shadow-[0_0_20px_-4px_hsl(var(--primary)/0.6)]">
-                  <span className="text-primary-foreground font-bold text-base">
+                <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center shadow-xs shrink-0">
+                  <span className="text-primary-foreground font-bold text-xs">
                     {(siteName || "A").charAt(0).toUpperCase()}
                   </span>
                 </div>
               )}
               <div className="min-w-0">
-                <h2 className="font-display text-[15px] font-bold leading-tight tracking-tight">
+                <h2 className="font-display text-sm font-bold leading-tight tracking-tight">
                   Control Center
                 </h2>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-[0.16em] leading-tight mt-0.5">
+                <p className="text-[9.5px] text-muted-foreground uppercase tracking-widest leading-tight mt-0.5 font-medium">
                   {role === "moderator" ? "Moderator" : "Admin"}
                 </p>
               </div>
@@ -530,11 +530,11 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
           </SheetContent>
         </Sheet>
 
-        <div className="flex-1 min-w-0 px-1.5 flex flex-col justify-center overflow-hidden">
-          <p className="text-[9px] uppercase font-semibold tracking-[0.14em] text-muted-foreground/75 leading-none truncate mb-0.5">
+        <div className="flex-1 min-w-0 px-2 flex flex-col justify-center overflow-hidden">
+          <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground/80 leading-none truncate mb-1">
             {isRoot ? greeting : mobileSectionLabel}
           </p>
-          <h1 className="text-[13.5px] font-bold text-foreground truncate tracking-tight leading-tight">
+          <h1 className="text-sm font-bold text-foreground truncate tracking-tight leading-tight">
             {isRoot ? `Hi, ${firstName}` : pageMeta.title}
           </h1>
         </div>
@@ -679,14 +679,14 @@ const AdminMobileShell: React.FC<{ children?: React.ReactNode }> = ({ children }
                 >
                   <div
                     className={`flex items-center justify-center w-9 h-7 rounded-xl transition-all ${
-                      active ? "bg-primary/15 text-primary" : "text-muted-foreground"
+                      active ? "bg-muted text-foreground font-semibold border border-border/60" : "text-muted-foreground"
                     }`}
                   >
                     <d.icon className="w-[17px] h-[17px]" />
                   </div>
                   <span
                     className={`text-[9px] font-medium leading-none truncate max-w-full px-0.5 ${
-                      active ? "text-primary" : "text-muted-foreground"
+                      active ? "text-foreground font-semibold" : "text-muted-foreground"
                     }`}
                   >
                     {d.title}

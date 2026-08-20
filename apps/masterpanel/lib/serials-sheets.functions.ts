@@ -441,9 +441,13 @@ function fieldValue(
     case "serial_code":       return r.serial_code ?? "";
     case "product":           return r.products?.name ?? "";
     case "variant":           return [r.product_variants?.size, r.product_variants?.color].filter(Boolean).join(" / ");
-    case "sku":               return r.product_variants?.sku || r.products?.sku || "";
-    case "status":            return r.status ?? "";
-    case "price":             return p.mainPrice ? String(p.mainPrice) : "";
+    case "status": {
+      if (r.is_defective || r.status === "defective") return "returned-defective";
+      if (r.status === "returned") return "returned";
+      if (r.status === "cancelled") return "cancelled";
+      if (r.status === "sold") return "sold";
+      return r.status || "available";
+    }
     case "discount_price":
     case "discounted_price":  return p.normalDiscountPrice ? String(p.normalDiscountPrice) : "";
     case "discounted":

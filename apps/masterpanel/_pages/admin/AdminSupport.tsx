@@ -277,6 +277,7 @@ export default function AdminSupport() {
       toast.error("This conversation is already claimed by another specialist.");
       return;
     }
+    const agentName = (user as any).user_metadata?.full_name || "Support Agent";
     try {
       await supabase
         .from("support_conversations")
@@ -288,12 +289,33 @@ export default function AdminSupport() {
         } as any)
         .eq("id", convId);
 
+      // Internal system note (hidden from admin chat view)
       await supabase.from("support_messages").insert({
         conversation_id: convId,
         sender_id: user.id,
         sender_type: "admin",
-        content: `👋 Specialist **${(user as any).user_metadata?.full_name || "Support Agent"}** has claimed this ticket and joined the session.`,
+        is_system: true,
+        content: `Agent ${agentName} claimed ticket.`,
       } as any);
+
+      // Professional customer-facing message
+      await supabase.from("support_messages").insert({
+        conversation_id: convId,
+        sender_id: user.id,
+        sender_type: "admin",
+        is_system: false,
+        content: `Hi there! I'm ${agentName} and I'll be your dedicated support specialist today. Thank you for your patience — I'm here to help you! 😊`,
+      } as any);
+
+      // Notification for customer
+      await (supabase as any).from("notifications").insert({
+        user_id: conv?.user_id,
+        title: "Support Agent Assigned",
+        message: `${agentName} has been assigned to help you with your support request.`,
+        type: "support",
+        priority: "high",
+        link_url: "/support",
+      });
 
       qc.invalidateQueries({ queryKey: ["admin-support-conversations"] });
       toast.success("Ticket claimed and live chat active!");
@@ -304,6 +326,7 @@ export default function AdminSupport() {
 
   // Reassign to specific agent
   const reassignConversation = async (convId: string, targetAgentId: string) => {
+    const conv = conversations.find((c: any) => c.id === convId);
     const targetAgent = staffList.find((a) => a.user_id === targetAgentId);
     const agentName = targetAgent?.full_name || "Specialist";
     try {
@@ -317,12 +340,35 @@ export default function AdminSupport() {
         } as any)
         .eq("id", convId);
 
+      // Internal system note (hidden from admin chat)
       await supabase.from("support_messages").insert({
         conversation_id: convId,
         sender_id: user?.id || targetAgentId,
         sender_type: "admin",
-        content: `🔄 Ticket reassigned to **${agentName}**.`,
+        is_system: true,
+        content: `Ticket reassigned to ${agentName}.`,
       } as any);
+
+      // Professional customer-facing message
+      await supabase.from("support_messages").insert({
+        conversation_id: convId,
+        sender_id: targetAgentId,
+        sender_type: "admin",
+        is_system: false,
+        content: `Hi! I'm ${agentName}, and I've been assigned to assist you from here. Happy to help! 😊`,
+      } as any);
+
+      // Notification for customer
+      if (conv?.user_id) {
+        await (supabase as any).from("notifications").insert({
+          user_id: conv.user_id,
+          title: "Support Agent Updated",
+          message: `${agentName} has been assigned to assist you.`,
+          type: "support",
+          priority: "high",
+          link_url: "/support",
+        });
+      }
 
       qc.invalidateQueries({ queryKey: ["admin-support-conversations"] });
       toast.success(`Ticket transferred to ${agentName}`);
@@ -343,11 +389,13 @@ export default function AdminSupport() {
         } as any)
         .eq("id", convId);
 
+      // Internal system note only
       await supabase.from("support_messages").insert({
         conversation_id: convId,
         sender_id: user?.id || "system",
         sender_type: "admin",
-        content: `↩️ Ticket was released back to the unassigned queue.`,
+        is_system: true,
+        content: `Ticket released back to the unassigned queue.`,
       } as any);
 
       qc.invalidateQueries({ queryKey: ["admin-support-conversations"] });
@@ -909,16 +957,12 @@ export default function AdminSupport() {
                   messages.map((msg: any) => {
                     const isAdmin = msg.sender_type === "admin";
                     const isAi = msg.sender_type === "ai";
-                    const isSystem = msg.content?.startsWith("🤖") || msg.content?.startsWith("⚡") || msg.content?.startsWith("👋") || msg.content?.startsWith("🔄");
+                    // Use DB flag — hide internal/system messages from admin chat view entirely
+                    const isSystem = !!msg.is_system || msg.content?.startsWith("🤖") || msg.content?.startsWith("⚡");
 
                     if (isSystem) {
-                      return (
-                        <div key={msg.id} className="py-1 text-center">
-                          <span className="inline-block px-3 py-1 rounded-full text-[10px] font-mono font-semibold bg-secondary/80 border border-border/50 text-muted-foreground">
-                            {msg.content}
-                          </span>
-                        </div>
-                      );
+                      // Completely hide system/internal messages from admin chat view
+                      return null;
                     }
 
                     return (

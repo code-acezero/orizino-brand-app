@@ -131,7 +131,7 @@ export default function SeoAdsDashboard() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-24 animate-fade-in text-foreground">
+    <div className="w-full space-y-8 pb-24 animate-fade-in text-foreground">
       {/* ── Header Banner with Real-time Health Grade ── */}
       <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-card via-card/90 to-primary/5 p-6 sm:p-8 shadow-sm">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">

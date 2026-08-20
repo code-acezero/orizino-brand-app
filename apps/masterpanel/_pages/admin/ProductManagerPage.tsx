@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Package, Tag, ScanLine, QrCode, Printer, RefreshCw, Plus, Trash2, Upload, Download, Copy, Lock, Unlock, FileUp, Keyboard, Info, Pencil, FileImage, FileDown, Settings2, ExternalLink, Sliders, CheckSquare, Square, PackageSearch, X, CheckCheck, ArrowLeftRight, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Boxes, FileSpreadsheet, TrendingUp, CheckCircle2, Clock, Filter, Check, AlertCircle, AlertTriangle, Eye, Search, MoreHorizontal, Layers, Type, History, TerminalSquare } from "lucide-react";
+import { Package, Tag, ScanLine, QrCode, Printer, RefreshCw, Plus, Trash2, Upload, Download, Copy, Lock, Unlock, FileUp, Keyboard, Info, Pencil, FileImage, FileDown, Settings2, ExternalLink, Sliders, CheckSquare, Square, PackageSearch, X, CheckCheck, ArrowLeftRight, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Boxes, FileSpreadsheet, TrendingUp, CheckCircle2, Clock, Filter, Check, AlertCircle, AlertTriangle, Eye, Search, MoreHorizontal, Layers, Type, History, TerminalSquare, RotateCw, RectangleHorizontal, FilePlus, ClipboardList, RotateCcw } from "lucide-react";
 import { useTabParam } from "@/hooks/use-tab-param";
 import {
   listSerials,
@@ -2200,6 +2200,7 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [columns, setColumns] = useState(1);
+  const [orientation, setOrientation] = useState<"horizontal" | "vertical">("horizontal");
 
   // ── Filter & selection state ───────────────────────────────────────────────
   type FilterMode = "unprinted" | "never" | "most" | "all" | "manual";
@@ -2258,19 +2259,27 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
 
   const stickerItems = useMemo<StickerData[]>(() => {
     return filteredRows.map((r: any) => {
+      const cfg = configFor(r);
       const variantLabel = [r.product_variants?.color, r.product_variants?.size].filter(Boolean).join(" · ");
       return {
         serialCode: r.serial_code,
-        brandName: configFor(r).brand_name ?? "ORIZINO",
+        brand: cfg.brand_name ?? "ORIZINO",
         productName: r.products?.name ?? "Product",
-        price: r.products?.price ? `৳${Number(r.products.price).toFixed(0)}` : undefined,
-        compareAtPrice: r.products?.compare_at_price ? `৳${Number(r.products.compare_at_price).toFixed(0)}` : undefined,
+        price: Number(r.products?.price ?? 0),
+        compareAtPrice: r.products?.compare_at_price ? Number(r.products.compare_at_price) : undefined,
         size: variantLabel || r.product_variants?.size || undefined,
         brandLogoUrl: brandLogoUrl ?? undefined,
-        config: configFor(r),
+        currency: cfg.currency_symbol ?? "৳",
+        showSize: cfg.show_size ?? true,
+        showOriginalPrice: cfg.show_original_price ?? true,
+        orientation: orientation,
+        config: {
+          ...cfg,
+          orientation: orientation,
+        },
       };
     });
-  }, [filteredRows, selectedPresetId, presetsById, activePreset, brandLogoUrl]);
+  }, [filteredRows, selectedPresetId, presetsById, activePreset, brandLogoUrl, orientation]);
 
   const printedCodes = filteredRows.map((r: any) => r.serial_code);
 
@@ -2317,13 +2326,13 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
     window.print();
   }
 
-  // Filter mode options
-  const filterOptions: { value: FilterMode; label: string; icon: string; desc: string }[] = [
-    { value: "never", label: "Never Printed", icon: "✨", desc: `Only serials with 0 prints (${neverPrintedCount})` },
-    { value: "unprinted", label: "Least Printed", icon: "📋", desc: "Lowest print count first" },
-    { value: "most", label: "Most Printed", icon: "🔁", desc: "Highest print count first" },
-    { value: "all", label: "All Stock", icon: "📦", desc: "All serials in order" },
-    { value: "manual", label: "Manual Pick", icon: "☑️", desc: "Select specific ones" },
+  // Filter mode options — clean monochrome icons
+  const filterOptions: { value: FilterMode; label: string; icon: React.ComponentType<{ className?: string }>; desc: string }[] = [
+    { value: "never", label: "Never Printed", icon: FilePlus, desc: `Only serials with 0 prints (${neverPrintedCount})` },
+    { value: "unprinted", label: "Least Printed", icon: ClipboardList, desc: "Lowest print count first" },
+    { value: "most", label: "Most Printed", icon: RotateCcw, desc: "Highest print count first" },
+    { value: "all", label: "All Stock", icon: Package, desc: "All serials in order" },
+    { value: "manual", label: "Manual Pick", icon: CheckSquare, desc: "Select specific ones" },
   ];
 
   return (
@@ -2332,24 +2341,30 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
         <DialogContent className="sm:max-w-3xl max-h-[95vh] flex flex-col overflow-hidden">
           <DialogHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pb-2 border-b border-border/50 shrink-0">
             <div className="pr-6 sm:pr-0">
-              <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
-                <Printer className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+              <DialogTitle className="flex items-center gap-2 text-sm sm:text-base text-foreground">
+                <Printer className="w-4 h-4 sm:w-5 sm:h-5 text-foreground shrink-0" />
                 Print Stickers
                 <Badge variant="secondary" className="text-[11px] font-mono">{filteredRows.length}/{allRows.length}</Badge>
               </DialogTitle>
-              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2">
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2.5">
                 Single-column roll (POS) or multi-column sheet.
-                <span className="text-emerald-500 font-medium">✨ {neverPrintedCount} never printed</span>
-                {printedOnceCount > 0 && <span className="text-amber-500 font-medium">· 🔁 {printedOnceCount} already printed</span>}
+                <span className="text-foreground/90 font-medium inline-flex items-center gap-1">
+                  <FilePlus className="w-3.5 h-3.5 text-muted-foreground" /> {neverPrintedCount} never printed
+                </span>
+                {printedOnceCount > 0 && (
+                  <span className="text-muted-foreground font-medium inline-flex items-center gap-1">
+                    · <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" /> {printedOnceCount} already printed
+                  </span>
+                )}
               </p>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCustomizeOpen(true)}
-              className="gap-1.5 text-xs h-8 w-full sm:w-auto bg-background hover:bg-muted font-medium border-primary/30 text-primary"
+              className="gap-1.5 text-xs h-8 w-full sm:w-auto bg-background hover:bg-muted font-medium border-border text-foreground"
             >
-              <Settings2 className="w-3.5 h-3.5" />
+              <Settings2 className="w-3.5 h-3.5 text-foreground" />
               Update Sticker Design
             </Button>
           </DialogHeader>
@@ -2359,29 +2374,34 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
             {/* Filter mode tabs */}
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest shrink-0 mr-1">Filter:</span>
-              {filterOptions.map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  title={opt.desc}
-                  onClick={() => setFilterMode(opt.value as FilterMode)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
-                    filterMode === opt.value
-                      ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                      : "bg-background border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
-                  }`}
-                >
-                  <span>{opt.icon}</span> {opt.label}
-                  {opt.value === "never" && neverPrintedCount > 0 && (
-                    <span className={`text-[9px] font-mono rounded px-1 ${filterMode === "never" ? "bg-primary-foreground/20 text-primary-foreground" : "bg-emerald-500/15 text-emerald-600"}` }>
-                      {neverPrintedCount}
-                    </span>
-                  )}
-                </button>
-              ))}
+              {filterOptions.map((opt) => {
+                const IconComp = opt.icon;
+                const isSelected = filterMode === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    title={opt.desc}
+                    onClick={() => setFilterMode(opt.value as FilterMode)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-foreground text-background border-foreground shadow-xs"
+                        : "bg-background border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+                    }`}
+                  >
+                    <IconComp className="w-3.5 h-3.5 shrink-0" />
+                    <span>{opt.label}</span>
+                    {opt.value === "never" && neverPrintedCount > 0 && (
+                      <span className={`text-[9px] font-mono rounded px-1 ${isSelected ? "bg-background/20 text-background" : "bg-muted text-foreground"}`}>
+                        {neverPrintedCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Quantity + Layout + Preset row */}
+            {/* Quantity + Layout + Orientation + Preset row */}
             <div className="flex flex-wrap items-center gap-2 bg-muted/30 rounded-lg border border-border/50 p-2">
               <Label className="text-xs font-semibold text-foreground whitespace-nowrap shrink-0">Qty:</Label>
               <div className="flex items-center gap-1 shrink-0">
@@ -2389,17 +2409,47 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
                 <input
                   type="number" min={1} max={allRows.length} value={quantity}
                   onChange={e => { const v = parseInt(e.target.value); setQuantity(isNaN(v) ? "" : Math.min(Math.max(1, v), allRows.length)); }}
-                  className="w-12 h-6 text-center text-xs font-mono rounded border border-border/60 bg-background text-foreground focus:outline-none focus:border-primary"
+                  className="w-12 h-6 text-center text-xs font-mono rounded border border-border/60 bg-background text-foreground focus:outline-none focus:border-foreground"
                 />
                 <button type="button" onClick={() => setQuantity(q => Math.min(allRows.length, (typeof q === "number" ? q : 1) + 1))} className="w-6 h-6 rounded border border-border/60 bg-background flex items-center justify-center text-xs text-muted-foreground hover:text-foreground cursor-pointer">+</button>
-                <button type="button" onClick={() => setQuantity(filterMode === "never" ? neverPrintedCount : allRows.length)} className="text-[10px] text-primary underline underline-offset-2 cursor-pointer ml-1 hover:no-underline whitespace-nowrap">Max</button>
+                <button type="button" onClick={() => setQuantity(filterMode === "never" ? neverPrintedCount : allRows.length)} className="text-[10px] text-foreground underline underline-offset-2 cursor-pointer ml-1 hover:no-underline whitespace-nowrap">Max</button>
               </div>
+
               <div className="h-4 w-px bg-border/50 shrink-0" />
-              <Label className="text-xs font-semibold text-foreground shrink-0">Layout:</Label>
+
+              <Label className="text-xs font-semibold text-foreground shrink-0">Orientation:</Label>
+              <div className="inline-flex rounded-md border border-input p-0.5 bg-background text-[10px]">
+                <button
+                  type="button"
+                  onClick={() => setOrientation("horizontal")}
+                  className={`px-2 py-0.5 rounded transition-colors font-medium flex items-center gap-1 cursor-pointer ${
+                    orientation === "horizontal" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  title="Horizontal (Default)"
+                >
+                  <RectangleHorizontal className="w-3 h-3" />
+                  Horizontal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrientation("vertical")}
+                  className={`px-2 py-0.5 rounded transition-colors font-medium flex items-center gap-1 cursor-pointer ${
+                    orientation === "vertical" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  title="Vertical / 90° Rotated for POS Rolls"
+                >
+                  <RotateCw className="w-3 h-3" />
+                  Vertical
+                </button>
+              </div>
+
+              <div className="h-4 w-px bg-border/50 shrink-0" />
+
+              <Label className="text-xs font-semibold text-foreground shrink-0">Columns:</Label>
               <div className="inline-flex rounded-md border border-input p-0.5 bg-background text-[10px]">
                 {[{ v: 1, l: "1 Col" }, { v: 2, l: "2 Col" }, { v: 3, l: "3 Col" }, { v: 4, l: "4 Col" }].map(({ v, l }) => (
-                  <button key={v} type="button" onClick={() => setColumns(v)} className={`px-2 py-0.5 rounded transition-colors font-medium flex items-center gap-1 cursor-pointer ${ columns === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground" }`}>
-                    {v === 1 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />}{l}
+                  <button key={v} type="button" onClick={() => setColumns(v)} className={`px-2 py-0.5 rounded transition-colors font-medium flex items-center gap-1 cursor-pointer ${ columns === v ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground" }`}>
+                    {v === 1 && <span className="w-1.5 h-1.5 rounded-full bg-foreground shrink-0" />}{l}
                   </button>
                 ))}
               </div>
@@ -2421,15 +2471,15 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
 
             {/* Manual Picker Panel */}
             {filterMode === "manual" && (
-              <div className="border border-primary/30 rounded-xl bg-card/60 overflow-hidden">
+              <div className="border border-border/80 rounded-xl bg-card/60 overflow-hidden">
                 <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/40 bg-muted/30">
                   <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                    <CheckSquare className="w-3.5 h-3.5 text-primary" />
+                    <CheckSquare className="w-3.5 h-3.5 text-foreground" />
                     Pick Stickers
                     <Badge variant="outline" className="text-[9px] font-mono">{manualSelected.size} selected</Badge>
                   </span>
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setManualSelected(new Set(allRows.map((r: any) => r.serial_code)))} className="text-[10px] text-primary underline underline-offset-2 cursor-pointer hover:no-underline">All</button>
+                    <button type="button" onClick={() => setManualSelected(new Set(allRows.map((r: any) => r.serial_code)))} className="text-[10px] text-foreground underline underline-offset-2 cursor-pointer hover:no-underline">All</button>
                     <span className="text-border">·</span>
                     <button type="button" onClick={() => setManualSelected(new Set())} className="text-[10px] text-muted-foreground underline underline-offset-2 cursor-pointer hover:no-underline">None</button>
                   </div>
@@ -2443,10 +2493,10 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
                       <button
                         key={r.serial_code} type="button"
                         onClick={() => setManualSelected(prev => { const next = new Set(prev); if (next.has(r.serial_code)) next.delete(r.serial_code); else next.add(r.serial_code); return next; })}
-                        className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left transition-colors cursor-pointer ${ isChecked ? "bg-primary/8 hover:bg-primary/12" : "hover:bg-muted/40" }`}
+                        className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left transition-colors cursor-pointer ${ isChecked ? "bg-muted/70 hover:bg-muted" : "hover:bg-muted/40" }`}
                       >
-                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${ isChecked ? "bg-primary border-primary" : "border-border" }`}>
-                          {isChecked && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${ isChecked ? "bg-foreground border-foreground" : "border-border" }`}>
+                          {isChecked && <Check className="w-2.5 h-2.5 text-background" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
@@ -2457,8 +2507,8 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
                         </div>
                         <div className="shrink-0">
                           {printCnt === 0
-                            ? <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20">New</Badge>
-                            : <Badge variant="outline" className={`text-[9px] ${printCnt >= 3 ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}`}>×{printCnt}</Badge>
+                            ? <Badge variant="outline" className="text-[9px] bg-muted text-foreground border-border">New</Badge>
+                            : <Badge variant="outline" className="text-[9px] bg-muted text-muted-foreground border-border">×{printCnt}</Badge>
                           }
                         </div>
                       </button>
@@ -2469,18 +2519,15 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
             )}
           </div>
 
-          {/* Sticker Preview — white background so stickers are visible in dark mode */}
+          {/* Sticker Preview — expands dynamically and scrolls smoothly inside container */}
           <div
             ref={sheetRef}
-            className={`print-sheet bg-white border border-border/60 rounded-xl p-3 max-h-[35vh] overflow-y-auto shadow-inner ${
-              columns === 1 ? "flex flex-col items-center gap-2" : "grid gap-2"
-            }`}
-            style={columns > 1 ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}
+            className="print-sheet bg-white border border-border/60 rounded-xl p-4 flex-1 min-h-[260px] max-h-[58vh] overflow-y-auto overflow-x-auto shadow-inner"
           >
-            {filteredRows.length === 0 ? (
-              <div className="py-8 text-center text-gray-400 text-xs">
+            {stickerItems.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground text-xs">
                 <span className="text-2xl block mb-1">
-                  {filterMode === "never" ? "✅" : filterMode === "manual" ? "☑️" : "🔍"}
+                  {filterMode === "never" ? "✨" : filterMode === "manual" ? "☑️" : "🔍"}
                 </span>
                 {filterMode === "never" ? "All stock has been printed at least once." :
                  filterMode === "manual" && manualSelected.size === 0 ? "Select stickers from the list above." :
@@ -2488,55 +2535,53 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
               </div>
             ) : (
               <>
-                {columns === 1 && (
-                  <div className="text-[10px] text-gray-400 font-mono flex items-center gap-1.5 mb-1 print:hidden select-none">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                    POS Roll · {filteredRows.length} {filteredRows.length === 1 ? "sticker" : "stickers"}
+                {columns === 1 ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="text-[10px] text-gray-400 font-mono flex items-center gap-1.5 mb-1 print:hidden select-none">
+                      <span className="w-1.5 h-1.5 rounded-full bg-foreground inline-block animate-pulse" />
+                      POS Roll · {stickerItems.length} {stickerItems.length === 1 ? "sticker" : "stickers"}
+                    </div>
+                    {stickerItems.map((item) => (
+                      <Sticker key={item.serialCode} data={item} />
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="grid gap-3 justify-items-center"
+                    style={{
+                      gridTemplateColumns: `repeat(${columns}, auto)`,
+                      justifyContent: "center",
+                    }}
+                  >
+                    {stickerItems.map((item) => (
+                      <Sticker key={item.serialCode} data={item} />
+                    ))}
                   </div>
                 )}
-                {filteredRows.map((r: any) => {
-                  const cfg = configFor(r);
-                  return (
-                    <Sticker
-                      key={r.serial_code}
-                      data={{
-                        serialCode: r.serial_code,
-                        productName: r.products?.name ?? "",
-                        size: r.product_variants?.size,
-                        price: r.products?.price ?? 0,
-                        compareAtPrice: r.products?.compare_at_price,
-                        brand: cfg.brand_name,
-                        brandLogoUrl: brandLogoUrl || undefined,
-                        currency: cfg.currency_symbol,
-                        showSize: cfg.show_size,
-                        showOriginalPrice: cfg.show_original_price,
-                        config: cfg,
-                      }}
-                    />
-                  );
-                })}
               </>
             )}
           </div>
 
           <DialogFooter className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-border/40 shrink-0">
             <div className="text-[11px] sm:text-xs text-muted-foreground flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
-              <span>Size: <strong>{activePreset?.width_in || 2}in × {activePreset?.height_in || 0.6}in</strong></span>
+              <span>Size: <strong>{orientation === "vertical" ? `${activePreset?.height_in || 0.6}in × ${activePreset?.width_in || 2}in` : `${activePreset?.width_in || 2}in × ${activePreset?.height_in || 0.6}in`}</strong></span>
               <span>·</span>
-              <span>Format: <strong>{activePreset?.barcode_format === "code128" ? "Barcode 128" : "QR Code (Auth URL)"}</strong></span>
+              <span>Alignment: <strong className={orientation === "vertical" ? "text-foreground font-semibold" : ""}>{orientation === "vertical" ? "Vertical (Rotated)" : "Horizontal"}</strong></span>
               <span>·</span>
-              <span className="text-primary font-medium">{filteredRows.length} stickers queued</span>
+              <span>Format: <strong>{activePreset?.barcode_format === "code128" ? "Barcode 128" : "QR Code"}</strong></span>
+              <span>·</span>
+              <span className="text-foreground font-medium">{filteredRows.length} stickers queued</span>
             </div>
             <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
               <Button variant="outline" size="sm" onClick={exportJpg} disabled={!!exporting || !filteredRows.length} className="text-xs h-9">
-                <FileImage className="w-3.5 h-3.5 mr-1" />
+                <FileImage className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
                 {exporting === "jpg" ? "JPG…" : "Export JPG"}
               </Button>
               <Button variant="outline" size="sm" onClick={exportPdf} disabled={!!exporting || !filteredRows.length} className="text-xs h-9">
-                <FileDown className="w-3.5 h-3.5 mr-1" />
+                <FileDown className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
                 {exporting === "pdf" ? "PDF…" : "Export PDF"}
               </Button>
-              <Button size="sm" onClick={doPrint} disabled={!filteredRows.length} className="col-span-2 sm:col-span-1 text-xs h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
+              <Button size="sm" onClick={doPrint} disabled={!filteredRows.length} className="col-span-2 sm:col-span-1 text-xs h-9 bg-foreground text-background hover:opacity-90 font-semibold">
                 <Printer className="w-3.5 h-3.5 mr-1.5" />
                 Print {filteredRows.length > 0 ? `(${filteredRows.length})` : ""}
               </Button>
@@ -2570,9 +2615,13 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
                 border: none !important;
                 box-shadow: none !important;
               }
-              .sticker-card {
+              .sticker-wrapper {
                 page-break-after: always !important;
                 break-after: page !important;
+                break-inside: avoid !important;
+                margin: 0 auto !important;
+              }
+              .sticker-card {
                 break-inside: avoid !important;
                 margin: 0 auto !important;
               }

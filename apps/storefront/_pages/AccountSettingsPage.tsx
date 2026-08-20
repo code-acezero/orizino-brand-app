@@ -109,7 +109,7 @@ const SECTIONS: { id: SectionId; label: string; icon: any; desc: string }[] = [
   { id: "general", label: "General", icon: Globe, desc: "Language, data & support" },
 ];
 
-const SettingsPage: React.FC = () => {
+const AccountSettingsPage: React.FC = () => {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const { currency, setCurrency, enabledCurrencies } = useCurrency();
@@ -889,4 +889,4 @@ const SettingsPage: React.FC = () => {
   );
 };
 
-export default SettingsPage;
+export default AccountSettingsPage;

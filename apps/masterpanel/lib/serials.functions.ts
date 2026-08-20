@@ -35,11 +35,12 @@ export async function runTwoWayStockSync(sb: any) {
     await sb.rpc("sync_stock_from_serials");
   } catch {}
 
-  // 1. Fetch available serial counts grouped by variant
+  // 1. Fetch sellable serial counts grouped by variant (available, unbinded returned non-defective, cancelled)
   const { data: variantCounts } = await sb
     .from("product_serials")
     .select("variant_id")
-    .eq("status", "available")
+    .in("status", ["available", "returned", "cancelled"])
+    .is("sold_order_id", null)
     .not("variant_id", "is", null);
 
   const vMap: Record<string, number> = {};
@@ -47,11 +48,12 @@ export async function runTwoWayStockSync(sb: any) {
     if (row.variant_id) vMap[row.variant_id] = (vMap[row.variant_id] || 0) + 1;
   }
 
-  // 2. Fetch available serial counts grouped by product (where variant is null)
+  // 2. Fetch sellable serial counts grouped by product (where variant is null)
   const { data: simpleCounts } = await sb
     .from("product_serials")
     .select("product_id")
-    .eq("status", "available")
+    .in("status", ["available", "returned", "cancelled"])
+    .is("sold_order_id", null)
     .is("variant_id", null);
 
   const pSimpleMap: Record<string, number> = {};
@@ -358,18 +360,21 @@ export const scanSerial = createServerFn({ method: "POST" })
 
     const update: Record<string, any> = { updated_at: new Date().toISOString() };
     if (data.action === "sell") {
-      if (row.status !== "available") throw new Error(`Cannot sell: current status is ${row.status}`);
+      const isAvailableForSale = row.status === "available" || row.status === "cancelled" || (row.status === "returned" && !(row as any).is_defective);
+      if (!isAvailableForSale) throw new Error(`Cannot sell: current status is ${row.status}`);
       update.status = "sold";
       update.sold_order_id = data.orderId ?? null;
       update.sold_at = new Date().toISOString();
     } else if (data.action === "cancel") {
-      if (row.status !== "sold") throw new Error("Only sold units can be cancelled");
       update.status = "cancelled";
+      update.sold_order_id = null;
     } else if (data.action === "return") {
-      if (row.status !== "sold") throw new Error("Only sold units can be returned");
       update.status = "returned";
+      update.sold_order_id = null;
     } else if (data.action === "defective") {
-      update.status = "defective";
+      update.status = "returned";
+      (update as any).is_defective = true;
+      update.sold_order_id = null;
     }
 
     const { data: updated, error: ue } = await sb.from("product_serials").update(update).eq("id", row.id).select("id, status, serial_code").maybeSingle();

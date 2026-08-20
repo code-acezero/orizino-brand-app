@@ -282,7 +282,7 @@ export default function BulkUpload({ mode, onComplete, categories, products }: B
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileSpreadsheet className="w-5 h-5 text-primary" />
+              <FileSpreadsheet className="w-5 h-5 text-foreground" />
               Bulk Upload {mode === "categories" ? "Categories" : mode === "products" ? "Products" : "Variants"}
             </DialogTitle>
           </DialogHeader>
@@ -297,10 +297,10 @@ export default function BulkUpload({ mode, onComplete, categories, products }: B
 
                 <TabsContent value="file" className="space-y-4 mt-4">
                   <div
-                    className="border-2 border-dashed border-primary/30 rounded-xl p-8 text-center hover:border-primary/60 transition-colors cursor-pointer"
+                    className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-foreground/40 transition-colors cursor-pointer"
                     onClick={() => fileRef.current?.click()}
                   >
-                    <Upload className="w-10 h-10 mx-auto text-primary/60 mb-3" />
+                    <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
                     <p className="text-sm font-medium text-foreground">Click to upload CSV, XLS, or XLSX</p>
                     <p className="text-xs text-muted-foreground mt-1">or drag and drop your file here</p>
                   </div>
@@ -318,7 +318,7 @@ export default function BulkUpload({ mode, onComplete, categories, products }: B
                       onChange={(e) => setSheetUrl(e.target.value)}
                       className="flex-1"
                     />
-                    <Button onClick={handleGoogleSheet} disabled={loadingSheet || !sheetUrl.trim()} className="gap-2">
+                    <Button onClick={handleGoogleSheet} disabled={loadingSheet || !sheetUrl.trim()} className="gap-2 bg-foreground text-background hover:opacity-90">
                       {loadingSheet ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
                       Load
                     </Button>
@@ -328,7 +328,7 @@ export default function BulkUpload({ mode, onComplete, categories, products }: B
 
               <div className="flex items-center justify-between pt-2 border-t border-border">
                 <Button variant="ghost" size="sm" onClick={downloadSample} className="text-xs gap-1.5">
-                  <FileSpreadsheet className="w-3.5 h-3.5" /> Download Sample CSV
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-muted-foreground" /> Download Sample CSV
                 </Button>
                 <p className="text-[11px] text-muted-foreground">
                   Required columns: <strong>{mode === "categories" ? "name, slug" : mode === "products" ? "name, slug, price" : "product, stock_quantity"}</strong>
@@ -339,15 +339,15 @@ export default function BulkUpload({ mode, onComplete, categories, products }: B
             <div className="flex flex-col gap-4 flex-1 min-h-0">
               {/* Summary */}
               <div className="flex items-center gap-3 flex-wrap">
-                <Badge variant="outline" className="gap-1.5">
+                <Badge variant="outline" className="gap-1.5 font-mono">
                   {rows.length} rows total
                 </Badge>
-                <Badge className="gap-1.5 bg-green-500/20 text-green-400 border-green-500/30">
-                  <CheckCircle className="w-3 h-3" /> {validRows.length} valid
+                <Badge variant="secondary" className="gap-1.5 font-mono">
+                  <CheckCircle className="w-3 h-3 text-foreground" /> {validRows.length} valid
                 </Badge>
                 {errorRows.length > 0 && (
-                  <Badge className="gap-1.5 bg-destructive/20 text-destructive border-destructive/30">
-                    <XCircle className="w-3 h-3" /> {errorRows.length} errors
+                  <Badge variant="outline" className="gap-1.5 text-muted-foreground border-border font-mono">
+                    <XCircle className="w-3 h-3 text-muted-foreground" /> {errorRows.length} errors
                   </Badge>
                 )}
               </div>
@@ -366,14 +366,14 @@ export default function BulkUpload({ mode, onComplete, categories, products }: B
                   </TableHeader>
                   <TableBody>
                     {rows.slice(0, 100).map((row, i) => (
-                      <TableRow key={i} className={row.status === "error" ? "bg-destructive/5" : ""}>
+                      <TableRow key={i} className={row.status === "error" ? "bg-muted/40" : ""}>
                         <TableCell>
                           {row.status === "valid" ? (
-                            <CheckCircle className="w-4 h-4 text-green-400" />
+                            <CheckCircle className="w-4 h-4 text-foreground" />
                           ) : (
                             <span className="flex items-center gap-1">
-                              <AlertTriangle className="w-4 h-4 text-destructive" />
-                              <span className="text-[10px] text-destructive">{row.errors[0]}</span>
+                              <AlertTriangle className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-[10px] text-muted-foreground">{row.errors[0]}</span>
                             </span>
                           )}
                         </TableCell>

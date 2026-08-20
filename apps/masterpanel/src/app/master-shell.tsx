@@ -21,12 +21,12 @@ import SettingsAiDashboard from "@/_pages/admin/dashboards/SettingsAiDashboard";
 import TeamDashboard from "@/_pages/admin/dashboards/TeamDashboard";
 
 // Sales pages
-import AdminProductsManagement from "@/_pages/admin/AdminProductsManagement";
+import AdminProductsManagement from "@/_pages/admin/ProductManagerPage";
 import AdminProductsHub from "@/_pages/admin/AdminProductsHub";
 import AdminProducts from "@/_pages/admin/AdminProducts";
 import AdminCategories from "@/_pages/admin/AdminCategories";
 import AdminOfflineOrders from "@/_pages/admin/AdminOfflineOrders";
-import AdminInvoiceStickers from "@/_pages/admin/AdminInvoiceStickers";
+import AdminInvoiceStickers from "@/_pages/admin/DesignStudioPage";
 import AdminCoupons from "@/_pages/admin/AdminCoupons";
 import AdminReviews from "@/_pages/admin/AdminReviews";
 import AdminRequests from "@/_pages/admin/AdminRequests";
@@ -37,7 +37,7 @@ import AdminCustomersHub from "@/_pages/admin/AdminCustomersHub";
 import AdminCustomers from "@/_pages/admin/AdminCustomers";
 import AdminSupport from "@/_pages/admin/AdminSupport";
 import AdminCustomerAnalytics from "@/_pages/admin/AdminCustomerAnalytics";
-import AdminLiveActivity from "@/_pages/admin/AdminLiveActivity";
+import AdminLiveActivity from "@/_pages/admin/LiveActivityPage";
 import AdminPaymentsCouriers from "@/_pages/admin/AdminPaymentsCouriers";
 import AdminPaymentGateways from "@/_pages/admin/AdminPaymentGateways";
 import AdminOrders from "@/_pages/admin/AdminOrders";
@@ -53,38 +53,38 @@ import AdminAnnouncements from "@/_pages/admin/AdminAnnouncements";
 import AdminPopups from "@/_pages/admin/AdminPopups";
 // Marketing & Communications
 import AdminEmailProvider from "@/_pages/admin/AdminEmailProvider";
-import AdminEmailSubscribers from "@/_pages/admin/AdminEmailSubscribers";
+import AdminEmailSubscribers from "@/_pages/admin/EmailListPage";
 import AdminEmailCampaigns from "@/_pages/admin/AdminEmailCampaigns";
 import AdminEmailTemplates from "@/_pages/admin/AdminEmailTemplates";
 import AdminEmailAutomations from "@/_pages/admin/AdminEmailAutomations";
 import AdminSmsProvider from "@/_pages/admin/AdminSmsProvider";
-import AdminWhatsAppProvider from "@/_pages/admin/AdminWhatsAppProvider";
+import AdminWhatsAppProvider from "@/_pages/admin/WhatsAppConfigPage";
 import AdminMarketingAudiences from "@/_pages/admin/AdminMarketingAudiences";
 import AffiliateHub from "@/_pages/admin/AffiliateHub";
 
 // Brand pages
-import AdminBranding from "@/_pages/admin/AdminBranding";
+import AdminBranding from "@/_pages/admin/BrandSettingsPage";
 import AdminAppearance from "@/_pages/admin/AdminAppearance";
 import AdminBanners from "@/_pages/admin/AdminBanners";
 import AdminFooter from "@/_pages/admin/AdminFooter";
 import AdminMobileUI from "@/_pages/admin/AdminMobileUI";
-import AdminCompanyLanding from "@/_pages/admin/AdminCompanyLanding";
+import AdminCompanyLanding from "@/_pages/admin/CompanyHomePage";
 import AdminBrandHomeNews from "@/_pages/admin/AdminBrandHomeNews";
 import AdminBrandHomeDocs from "@/_pages/admin/AdminBrandHomeDocs";
 import AdminBrandHomeTrack from "@/_pages/admin/AdminBrandHomeTrack";
 import AdminBrandHomeScanner from "@/_pages/admin/AdminBrandHomeScanner";
 import AdminHome from "@/_pages/admin/AdminHome";
 import AdminCmsPages from "@/_pages/admin/AdminCmsPages";
-import AdminExploreUI from "@/_pages/admin/AdminExploreUI";
+import AdminExploreUI from "@/_pages/admin/ExploreStorePage";
 
 // System & Settings pages
-import AdminDbHealth from "@/_pages/admin/AdminDbHealth";
-import AdminDebug from "@/_pages/admin/AdminDebug";
+import AdminDbHealth from "@/_pages/admin/DatabaseHealthPage";
+import AdminDebug from "@/_pages/admin/DevToolsPage";
 import AdminSettings from "@/_pages/admin/AdminSettings";
-import AdminAISettings from "@/_pages/admin/AdminAISettings";
+import AdminAISettings from "@/_pages/admin/AIAssistantConfigPage";
 import AdminRecommendations from "@/_pages/admin/AdminRecommendations";
-import AdminCallSettings from "@/_pages/admin/AdminCallSettings";
-import AdminTelegram from "@/_pages/admin/AdminTelegram";
+import AdminCallSettings from "@/_pages/admin/VoiceCallConfigPage";
+import AdminTelegram from "@/_pages/admin/TelegramBotPage";
 import AdminRedirects from "@/_pages/admin/AdminRedirects";
 
 // Team pages
@@ -92,6 +92,7 @@ import AdminTeams from "@/_pages/admin/AdminTeams";
 import AdminMyTeam from "@/_pages/admin/AdminMyTeam";
 import AdminEmployees from "@/_pages/admin/AdminEmployees";
 import AdminAuditLog from "@/_pages/admin/AdminAuditLog";
+import AccessManager from "@/_pages/corporate/AccessManager";
 
 // Auth pages
 import AdminAuthPage from "@/_pages/AdminAuthPage";
@@ -206,8 +207,9 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/team/teams": AdminTeams,
   "/team/my-team": AdminMyTeam,
   "/team/employees": AdminEmployees,
+  "/team/staff": AdminEmployees,
   "/team/audit-log": AdminAuditLog,
-  "/team/access": AdminEmployees,
+  "/team/access": AccessManager,
 };
 
 export default function MasterPanelShell({ children }: { children?: React.ReactNode }) {

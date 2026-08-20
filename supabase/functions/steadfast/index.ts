@@ -173,11 +173,25 @@ Deno.serve(async (req) => {
       const sfData = await sfRes.json();
 
       if (sfData.delivery_status && body.order_id) {
+        const statusLower = String(sfData.delivery_status || "").toLowerCase();
+        let internalStatus: string | null = null;
+        if (statusLower.includes("delivered")) internalStatus = "delivered";
+        else if (statusLower.includes("in_transit") || statusLower.includes("out_for_delivery") || statusLower.includes("shipped")) internalStatus = "shipped";
+        else if (statusLower.includes("return")) internalStatus = "returned";
+        else if (statusLower.includes("cancel") || statusLower.includes("fail")) internalStatus = "cancelled";
+        else if (statusLower.includes("pending") || statusLower.includes("in_review")) internalStatus = "processing";
+
         await admin.from("steadfast_shipments").update({
           status: sfData.delivery_status,
           raw_response: sfData,
           last_synced_at: new Date().toISOString(),
         }).eq("order_id", body.order_id);
+
+        if (internalStatus) {
+          const orderUpdates: any = { status: internalStatus, updated_at: new Date().toISOString() };
+          if (internalStatus === "delivered") orderUpdates.payment_status = "paid";
+          await admin.from("orders").update(orderUpdates).eq("id", body.order_id);
+        }
       }
 
       return new Response(

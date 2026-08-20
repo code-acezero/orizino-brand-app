@@ -175,7 +175,7 @@ export default function EmailDashboard() {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 pb-20">
+    <div className="w-full space-y-6 pb-20">
       {/* ── HEADER HERO ── */}
       <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-card/80 via-card/50 to-[#9a0002]/10 backdrop-blur-xl p-6 sm:p-8 shadow-xl">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">

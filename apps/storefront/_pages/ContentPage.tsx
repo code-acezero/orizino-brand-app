@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import BlockRenderer from "@/components/BlockRenderer";
 import type { PageBlock } from "@/components/admin/PageBuilder";
 
-const CmsPage: React.FC = () => {
+const ContentPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
 
   const { data: page, isLoading } = useQuery({
@@ -65,5 +65,5 @@ const CmsPage: React.FC = () => {
   );
 };
 
-export default CmsPage;
+export default ContentPage;
 // code:4ce0

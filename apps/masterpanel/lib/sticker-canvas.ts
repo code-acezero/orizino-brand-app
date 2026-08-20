@@ -73,6 +73,13 @@ export async function renderStickerToCanvas(
   const fontFamily = c.font_family || "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
   const monoFont = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
 
+  const brand = data.brand || (data as any).brandName || c.brand_name || "ORIZINO";
+  const currency = data.currency || c.currency_symbol || "৳";
+  const price = typeof data.price === "number" ? data.price : (Number(String(data.price || "").replace(/[^0-9.]/g, "")) || 0);
+  const compareAtPrice = typeof data.compareAtPrice === "number" ? data.compareAtPrice : (data.compareAtPrice ? Number(String(data.compareAtPrice).replace(/[^0-9.]/g, "")) : undefined);
+  const showSize = data.showSize ?? c.show_size ?? true;
+  const showOriginalPrice = data.showOriginalPrice ?? c.show_original_price ?? true;
+
   // 1. Geometric Calculations (Border-Box Model matching CSS)
   const hasBorder = c.border_style !== "none" && c.border_width_pt > 0;
   const borderWidthPx = hasBorder ? Math.max(1, (c.border_width_pt / 72) * dpi) : 0;
@@ -94,6 +101,8 @@ export async function renderStickerToCanvas(
   // 3. Setup Content Inset & Clipping Box (Inside Border + Padding)
   const padXPx = Math.round(c.padding_x_in * inToPx);
   const padYPx = Math.round(c.padding_y_in * inToPx);
+  const totalPadXIn = c.padding_x_in;
+  const totalPadYIn = c.padding_y_in;
 
   const insetLeft = borderWidthPx + padXPx;
   const insetTop = borderWidthPx + padYPx;
@@ -155,27 +164,27 @@ export async function renderStickerToCanvas(
           ctx.restore();
         }
       } catch (e) {
-        console.error("Watermark image render failed", e);
+        console.error("Watermark render error", e);
       }
     } else {
       ctx.save();
-      ctx.globalAlpha = Math.max(0.02, Math.min(1, c.watermark_opacity * 0.75));
+      ctx.globalAlpha = Math.max(0.02, Math.min(1, c.watermark_opacity));
+      ctx.font = `900 ${Math.min(c.height_in * 36, 28) * scale}px ${fontFamily}`;
       ctx.fillStyle = textColor;
-      const fontSize = Math.round(Math.min(c.height_in * 32, 24) * scale);
-      ctx.font = `900 ${fontSize}px ${fontFamily}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText((data.brand || "ORIZINO").toUpperCase(), widthPx / 2, heightPx / 2);
+      ctx.fillText(brand, widthPx / 2, heightPx / 2);
       ctx.restore();
     }
   }
 
+  // 5. Render Barcode & Typography Layout
   const isQr = c.barcode_format === "qrcode" || c.barcode_format === "datamatrix";
 
   if (isQr) {
-    // ─── 2D QR SIDE-BY-SIDE LAYOUT ──────────────────────────────────────────
-    // In CSS: qrSizeIn = Math.min(innerHIn, innerWIn * 0.45, 0.75)
-    const qrSizePx = Math.round(Math.min(contentH, contentW * 0.45, 0.75 * inToPx));
+    // ─── QR 2D SIDE-BY-SIDE LAYOUT ──────────────────────────────────────────
+    const qrSizeIn = Math.min(c.height_in - totalPadYIn * 2, (c.width_in - totalPadXIn * 2) * 0.45, 0.85);
+    const qrSizePx = Math.round(qrSizeIn * inToPx);
     const qrCanvas = document.createElement("canvas");
     const payload =
       c.qr_data_mode === "raw" ? data.serialCode : buildVerificationUrl(data.serialCode);
@@ -200,12 +209,10 @@ export async function renderStickerToCanvas(
       }
     }
 
-    // Gap between QR and text column (Tailwind gap-1.5 = 6px @ 96dpi = 0.0625in)
     const gapPx = Math.round(0.0625 * inToPx);
     const textX = c.show_barcode ? contentLeft + qrSizePx + gapPx : contentLeft;
     const textRight = contentRight;
 
-    // Text column vertical padding (Tailwind py-0.5 = 2px @ 96dpi = 0.02083in)
     const pyPx = Math.round(0.02083 * inToPx);
     const colTop = contentTop + pyPx;
     const colBottom = contentBottom - pyPx;
@@ -214,7 +221,6 @@ export async function renderStickerToCanvas(
     const footerFontPx = Math.round(c.footer_font_size_pt * scale);
     const productFontPx = Math.round(c.product_name_font_size_pt * scale);
 
-    // Row 1: Brand (left) & Size (right)
     ctx.save();
     ctx.textBaseline = "top";
     ctx.fillStyle = textColor;
@@ -222,17 +228,16 @@ export async function renderStickerToCanvas(
     if (c.show_brand) {
       ctx.font = `${c.brand_bold ? "700" : "400"} ${headerFontPx}px ${fontFamily}`;
       ctx.textAlign = "left";
-      ctx.fillText(data.brand || "", textX, colTop);
+      ctx.fillText(brand, textX, colTop);
     }
 
-    if (data.showSize && data.size) {
+    if (showSize && data.size) {
       ctx.font = `700 ${headerFontPx}px ${fontFamily}`;
       ctx.textAlign = "right";
       ctx.fillText(`Size: ${data.size}`, textRight, colTop);
     }
     ctx.restore();
 
-    // Row 2: Product Name (optional)
     let headerOffset = headerFontPx * 1.25;
     if (c.show_product_name && data.productName) {
       ctx.save();
@@ -246,7 +251,6 @@ export async function renderStickerToCanvas(
       headerOffset += productFontPx * 1.25;
     }
 
-    // Row 3: Serial Code (vertically centered between header and price row in justify-between)
     if (c.show_serial_code) {
       ctx.save();
       ctx.textBaseline = "middle";
@@ -261,29 +265,26 @@ export async function renderStickerToCanvas(
       ctx.restore();
     }
 
-    // Row 4: Prices & AUTHENTIC Badge (aligned to bottom)
     if (c.show_price) {
       ctx.save();
       ctx.textBaseline = "bottom";
       let curPriceX = textX;
 
       const hasDiscount =
-        data.showOriginalPrice &&
-        typeof data.compareAtPrice === "number" &&
-        data.compareAtPrice > data.price;
+        showOriginalPrice &&
+        typeof compareAtPrice === "number" &&
+        compareAtPrice > price;
 
       if (hasDiscount) {
-        // Strike-through original price
         ctx.font = `400 ${footerFontPx}px ${fontFamily}`;
         ctx.fillStyle = textColor;
         ctx.globalAlpha = 0.6;
-        const compText = `${data.currency}${data.compareAtPrice}`;
+        const compText = `${currency}${compareAtPrice}`;
         ctx.textAlign = "left";
         ctx.fillText(compText, curPriceX, colBottom);
         const compMetrics = ctx.measureText(compText);
         const compW = compMetrics.width;
 
-        // Exact vertical center of digits (middle of digit cap height)
         const strikeY = Math.round(colBottom - (footerFontPx * 0.46));
 
         ctx.beginPath();
@@ -296,14 +297,12 @@ export async function renderStickerToCanvas(
         curPriceX += compW + Math.round(4 * (dpi / 96));
       }
 
-      // Sale Price
       ctx.globalAlpha = 1.0;
       ctx.font = `${c.price_bold ? "700" : "400"} ${headerFontPx}px ${fontFamily}`;
       ctx.fillStyle = textColor;
       ctx.textAlign = "left";
-      ctx.fillText(`${data.currency}${data.price}`, curPriceX, colBottom);
+      ctx.fillText(`${currency}${price}`, curPriceX, colBottom);
 
-      // AUTHENTIC Badge (right-aligned)
       const badgeFontPx = Math.max(8, Math.round(5 * scale));
       ctx.font = `600 ${badgeFontPx}px ${monoFont}`;
       ctx.textAlign = "right";
@@ -313,7 +312,6 @@ export async function renderStickerToCanvas(
       ctx.restore();
     }
   } else {
-    // ─── 1D BARCODE STACKED LAYOUT ──────────────────────────────────────────
     const headerFontPx = Math.round(c.header_font_size_pt * scale);
     const footerFontPx = Math.round(c.footer_font_size_pt * scale);
 
@@ -321,17 +319,16 @@ export async function renderStickerToCanvas(
     const colTop = contentTop + pyPx;
     const colBottom = contentBottom - pyPx;
 
-    // Header row
-    if (c.show_brand || (data.showSize && data.size)) {
+    if (c.show_brand || (showSize && data.size)) {
       ctx.save();
       ctx.textBaseline = "top";
       ctx.fillStyle = textColor;
       if (c.show_brand) {
         ctx.font = `${c.brand_bold ? "700" : "400"} ${headerFontPx}px ${fontFamily}`;
         ctx.textAlign = "left";
-        ctx.fillText(data.brand || "", contentLeft, colTop);
+        ctx.fillText(brand, contentLeft, colTop);
       }
-      if (data.showSize && data.size) {
+      if (showSize && data.size) {
         ctx.font = `700 ${headerFontPx}px ${fontFamily}`;
         ctx.textAlign = "right";
         ctx.fillText(`Size: ${data.size}`, contentRight, colTop);
@@ -339,7 +336,6 @@ export async function renderStickerToCanvas(
       ctx.restore();
     }
 
-    // 1D Barcode Graphic (centered in available space)
     if (c.show_barcode) {
       const barcodeTop = colTop + headerFontPx * 1.35;
       const barcodeBottom = colBottom - footerFontPx * 1.35;
@@ -369,7 +365,6 @@ export async function renderStickerToCanvas(
       }
     }
 
-    // Footer: Serial & Price
     if (c.show_serial_code || c.show_price) {
       ctx.save();
       ctx.textBaseline = "bottom";
@@ -381,23 +376,23 @@ export async function renderStickerToCanvas(
       }
       if (c.show_price) {
         const hasDiscount =
-          data.showOriginalPrice &&
-          typeof data.compareAtPrice === "number" &&
-          data.compareAtPrice > data.price;
+          showOriginalPrice &&
+          typeof compareAtPrice === "number" &&
+          compareAtPrice > price;
 
         if (hasDiscount) {
           ctx.font = `${c.price_bold ? "700" : "400"} ${footerFontPx}px ${fontFamily}`;
           ctx.textAlign = "right";
           ctx.fillStyle = textColor;
           ctx.globalAlpha = 1.0;
-          const saleText = `${data.currency}${data.price}`;
+          const saleText = `${currency}${price}`;
           ctx.fillText(saleText, contentRight, colBottom);
           const saleMetrics = ctx.measureText(saleText);
 
           const compFontPx = Math.max(7, Math.round(footerFontPx * 0.85));
           ctx.font = `400 ${compFontPx}px ${fontFamily}`;
           ctx.globalAlpha = 0.6;
-          const compText = `${data.currency}${data.compareAtPrice}`;
+          const compText = `${currency}${compareAtPrice}`;
           const compMetrics = ctx.measureText(compText);
           const compX = contentRight - saleMetrics.width - Math.round(3 * (dpi / 96)) - compMetrics.width;
           ctx.textAlign = "left";
@@ -414,7 +409,7 @@ export async function renderStickerToCanvas(
           ctx.font = `${c.price_bold ? "700" : "400"} ${footerFontPx}px ${fontFamily}`;
           ctx.textAlign = "right";
           ctx.fillStyle = textColor;
-          ctx.fillText(`${data.currency}${data.price}`, contentRight, colBottom);
+          ctx.fillText(`${currency}${price}`, contentRight, colBottom);
         }
       }
       ctx.restore();
@@ -463,6 +458,22 @@ export async function renderStickerToCanvas(
 
     ctx.stroke();
     ctx.restore();
+  }
+
+  const isVertical = data.orientation === "vertical" || c.orientation === "vertical";
+  if (isVertical) {
+    const rotCanvas = document.createElement("canvas");
+    rotCanvas.width = heightPx;
+    rotCanvas.height = widthPx;
+    const rotCtx = rotCanvas.getContext("2d");
+    if (rotCtx) {
+      rotCtx.imageSmoothingEnabled = true;
+      rotCtx.imageSmoothingQuality = "high";
+      rotCtx.translate(heightPx, 0);
+      rotCtx.rotate(Math.PI / 2);
+      rotCtx.drawImage(canvas, 0, 0);
+      return rotCanvas;
+    }
   }
 
   return canvas;

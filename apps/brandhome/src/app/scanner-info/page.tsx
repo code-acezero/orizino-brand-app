@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import ScannerInfoPage from "@/_pages/ScannerInfoPage";
+import ProductScannerPage from "@/_pages/ProductScannerPage";
 
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <ScannerInfoPage />
+      <ProductScannerPage />
     </Suspense>
   );
 }

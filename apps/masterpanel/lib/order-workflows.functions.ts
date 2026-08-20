@@ -198,6 +198,19 @@ export const decideCancellation = createServerFn({ method: "POST" })
         if (typeof data.refund_amount === "number") patch.refund_amount = data.refund_amount;
       }
       await sb.from("orders").update({ status: "cancelled", updated_at: now }).eq("id", req.order_id);
+
+      // Auto-restock serials and make available again
+      await sb
+        .from("product_serials")
+        .update({ status: "available", sold_order_id: null, sold_at: null, updated_at: now })
+        .eq("sold_order_id", req.order_id);
+
+      try {
+        const { runTwoWayStockSync } = await import("./serials.functions");
+        await runTwoWayStockSync(sb);
+      } catch (err) {
+        console.warn("[order-workflows] Stock sync error:", err);
+      }
     } else {
       patch.status = "rejected";
       // restore order to previous cancellable status
@@ -273,6 +286,32 @@ export const decideReturn = createServerFn({ method: "POST" })
       patch.refund_status = data.refund_status ?? "refunded";
       patch.resolved_at = now;
       orderStatus = "returned";
+
+      // Check if return was defective based on reason or admin notes
+      const reasonLower = (req.reason || "").toLowerCase();
+      const notesLower = (data.admin_notes || "").toLowerCase();
+      const isDefective = reasonLower.includes("defect") || reasonLower.includes("damaged") || notesLower.includes("defect");
+
+      if (isDefective) {
+        // Mark serial as returned + defective
+        await sb
+          .from("product_serials")
+          .update({ status: "returned", updated_at: now })
+          .eq("sold_order_id", req.order_id);
+      } else {
+        // Normal return: keep status returned (non-defective) and unbind so it can be re-sold
+        await sb
+          .from("product_serials")
+          .update({ status: "returned", sold_order_id: null, updated_at: now })
+          .eq("sold_order_id", req.order_id);
+      }
+
+      try {
+        const { runTwoWayStockSync } = await import("./serials.functions");
+        await runTwoWayStockSync(sb);
+      } catch (err) {
+        console.warn("[order-workflows] Stock sync error on return:", err);
+      }
     }
 
     const { error } = await sb.from("return_requests").update(patch).eq("id", data.id);

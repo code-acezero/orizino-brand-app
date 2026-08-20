@@ -3,9 +3,9 @@ import React from "react";
 import { useLocation, useNavigate } from "@/lib/router-compat";
 import { useSeoMeta } from "@/hooks/use-seo-meta";
 import { MoveHorizontal, Type, ShoppingBag, UserCircle, KeyRound, Layout } from "lucide-react";
-import AdminStorefrontAppearance from "./AdminStorefrontAppearance";
-import AdminProfileAppearance from "./AdminProfileAppearance";
-import AdminAuthAppearance from "./AdminAuthAppearance";
+import AdminStorefrontAppearance from "./StorefrontThemePage";
+import AdminProfileAppearance from "./PublicProfileThemePage";
+import AdminAuthAppearance from "./AuthPageThemePage";
 import ProductDetailLayoutPanel from "@/components/admin/ProductDetailLayoutPanel";
 import MarqueeStripConfigPanel from "@/components/admin/MarqueeStripConfigPanel";
 

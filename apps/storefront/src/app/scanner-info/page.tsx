@@ -1,5 +1,5 @@
-import ScannerInfoPage from "@/_pages/ScannerInfoPage";
+import ProductScanPage from "@/_pages/ProductScanPage";
 
 export default function Page() {
-  return <ScannerInfoPage />;
+  return <ProductScanPage />;
 }

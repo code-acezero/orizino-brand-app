@@ -9,6 +9,7 @@ import { toast } from "@/lib/app-toast";
 import CurrencyMenu from "@/components/footer/CurrencyMenu";
 import LanguageMenu from "@/components/footer/LanguageMenu";
 import ThemeToggle from "@/components/footer/ThemeToggle";
+import BrandLogo from "@/components/BrandLogo";
 import { useLanguage, getLocalizedBrandName, getLocalizedBrandSuffix } from "@/contexts/LanguageContext";
 import { storefrontHref } from "@/lib/cross-app-urls";
 
@@ -93,8 +94,8 @@ const Footer: React.FC<FooterProps> = ({ variantOverride }) => {
   const titleFont = (siteSettings?.title_font as string) || "";
   const titleImageUrl = (siteSettings?.title_image_url as string) || "";
 
-  const showLogo = (displayStyle === "logo" || displayStyle === "both") && Boolean(logoUrl);
-  const showTitle = displayStyle === "title" || displayStyle === "both" || Boolean(siteName);
+  const showLogo = displayStyle !== "title" && displayStyle !== "none";
+  const showTitle = displayStyle !== "logo" && displayStyle !== "none" && Boolean(siteName);
 
   const renderTitleText = (imgClass = "") => {
     if (isLoadingSettings) {
@@ -211,22 +212,14 @@ const Footer: React.FC<FooterProps> = ({ variantOverride }) => {
     return (
       <>
         {/* mobile/tablet */}
-        <footer className="md:hidden relative mt-6 pb-[76px] px-4">
+        <footer className="md:hidden relative mt-6 pb-4 px-4">
           <div className="rounded-3xl border border-border/40 bg-card/40 backdrop-blur-xl overflow-hidden">
             <div className="px-4 py-4 border-b border-border/40 flex items-center gap-3">
-              {showLogo && logoUrl && (
-                <div
-                  className="w-12 h-12 shrink-0 bg-[#1E232A] dark:bg-[#F3EAD8] transition-colors duration-300"
-                  style={{
-                    maskImage: `url("${logoUrl}")`,
-                    WebkitMaskImage: `url("${logoUrl}")`,
-                    maskSize: "contain",
-                    WebkitMaskSize: "contain",
-                    maskRepeat: "no-repeat",
-                    WebkitMaskRepeat: "no-repeat",
-                    maskPosition: "center",
-                    WebkitMaskPosition: "center",
-                  }}
+              {showLogo && (
+                <BrandLogo
+                  logoUrl={siteSettings?.logo_url || siteSettings?.site_icon_url}
+                  alt={siteName}
+                  className="h-10 w-10 shrink-0"
                 />
               )}
               <div className="min-w-0 flex-1">
@@ -297,19 +290,11 @@ const Footer: React.FC<FooterProps> = ({ variantOverride }) => {
             <div className="grid grid-cols-12 gap-6 lg:gap-10 pt-2 pb-6 border-b border-border/40 items-center">
               {/* Logo + title block */}
               <Link to="/home" className="col-span-12 md:col-span-5 flex items-center gap-4 lg:gap-5 group min-w-0">
-                {showLogo && logoUrl && (
-                  <div
-                    className="w-16 h-16 shrink-0 bg-[#1E232A] dark:bg-[#F3EAD8] transition-colors duration-300 group-hover:scale-105"
-                    style={{
-                      maskImage: `url("${logoUrl}")`,
-                      WebkitMaskImage: `url("${logoUrl}")`,
-                      maskSize: "contain",
-                      WebkitMaskSize: "contain",
-                      maskRepeat: "no-repeat",
-                      WebkitMaskRepeat: "no-repeat",
-                      maskPosition: "center",
-                      WebkitMaskPosition: "center",
-                    }}
+                {showLogo && (
+                  <BrandLogo
+                    logoUrl={siteSettings?.logo_url || siteSettings?.site_icon_url}
+                    alt={siteName}
+                    className="h-12 w-12 lg:h-14 lg:w-14 shrink-0 transition-transform duration-300 group-hover:scale-105"
                   />
                 )}
                 <div className="min-w-0 flex flex-col justify-center" style={{ gap: "clamp(4px, 0.6vw, 10px)" }}>
@@ -451,17 +436,17 @@ const Footer: React.FC<FooterProps> = ({ variantOverride }) => {
   return (
     <>
       {/* Mobile + tablet */}
-      <footer className="lg:hidden relative mt-6 pb-[76px]">
+      <footer className="lg:hidden relative mt-6 pb-4">
         <div className="px-2.5 sm:px-3">
           <div className="border border-border/40 bg-card/40 rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/40">
               <Link to="/home" className="inline-flex items-center gap-2 min-w-0">
-                {logoUrl ? (
-                  <img src={logoUrl} alt={siteName} className="w-5 h-5 rounded-full object-cover ring-1 ring-border/40 shrink-0" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
-                    <span className="text-primary-foreground text-[9px] font-bold">{(siteName || "L").charAt(0)}</span>
-                  </div>
+                {showLogo && (
+                  <BrandLogo
+                    logoUrl={siteSettings?.logo_url || siteSettings?.site_icon_url}
+                    alt={siteName}
+                    className="h-6 w-6 shrink-0"
+                  />
                 )}
                 {siteName && <span className="font-semibold text-[11px] tracking-tight text-foreground truncate" style={{ fontFamily: "var(--font-display)" }}>{siteName}</span>}
               </Link>
@@ -515,12 +500,12 @@ const Footer: React.FC<FooterProps> = ({ variantOverride }) => {
             <div className="grid grid-cols-12 gap-6 lg:gap-10 p-6 lg:p-8 border-b border-border/40">
               <div className="col-span-12 md:col-span-5 flex flex-col justify-between gap-4">
                 <Link to="/home" className="inline-flex items-center gap-3 group w-fit">
-                  {logoUrl ? (
-                    <img src={logoUrl} alt={siteName} className="w-9 h-9 rounded-full object-cover ring-1 ring-border/40" />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center">
-                      <span className="text-primary-foreground font-bold">{(siteName || "L").charAt(0)}</span>
-                    </div>
+                  {showLogo && (
+                    <BrandLogo
+                      logoUrl={siteSettings?.logo_url || siteSettings?.site_icon_url}
+                      alt={siteName}
+                      className="h-9 w-9 shrink-0 transition-transform duration-300 group-hover:scale-105"
+                    />
                   )}
                   {siteName && <span className="font-semibold text-sm tracking-tight text-foreground" style={{ fontFamily: "var(--font-display)" }}>{siteName}</span>}
                 </Link>

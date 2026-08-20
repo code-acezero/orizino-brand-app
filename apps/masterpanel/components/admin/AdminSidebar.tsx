@@ -359,7 +359,7 @@ export function AdminSidebar() {
           >
             {hasChildren ? (
               <span className="w-full flex items-center gap-2 cursor-pointer min-w-0">
-                <item.icon className="shrink-0 !size-[15px] text-primary" />
+                <item.icon className={`shrink-0 !size-[15px] ${isParentActive ? "text-foreground" : "text-muted-foreground"}`} />
                 <span className="truncate flex-1 text-left whitespace-nowrap transition-opacity duration-200 group-data-[collapsible=icon]:hidden">{item.title}</span>
                 <ChevronDown
                   className={`!size-3.5 shrink-0 transition-transform duration-200 group-data-[collapsible=icon]:hidden ${
@@ -369,7 +369,7 @@ export function AdminSidebar() {
               </span>
             ) : (
               <NavLink to={item.url} end={item.url === "/"} onClick={closeOnMobile} className="flex items-center gap-2 w-full min-w-0">
-                <item.icon className={`shrink-0 !size-[15px] ${isParentActive ? "text-primary" : ""}`} />
+                <item.icon className={`shrink-0 !size-[15px] ${isParentActive ? "text-foreground font-medium" : "text-muted-foreground"}`} />
                 <span className="truncate flex-1 text-left whitespace-nowrap transition-opacity duration-200 group-data-[collapsible=icon]:hidden">{item.title}</span>
                 {badge != null && (
                   <span className="ml-auto min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 group-data-[collapsible=icon]:hidden">
@@ -751,13 +751,12 @@ export function AdminSidebar() {
                             )}
                           >
                             <div
-                              className="w-5 h-5 rounded flex items-center justify-center shrink-0"
-                              style={{
-                                backgroundColor: isSectionActive ? `${item.color}35` : `${item.color}18`,
-                                border: `1px solid ${isSectionActive ? item.color : item.color + "30"}`
-                              }}
+                              className={cn(
+                                "w-5 h-5 rounded flex items-center justify-center shrink-0 border transition-colors",
+                                isSectionActive ? "bg-muted border-border/80 text-foreground" : "bg-secondary/40 border-border/40 text-muted-foreground"
+                              )}
                             >
-                              <Icon className="w-3 h-3" style={{ color: item.color }} />
+                              <Icon className="w-3 h-3" />
                             </div>
                             <span className="truncate flex-1">{item.title}</span>
                             {isSectionActive && (

@@ -26,13 +26,24 @@ export interface SerialLookupRow {
   sold_at: string | null;
   products: { name: string; sku: string; price: number; compare_at_price: number | null; thumbnail: string | null } | null;
   product_variants: { size: string | null; color: string | null; sku: string | null } | null;
+  orders?: {
+    id: string;
+    order_number: string;
+    customer_name: string | null;
+    guest_name: string | null;
+    guest_phone: string | null;
+    status: string;
+    total: number;
+    created_at: string;
+    shipping_address?: any;
+  } | null;
 }
 
 export async function lookupSerial(code: string): Promise<SerialLookupRow | null> {
   const { data, error } = await sb
     .from("product_serials")
     .select(
-      "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku)",
+      "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_name, guest_phone, status, total, created_at, shipping_address)",
     )
     .eq("serial_code", code)
     .maybeSingle();

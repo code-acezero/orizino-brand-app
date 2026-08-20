@@ -42,7 +42,7 @@ const FALLBACK_CONTENT: Record<string, { title: string; subtitle: string; conten
   }
 };
 
-const LegalPage: React.FC<LegalPageProps> = ({ slug }) => {
+const LegalPolicyPage: React.FC<LegalPageProps> = ({ slug }) => {
   const currentDoc = LEGAL_DOCS.find((d) => d.slug === slug || (slug === "returns" && d.href === "/refund")) || LEGAL_DOCS[0];
 
   const { data: pageData, isLoading } = useQuery({
@@ -245,4 +245,4 @@ const LegalPage: React.FC<LegalPageProps> = ({ slug }) => {
   );
 };
 
-export default LegalPage;
+export default LegalPolicyPage;

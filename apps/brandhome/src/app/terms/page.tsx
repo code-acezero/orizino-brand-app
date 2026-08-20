@@ -1,5 +1,5 @@
-import CmsPage from "@/_pages/CmsPage";
+import DynamicContentPage from "@/_pages/DynamicContentPage";
 
 export default function TermsRoute() {
-  return <CmsPage slug="terms" />;
+  return <DynamicContentPage slug="terms" />;
 }

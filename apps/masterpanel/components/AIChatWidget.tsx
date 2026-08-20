@@ -290,6 +290,7 @@ const AIChatWidget: React.FC = () => {
   const [submittingComplaint, setSubmittingComplaint] = useState(false);
   const [liveMode, setLiveMode] = useState(false);
   const [liveConvId, setLiveConvId] = useState<string | null>(null);
+  const [liveConvAssigned, setLiveConvAssigned] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollVisible = useScrollVisibility();
   const handoffFn = useServerFn(flagHandoffToHuman);
@@ -699,22 +700,42 @@ const AIChatWidget: React.FC = () => {
     return () => { supabase.removeChannel(channel); };
   }, [liveConvId, liveMode, qc]);
 
+  // Poll for assignment & session close
   useEffect(() => {
     if (!liveConvId || !liveMode) return;
     const check = async () => {
-      const { data } = await supabase.from("support_conversations").select("status").eq("id", liveConvId).maybeSingle();
+      const { data } = await supabase
+        .from("support_conversations")
+        .select("status, assigned_to, profiles:assigned_to(full_name)")
+        .eq("id", liveConvId)
+        .maybeSingle();
       if (data?.status === "closed") {
         setLiveMode(false);
+        setLiveConvAssigned(false);
         setMessages(prev => [...prev, { role: "assistant", content: "The live support session has ended. I'm back to assist you! 😊" }]);
+      } else if (data?.assigned_to && !liveConvAssigned) {
+        // Agent just got assigned — show professional welcome message
+        const agentName = (data as any)?.profiles?.full_name || "a support specialist";
+        setLiveConvAssigned(true);
+        setMessages(prev => [
+          ...prev,
+          {
+            role: "assistant" as const,
+            content: `Hi there! I'm ${agentName} and I'll be assisting you today. How can I help you? 😊`,
+          },
+        ]);
       }
     };
-    const interval = setInterval(check, 30000);
+    check(); // immediate first check
+    const interval = setInterval(check, 15000);
     return () => clearInterval(interval);
-  }, [liveConvId, liveMode]);
+  }, [liveConvId, liveMode, liveConvAssigned]);
 
   useEffect(() => {
     if (!liveMode || liveMessages.length === 0) return;
-    const converted: Msg[] = liveMessages.map((m: any) => ({
+    // Filter out internal system messages (auto-assign events, internal handoff notes) from customer view
+    const visible = liveMessages.filter((m: any) => !m.is_system);
+    const converted: Msg[] = visible.map((m: any) => ({
       role: m.sender_type === "user" ? "user" as const : "assistant" as const,
       content: m.content,
     }));
@@ -841,6 +862,11 @@ const AIChatWidget: React.FC = () => {
     }
 
     if (liveMode && liveConvId && user) {
+      // Block customer from sending until an agent is assigned
+      if (!liveConvAssigned) {
+        toast.info("Please wait — a support agent will be assigned to you shortly.");
+        return;
+      }
       const content = text || (pendingAttachments[0]?.url ?? "");
       setInput("");
       setPendingAttachments([]);
@@ -984,7 +1010,8 @@ const AIChatWidget: React.FC = () => {
         }
         setLiveConvId(conv.id);
         setLiveMode(false);
-        setMessages([{ role: "assistant", content: "⏳ Support ticket requested. In queue for specialist assignment." }]);
+        setLiveConvAssigned(false);
+        setMessages([{ role: "assistant", content: "Your support request has been received. \n\nA specialist will be with you shortly — you'll be notified as soon as one is assigned. Please hold on! 🙏" }]);
       }
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Couldn't connect to live support right now." }]);
@@ -1715,8 +1742,17 @@ const AIChatWidget: React.FC = () => {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
                       onPaste={handlePaste}
-                      placeholder={liveMode ? "Message agent..." : uploading ? "Uploading…" : "Ask anything, paste or drop an image..."}
-                      className="flex-1 bg-transparent px-1 py-1.5 text-sm text-foreground placeholder:text-foreground/55 focus:outline-none"
+                      placeholder={
+                        liveConvId && !liveConvAssigned
+                          ? "⏳ Waiting for an agent to be assigned..."
+                          : liveMode
+                          ? "Message your support agent..."
+                          : uploading
+                          ? "Uploading…"
+                          : "Ask anything, paste or drop an image..."
+                      }
+                      disabled={!!(liveConvId && !liveConvAssigned)}
+                      className={`flex-1 bg-transparent px-1 py-1.5 text-sm text-foreground placeholder:text-foreground/55 focus:outline-none ${liveConvId && !liveConvAssigned ? "opacity-60 cursor-not-allowed" : ""}`}
                     />
                     <motion.button
                       whileTap={{ scale: 0.92 }}

@@ -1,5 +1,5 @@
-import SettingsPage from "@/_pages/SettingsPage";
+import AccountSettingsPage from "@/_pages/AccountSettingsPage";
 
 export default function Page() {
-  return <SettingsPage />;
+  return <AccountSettingsPage />;
 }

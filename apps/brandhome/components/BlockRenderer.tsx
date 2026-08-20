@@ -24,7 +24,7 @@ const HeroBlock: React.FC<{ p: Record<string, any> }> = ({ p }) => (
       <h1 className="text-4xl md:text-5xl font-editorial font-bold text-foreground">{p.title}</h1>
       {p.subtitle && <p className="text-lg text-muted-foreground mt-4 font-sans-brand">{p.subtitle}</p>}
       {p.buttonText && (
-        <a href={storefrontHref(p.buttonLink || "/shop")} className="inline-block mt-6 px-8 py-3 bg-primary text-primary-foreground rounded-2xl font-bold font-sans-brand hover:opacity-90 transition-opacity">
+        <a href={storefrontHref(p.buttonLink || "/")} className="inline-block mt-6 px-8 py-3 bg-primary text-primary-foreground rounded-2xl font-bold font-sans-brand hover:opacity-90 transition-opacity">
           {p.buttonText}
         </a>
       )}
@@ -54,7 +54,7 @@ const CTABlock: React.FC<{ p: Record<string, any> }> = ({ p }) => (
   <section className="py-12 px-8 rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 text-center">
     <h2 className="text-2xl font-editorial font-bold text-foreground">{p.title}</h2>
     {p.subtitle && <p className="text-muted-foreground mt-2 font-sans-brand">{p.subtitle}</p>}
-    <a href={storefrontHref(p.buttonLink || "/shop")} className="inline-block mt-6 px-8 py-3 bg-primary text-primary-foreground rounded-2xl font-bold font-sans-brand hover:opacity-90 transition-opacity">
+    <a href={storefrontHref(p.buttonLink || "/")} className="inline-block mt-6 px-8 py-3 bg-primary text-primary-foreground rounded-2xl font-bold font-sans-brand hover:opacity-90 transition-opacity">
       {p.buttonText}
     </a>
   </section>

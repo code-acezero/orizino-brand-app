@@ -76,7 +76,7 @@ export function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@orizino.com"
                 autoComplete="username"
-                className="h-12 rounded-2xl text-[14px] bg-secondary/30 border-border/70 focus-visible:ring-primary"
+                className="h-12 rounded-2xl text-[14px] bg-secondary/30 border-border/70 focus-visible:border-foreground/40"
                 required
               />
             </div>
@@ -92,7 +92,7 @@ export function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
                   autoComplete="current-password"
-                  className="h-12 rounded-2xl text-[14px] pr-11 bg-secondary/30 border-border/70 focus-visible:ring-primary"
+                  className="h-12 rounded-2xl text-[14px] pr-11 bg-secondary/30 border-border/70 focus-visible:border-foreground/40"
                   required
                 />
                 <button
@@ -132,9 +132,9 @@ export function Login() {
 
           {/* Quick Help / Admin note */}
           <div className="pt-2 border-t border-border/40 flex items-center justify-between text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               <Lock className="w-3 h-3 text-emerald-500" />
-              <span>RLS Protected Terminal</span>
+              <span>Secure Operations Terminal</span>
             </span>
             <span className="font-mono text-[10px] opacity-70">v2.4.0-ops</span>
           </div>

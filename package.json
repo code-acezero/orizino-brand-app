@@ -7,17 +7,17 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npx --yes concurrently -k -n \"brandhome,storefront,masterpanel,orderops,explore\" -c \"cyan,green,yellow,magenta,blue\" \"npm run dev:brandhome\" \"npm run dev:storefront\" \"npm run dev:masterpanel\" \"npm run dev:orderops\" \"npm run dev:explore\"",
-    "dev:brandhome": "npm run dev --workspace=apps/brandhome",
-    "dev:storefront": "npm run dev --workspace=apps/storefront",
-    "dev:masterpanel": "npm run dev --workspace=apps/masterpanel",
-    "dev:orderops": "npm run dev --workspace=apps/orderops",
-    "dev:explore": "npm run dev --workspace=apps/explore",
-    "build:brandhome": "npm run build --workspace=apps/brandhome",
-    "build:storefront": "npm run build --workspace=apps/storefront",
-    "build:masterpanel": "npm run build --workspace=apps/masterpanel",
-    "build:orderops": "npm run build --workspace=apps/orderops",
-    "build:explore": "npm run build --workspace=apps/explore",
+    "dev": "npx --yes concurrently -n \"brandhome,storefront,masterpanel,orderops,explore\" -c \"cyan,green,yellow,magenta,blue\" \"npm run dev:brandhome\" \"npm run dev:storefront\" \"npm run dev:masterpanel\" \"npm run dev:orderops\" \"npm run dev:explore\"",
+    "dev:brandhome": "npm run dev --prefix apps/brandhome",
+    "dev:storefront": "npm run dev --prefix apps/storefront",
+    "dev:masterpanel": "npm run dev --prefix apps/masterpanel",
+    "dev:orderops": "npm run dev --prefix apps/orderops",
+    "dev:explore": "npm run dev --prefix apps/explore",
+    "build:brandhome": "npm run build --prefix apps/brandhome",
+    "build:storefront": "npm run build --prefix apps/storefront",
+    "build:masterpanel": "npm run build --prefix apps/masterpanel",
+    "build:orderops": "npm run build --prefix apps/orderops",
+    "build:explore": "npm run build --prefix apps/explore",
     "build": "npm run build:brandhome && npm run build:storefront && npm run build:masterpanel && npm run build:orderops && npm run build:explore"
   },
   "dependencies": {

@@ -21,7 +21,12 @@ import {
   POS_ROLL_SIZES,
   type PosRollSize,
 } from "@/lib/pos-slip-render";
-import { StickerSetupTab } from "./AdminProductsManagement";
+import {
+  renderOrderStickerHtml,
+  ORDER_STICKER_SIZES,
+  type OrderStickerSize,
+} from "@/lib/order-sticker-render";
+import { StickerSetupTab } from "./ProductManagerPage";
 import { useTabParam } from "@/hooks/use-tab-param";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -65,9 +70,14 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Truck,
+  MapPin,
+  Phone,
+  Globe,
+  Package,
 } from "lucide-react";
 
-type ModeTab = "invoice" | "order-sticker";
+type ModeTab = "invoice" | "pos-slip" | "order-sticker";
 
 const LUXURY_PRESETS: Array<{
   id: InvoiceSettings["preset"];
@@ -249,18 +259,18 @@ const GeometryAndSizingPanel: React.FC<{
               { id: "large", label: "Large" },
               { id: "full_width", label: "Full Width" },
             ] as const
-          ).map((opt) => (
+          ).map((sz) => (
             <button
-              key={opt.id}
+              key={sz.id}
               type="button"
-              onClick={() => patch("qr_size", opt.id)}
-              className={`py-1.5 px-1.5 rounded-lg border text-center text-[10px] font-bold transition-all cursor-pointer ${
-                (settings.qr_size || "full_width") === opt.id
-                  ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                  : "bg-secondary/30 border-border/50 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+              onClick={() => patch("qr_size", sz.id)}
+              className={`py-1 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                (settings.qr_size || "full_width") === sz.id
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-secondary/30 border-border/50 text-muted-foreground hover:text-foreground"
               }`}
             >
-              {opt.label}
+              {sz.label}
             </button>
           ))}
         </div>
@@ -268,12 +278,12 @@ const GeometryAndSizingPanel: React.FC<{
         {/* QR Scale Slider */}
         <div className="space-y-1 pt-1">
           <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>Fine-tune QR Width / Scale:</span>
+            <span>Fine-tune QR Scale:</span>
             <span className="font-mono font-bold text-primary">{settings.qr_scale ?? 100}%</span>
           </div>
           <Slider
-            min={50}
-            max={180}
+            min={60}
+            max={150}
             step={5}
             value={[settings.qr_scale ?? 100]}
             onValueChange={([val]) => patch("qr_scale", val)}
@@ -281,69 +291,48 @@ const GeometryAndSizingPanel: React.FC<{
         </div>
       </div>
 
-      {/* 2. Brand Logo & Brand Name Sizing */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        {/* Logo Sizing */}
-        <div className="space-y-1.5 p-2.5 rounded-xl border border-border/40 bg-secondary/15">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-foreground">Brand Logo Size</span>
-            <span className="text-[10px] font-mono text-primary font-bold">{settings.logo_size || "large"} ({settings.logo_scale ?? 100}%)</span>
+      {/* 2. Logo & Brand Title Sizing */}
+      <div className="space-y-2 p-2.5 rounded-xl border border-border/40 bg-secondary/15">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Crown className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-bold text-foreground">Brand Logo Crest</span>
           </div>
-          <div className="grid grid-cols-4 gap-1">
-            {(["small", "medium", "large", "extra_large"] as const).map((sz) => (
-              <button
-                key={sz}
-                type="button"
-                onClick={() => patch("logo_size", sz)}
-                className={`py-1 text-[9.5px] font-bold rounded-lg border capitalize transition-all cursor-pointer ${
-                  (settings.logo_size || "large") === sz
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-secondary/30 border-border/50 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {sz === "extra_large" ? "XL" : sz}
-              </button>
-            ))}
-          </div>
-          <Slider
-            min={50}
-            max={180}
-            step={5}
-            value={[settings.logo_scale ?? 100]}
-            onValueChange={([v]) => patch("logo_scale", v)}
-            className="pt-1"
-          />
+          <Badge variant="outline" className="text-[10px] font-mono capitalize border-primary/30 text-primary">
+            {settings.logo_size || "medium"} ({settings.logo_scale ?? 100}%)
+          </Badge>
         </div>
 
-        {/* Brand Name Sizing */}
-        <div className="space-y-1.5 p-2.5 rounded-xl border border-border/40 bg-secondary/15">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-foreground">Brand Name Size</span>
-            <span className="text-[10px] font-mono text-primary font-bold">{settings.brand_name_size || "large"} ({settings.brand_name_scale ?? 100}%)</span>
-          </div>
-          <div className="grid grid-cols-4 gap-1">
-            {(["small", "medium", "large", "extra_large"] as const).map((sz) => (
-              <button
-                key={sz}
-                type="button"
-                onClick={() => patch("brand_name_size", sz)}
-                className={`py-1 text-[9.5px] font-bold rounded-lg border capitalize transition-all cursor-pointer ${
-                  (settings.brand_name_size || "large") === sz
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-secondary/30 border-border/50 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {sz === "extra_large" ? "XL" : sz}
-              </button>
-            ))}
+        {/* Logo Size Toggle */}
+        <div className="grid grid-cols-4 gap-1">
+          {(["small", "medium", "large", "extra_large"] as const).map((sz) => (
+            <button
+              key={sz}
+              type="button"
+              onClick={() => patch("logo_size", sz)}
+              className={`py-1 text-[10px] font-bold rounded-lg border capitalize transition-all cursor-pointer ${
+                (settings.logo_size || "medium") === sz
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-secondary/30 border-border/50 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {sz.replace("_", " ")}
+            </button>
+          ))}
+        </div>
+
+        {/* Logo Scale Slider */}
+        <div className="space-y-1 pt-1">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+            <span>Fine-tune Logo Scale:</span>
+            <span className="font-mono font-bold text-primary">{settings.logo_scale ?? 100}%</span>
           </div>
           <Slider
-            min={50}
-            max={180}
+            min={60}
+            max={160}
             step={5}
-            value={[settings.brand_name_scale ?? 100]}
-            onValueChange={([v]) => patch("brand_name_scale", v)}
-            className="pt-1"
+            value={[settings.logo_scale ?? 100]}
+            onValueChange={([val]) => patch("logo_scale", val)}
           />
         </div>
       </div>
@@ -435,26 +424,34 @@ const GeometryAndSizingPanel: React.FC<{
 
 export default function AdminInvoiceStickers() {
   const [tab, setTab] = useTabParam("invoice", "/sales/invoice-stickers");
-  const [activeTab, setActiveTab] = useState<ModeTab>(() => (tab === "order-sticker" ? "order-sticker" : "invoice"));
+  const [activeTab, setActiveTab] = useState<ModeTab>(() => {
+    if (tab === "order-sticker") return "order-sticker";
+    if (tab === "pos-slip") return "pos-slip";
+    return "invoice";
+  });
   const persist = useServerFn(saveInvoiceSettings);
 
   const [settings, setSettings] = useState<InvoiceSettings>(() => InvoiceSettingsSchema.parse({}));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [previewZoom, setPreviewZoom] = useState<number>(75);
-  const [stickerPreviewZoom, setStickerPreviewZoom] = useState<number>(100);
+  const [posPreviewZoom, setPosPreviewZoom] = useState<number>(100);
+  const [orderStickerZoom, setOrderStickerZoom] = useState<number>(100);
   const [posRollSize, setPosRollSize] = useState<PosRollSize>("58mm");
+  const [orderStickerSize, setOrderStickerSize] = useState<OrderStickerSize>("4x2");
   const [posAutoHeight, setPosAutoHeight] = useState<number>(380);
   const [previewDataSource, setPreviewDataSource] = useState<"sample" | "real">("sample");
   const [selectedRealOrderId, setSelectedRealOrderId] = useState<string>("");
 
   const previewRef = useRef<HTMLIFrameElement>(null);
-  const stickerPreviewRef = useRef<HTMLIFrameElement>(null);
+  const posPreviewRef = useRef<HTMLIFrameElement>(null);
+  const orderStickerPreviewRef = useRef<HTMLIFrameElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Sync tab param changes
   useEffect(() => {
     if (tab === "order-sticker") setActiveTab("order-sticker");
+    else if (tab === "pos-slip") setActiveTab("pos-slip");
     else if (tab === "invoice") setActiveTab("invoice");
   }, [tab]);
 
@@ -469,28 +466,30 @@ export default function AdminInvoiceStickers() {
     return () => window.removeEventListener("message", handleMsg);
   }, []);
 
-  // Fetch site brand assets
-  const { data: brandLogoUrl } = useQuery({
-    queryKey: ["site-logo-url"],
+  // Fetch site brand assets & live contact settings from database
+  const { data: dbBrandSettings } = useQuery({
+    queryKey: ["site-brand-settings-full"],
     queryFn: async () => {
-      const { data } = await supabase.from("site_settings").select("value").eq("key", "logo_url").maybeSingle();
-      if (!data) return "/orizino-logo.svg";
-      const val = typeof data.value === "object" && data.value !== null ? (data.value as any).value ?? "/orizino-logo.svg" : data.value;
-      return val || "/orizino-logo.svg";
+      const { data } = await supabase
+        .from("site_settings")
+        .select("key, value")
+        .in("key", ["site_name", "logo_url", "contact_email", "contact_phone", "address", "website", "brand_settings"]);
+      const map: Record<string, string> = {};
+      data?.forEach((row: any) => {
+        const val = typeof row.value === "object" && row.value !== null ? (row.value.value ?? row.value) : row.value;
+        if (typeof val === "string") {
+          map[row.key] = val;
+        } else if (typeof val === "object" && val !== null) {
+          Object.assign(map, val);
+        }
+      });
+      return map;
     },
     staleTime: 60000,
   });
 
-  const { data: brandName } = useQuery({
-    queryKey: ["site-name"],
-    queryFn: async () => {
-      const { data } = await supabase.from("site_settings").select("value").eq("key", "site_name").maybeSingle();
-      if (!data) return "ORIZINO IMPERIAL GOODS CO.";
-      const val = typeof data.value === "object" && data.value !== null ? (data.value as any).value ?? "ORIZINO" : String(data.value);
-      return val || "ORIZINO IMPERIAL GOODS CO.";
-    },
-    staleTime: 60000,
-  });
+  const brandName = dbBrandSettings?.site_name || "ORIZINO";
+  const brandLogoUrl = dbBrandSettings?.logo_url || "/orizino-logo.svg";
 
   // Fetch recent real orders for live realistic test previews
   const { data: recentOrders = [] } = useQuery({
@@ -509,43 +508,43 @@ export default function AdminInvoiceStickers() {
   // Build active payload for live preview
   const activePayload = useMemo((): InvoiceOrderPayload => {
     const resolvedLogo = brandLogoUrl || "/orizino-logo.svg";
+    const brandData = {
+      name: brandName || "ORIZINO",
+      logo_url: resolvedLogo,
+      brand_mark_url: resolvedLogo,
+      address: dbBrandSettings?.address || "Flagship Atelier & Head Office, Dhaka",
+      email: dbBrandSettings?.contact_email || "concierge@orizino.com",
+      phone: dbBrandSettings?.contact_phone || "+880 1800-000000",
+      website: dbBrandSettings?.website || "www.orizino.com",
+    };
 
     if (previewDataSource === "real" && selectedRealOrderId) {
       const ord: any = recentOrders.find((o: any) => o.id === selectedRealOrderId);
       if (ord) {
         return {
-          order_number: ord.order_number || "Imperial-00123",
-          invoice_number: `INV-${ord.order_number?.replace(/\D/g, "") || "00123"}`,
+          order_number: ord.order_number || "ORZ-884910",
+          invoice_number: `INV-${ord.order_number?.replace(/\D/g, "") || "884910"}`,
           issue_date: new Date(ord.created_at || Date.now()).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
           status: "confirmed",
           payment_method: ord.payment_method || "Cash on Delivery",
-          payment_status: "Verified Order Dispatch",
-          tracking_number: "ORZ-EXP-884910-BD",
+          payment_status: ord.payment_status || "Pending",
           subtotal: Number(ord.subtotal || ord.total || 0),
           shipping_fee: Number(ord.shipping_fee || 0),
           tax: 0,
           discount: Number(ord.coupon_discount || 0),
           total: Number(ord.total || 0),
           currency: "৳",
-          brand: {
-            name: brandName || "ORIZINO IMPERIAL GOODS CO.",
-            logo_url: resolvedLogo,
-            brand_mark_url: resolvedLogo,
-            address: "N°1 Palace Road, Capital City, Dhaka",
-            email: "info@orizino.com",
-            phone: "003 255 7899",
-            website: "orizino.com",
-          },
+          brand: brandData,
           customer: {
-            full_name: ord.customer_name || "Customer Name",
-            email: ord.customer_email || "client@orizino.com",
-            phone: ord.customer_phone || "(40) 253-6726",
-            shipping_address: ord.shipping_address || "Address Road, Capital City",
-            billing_address: ord.shipping_address || "Address Road, Capital City",
+            full_name: ord.customer_name || "Valued Patron",
+            email: ord.customer_email || "patron@domain.com",
+            phone: ord.customer_phone || "+880 1700-000000",
+            billing_address: ord.shipping_address || "Dhaka, Bangladesh",
+            shipping_address: ord.shipping_address || "Dhaka, Bangladesh",
           },
           items: (ord.order_items || []).map((it: any) => ({
-            name: it.name || "Silk Item",
-            sku: it.sku || "ORZ-SL-CHR-01",
+            name: it.name || "Imperial Garment",
+            sku: it.sku || "ORZ-SKU",
             quantity: Number(it.quantity || 1),
             unit_price: Number(it.unit_price || 0),
             line_total: Number(it.total_price || 0),
@@ -555,12 +554,8 @@ export default function AdminInvoiceStickers() {
       }
     }
 
-    return sampleInvoicePayload({
-      logo_url: resolvedLogo,
-      brand_mark_url: resolvedLogo,
-      name: brandName || "ORIZINO IMPERIAL GOODS CO.",
-    });
-  }, [previewDataSource, selectedRealOrderId, recentOrders, brandLogoUrl, brandName]);
+    return sampleInvoicePayload(brandData);
+  }, [previewDataSource, selectedRealOrderId, recentOrders, brandLogoUrl, brandName, dbBrandSettings]);
 
   useEffect(() => {
     let alive = true;
@@ -608,10 +603,15 @@ export default function AdminInvoiceStickers() {
         if (previewRef.current && previewRef.current.srcdoc !== html) {
           previewRef.current.srcdoc = html;
         }
-      } else if (activeTab === "order-sticker") {
+      } else if (activeTab === "pos-slip") {
         const html = renderPosSlipHtml(settings, activePayload, posRollSize);
-        if (stickerPreviewRef.current && stickerPreviewRef.current.srcdoc !== html) {
-          stickerPreviewRef.current.srcdoc = html;
+        if (posPreviewRef.current && posPreviewRef.current.srcdoc !== html) {
+          posPreviewRef.current.srcdoc = html;
+        }
+      } else if (activeTab === "order-sticker") {
+        const html = renderOrderStickerHtml(settings, activePayload, orderStickerSize);
+        if (orderStickerPreviewRef.current && orderStickerPreviewRef.current.srcdoc !== html) {
+          orderStickerPreviewRef.current.srcdoc = html;
         }
       }
     }, 10);
@@ -619,7 +619,7 @@ export default function AdminInvoiceStickers() {
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
-  }, [settings, activePayload, activeTab, posRollSize]);
+  }, [settings, activePayload, activeTab, posRollSize, orderStickerSize]);
 
   const patch = useCallback(<K extends keyof InvoiceSettings>(key: K, value: InvoiceSettings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -649,7 +649,22 @@ export default function AdminInvoiceStickers() {
       if (clientErr) {
         await saveInvoiceSettings({ data: parsed });
       }
-      toast.success("Settings saved successfully");
+
+      // Sync Order Sticker settings to sticker_settings table
+      const orderStickerDims = ORDER_STICKER_SIZES[orderStickerSize];
+      await (supabase as any).from("sticker_settings").upsert({
+        sticker_kind: "order",
+        name: "Order Shipping Label Preset",
+        width_in: orderStickerDims.widthIn,
+        height_in: orderStickerDims.heightIn,
+        border_color: parsed.accent_color || "#6B0F1A",
+        background_color: parsed.bg_color || "#FDFBF7",
+        text_color: parsed.text_color || "#1D070B",
+        font_family: parsed.font_family || "Plus Jakarta Sans",
+        is_active: true,
+      }, { onConflict: "sticker_kind" });
+
+      toast.success("Settings saved and synchronized successfully");
     } catch (e: any) {
       toast.error(e?.message ?? "Save failed");
     } finally {
@@ -666,10 +681,19 @@ export default function AdminInvoiceStickers() {
     }
   };
 
-  const triggerStickerPrint = () => {
-    if (stickerPreviewRef.current?.contentWindow) {
-      stickerPreviewRef.current.contentWindow.focus();
-      stickerPreviewRef.current.contentWindow.print();
+  const triggerPosPrint = () => {
+    if (posPreviewRef.current?.contentWindow) {
+      posPreviewRef.current.contentWindow.focus();
+      posPreviewRef.current.contentWindow.print();
+    } else {
+      window.print();
+    }
+  };
+
+  const triggerOrderStickerPrint = () => {
+    if (orderStickerPreviewRef.current?.contentWindow) {
+      orderStickerPreviewRef.current.contentWindow.focus();
+      orderStickerPreviewRef.current.contentWindow.print();
     } else {
       window.print();
     }
@@ -713,7 +737,7 @@ export default function AdminInvoiceStickers() {
   };
 
   const exportPosSlipJpg = async () => {
-    const iframeDoc = stickerPreviewRef.current?.contentDocument;
+    const iframeDoc = posPreviewRef.current?.contentDocument;
     if (!iframeDoc?.body) {
       toast.error("POS Slip preview not ready");
       return;
@@ -746,6 +770,40 @@ export default function AdminInvoiceStickers() {
     }
   };
 
+  const exportOrderStickerJpg = async () => {
+    const iframeDoc = orderStickerPreviewRef.current?.contentDocument;
+    if (!iframeDoc?.body) {
+      toast.error("Order Sticker preview not ready");
+      return;
+    }
+    try {
+      toast.info("Exporting Order Sticker as JPG...");
+      await iframeDoc.fonts.ready;
+
+      const target =
+        (iframeDoc.querySelector(".sticker-card") as HTMLElement) ??
+        iframeDoc.body;
+
+      const dataUrl = await toJpeg(target, {
+        quality: 0.98,
+        pixelRatio: 3,
+        backgroundColor: "#FDFBF7",
+        fontEmbedCSS: GOOGLE_FONTS_EMBED,
+      });
+
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `OrderSticker-${activePayload.order_number || "ORZ"}-${orderStickerSize}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast.success("Order Sticker exported as JPG");
+    } catch (err: any) {
+      console.error("JPG export error:", err);
+      toast.error("Failed to export JPG: " + (err?.message || "Error"));
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8 text-center text-xs text-muted-foreground font-mono">
@@ -761,14 +819,14 @@ export default function AdminInvoiceStickers() {
         <div>
           <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Receipt className="w-5 h-5 text-primary" />
-            Invoice &amp; Order Sticker Studio
+            Invoice &amp; Sticker Design Studio
           </h1>
           <p className="text-xs text-muted-foreground">
-            A4 single-page luxury document formatting with royal Oriental filigree, logo watermark, and instant QR validation.
+            Official A4 luxury invoice, POS receipt slip, and high-visibility shipping sticker formatting.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap sm:flex-nowrap">
           {activeTab === "invoice" ? (
             <>
               <Button
@@ -797,12 +855,12 @@ export default function AdminInvoiceStickers() {
                 {saving ? "Saving…" : "Save Changes"}
               </Button>
             </>
-          ) : (
+          ) : activeTab === "pos-slip" ? (
             <>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={triggerStickerPrint}
+                onClick={triggerPosPrint}
                 className="rounded-xl h-8 text-xs font-semibold cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5 mr-1.5 text-primary" /> Test Print ({POS_ROLL_SIZES[posRollSize].widthMm}mm)
@@ -811,6 +869,34 @@ export default function AdminInvoiceStickers() {
                 size="sm"
                 variant="outline"
                 onClick={exportPosSlipJpg}
+                className="rounded-xl h-8 text-xs font-semibold cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5 mr-1.5 text-primary" /> Export JPG
+              </Button>
+              <Button
+                size="sm"
+                onClick={onSave}
+                disabled={saving}
+                className="rounded-xl h-8 text-xs font-semibold bg-primary text-primary-foreground cursor-pointer px-4"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+                {saving ? "Saving…" : "Save Changes"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={triggerOrderStickerPrint}
+                className="rounded-xl h-8 text-xs font-semibold cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5 mr-1.5 text-primary" /> Test Print ({ORDER_STICKER_SIZES[orderStickerSize].label})
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={exportOrderStickerJpg}
                 className="rounded-xl h-8 text-xs font-semibold cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5 mr-1.5 text-primary" /> Export JPG
@@ -855,50 +941,72 @@ export default function AdminInvoiceStickers() {
         </div>
       ) : (
         <div className="space-y-3 min-w-0">
-          {/* ── Symmetrical 2-Way Switcher: [ Invoice ] | [ Order Sticker ] ── */}
+          {/* ── Symmetrical 3-Way Mode Switcher ── */}
           <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-1">
-            <div className="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1">
+              {/* Tab 1: Official A4 Invoice */}
               <button
                 type="button"
                 onClick={() => {
                   setActiveTab("invoice");
                   setTab("invoice");
                 }}
-                className={`flex items-center justify-center gap-2 p-2 rounded-xl transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-2.5 p-2 rounded-xl transition-all cursor-pointer ${
                   activeTab === "invoice"
-                    ? "bg-primary text-primary-foreground font-semibold"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                     : "bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/70"
                 }`}
               >
-                <FileText className="w-4 h-4" />
-                <div className="text-left">
-                  <p className="text-xs font-semibold leading-tight">Official A4 Invoice</p>
-                  <p className="text-[10px] opacity-75 leading-tight">Imperial Heritage Single-Page Document (210×297mm)</p>
+                <FileText className="w-4 h-4 shrink-0" />
+                <div className="text-left min-w-0">
+                  <p className="text-xs font-bold leading-tight truncate">Official A4 Invoice</p>
+                  <p className="text-[10px] opacity-80 leading-tight truncate">Imperial Heritage Tax Invoice (A4)</p>
                 </div>
               </button>
 
+              {/* Tab 2: POS Receipt Slip */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("pos-slip");
+                  setTab("pos-slip");
+                }}
+                className={`flex items-center justify-center gap-2.5 p-2 rounded-xl transition-all cursor-pointer ${
+                  activeTab === "pos-slip"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                    : "bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/70"
+                }`}
+              >
+                <Receipt className="w-4 h-4 shrink-0" />
+                <div className="text-left min-w-0">
+                  <p className="text-xs font-bold leading-tight truncate">POS Receipt Slip</p>
+                  <p className="text-[10px] opacity-80 leading-tight truncate">Thermal POS Roll Format (Auto Length)</p>
+                </div>
+              </button>
+
+              {/* Tab 3: Order Shipping Sticker */}
               <button
                 type="button"
                 onClick={() => {
                   setActiveTab("order-sticker");
                   setTab("order-sticker");
                 }}
-                className={`flex items-center justify-center gap-2 p-2 rounded-xl transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-2.5 p-2 rounded-xl transition-all cursor-pointer ${
                   activeTab === "order-sticker"
-                    ? "bg-primary text-primary-foreground font-semibold"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                     : "bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/70"
                 }`}
               >
-                <Receipt className="w-4 h-4" />
-                <div className="text-left">
-                  <p className="text-xs font-semibold leading-tight">POS Invoice Slip / Sticker</p>
-                  <p className="text-[10px] opacity-75 leading-tight">2.2" POS Machine Format (Auto Length)</p>
+                <Tag className="w-4 h-4 shrink-0" />
+                <div className="text-left min-w-0">
+                  <p className="text-xs font-bold leading-tight truncate">Order Shipping Sticker</p>
+                  <p className="text-[10px] opacity-80 leading-tight truncate">Large Delivery Address &amp; Order QR</p>
                 </div>
               </button>
             </div>
           </div>
 
-          {/* ── TAB 1: LUXURY INVOICE DESIGNER ── */}
+          {/* ── TAB 1: LUXURY A4 INVOICE DESIGNER ── */}
           {activeTab === "invoice" && (
             <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-3.5 items-start min-w-0">
               {/* Left Column: Symmetrical Clean Config Engine */}
@@ -919,84 +1027,50 @@ export default function AdminInvoiceStickers() {
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {LUXURY_PRESETS.map((p) => {
-                      const isSelected = settings.preset === p.id;
-                      const IconComponent = p.icon;
+                      const IconComp = p.icon;
+                      const active = settings.preset === p.id;
                       return (
                         <button
                           key={p.id}
                           type="button"
                           onClick={() => applyPreset(p.id)}
-                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[75px] ${
-                            isSelected
-                              ? "bg-primary/10 border-primary text-foreground font-semibold ring-1 ring-primary/30"
-                              : "bg-secondary/30 border-border/50 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                            active
+                              ? "border-primary bg-primary/10 ring-1 ring-primary"
+                              : "border-border/60 hover:border-primary/40 bg-secondary/15"
                           }`}
                         >
-                          <div className="flex items-center justify-between gap-1 w-full">
-                            <div className="w-3.5 h-3.5 rounded-full border border-white/20" style={{ background: p.accent }} />
-                            <IconComponent className="w-3.5 h-3.5 opacity-60" />
+                          <div className="flex items-center gap-2 mb-1">
+                            <IconComp className="w-3.5 h-3.5 text-primary" />
+                            <span className="text-xs font-bold text-foreground">{p.label}</span>
                           </div>
-                          <div>
-                            <p className="text-xs font-bold text-foreground">{p.label}</p>
-                            <p className="text-[9px] text-muted-foreground leading-tight mt-0.5 line-clamp-1">
-                              {p.description}
-                            </p>
-                          </div>
+                          <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                            {p.description}
+                          </p>
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* ── FONT CONFIGURATION PANEL ── */}
-                <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3.5 sm:p-4 space-y-3">
+                {/* Typography Engine */}
+                <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3.5 sm:p-4 space-y-2.5">
                   <div className="flex items-center gap-2 border-b border-border/50 pb-2">
                     <Type className="w-4 h-4 text-primary" />
                     <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                      Typography &amp; Font Configs
+                      Typography Engine
                     </h3>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {/* Body Font Family */}
-                    <div className="space-y-1.5">
-                      <Label className="text-[11px] font-medium text-foreground">Body Font Family</Label>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Heading Font Family</Label>
                       <Select
-                        value={CURATED_BODY_FONTS.some((f) => f.value === settings.font_family) ? settings.font_family : "custom"}
-                        onValueChange={(val) => {
-                          if (val !== "custom") patch("font_family", val);
-                        }}
+                        value={settings.heading_font_family || "Cinzel"}
+                        onValueChange={(v) => patch("heading_font_family", v)}
                       >
-                        <SelectTrigger className="h-8 text-xs rounded-xl bg-secondary/30 border-border/60">
-                          <SelectValue placeholder="Select Body Font" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CURATED_BODY_FONTS.map((f) => (
-                            <SelectItem key={f.value} value={f.value} className="text-xs">
-                              {f.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        value={settings.font_family}
-                        onChange={(e) => patch("font_family", e.target.value)}
-                        placeholder="Custom Google font name"
-                        className="h-7 text-[11px] bg-secondary/20 border-border/50 rounded-lg"
-                      />
-                    </div>
-
-                    {/* Heading Font Family */}
-                    <div className="space-y-1.5">
-                      <Label className="text-[11px] font-medium text-foreground">Heading Font Family</Label>
-                      <Select
-                        value={CURATED_HEADING_FONTS.some((f) => f.value === settings.heading_font_family) ? settings.heading_font_family : "custom"}
-                        onValueChange={(val) => {
-                          if (val !== "custom") patch("heading_font_family", val);
-                        }}
-                      >
-                        <SelectTrigger className="h-8 text-xs rounded-xl bg-secondary/30 border-border/60">
-                          <SelectValue placeholder="Select Heading Font" />
+                        <SelectTrigger className="h-8 text-xs rounded-xl bg-background border-border/60">
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {CURATED_HEADING_FONTS.map((f) => (
@@ -1006,89 +1080,39 @@ export default function AdminInvoiceStickers() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Input
-                        value={settings.heading_font_family}
-                        onChange={(e) => patch("heading_font_family", e.target.value)}
-                        placeholder="Custom heading font name"
-                        className="h-7 text-[11px] bg-secondary/20 border-border/50 rounded-lg"
-                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs">Body Font Family</Label>
+                      <Select
+                        value={settings.font_family || "Plus Jakarta Sans"}
+                        onValueChange={(v) => patch("font_family", v)}
+                      >
+                        <SelectTrigger className="h-8 text-xs rounded-xl bg-background border-border/60">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CURATED_BODY_FONTS.map((f) => (
+                            <SelectItem key={f.value} value={f.value} className="text-xs">
+                              {f.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
-                  {/* Base Font Size Slider */}
-                  <div className="pt-2 border-t border-border/40 space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-[11px] text-muted-foreground">Base Document Font Size:</span>
-                      <span className="font-mono font-bold text-primary">
-                        {settings.font_size ?? 15}px
-                      </span>
+                  <div className="pt-2 border-t border-border/40">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-semibold text-foreground">Base Font Scale</span>
+                      <span className="font-mono text-primary font-bold">{settings.font_size ?? 15}px</span>
                     </div>
                     <Slider
-                      min={10}
-                      max={24}
-                      step={1}
                       value={[settings.font_size ?? 15]}
-                      onValueChange={([val]) => patch("font_size", val)}
-                      className="py-1"
-                    />
-                  </div>
-                </div>
-
-                {/* Colors, Palette & Watermark */}
-                <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3.5 sm:p-4 space-y-3">
-                  <div className="flex items-center gap-2 border-b border-border/50 pb-2">
-                    <Palette className="w-4 h-4 text-primary" />
-                    <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                      Palette &amp; Watermark
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {(
-                      [
-                        { key: "accent_color", label: "Accent Ink" },
-                        { key: "text_color", label: "Main Ink" },
-                        { key: "muted_color", label: "Subtle Ink" },
-                        { key: "bg_color", label: "Parchment" },
-                      ] as const
-                    ).map(({ key, label }) => (
-                      <div key={key} className="space-y-1">
-                        <Label className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground block truncate">
-                          {label}
-                        </Label>
-                        <div className="flex items-center gap-1 bg-secondary/30 border border-border/50 rounded-xl p-1">
-                          <input
-                            type="color"
-                            value={settings[key]}
-                            onChange={(e) => patch(key, e.target.value)}
-                            className="h-6 w-6 rounded-lg border-0 bg-transparent cursor-pointer shrink-0"
-                          />
-                          <input
-                            type="text"
-                            value={settings[key]}
-                            onChange={(e) => patch(key, e.target.value)}
-                            className="w-full bg-transparent font-mono text-[10px] text-foreground outline-none uppercase"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Watermark Opacity Slider */}
-                  <div className="pt-2 border-t border-border/40 space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-[11px] text-muted-foreground">Logo Watermark Opacity:</span>
-                      <span className="font-mono font-bold text-primary">
-                        {Math.round((settings.watermark_opacity ?? 0.08) * 100)}%
-                      </span>
-                    </div>
-                    <Slider
-                      min={0.02}
-                      max={0.25}
-                      step={0.01}
-                      value={[settings.watermark_opacity ?? 0.08]}
-                      onValueChange={([val]) => patch("watermark_opacity", val)}
-                      className="py-1"
+                      min={12}
+                      max={18}
+                      step={1}
+                      onValueChange={([v]) => patch("font_size", v)}
                     />
                   </div>
                 </div>
@@ -1096,54 +1120,53 @@ export default function AdminInvoiceStickers() {
                 {/* Geometry & Element Resizing Controls */}
                 <GeometryAndSizingPanel settings={settings} patch={patch} />
 
-                {/* Document Field Toggles */}
-                <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3 space-y-2">
-                  <div className="flex items-center gap-2 border-b border-border/50 pb-1.5">
-                    <Sliders className="w-3.5 h-3.5 text-primary" />
-                    <h3 className="text-[11px] font-bold text-foreground uppercase tracking-wider">
-                      Visible Elements &amp; Information
+                {/* Field Visibility Checklist */}
+                <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3.5 sm:p-4 space-y-3">
+                  <div className="flex items-center gap-2 border-b border-border/50 pb-2">
+                    <Sliders className="w-4 h-4 text-primary" />
+                    <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                      Visible Invoice Modules
                     </h3>
                   </div>
 
-                  <div className="space-y-1.5">
-                    {FIELD_GROUPS.map((group) => (
-                      <div key={group.title} className="space-y-0.5">
-                        <span className="text-[8.5px] font-mono uppercase tracking-wider text-muted-foreground block">
-                          {group.title}
-                        </span>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
-                          {group.fields.map((f) => (
-                            <label
-                              key={f.key}
-                              className="flex items-center justify-between py-1 px-1.5 rounded-lg border border-border/40 bg-secondary/15 hover:bg-secondary/35 cursor-pointer transition-colors"
-                            >
-                              <span className="text-[10px] font-medium text-foreground truncate pr-1">{f.label}</span>
-                              <Switch
-                                checked={settings[f.key] as boolean}
-                                onCheckedChange={(v) => patch(f.key, v as any)}
-                                className="scale-[0.65] shrink-0 origin-right"
-                              />
-                            </label>
-                          ))}
-                        </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {FIELD_GROUPS.map((grp) => (
+                      <div key={grp.title} className="space-y-1.5 p-2 rounded-xl bg-secondary/15 border border-border/30">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-1 mb-1">
+                          {grp.title}
+                        </p>
+                        {grp.fields.map((f) => (
+                          <label
+                            key={f.key}
+                            className="flex items-center justify-between p-1 px-1.5 rounded-lg hover:bg-background/40 cursor-pointer text-xs"
+                          >
+                            <span className="text-foreground text-[11px]">{f.label}</span>
+                            <Switch
+                              checked={settings[f.key] !== false}
+                              onCheckedChange={(val) => patch(f.key, val)}
+                              className="scale-75 origin-right"
+                            />
+                          </label>
+                        ))}
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Right Column: Exact A4 Page Fit & Zero-Scroll Preview */}
+              {/* Right Column: Live Strict A4 Sheet Preview */}
               <div className="xl:sticky xl:top-20 xl:self-start space-y-2 min-w-0">
                 <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md overflow-hidden flex flex-col shadow-xs">
-                  {/* Top Preview Bar */}
+                  {/* Preview Top Bar */}
                   <div className="p-2.5 border-b border-border/50 bg-secondary/20 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
                       <Eye className="w-3.5 h-3.5 text-primary" />
-                      <span className="text-xs font-bold text-foreground">A4 Master View</span>
+                      <span className="text-xs font-bold text-foreground">
+                        A4 Live Viewport (210×297mm)
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      {/* Data Source Selector */}
                       <Select
                         value={previewDataSource === "real" && selectedRealOrderId ? selectedRealOrderId : "sample"}
                         onValueChange={(val) => {
@@ -1171,21 +1194,10 @@ export default function AdminInvoiceStickers() {
                         </SelectContent>
                       </Select>
 
-                      {/* Zoom Controls */}
                       <div className="flex items-center gap-0.5 bg-background border border-border/60 rounded-xl p-0.5">
                         <button
                           type="button"
-                          onClick={() => setPreviewZoom(75)}
-                          title="Fit Full Page"
-                          className={`px-1.5 py-0.5 text-[10px] font-bold rounded-lg cursor-pointer ${
-                            previewZoom === 75 ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          Fit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPreviewZoom((z) => Math.max(50, z - 10))}
+                          onClick={() => setPreviewZoom((z) => Math.max(45, z - 10))}
                           title="Zoom Out"
                           className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
                         >
@@ -1194,7 +1206,7 @@ export default function AdminInvoiceStickers() {
                         <span className="text-[10px] font-mono font-bold px-1">{previewZoom}%</span>
                         <button
                           type="button"
-                          onClick={() => setPreviewZoom((z) => Math.min(130, z + 10))}
+                          onClick={() => setPreviewZoom((z) => Math.min(115, z + 10))}
                           title="Zoom In"
                           className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
                         >
@@ -1204,20 +1216,21 @@ export default function AdminInvoiceStickers() {
                     </div>
                   </div>
 
-                  {/* Clean A4 Viewport Aligned at Top */}
-                  <div className="p-3 bg-[#E8E4DB] dark:bg-[#1A1513] overflow-hidden flex items-center justify-center min-h-[500px]">
+                  {/* Scaled A4 Viewport Container */}
+                  <div className="p-4 sm:p-6 bg-[#E8E4DB] dark:bg-[#1A1513] overflow-x-auto min-h-[580px] flex items-center justify-center">
                     <div
                       style={{
-                        width: `${(210 * previewZoom) / 100}mm`,
-                        height: `${(297 * previewZoom) / 100}mm`,
+                        width: `${(210 * 3.7795 * previewZoom) / 100}px`,
+                        height: `${(297 * 3.7795 * previewZoom) / 100}px`,
                         position: "relative",
-                        overflow: "hidden",
-                        boxShadow: "0 8px 30px rgba(0,0,0,0.2)",
+                        boxShadow: "0 12px 36px rgba(0,0,0,0.22)",
                         borderRadius: "4px",
                         flexShrink: 0,
+                        overflow: "hidden",
+                        background: "#FDFBF7",
                         transition: "width 0.15s ease, height 0.15s ease",
                       }}
-                      className="border border-[#C5A059]/40 bg-[#FDFBF7]"
+                      className="border border-[#C5A059]/40"
                     >
                       <div
                         style={{
@@ -1245,10 +1258,10 @@ export default function AdminInvoiceStickers() {
             </div>
           )}
 
-          {/* ── TAB 2: POS INVOICE SLIP / STICKER ── */}
-          {activeTab === "order-sticker" && (
+          {/* ── TAB 2: POS RECEIPT SLIP ── */}
+          {activeTab === "pos-slip" && (
             <div className="grid grid-cols-1 xl:grid-cols-[minmax(320px,460px)_1fr] gap-4 items-start min-w-0">
-              {/* Left Column: POS Thermal Roll Live Preview (Fitted tightly to receipt) */}
+              {/* Left Column: POS Thermal Roll Live Preview */}
               <div className="xl:sticky xl:top-20 xl:self-start space-y-2 min-w-0">
                 <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md overflow-hidden flex flex-col shadow-xs">
                   {/* Preview Top Bar */}
@@ -1261,7 +1274,6 @@ export default function AdminInvoiceStickers() {
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      {/* Data Source Selector */}
                       <Select
                         value={previewDataSource === "real" && selectedRealOrderId ? selectedRealOrderId : "sample"}
                         onValueChange={(val) => {
@@ -1289,30 +1301,19 @@ export default function AdminInvoiceStickers() {
                         </SelectContent>
                       </Select>
 
-                      {/* Zoom Controls */}
                       <div className="flex items-center gap-0.5 bg-background border border-border/60 rounded-xl p-0.5">
                         <button
                           type="button"
-                          onClick={() => setStickerPreviewZoom(100)}
-                          title="100% Scale"
-                          className={`px-1.5 py-0.5 text-[10px] font-bold rounded-lg cursor-pointer ${
-                            stickerPreviewZoom === 100 ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          100%
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setStickerPreviewZoom((z) => Math.max(70, z - 15))}
+                          onClick={() => setPosPreviewZoom((z) => Math.max(70, z - 15))}
                           title="Zoom Out"
                           className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
                         >
                           <ZoomOut className="w-3 h-3" />
                         </button>
-                        <span className="text-[10px] font-mono font-bold px-1">{stickerPreviewZoom}%</span>
+                        <span className="text-[10px] font-mono font-bold px-1">{posPreviewZoom}%</span>
                         <button
                           type="button"
-                          onClick={() => setStickerPreviewZoom((z) => Math.min(160, z + 15))}
+                          onClick={() => setPosPreviewZoom((z) => Math.min(160, z + 15))}
                           title="Zoom In"
                           className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
                         >
@@ -1326,8 +1327,8 @@ export default function AdminInvoiceStickers() {
                   <div className="p-4 sm:p-5 bg-[#E8E4DB] dark:bg-[#1A1513] overflow-x-auto min-h-[460px] flex items-start justify-center">
                     <div
                       style={{
-                        width: `${(POS_ROLL_SIZES[posRollSize].widthIn * 96 * stickerPreviewZoom) / 100}px`,
-                        height: `${(posAutoHeight * stickerPreviewZoom) / 100}px`,
+                        width: `${(POS_ROLL_SIZES[posRollSize].widthIn * 96 * posPreviewZoom) / 100}px`,
+                        height: `${(posAutoHeight * posPreviewZoom) / 100}px`,
                         position: "relative",
                         boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
                         borderRadius: "3px",
@@ -1341,7 +1342,7 @@ export default function AdminInvoiceStickers() {
                         style={{
                           width: `${POS_ROLL_SIZES[posRollSize].widthIn}in`,
                           height: `${posAutoHeight}px`,
-                          transform: `scale(${stickerPreviewZoom / 100})`,
+                          transform: `scale(${posPreviewZoom / 100})`,
                           transformOrigin: "top left",
                           position: "absolute",
                           top: 0,
@@ -1349,7 +1350,7 @@ export default function AdminInvoiceStickers() {
                         }}
                       >
                         <iframe
-                          ref={stickerPreviewRef}
+                          ref={posPreviewRef}
                           title="POS Slip Live Preview"
                           className="border-0 block"
                           style={{
@@ -1367,7 +1368,7 @@ export default function AdminInvoiceStickers() {
 
               {/* Right Column: Customizer & Roll Size Selector */}
               <div className="space-y-3 min-w-0">
-                {/* Roll Size & Standard Selector Card */}
+                {/* Roll Size Selector Card */}
                 <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3.5 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
@@ -1436,41 +1437,238 @@ export default function AdminInvoiceStickers() {
                       );
                     })}
                   </div>
-
-                  {/* Font Size Scaling */}
-                  <div className="pt-2 border-t border-border/40">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-semibold text-foreground">Typography Base Scale</span>
-                      <span className="font-mono text-primary font-bold">
-                        {settings.font_size ?? 13}px (Slip: {Math.max(8.5, Math.min(16, POS_ROLL_SIZES[posRollSize].defaultFontSize + ((settings.font_size ?? 13) - 13)))}px)
-                      </span>
-                    </div>
-                    <Slider
-                      value={[settings.font_size ?? 13]}
-                      min={10}
-                      max={18}
-                      step={1}
-                      onValueChange={([v]) => patch("font_size", v)}
-                    />
-                  </div>
-
-                  {/* Watermark Opacity */}
-                  <div className="pt-2 border-t border-border/40">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-semibold text-foreground">Watermark Opacity</span>
-                      <span className="font-mono text-primary font-bold">{Math.round((settings.watermark_opacity ?? 0.06) * 100)}%</span>
-                    </div>
-                    <Slider
-                      value={[Math.round((settings.watermark_opacity ?? 0.06) * 100)]}
-                      min={0}
-                      max={20}
-                      step={1}
-                      onValueChange={([v]) => patch("watermark_opacity", v / 100)}
-                    />
-                  </div>
                 </div>
 
                 {/* Geometry & Element Resizing Controls */}
+                <GeometryAndSizingPanel settings={settings} patch={patch} />
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB 3: ORDER SHIPPING STICKER (NEW DEDICATED TAB) ── */}
+          {activeTab === "order-sticker" && (
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(320px,500px)_1fr] gap-4 items-start min-w-0">
+              {/* Left Column: Order Shipping Sticker Live Preview */}
+              <div className="xl:sticky xl:top-20 xl:self-start space-y-2 min-w-0">
+                <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md overflow-hidden flex flex-col shadow-xs">
+                  {/* Preview Top Bar */}
+                  <div className="p-2.5 border-b border-border/50 bg-secondary/20 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Truck className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-xs font-bold text-foreground">
+                        Order Shipping Sticker · {ORDER_STICKER_SIZES[orderStickerSize].label}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <Select
+                        value={previewDataSource === "real" && selectedRealOrderId ? selectedRealOrderId : "sample"}
+                        onValueChange={(val) => {
+                          if (val === "sample") {
+                            setPreviewDataSource("sample");
+                            setSelectedRealOrderId("");
+                          } else {
+                            setPreviewDataSource("real");
+                            setSelectedRealOrderId(val);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-7 text-xs rounded-xl bg-background border-border/60 w-32">
+                          <SelectValue placeholder="Data Source" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sample" className="text-xs font-medium">
+                            Sample Preview
+                          </SelectItem>
+                          {recentOrders.map((o: any) => (
+                            <SelectItem key={o.id} value={o.id} className="text-xs font-mono">
+                              {o.order_number}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <div className="flex items-center gap-0.5 bg-background border border-border/60 rounded-xl p-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setOrderStickerZoom((z) => Math.max(70, z - 15))}
+                          title="Zoom Out"
+                          className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                          <ZoomOut className="w-3 h-3" />
+                        </button>
+                        <span className="text-[10px] font-mono font-bold px-1">{orderStickerZoom}%</span>
+                        <button
+                          type="button"
+                          onClick={() => setOrderStickerZoom((z) => Math.min(160, z + 15))}
+                          title="Zoom In"
+                          className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                          <ZoomIn className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Left-Side Sticker Viewport Container */}
+                  <div className="p-4 sm:p-6 bg-[#E8E4DB] dark:bg-[#1A1513] overflow-x-auto min-h-[380px] flex items-center justify-center">
+                    <div
+                      style={{
+                        width: `${(ORDER_STICKER_SIZES[orderStickerSize].widthIn * 96 * orderStickerZoom) / 100}px`,
+                        height: `${(ORDER_STICKER_SIZES[orderStickerSize].heightIn * 96 * orderStickerZoom) / 100}px`,
+                        position: "relative",
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+                        borderRadius: "2px",
+                        flexShrink: 0,
+                        overflow: "hidden",
+                        transition: "width 0.15s ease, height 0.15s ease",
+                      }}
+                      className="border border-[#C5A059]/40 bg-[#FDFBF7]"
+                    >
+                      <div
+                        style={{
+                          width: `${ORDER_STICKER_SIZES[orderStickerSize].widthIn}in`,
+                          height: `${ORDER_STICKER_SIZES[orderStickerSize].heightIn}in`,
+                          transform: `scale(${orderStickerZoom / 100})`,
+                          transformOrigin: "top left",
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                        }}
+                      >
+                        <iframe
+                          ref={orderStickerPreviewRef}
+                          title="Order Shipping Sticker Live Preview"
+                          className="border-0 block"
+                          style={{
+                            width: `${ORDER_STICKER_SIZES[orderStickerSize].widthIn}in`,
+                            height: `${ORDER_STICKER_SIZES[orderStickerSize].heightIn}in`,
+                            overflow: "hidden",
+                          }}
+                          scrolling="no"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Customizer & Order Sticker Controls */}
+              <div className="space-y-3 min-w-0">
+                {/* 1. Label Dimensions Selector */}
+                <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3.5 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Tag className="w-4 h-4 text-primary" />
+                      <h4 className="text-xs font-bold text-foreground">Shipping Sticker Dimensions</h4>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">
+                      {ORDER_STICKER_SIZES[orderStickerSize].label}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    {(Object.keys(ORDER_STICKER_SIZES) as OrderStickerSize[]).map((key) => {
+                      const cfg = ORDER_STICKER_SIZES[key];
+                      const isSel = orderStickerSize === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setOrderStickerSize(key)}
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                            isSel
+                              ? "border-primary bg-primary/10 ring-1 ring-primary"
+                              : "border-border/60 hover:border-primary/40 bg-secondary/15"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-xs font-bold text-foreground">{cfg.label}</span>
+                            {isSel && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground line-clamp-1">{cfg.desc}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Aesthetic Style Presets */}
+                <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3.5 space-y-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <Palette className="w-4 h-4 text-primary" />
+                    <h4 className="text-xs font-bold text-foreground">Aesthetic Style Presets</h4>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {LUXURY_PRESETS.map((p) => {
+                      const IconComp = p.icon;
+                      const active = settings.preset === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => applyPreset(p.id)}
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                            active
+                              ? "border-primary bg-primary/10 ring-1 ring-primary"
+                              : "border-border/60 hover:border-primary/40 bg-secondary/15"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <IconComp className="w-3.5 h-3.5 text-primary" />
+                            <span className="text-xs font-bold text-foreground">{p.label}</span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground line-clamp-1">{p.description}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Customer Info & Branding Highlights Card */}
+                <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3.5 space-y-3">
+                  <div className="flex items-center gap-1.5 border-b border-border/50 pb-2">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                      Sticker Content &amp; Branding Features
+                    </h4>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <div className="p-2.5 rounded-xl bg-secondary/20 border border-border/40 space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-foreground">
+                        <Crown className="w-3.5 h-3.5 text-primary" />
+                        <span>ORIZINO Branding (Large Logo Left)</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Displays the prominent brand crest on the left, brand name in imperial typography, official phone number, and verified URL <strong className="text-primary">www.orizino.com</strong>.
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-secondary/20 border border-border/40 space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-foreground">
+                        <User className="w-3.5 h-3.5 text-primary" />
+                        <span>High-Visibility Large Recipient Box</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Recipient name, phone number, and full shipping delivery address are rendered in high-contrast bold fonts for instant clarity by courier dispatch and riders.
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-secondary/20 border border-border/40 space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-foreground">
+                        <QrCode className="w-3.5 h-3.5 text-primary" />
+                        <span>Order Verification &amp; Tracking QR Code</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Crisp vector QR code linking to the live online order tracking and authenticity verification portal.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Sizing Controls */}
                 <GeometryAndSizingPanel settings={settings} patch={patch} />
               </div>
             </div>

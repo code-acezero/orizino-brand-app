@@ -123,29 +123,39 @@ export function CompanyNav({ variant }: CompanyNavProps) {
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${variantHeaderClass()}`}>
       <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 h-16 flex items-center justify-between relative">
-        {/* Left Corner: Internal Navigation Links */}
-        <nav className="hidden md:flex items-center gap-6 z-10">
-          {NAV_LINKS.filter((l) => !l.external).map((link) => {
-            const isCurrent = link.href === "/" ? pathname === "/" : link.href ? pathname.startsWith(link.href) : false;
-            return (
-              <a
-                key={link.label}
-                href={link.href!}
-                translate="no"
-                className={`text-[11px] uppercase tracking-[0.14em] transition-colors ${
-                  isCurrent
-                    ? "font-bold text-primary border-b-2 border-primary pb-0.5"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {link.label}
-              </a>
-            );
-          })}
-        </nav>
+        {/* Left Corner: Mobile Burger Menu Button & Desktop Nav */}
+        <div className="flex items-center gap-2 z-10">
+          <button
+            className="md:hidden text-foreground p-2 -ml-1.5 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+            onClick={() => setOpen((v) => !v)}
+            aria-label="Toggle menu"
+          >
+            {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
 
-        {/* Middle: Centered Logo & Brand Title (No Suffix) */}
-        <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex items-center justify-center z-10">
+          <nav className="hidden md:flex items-center gap-6">
+            {NAV_LINKS.filter((l) => !l.external).map((link) => {
+              const isCurrent = link.href === "/" ? pathname === "/" : link.href ? pathname.startsWith(link.href) : false;
+              return (
+                <a
+                  key={link.label}
+                  href={link.href!}
+                  translate="no"
+                  className={`text-[11px] uppercase tracking-[0.14em] transition-colors ${
+                    isCurrent
+                      ? "font-bold text-primary border-b-2 border-primary pb-0.5"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {link.label}
+                </a>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Middle: Centered Logo & Brand Title (Centered on both Mobile & Desktop) */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center z-10 pointer-events-auto">
           <a href="/" className="flex items-center gap-2.5 group" aria-label={`${brand?.name || "Orizino"} Home`}>
             {brand?.logo && (brand.displayStyle === "logo" || brand.displayStyle === "both") && (
               <img
@@ -185,37 +195,42 @@ export function CompanyNav({ variant }: CompanyNavProps) {
           </a>
         </div>
 
-        {/* Right Corner: External Shop Button & Sign In */}
-        <div className="hidden md:flex items-center gap-3 z-10">
-          {NAV_LINKS.filter((l) => l.external).map((link) => (
+        {/* Right Corner: Desktop Actions & Mobile Sign In */}
+        <div className="flex items-center gap-3 z-10">
+          {/* Mobile Sign In — Clean without bg, centered, hidden when drawer menu is open */}
+          {!open && (
             <a
-              key={link.label}
-              href={shopUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={signInUrl}
               suppressHydrationWarning
-              className="text-[11px] uppercase tracking-[0.14em] font-medium text-foreground transition-all hover:bg-foreground hover:text-background px-4 py-2 rounded-full border border-border"
+              className="md:hidden inline-flex items-center justify-center text-center text-[11px] uppercase tracking-[0.14em] font-medium text-foreground/90 hover:text-primary transition-colors h-8 px-2 shrink-0 leading-none select-none"
             >
-              {link.label} ↗
+              Sign In
             </a>
-          ))}
-          <a
-            href={signInUrl}
-            suppressHydrationWarning
-            className="text-[11px] uppercase tracking-[0.14em] font-medium text-background bg-foreground hover:opacity-80 transition-opacity px-5 py-2 rounded-full shadow-sm"
-          >
-            Sign In
-          </a>
-        </div>
+          )}
 
-        {/* Mobile burger */}
-        <button
-          className="md:hidden text-foreground p-2 rounded-lg hover:bg-muted transition-colors ml-auto z-10"
-          onClick={() => setOpen((v) => !v)}
-          aria-label="Toggle menu"
-        >
-          {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+          {/* Desktop Controls */}
+          <div className="hidden md:flex items-center gap-3">
+            {NAV_LINKS.filter((l) => l.external).map((link) => (
+              <a
+                key={link.label}
+                href={shopUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                suppressHydrationWarning
+                className="text-[11px] uppercase tracking-[0.14em] font-medium text-foreground transition-all hover:bg-foreground hover:text-background px-4 py-2 rounded-full border border-border inline-flex items-center justify-center text-center"
+              >
+                {link.label} ↗
+              </a>
+            ))}
+            <a
+              href={signInUrl}
+              suppressHydrationWarning
+              className="text-[11px] uppercase tracking-[0.14em] font-medium text-background bg-foreground hover:opacity-80 transition-opacity px-5 py-2 rounded-full shadow-sm inline-flex items-center justify-center text-center"
+            >
+              Sign In
+            </a>
+          </div>
+        </div>
       </div>
 
       {/* Mobile menu */}

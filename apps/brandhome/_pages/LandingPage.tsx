@@ -162,34 +162,37 @@ const LandingPage: React.FC = () => {
         <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 xl:px-10 mx-auto text-center flex flex-col items-center">
           {showLogo && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 0, scale: 0.92 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="mb-8"
+              className="mb-8 w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 mx-auto flex items-center justify-center shrink-0 select-none"
             >
-              {logoUrl && displayStyle !== "emblem" && displayStyle !== "both" ? (
-                <img src={logoUrl} alt={siteName} className="w-28 h-28 sm:w-36 sm:h-36 mx-auto object-contain drop-shadow-xl" />
-              ) : (
+              <div className="w-full h-full flex items-center justify-center animate-logo-idle">
                 <svg
                   viewBox="0 0 539.27 565.14"
-                  className="w-36 h-36 sm:w-48 sm:h-48 lg:w-56 lg:h-56 mx-auto overflow-visible filter drop-shadow-[0_8px_25px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_8px_30px_rgba(255,255,255,0.06)]"
+                  className="w-full h-full object-contain overflow-visible select-none text-foreground"
+                  style={{ color: "hsl(var(--foreground))" }}
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <defs>
-                    <linearGradient id="logoMetallicGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="var(--theme-shine, #ffffff)" stopOpacity="1" />
-                      <stop offset="25%" stopColor="hsl(var(--foreground))" stopOpacity="0.85" />
-                      <stop offset="75%" stopColor="hsl(var(--foreground))" stopOpacity="0.85" />
-                      <stop offset="100%" stopColor="var(--theme-shine, #ffffff)" stopOpacity="1" />
-                    </linearGradient>
-                  </defs>
-                  <g fill="url(#logoMetallicGrad)" stroke="url(#logoMetallicGrad)" strokeLinejoin="round" strokeLinecap="round">
-                    <path className="animate-logo-stroke-fill" d="M11.31,303.01l10.42,10.61,102.73,114.11c-16.27-34.27-34.28-66.2-53.79-98.11L0,219.52l41.25-42.82,104.13-107.09C169.3,45.99,192.23,22.22,218.19,0l-71.11,101.28L55.74,232.06c26,65.57,52.95,130.16,81.76,194.32l12.16,25.25,71.16,112.86L52.01,416.82l-40.7-113.8Z" />
-                    <path className="animate-logo-stroke-fill" style={{ animationDelay: "0.2s" }} d="M510.24,351.74l-23.18,64.87-169.05,148.54,27.52-44.45,45.28-70.91,30.12-65.82,16.7-38.98,46-113.02-81.21-116.77-25.93-36.85L321.38.16c14.41,11.93,26.61,24.47,40.1,37.05l86.76,87.48,77.26,80.22,13.77,14.47-52.64,81.42c-26.66,41.23-50.32,83.4-72.56,127.58l33.83-36.98,79.5-88.8-17.16,49.14Z" />
-                    <path className="animate-logo-stroke-fill" style={{ animationDelay: "0.4s" }} d="M356.28,185.04l26.95,46.73-36.12,40.33-32.01,35.6-5.9,33.94-22.1,115.86-19.75,106.98-25.06-136.06-23.26-120.77-10.57-11.82-57.13-64.08,17.38-30.41,40.24-67.6c-.28,10.99,4.75,22.09,2.63,32.95l-18.99,63.2,44.02,68.95,9.75,55.81,20.97,113.31,20.22-107.91,10.47-61.52,44.22-68.68-19.37-63.68,2.55-32.17,30.86,51.02Z" />
+                  <g stroke="currentColor" fill="currentColor" strokeLinejoin="round" strokeLinecap="round">
+                    <path
+                      pathLength={1200}
+                      className="logo-wing-left"
+                      d="M11.31,303.01l10.42,10.61,102.73,114.11c-16.27-34.27-34.28-66.2-53.79-98.11L0,219.52l41.25-42.82,104.13-107.09C169.3,45.99,192.23,22.22,218.19,0l-71.11,101.28L55.74,232.06c26,65.57,52.95,130.16,81.76,194.32l12.16,25.25,71.16,112.86L52.01,416.82l-40.7-113.8Z"
+                    />
+                    <path
+                      pathLength={1200}
+                      className="logo-wing-right"
+                      d="M510.24,351.74l-23.18,64.87-169.05,148.54,27.52-44.45,45.28-70.91,30.12-65.82,16.7-38.98,46-113.02-81.21-116.77-25.93-36.85L321.38.16c14.41,11.93,26.61,24.47,40.1,37.05l86.76,87.48,77.26,80.22,13.77,14.47-52.64,81.42c-26.66,41.23-50.32,83.4-72.56,127.58l33.83-36.98,79.5-88.8-17.16,49.14Z"
+                    />
+                    <path
+                      pathLength={1200}
+                      className="logo-wing-middle"
+                      d="M356.28,185.04l26.95,46.73-36.12,40.33-32.01,35.6-5.9,33.94-22.1,115.86-19.75,106.98-25.06-136.06-23.26-120.77-10.57-11.82-57.13-64.08,17.38-30.41,40.24-67.6c-.28,10.99,4.75,22.09,2.63,32.95l-18.99,63.2,44.02,68.95,9.75,55.81,20.97,113.31,20.22-107.91,10.47-61.52,44.22-68.68-19.37-63.68,2.55-32.17,30.86,51.02Z"
+                    />
                   </g>
                 </svg>
-              )}
+              </div>
             </motion.div>
           )}
           

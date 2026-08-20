@@ -14,6 +14,12 @@ interface Props {
   bucket?: string;
   folder?: string;
   size?: number; // output px, default 512
+  renderLayout?: (props: {
+    value?: string | null;
+    onUpload: () => void;
+    onReposition: () => void;
+    onRemove: () => void;
+  }) => React.ReactNode;
 }
 
 async function cropToBlob(
@@ -45,6 +51,7 @@ const AvatarCropUpload: React.FC<Props> = ({
   bucket = "avatars",
   folder,
   size = 512,
+  renderLayout,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -172,23 +179,33 @@ const AvatarCropUpload: React.FC<Props> = ({
             </Button>
           </div>
         </div>
+      ) : renderLayout ? (
+        <>
+          {renderLayout({
+            value,
+            onUpload: () => inputRef.current?.click(),
+            onReposition: startReposition,
+            onRemove: () => onChange("", ""),
+          })}
+          <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={pickFile} />
+        </>
       ) : (
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3">
           {value ? (
-            <img src={value} alt="Avatar" className="w-20 h-20 rounded-full object-cover ring-2 ring-border/60" />
+            <img src={value} alt="Avatar" className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl object-cover ring-1 ring-border/80 shadow-xs shrink-0" />
           ) : (
-            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs font-medium">
-              None
+            <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground text-xs font-medium shrink-0">
+              No Photo
             </div>
           )}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => inputRef.current?.click()}>
-                <Upload className="w-4 h-4 mr-2" /> {value ? "Replace" : "Upload"}
+          <div className="flex flex-col gap-1.5 justify-center">
+            <div className="flex items-center gap-1.5">
+              <Button size="sm" variant="outline" className="h-7.5 text-xs px-2.5 rounded-lg" onClick={() => inputRef.current?.click()}>
+                <Upload className="w-3.5 h-3.5 mr-1.5" /> {value ? "Replace" : "Upload"}
               </Button>
               {value && (
-                <Button size="sm" variant="ghost" onClick={startReposition}>
-                  <RotateCcw className="w-4 h-4 mr-1.5" /> Reposition
+                <Button size="sm" variant="ghost" className="h-7.5 text-xs px-2 rounded-lg text-muted-foreground hover:text-foreground" onClick={startReposition} title="Reposition">
+                  <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reposition
                 </Button>
               )}
             </div>
@@ -196,9 +213,9 @@ const AvatarCropUpload: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => onChange("", "")}
-                className="text-xs text-muted-foreground hover:text-destructive transition-colors text-left"
+                className="text-[11px] text-muted-foreground hover:text-destructive transition-colors text-left pl-1"
               >
-                Remove
+                Remove photo
               </button>
             )}
           </div>

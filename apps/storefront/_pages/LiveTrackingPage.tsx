@@ -71,22 +71,33 @@ const LiveTrackingPage: React.FC = () => {
 
       if (directMatch) return directMatch;
 
-      // 2. Match by Customer Phone Number
+      // 2. Match by Customer Phone Number (guest_phone or customer_phone)
       const { data: phoneMatch } = await supabase
         .from("orders" as any)
         .select("*, order_items(*), pathao_shipments(*), steadfast_shipments(*)")
-        .eq("customer_phone", q)
+        .or(`guest_phone.eq.${q},customer_phone.eq.${q}`)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (phoneMatch) return phoneMatch;
 
-      // 3. Match by Steadfast or Pathao consignment code
+      // 3. Match by Customer Email (guest_email or customer_email)
+      const { data: emailMatch } = await supabase
+        .from("orders" as any)
+        .select("*, order_items(*), pathao_shipments(*), steadfast_shipments(*)")
+        .or(`guest_email.eq.${q},customer_email.eq.${q}`)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (emailMatch) return emailMatch;
+
+      // 4. Match by Steadfast or Pathao consignment code
       const { data: sfMatch } = await supabase
         .from("steadfast_shipments" as any)
         .select("order_id")
-        .eq("tracking_code", q)
+        .or(`tracking_code.eq.${q},consignment_id.eq.${q}`)
         .maybeSingle();
 
       if ((sfMatch as any)?.order_id) {
@@ -96,6 +107,22 @@ const LiveTrackingPage: React.FC = () => {
           .eq("id", (sfMatch as any).order_id)
           .maybeSingle();
         if (sfOrder) return sfOrder;
+      }
+
+      // 5. Match by Pathao shipment consignment
+      const { data: ptMatch } = await supabase
+        .from("pathao_shipments" as any)
+        .select("order_id")
+        .or(`consignment_id.eq.${q},invoice_id.eq.${q}`)
+        .maybeSingle();
+
+      if ((ptMatch as any)?.order_id) {
+        const { data: ptOrder } = await supabase
+          .from("orders" as any)
+          .select("*, order_items(*), pathao_shipments(*), steadfast_shipments(*)")
+          .eq("id", (ptMatch as any).order_id)
+          .maybeSingle();
+        if (ptOrder) return ptOrder;
       }
 
       return null;

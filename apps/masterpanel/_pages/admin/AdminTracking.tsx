@@ -437,7 +437,7 @@ export default function AdminTracking() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-24 animate-fade-in text-foreground">
+    <div className="w-full space-y-6 pb-24 animate-fade-in text-foreground">
       {/* ── Top Header & App Switcher (Single Row) ── */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-border/40 pb-4">
         <div className="flex items-center gap-3">

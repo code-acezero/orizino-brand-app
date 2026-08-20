@@ -2,60 +2,45 @@ import React from "react";
 import { useTheme } from "@orizino/ui";
 import { Moon, Sun, Monitor } from "lucide-react";
 
-const THEME_OPTIONS = [
-  { value: "system", label: "Auto", icon: Monitor, tip: "Match device OS theme" },
-  { value: "light", label: "Light", icon: Sun, tip: "Light theme" },
-  { value: "dark", label: "Dark", icon: Moon, tip: "Dark theme" },
-] as const;
-
-export default function ThemeToggle() {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+export default function ThemeToggle({ className = "" }: { className?: string }) {
+  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return (
-      <div className="inline-flex items-center p-0.5 rounded-full border border-border/40 bg-foreground/5 text-muted-foreground">
-        <div className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider">
-          <Monitor className="w-3.5 h-3.5 text-muted-foreground" />
-          <span>Auto</span>
-        </div>
-      </div>
-    );
-  }
+  const handleCycle = () => {
+    if (theme === "system" || !theme) setTheme("light");
+    else if (theme === "light") setTheme("dark");
+    else setTheme("system");
+  };
 
-  const currentTheme = theme || "system";
+  const getTitle = () => {
+    if (!mounted) return "Theme mode";
+    if (theme === "dark") return "Theme: Dark (click for Auto/System)";
+    if (theme === "light") return "Theme: Light (click for Dark)";
+    return "Theme: Auto/System (click for Light)";
+  };
 
   return (
-    <div
-      role="group"
-      aria-label="Select color theme mode"
-      className="inline-flex items-center p-0.5 rounded-full border border-border/40 bg-foreground/5 backdrop-blur-sm"
+    <button
+      type="button"
+      onClick={handleCycle}
+      title={getTitle()}
+      aria-label="Toggle theme mode"
+      className={`w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors rounded-full border border-border/40 bg-foreground/5 hover:bg-foreground/10 shrink-0 cursor-pointer ${className}`}
     >
-      {THEME_OPTIONS.map((opt) => {
-        const Icon = opt.icon;
-        const isActive = currentTheme === opt.value;
-        return (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => setTheme(opt.value)}
-            title={opt.tip}
-            aria-pressed={isActive}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
-              isActive
-                ? "bg-foreground text-background shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
-            }`}
-          >
-            <Icon className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline-block capitalize">{opt.label}</span>
-          </button>
-        );
-      })}
-    </div>
+      {!mounted ? (
+        <Monitor className="w-4 h-4" strokeWidth={1.5} />
+      ) : theme === "dark" ? (
+        <Moon className="w-4 h-4" strokeWidth={1.5} />
+      ) : theme === "light" ? (
+        <Sun className="w-4 h-4" strokeWidth={1.5} />
+      ) : (
+        <Monitor className="w-4 h-4" strokeWidth={1.5} />
+      )}
+    </button>
   );
 }
+

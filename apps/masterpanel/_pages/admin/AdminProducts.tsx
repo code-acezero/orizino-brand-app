@@ -96,7 +96,7 @@ import { useServerFn } from "@/lib/server-fn-compat";
 import { notifyAboutProducts } from "@/lib/email-broadcasts.functions";
 import { generateSerials, listStickerPresets, syncStockFromSerials, reconcileProductSerialsFromStock } from "@/lib/serials.functions";
 import { generateSku, checkSku, getDefaultSkuPrefix, setDefaultSkuPrefix } from "@/lib/sku.functions";
-import { PrintStickersDialog } from "@/_pages/admin/AdminProductsManagement";
+import { PrintStickersDialog } from "@/_pages/admin/ProductManagerPage";
 import BulkUpload from "@/components/admin/BulkUpload";
 import { exportProducts, exportVariants } from "@/components/admin/bulkExport";
 import { deleteStorageFiles, cleanOrphanProductImages } from "@/lib/image-cleanup.functions";

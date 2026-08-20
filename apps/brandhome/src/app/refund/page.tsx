@@ -1,5 +1,5 @@
-import CmsPage from "@/_pages/CmsPage";
+import DynamicContentPage from "@/_pages/DynamicContentPage";
 
 export default function RefundRoute() {
-  return <CmsPage slug="returns" />;
+  return <DynamicContentPage slug="returns" />;
 }

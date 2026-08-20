@@ -1,5 +1,5 @@
-import LookbookPage from "@/_pages/LookbookPage";
+import BrandLookbookPage from "@/_pages/BrandLookbookPage";
 
 export default function Page() {
-  return <LookbookPage />;
+  return <BrandLookbookPage />;
 }

@@ -1,19 +1,21 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { NotificationProvider } from "@/lib/notifications";
 import { OrderOpsThemeProvider } from "@/lib/OrderOpsThemeProvider";
 import { AppShell } from "@/components/AppShell";
+import { DynamicIsland } from "@/components/DynamicIsland";
 import { Login } from "@/_pages/Login";
 import { Dashboard } from "@/_pages/Dashboard";
 import { Orders } from "@/_pages/Orders";
-import { OfflineOrders } from "@/_pages/OfflineOrders";
-import { Scanner } from "@/_pages/Scanner";
-import { StockSerials } from "@/_pages/StockSerials";
-import { SupportInbox } from "@/_pages/SupportInbox";
+import { WalkInOrders } from "@/_pages/WalkInOrders";
+import { StatusScanner } from "@/_pages/StatusScanner";
+import { InventoryStudio } from "@/_pages/InventoryStudio";
+import { SupportTickets } from "@/_pages/SupportTickets";
 import { CourierDispatch } from "@/_pages/CourierDispatch";
-import { LabelsAndSlips } from "@/_pages/LabelsAndSlips";
-import { ReturnsIntake } from "@/_pages/ReturnsIntake";
+import { PrintCenterPage } from "@/_pages/PrintCenterPage";
+import { ReturnsCenter } from "@/_pages/ReturnsCenter";
 import { useOrderOpsTheme } from "@/lib/theme";
 import { lazy, Suspense, useState, useEffect } from "react";
 
@@ -83,26 +85,39 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <OrderOpsThemeProvider>
         <AuthProvider>
-          <HashRouter>
-            <Gate>
-              <AppShell>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/orders" element={<Orders />} />
-                  <Route path="/offline" element={<OfflineOrders />} />
-                  <Route path="/scanner" element={<Scanner />} />
-                  <Route path="/stock" element={<StockSerials />} />
-                  <Route path="/support" element={<SupportInbox />} />
-                  <Route path="/dispatch" element={<CourierDispatch />} />
-                  <Route path="/labels" element={<LabelsAndSlips />} />
-                  <Route path="/returns" element={<ReturnsIntake />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </AppShell>
-            </Gate>
-            <DeferredWidgets />
-          </HashRouter>
-          <Toaster position="top-center" richColors />
+          <NotificationProvider>
+            <BrowserRouter>
+              <DynamicIsland />
+              <Gate>
+                <AppShell>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/orders" element={<Orders />} />
+                    <Route path="/offline" element={<WalkInOrders />} />
+                    <Route path="/scanner" element={<StatusScanner />} />
+                    <Route path="/stock" element={<InventoryStudio />} />
+                    <Route path="/support" element={<SupportTickets />} />
+                    <Route path="/dispatch" element={<CourierDispatch />} />
+                    <Route path="/labels" element={<PrintCenterPage />} />
+                    <Route path="/returns" element={<ReturnsCenter />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </AppShell>
+              </Gate>
+              <DeferredWidgets />
+            </BrowserRouter>
+            <Toaster
+              position="top-center"
+              theme="dark"
+              richColors
+              closeButton
+              offset={70}
+              toastOptions={{
+                className: "!bg-zinc-950/95 !border !border-zinc-800 !text-white !backdrop-blur-2xl !rounded-2xl !shadow-2xl !text-xs",
+                descriptionClassName: "!text-zinc-400 !text-[11px]",
+              }}
+            />
+          </NotificationProvider>
         </AuthProvider>
       </OrderOpsThemeProvider>
     </QueryClientProvider>

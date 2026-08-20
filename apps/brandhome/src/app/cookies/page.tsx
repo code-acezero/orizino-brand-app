@@ -1,5 +1,5 @@
-import CmsPage from "@/_pages/CmsPage";
+import DynamicContentPage from "@/_pages/DynamicContentPage";
 
-export default function CookiesRoute() {
-  return <CmsPage slug="cookies" />;
+export default function CookiesPage() {
+  return <DynamicContentPage slug="cookies" />;
 }

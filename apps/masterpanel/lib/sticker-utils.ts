@@ -100,8 +100,8 @@ export async function stickersToPdfBlob(
     const canvas = await renderStickerToCanvas(s, 300);
     const imgData = canvas.toDataURL("image/png");
 
-    const wMm = (s.config?.width_in ?? 2) * 25.4;
-    const hMm = (s.config?.height_in ?? 0.6) * 25.4;
+    const wMm = (canvas.width / 300) * 25.4;
+    const hMm = (canvas.height / 300) * 25.4;
 
     if (curX + wMm > pageW - margin && curX > margin) {
       curX = margin;

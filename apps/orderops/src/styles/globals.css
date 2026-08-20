@@ -118,7 +118,7 @@
 
     --border: 240 8% 88%;
     --input: 240 8% 88%;
-    --ring: 348 83% 47%;
+    --ring: 240 5% 70%;
 
     --radius: 1.125rem;
 
@@ -129,7 +129,7 @@
     --sidebar-accent: 348 83% 96%;
     --sidebar-accent-foreground: 348 83% 40%;
     --sidebar-border: 240 8% 88%;
-    --sidebar-ring: 348 83% 47%;
+    --sidebar-ring: 240 5% 70%;
   }
 
   .dark {
@@ -152,13 +152,37 @@
     --destructive-foreground: 0 0% 100%;
     --border: 0 0% 20%;
     --input: 0 0% 20%;
-    --ring: 348 83% 53%;
+    --ring: 0 0% 35%;
     --sidebar-background: 0 0% 9%;
     --sidebar-foreground: 0 0% 92%;
     --sidebar-border: 0 0% 20%;
   }
 
-  * { border-color: hsl(var(--border)); }
+  * {
+    border-color: hsl(var(--border));
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+
+  /* Custom sleek scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
   body {
     background: hsl(var(--background));
     color: hsl(var(--foreground));

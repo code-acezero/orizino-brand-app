@@ -246,6 +246,19 @@ export default function AdminOrders() {
           console.warn("[admin-orders] Auto invoice email dispatch note:", e);
         }
       }
+
+      // Automatically restock and free serials upon order cancellation or return
+      if (status === "cancelled" || status === "returned") {
+        try {
+          await (supabase as any)
+            .from("product_serials")
+            .update({ status: "available", sold_order_id: null, sold_at: null, updated_at: new Date().toISOString() })
+            .eq("sold_order_id", id);
+          await (supabase as any).rpc("sync_stock_from_serials");
+        } catch (e) {
+          console.warn("[admin-orders] Serial restock note:", e);
+        }
+      }
     },
     onSuccess: (_, { status }) => {
       qc.invalidateQueries({ queryKey: ["admin-orders"] });

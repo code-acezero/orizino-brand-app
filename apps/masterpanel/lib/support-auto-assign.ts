@@ -105,22 +105,56 @@ export async function runAutoAssignCheck(
         continue;
       }
 
-      // Add system SLA note in ticket transcript
+      // Internal audit note (hidden from admin & customer chat views)
       await supabase.from("support_messages").insert({
         conversation_id: ticket.id,
         sender_id: currentUserId || targetAgent.user_id,
         sender_type: "admin",
-        content: `⚡ *System SLA Auto-Assign*: Ticket automatically assigned to **${agentName}** after exceeding the ${config.timeoutMinutes}m response SLA.`,
+        is_system: true,
+        content: `SLA Auto-Assign: Ticket assigned to ${agentName} after ${config.timeoutMinutes}m without response.`,
       } as any);
 
-      // Create notification for target agent
+      // Professional customer-facing message (visible in widget)
+      await supabase.from("support_messages").insert({
+        conversation_id: ticket.id,
+        sender_id: targetAgent.user_id,
+        sender_type: "admin",
+        is_system: false,
+        content: `Hi there! I'm ${agentName} and I'll be your dedicated support specialist today. Thank you for your patience \u2014 I'm here to help resolve your inquiry! \ud83d\ude0a`,
+      } as any);
+
+      // In-app notification for the assigned agent
       await supabase.from("notifications").insert({
-        title: "⚡ Support Ticket Auto-Assigned",
+        title: "\u26a1 Support Ticket Auto-Assigned",
         message: `Ticket #TK-${ticket.id.slice(0, 8).toUpperCase()} was auto-assigned to you (${ticket.subject || "Customer Inquiry"}).`,
         type: "support",
         priority: "high",
         link_url: `/sales/support?c=${ticket.id}`,
       } as any);
+
+      // In-app notification for the customer
+      if (ticket.user_id) {
+        await (supabase as any).from("notifications").insert({
+          user_id: ticket.user_id,
+          title: "Support Agent Assigned",
+          message: `${agentName} has been assigned to help you with your support request.`,
+          type: "support",
+          priority: "high",
+          link_url: "/support",
+        });
+
+        // Trigger email notification to customer via edge function (best-effort)
+        supabase.functions
+          .invoke("send-assignment-email", {
+            body: {
+              conversation_id: ticket.id,
+              user_id: ticket.user_id,
+              agent_name: agentName,
+              subject: ticket.subject || "Your Support Request",
+            },
+          })
+          .catch(() => {});
+      }
 
       // Update in-memory load
       agentWorkload[targetAgent.user_id] = (agentWorkload[targetAgent.user_id] || 0) + 1;

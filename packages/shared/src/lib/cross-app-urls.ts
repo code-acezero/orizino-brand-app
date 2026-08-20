@@ -156,10 +156,10 @@ export function exploreHref(path = "/"): string {
 
 /** Configurable button targets — full URL overrides (absolute or path). */
 export function shopHref(): string {
-  return runtime("shop_url") || storefrontHref("/shop");
+  return runtime("shop_url") || storefrontHref("/");
 }
 export function startShoppingHref(): string {
-  return runtime("start_shopping_url") || storefrontHref("/shop");
+  return runtime("start_shopping_url") || storefrontHref("/");
 }
 export function exploreCategoriesHref(): string {
   return runtime("explore_categories_url") || storefrontHref("/categories");

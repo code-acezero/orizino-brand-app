@@ -37,7 +37,7 @@ const FAQS = [
   },
 ];
 
-const ScannerInfoPage: React.FC = () => {
+const ProductScanPage: React.FC = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
@@ -227,4 +227,4 @@ const ScannerInfoPage: React.FC = () => {
   );
 };
 
-export default ScannerInfoPage;
+export default ProductScanPage;

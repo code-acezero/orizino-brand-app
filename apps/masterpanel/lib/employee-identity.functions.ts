@@ -31,7 +31,7 @@ const IdentityUpdateSchema = z.object({
   allow_indexing: z.boolean().optional(),
   slug: z
     .string()
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Lowercase letters, digits, hyphens only")
+    .regex(/^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$/, "Letters, digits, hyphens only")
     .min(3)
     .max(60)
     .optional(),
@@ -40,18 +40,31 @@ const IdentityUpdateSchema = z.object({
 });
 
 async function ensureIdentity(sb: any, userId: string) {
+  if (!userId || typeof userId !== "string" || !userId.includes("-")) return null;
   const { data } = await sb.from("employee_identities").select("*").eq("user_id", userId).maybeSingle();
   if (data) return data;
-  // Try to create one on demand (for admins who don't yet have an entry)
+  // Try to create one on demand (for staff who don't yet have an entry)
   const { data: prof } = await sb.from("profiles").select("full_name").eq("id", userId).maybeSingle();
-  const base = (prof?.full_name || "staff").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "staff";
-  let slug = `${base}-${userId.slice(0, 4)}`;
+  const firstName = (prof?.full_name || "staff").trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z0-9]/g, "") || "staff";
+  let slug = `${firstName}-${userId.slice(0, 4)}`;
   const { data: created, error } = await sb
     .from("employee_identities")
     .insert({ user_id: userId, slug, display_name: prof?.full_name ?? null })
     .select("*")
-    .single();
-  if (error) throw new Error(error.message);
+    .maybeSingle();
+  if (error) {
+    if (error.code === "23505") {
+      const fallbackSlug = `${firstName}-${Math.random().toString(36).slice(2, 6)}`;
+      const { data: fallbackCreated } = await sb
+        .from("employee_identities")
+        .insert({ user_id: userId, slug: fallbackSlug, display_name: prof?.full_name ?? null })
+        .select("*")
+        .maybeSingle();
+      if (fallbackCreated) return fallbackCreated;
+    }
+    const { data: fallback } = await sb.from("employee_identities").select("*").eq("user_id", userId).maybeSingle();
+    return fallback || null;
+  }
   return created;
 }
 
@@ -59,6 +72,7 @@ export const getMyIdentity = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const sb: any = context.supabase;
+    if (!context.userId) return null;
     return ensureIdentity(sb, context.userId);
   });
 
@@ -67,9 +81,10 @@ export const updateMyIdentity = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => IdentityUpdateSchema.parse(d))
   .handler(async ({ context, data }) => {
     const sb: any = context.supabase;
+    if (!context.userId) throw new Error("Unauthorized");
     const existing = await ensureIdentity(sb, context.userId);
     // Slug uniqueness pre-check for a nicer error
-    if (data.slug && data.slug !== existing.slug) {
+    if (data.slug && existing && data.slug !== existing.slug) {
       const { data: taken } = await sb
         .from("employee_identities")
         .select("id")
@@ -107,13 +122,39 @@ export const adminListIdentities = createServerFn({ method: "GET" })
 export const adminUpsertIdentityForUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ user_id: z.string().uuid() }).parse(d),
+    z
+      .object({
+        user_id: z.string().uuid(),
+        slug: z
+          .string()
+          .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+          .min(3)
+          .max(60)
+          .optional(),
+        title: z.string().max(120).nullable().optional(),
+        department: z.string().max(120).nullable().optional(),
+        is_public: z.boolean().optional(),
+      })
+      .parse(d)
   )
   .handler(async ({ context, data }) => {
     const sb: any = context.supabase;
     const { data: role } = await sb.rpc("has_any_role", { _user_id: context.userId, _roles: ["admin", "moderator"] });
     if (!role) throw new Error("Forbidden");
-    return ensureIdentity(sb, data.user_id);
+    const existing = await ensureIdentity(sb, data.user_id);
+    const { data: updated, error } = await sb
+      .from("employee_identities")
+      .update({
+        slug: data.slug || existing.slug,
+        title: data.title ?? existing.title,
+        department: data.department ?? existing.department,
+        is_public: data.is_public ?? existing.is_public,
+      })
+      .eq("user_id", data.user_id)
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return updated;
   });
 
 export const adminRegenerateEmployeeCode = createServerFn({ method: "POST" })
@@ -154,7 +195,7 @@ export const updateUserIdentityAdmin = createServerFn({ method: "POST" })
     const { data: role } = await sb.rpc("has_any_role", { _user_id: context.userId, _roles: ["admin", "moderator"] });
     if (!role) throw new Error("Forbidden");
     const existing = await ensureIdentity(sb, data.targetUserId);
-    if (data.identityData.slug && data.identityData.slug !== existing.slug) {
+    if (data.identityData.slug && existing && data.identityData.slug !== existing.slug) {
       const { data: taken } = await sb
         .from("employee_identities")
         .select("id")
@@ -174,4 +215,3 @@ export const updateUserIdentityAdmin = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return updated;
   });
-

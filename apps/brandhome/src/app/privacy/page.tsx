@@ -1,5 +1,5 @@
-import CmsPage from "@/_pages/CmsPage";
+import DynamicContentPage from "@/_pages/DynamicContentPage";
 
 export default function PrivacyRoute() {
-  return <CmsPage slug="privacy" />;
+  return <DynamicContentPage slug="privacy" />;
 }

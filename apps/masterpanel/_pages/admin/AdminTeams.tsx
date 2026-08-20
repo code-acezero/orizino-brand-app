@@ -1,485 +1,711 @@
 "use client";
+
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "@/lib/app-toast";
-import { motion, AnimatePresence } from "framer-motion";
+import { useServerFn } from "@/lib/server-fn-compat";
+import { listStaff } from "@/lib/staff.functions";
+import {
+  listTeamsDetailed,
+  createTeam,
+  updateTeam,
+  deleteTeam,
+  setTeamMembers,
+  setTeamSections,
+  TeamDetailed,
+} from "@/lib/teams.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "@/lib/app-toast";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Users2, Plus, Trash2, Settings2, UserPlus, X, ChevronRight,
-  ShieldCheck, Edit3, Save, Clock, History, Filter,
+  ShieldCheck, Edit3, Save, Clock, History, Filter, Search,
+  Building2, BookOpen, Layers, Check, Loader2, Sparkles,
 } from "lucide-react";
-import { EmptyState } from "@/components/admin/TableStates";
 
 const SECTION_LABELS: Record<string, { label: string; color: string }> = {
   products:       { label: "Products",       color: "#a855f7" },
   orders:         { label: "Orders",         color: "#f59e0b" },
   offline_orders: { label: "Offline Orders", color: "#f97316" },
   customers:      { label: "Customers",      color: "#38bdf8" },
-  affiliate:      { label: "Affiliate Program", color: "#84cc16" },
+  affiliate:      { label: "Affiliate Hub",  color: "#84cc16" },
   seo:            { label: "Marketing",      color: "#fb923c" },
   storefront_ui:  { label: "Brand & Storefront", color: "#ec4899" },
-  portfolio:      { label: "Portfolio/CMS",  color: "#22d3ee" },
-  ai:             { label: "AI",             color: "#818cf8" },
+  portfolio:      { label: "Portfolio / CMS", color: "#22d3ee" },
+  ai:             { label: "AI Configuration", color: "#818cf8" },
   analytics:      { label: "Analytics",      color: "#34d399" },
   employees:      { label: "Team & Access",  color: "#f43f5e" },
   settings:       { label: "Settings & AI",  color: "#94a3b8" },
 };
+
 const ALL_SECTIONS = Object.keys(SECTION_LABELS);
 
-const TEAM_COLORS = [
-  "#6366f1","#8b5cf6","#ec4899","#f43f5e","#f59e0b",
-  "#10b981","#06b6d4","#3b82f6","#84cc16","#14b8a6",
+const PRESET_COLORS = [
+  "#6366f1", "#8b5cf6", "#ec4899", "#f43f5e", "#f59e0b",
+  "#10b981", "#06b6d4", "#3b82f6", "#84cc16", "#14b8a6",
 ];
 
-const ACTION_ICON: Record<string, { label: string; dot: string }> = {
-  team_created:    { label: "Team created",          dot: "bg-primary" },
-  team_updated:    { label: "Team updated",           dot: "bg-amber-400" },
-  team_deleted:    { label: "Team deleted",           dot: "bg-destructive" },
-  member_added:    { label: "Member added",           dot: "bg-emerald-400" },
-  member_removed:  { label: "Member removed",         dot: "bg-rose-400" },
-  section_granted: { label: "Section access granted", dot: "bg-sky-400" },
-  section_revoked: { label: "Section access revoked", dot: "bg-orange-400" },
-};
-
-function fmt(ts: string) {
-  return new Date(ts).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-
-function TeamCard({ team, members, sections, onEdit, onDelete, onManageMembers, onManageSections }: {
-  team: any; members: any[]; sections: string[];
-  onEdit: () => void; onDelete: () => void;
-  onManageMembers: () => void; onManageSections: () => void;
-}) {
-  return (
-    <motion.div layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
-      className="rounded-xl border border-border/60 bg-card overflow-hidden">
-      <div className="h-1.5 w-full" style={{ backgroundColor: team.color }} />
-      <div className="p-5 space-y-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm text-white shadow-sm"
-              style={{ backgroundColor: team.color }}>
-              {team.name.slice(0, 2).toUpperCase()}
-            </div>
-            <div>
-              <h3 className="font-semibold text-sm">{team.name}</h3>
-              {team.description && <p className="text-xs text-muted-foreground line-clamp-1">{team.description}</p>}
-            </div>
-          </div>
-          <div className="flex gap-1">
-            <button onClick={onEdit} className="p-1.5 rounded-md hover:bg-muted/60 transition-colors">
-              <Edit3 className="w-3.5 h-3.5 text-muted-foreground" />
-            </button>
-            <button onClick={onDelete} className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors">
-              <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Members ({members.length})</span>
-            <button onClick={onManageMembers} className="flex items-center gap-1 text-xs text-primary hover:underline">
-              <UserPlus className="w-3 h-3" /> Manage
-            </button>
-          </div>
-          {members.length === 0
-            ? <p className="text-xs text-muted-foreground italic">No members yet</p>
-            : <div className="flex flex-wrap gap-1.5">
-                {members.map((m: any) => (
-                  <div key={m.user_id} className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2.5 py-0.5 text-xs">
-                    <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-bold">
-                      {(m.full_name || "?")[0]?.toUpperCase()}
-                    </div>
-                    <span className="max-w-[100px] truncate">{m.full_name || m.user_id.slice(0, 8)}</span>
-                  </div>
-                ))}
-              </div>
-          }
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sections ({sections.length})</span>
-            <button onClick={onManageSections} className="flex items-center gap-1 text-xs text-primary hover:underline">
-              <Settings2 className="w-3 h-3" /> Manage
-            </button>
-          </div>
-          {sections.length === 0
-            ? <p className="text-xs text-muted-foreground italic">No sections assigned</p>
-            : <div className="flex flex-wrap gap-1.5">
-                {sections.map((s) => {
-                  const m = SECTION_LABELS[s] ?? { label: s, color: "#94a3b8" };
-                  return (
-                    <span key={s} className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                      style={{ backgroundColor: `${m.color}22`, color: m.color, border: `1px solid ${m.color}44` }}>
-                      {m.label}
-                    </span>
-                  );
-                })}
-              </div>
-          }
-        </div>
-      </div>
-    </motion.div>
-  );
-}
+const DEPARTMENT_TEMPLATES = [
+  { name: "Order Operations & Logistics", description: "Processes online and offline orders, invoices, and shipments.", color: "#f59e0b", sections: ["orders", "offline_orders", "customers"] },
+  { name: "Product & Inventory", description: "Catalog management, categories, stock, and barcode serial printing.", color: "#a855f7", sections: ["products", "offline_orders"] },
+  { name: "Customer Experience & Support", description: "Customer accounts, inquiries, orders, and support tickets.", color: "#38bdf8", sections: ["customers", "orders"] },
+  { name: "Brand & Creative Design", description: "Storefront appearance, banners, lookbooks, and media assets.", color: "#ec4899", sections: ["storefront_ui", "portfolio"] },
+  { name: "Marketing & Growth", description: "Campaigns, SEO, affiliate partners, coupons, and analytics.", color: "#fb923c", sections: ["seo", "affiliate", "analytics", "storefront_ui"] },
+];
 
 export default function AdminTeams() {
-  const { user } = useAuth();
   const qc = useQueryClient();
-  const [tab, setTab] = useState<"teams" | "audit">("teams");
+  const fetchTeams = useServerFn(listTeamsDetailed);
+  const fetchStaff = useServerFn(listStaff);
+  const createTeamFn = useServerFn(createTeam);
+  const updateTeamFn = useServerFn(updateTeam);
+  const deleteTeamFn = useServerFn(deleteTeam);
+  const setTeamMembersFn = useServerFn(setTeamMembers);
+  const setTeamSectionsFn = useServerFn(setTeamSections);
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editTeam, setEditTeam]     = useState<any>(null);
-  const [membersTeam, setMembersTeam] = useState<any>(null);
-  const [sectionsTeam, setSectionsTeam] = useState<any>(null);
-  const [form, setForm]             = useState({ name: "", description: "", color: TEAM_COLORS[0] });
-  const [auditFilter, setAuditFilter] = useState<string>("all");
-
-  // ── Data ──────────────────────────────────────────────────────
-  const { data: teamsData, isLoading } = useQuery({
-    queryKey: ["admin-teams"],
+  // Queries
+  const { data: teams = [], isLoading: teamsLoading, refetch: refetchTeams } = useQuery({
+    queryKey: ["admin-teams-detailed"],
     queryFn: async () => {
-      const [teamsRes, membersRes, sectionsRes, profilesRes] = await Promise.all([
-        (supabase as any).from("teams").select("*").order("created_at"),
-        (supabase as any).from("team_members").select("team_id, user_id"),
-        (supabase as any).from("team_section_access").select("team_id, section"),
-        supabase.from("profiles").select("id, full_name, avatar_url"),
-      ]);
-      const profiles: Record<string, any> = {};
-      (profilesRes.data ?? []).forEach((p) => (profiles[p.id] = p));
-      return { teams: teamsRes.data ?? [], members: membersRes.data ?? [], sections: sectionsRes.data ?? [], profiles };
-    },
-  });
-
-  const { data: auditData, isLoading: auditLoading } = useQuery({
-    queryKey: ["team-audit-log", auditFilter],
-    enabled: tab === "audit",
-    queryFn: async () => {
-      let q = (supabase as any).from("team_audit_log").select("*, profiles:performed_by(full_name), target:target_user_id(full_name)").order("created_at", { ascending: false }).limit(200);
-      if (auditFilter !== "all") q = q.eq("action", auditFilter);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  const { data: staffList } = useQuery({
-    queryKey: ["staff-list-for-teams"],
-    queryFn: async () => {
-      const { data: roles } = await supabase.from("user_roles").select("user_id, role").limit(200);
-      const ids = [...new Set((roles ?? []).map((r: any) => r.user_id))];
-      if (!ids.length) return [];
-      const { data: profs } = await supabase.from("profiles").select("id, full_name, avatar_url").in("id", ids);
-      return (profs ?? []).map((p) => ({
-        ...p,
-        roles: (roles ?? []).filter((r: any) => r.user_id === p.id).map((r: any) => r.role),
-      }));
-    },
-  });
-
-  const { teams = [], members = [], sections = [], profiles = {} } = teamsData ?? {};
-  const teamMembers  = (id: string) => members.filter((m: any) => m.team_id === id).map((m: any) => ({ ...m, ...(profiles[m.user_id] ?? {}) }));
-  const teamSections = (id: string) => sections.filter((s: any) => s.team_id === id).map((s: any) => s.section);
-
-  // ── Mutations ─────────────────────────────────────────────────
-  const inv = () => { qc.invalidateQueries({ queryKey: ["admin-teams"] }); qc.invalidateQueries({ queryKey: ["teams-summary"] }); qc.invalidateQueries({ queryKey: ["team-audit-log"] }); };
-
-  const createMut = useMutation({
-    mutationFn: async (d: any) => { const { error } = await (supabase as any).from("teams").insert({ ...d, created_by: user?.id }); if (error) throw error; },
-    onSuccess: () => { toast.success("Team created"); inv(); setCreateOpen(false); setForm({ name: "", description: "", color: TEAM_COLORS[0] }); },
-    onError: (e: any) => toast.error(e.message),
-  });
-  const updateMut = useMutation({
-    mutationFn: async ({ id, data }: any) => { const { error } = await (supabase as any).from("teams").update({ ...data, updated_at: new Date().toISOString() }).eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("Team updated"); inv(); setEditTeam(null); },
-    onError: (e: any) => toast.error(e.message),
-  });
-  const deleteMut = useMutation({
-    mutationFn: async (id: string) => { const { error } = await (supabase as any).from("teams").delete().eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("Team deleted"); inv(); },
-    onError: (e: any) => toast.error(e.message),
-  });
-  const addMemberMut = useMutation({
-    mutationFn: async ({ teamId, userId }: any) => {
-      const { error } = await (supabase as any).from("team_members").insert({ team_id: teamId, user_id: userId, added_by: user?.id });
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("Member added"); inv(); },
-    onError: (e: any) => toast.error(e.message),
-  });
-  const removeMemberMut = useMutation({
-    mutationFn: async ({ teamId, userId }: any) => { const { error } = await (supabase as any).from("team_members").delete().eq("team_id", teamId).eq("user_id", userId); if (error) throw error; },
-    onSuccess: () => { toast.success("Member removed"); inv(); },
-    onError: (e: any) => toast.error(e.message),
-  });
-  const toggleSectionMut = useMutation({
-    mutationFn: async ({ teamId, section, has }: any) => {
-      if (has) {
-        const { error } = await (supabase as any).from("team_section_access").delete().eq("team_id", teamId).eq("section", section);
-        if (error) throw error;
-      } else {
-        const { error } = await (supabase as any).from("team_section_access").insert({ team_id: teamId, section, granted_by: user?.id });
-        if (error) throw error;
+      try {
+        const res = await fetchTeams();
+        return Array.isArray(res) ? res : [];
+      } catch {
+        return [];
       }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-teams"] }); qc.invalidateQueries({ queryKey: ["staff-sections"] }); qc.invalidateQueries({ queryKey: ["team-audit-log"] }); },
-    onError: (e: any) => toast.error(e.message),
   });
 
+  const { data: staff = [] } = useQuery({
+    queryKey: ["staff"],
+    queryFn: () => fetchStaff(),
+  });
+
+  // Modals state
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editTeamModal, setEditTeamModal] = useState<TeamDetailed | null>(null);
+  const [membersModalTeam, setMembersModalTeam] = useState<TeamDetailed | null>(null);
+  const [sectionsModalTeam, setSectionsModalTeam] = useState<TeamDetailed | null>(null);
+
+  // Form states
+  const [teamForm, setTeamForm] = useState({
+    name: "",
+    description: "",
+    color: PRESET_COLORS[0],
+    initialSections: [] as string[],
+  });
+
+  const [memberSearchQuery, setMemberSearchQuery] = useState("");
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
+  const [selectedSections, setSelectedSections] = useState<Set<string>>(new Set());
+
+  // Mutations
+  const createMut = useMutation({
+    mutationFn: async () => {
+      await createTeamFn({
+        data: {
+          name: teamForm.name.trim(),
+          description: teamForm.description.trim() || null,
+          color: teamForm.color,
+          initialSections: teamForm.initialSections,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Team created successfully");
+      setCreateModalOpen(false);
+      setTeamForm({ name: "", description: "", color: PRESET_COLORS[0], initialSections: [] });
+      qc.invalidateQueries({ queryKey: ["admin-teams-detailed"] });
+      qc.invalidateQueries({ queryKey: ["staff"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to create team"),
+  });
+
+  const updateMut = useMutation({
+    mutationFn: async () => {
+      if (!editTeamModal) return;
+      await updateTeamFn({
+        data: {
+          id: editTeamModal.id,
+          name: teamForm.name.trim(),
+          description: teamForm.description.trim() || null,
+          color: teamForm.color,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Team updated");
+      setEditTeamModal(null);
+      qc.invalidateQueries({ queryKey: ["admin-teams-detailed"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to update team"),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async (team: TeamDetailed) => {
+      await deleteTeamFn({
+        data: {
+          id: team.id,
+          name: team.name,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Team deleted");
+      qc.invalidateQueries({ queryKey: ["admin-teams-detailed"] });
+      qc.invalidateQueries({ queryKey: ["staff"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to delete team"),
+  });
+
+  const saveMembersMut = useMutation({
+    mutationFn: async () => {
+      if (!membersModalTeam) return;
+      await setTeamMembersFn({
+        data: {
+          teamId: membersModalTeam.id,
+          teamName: membersModalTeam.name,
+          memberUserIds: Array.from(selectedMemberIds),
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Team roster updated");
+      setMembersModalTeam(null);
+      qc.invalidateQueries({ queryKey: ["admin-teams-detailed"] });
+      qc.invalidateQueries({ queryKey: ["staff"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to update members"),
+  });
+
+  const saveSectionsMut = useMutation({
+    mutationFn: async () => {
+      if (!sectionsModalTeam) return;
+      await setTeamSectionsFn({
+        data: {
+          teamId: sectionsModalTeam.id,
+          teamName: sectionsModalTeam.name,
+          sections: Array.from(selectedSections),
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Team permissions updated");
+      setSectionsModalTeam(null);
+      qc.invalidateQueries({ queryKey: ["admin-teams-detailed"] });
+      qc.invalidateQueries({ queryKey: ["staff"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to update team permissions"),
+  });
+
+  const openEditModal = (t: TeamDetailed) => {
+    setEditTeamModal(t);
+    setTeamForm({
+      name: t.name,
+      description: t.description || "",
+      color: t.color,
+      initialSections: [],
+    });
+  };
+
+  const openMembersModal = (t: TeamDetailed) => {
+    setMembersModalTeam(t);
+    setSelectedMemberIds(new Set(t.members.map((m) => m.user_id)));
+    setMemberSearchQuery("");
+  };
+
+  const openSectionsModal = (t: TeamDetailed) => {
+    setSectionsModalTeam(t);
+    setSelectedSections(new Set(t.sections));
+  };
+
+  const applyDepartmentTemplate = (tpl: typeof DEPARTMENT_TEMPLATES[0]) => {
+    setTeamForm({
+      name: tpl.name,
+      description: tpl.description,
+      color: tpl.color,
+      initialSections: tpl.sections,
+    });
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-6 pb-12">
       {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-display font-bold flex items-center gap-2"><Users2 className="w-7 h-7" /> Teams</h1>
-          <p className="text-sm text-muted-foreground mt-1">Create teams, assign staff, and control section access. Triggers auto-log every change.</p>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground flex items-center gap-2.5">
+            <Building2 className="w-7 h-7 text-primary" /> Teams & Departments
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Group employees into departments with shared section permissions and organizational structure.
+          </p>
         </div>
-        <Button onClick={() => { setForm({ name: "", description: "", color: TEAM_COLORS[0] }); setCreateOpen(true); }}>
-          <Plus className="w-4 h-4 mr-1.5" /> New Team
+
+        <Button
+          size="sm"
+          onClick={() => {
+            setTeamForm({ name: "", description: "", color: PRESET_COLORS[0], initialSections: [] });
+            setCreateModalOpen(true);
+          }}
+          className="gap-2 h-9 font-medium shadow-sm shrink-0"
+        >
+          <Plus className="w-4 h-4" /> Create Department / Team
         </Button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-border/60">
-        {(["teams", "audit"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-            {t === "audit" ? <span className="flex items-center gap-1.5"><History className="w-3.5 h-3.5" /> Audit Log</span> : "Teams"}
-          </button>
-        ))}
-      </div>
+      {/* Teams Grid */}
+      {teamsLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-56 rounded-xl border border-border/40 bg-muted/20 animate-pulse" />
+          ))}
+        </div>
+      ) : teams.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center rounded-xl border border-dashed border-border/80 bg-card p-8">
+          <Building2 className="w-12 h-12 text-muted-foreground/30 mb-3" />
+          <h3 className="text-base font-semibold text-foreground">No Teams Configured</h3>
+          <p className="text-xs text-muted-foreground max-w-sm mt-1 mb-4">
+            Create departments like Sales, Warehouse, Support, or Marketing to easily distribute section permissions.
+          </p>
+          <Button size="sm" onClick={() => setCreateModalOpen(true)} className="gap-1.5">
+            <Plus className="w-4 h-4" /> Create First Team
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {teams.map((team) => (
+            <motion.div
+              key={team.id}
+              layout
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-xl border border-border/70 bg-card overflow-hidden shadow-sm hover:border-primary/40 transition-all flex flex-col justify-between"
+            >
+              {/* Color Banner */}
+              <div className="h-1.5 w-full" style={{ backgroundColor: team.color }} />
 
-      {/* ── Teams tab ── */}
-      {tab === "teams" && (
-        <>
-          <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-muted-foreground flex gap-3 items-start">
-            <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-            <span><span className="font-medium text-foreground">How it works:</span> Members inherit section access from their team. 1 section → redirected straight there. Multiple → sees panel with their sections only. All changes are auto-logged.</span>
-          </div>
+              <div className="p-5 space-y-4 flex-1">
+                {/* Team Title & Actions */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-base text-white shadow-sm shrink-0"
+                      style={{ backgroundColor: team.color }}
+                    >
+                      {team.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-sm text-foreground truncate">{team.name}</h3>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                        {team.description || "No description provided"}
+                      </p>
+                    </div>
+                  </div>
 
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {[1,2,3].map((i) => <div key={i} className="h-48 rounded-xl border border-border/40 bg-muted/20 animate-pulse" />)}
-            </div>
-          ) : teams.length === 0 ? (
-            <EmptyState
-              icon={<Users2 className="w-5 h-5" />}
-              message="No teams yet"
-              hint="Group members into teams to control which sections they can access."
-              action={<Button variant="outline" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4 mr-1.5" /> Create team</Button>}
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              <AnimatePresence mode="popLayout">
-                {teams.map((team: any) => (
-                  <TeamCard key={team.id} team={team}
-                    members={teamMembers(team.id)} sections={teamSections(team.id)}
-                    onEdit={() => { setEditTeam(team); setForm({ name: team.name, description: team.description ?? "", color: team.color }); }}
-                    onDelete={() => { if (confirm(`Delete team "${team.name}"?`)) deleteMut.mutate(team.id); }}
-                    onManageMembers={() => setMembersTeam(team)}
-                    onManageSections={() => setSectionsTeam(team)}
-                  />
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
-        </>
-      )}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => openEditModal(team)}
+                      className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      title="Edit details"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Delete team "${team.name}"? Team members will not lose their accounts.`)) {
+                          deleteMut.mutate(team);
+                        }
+                      }}
+                      className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                      title="Delete team"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
 
-      {/* ── Audit Log tab ── */}
-      {tab === "audit" && (
-        <div className="space-y-4">
-          {/* Filter */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Filter className="w-3.5 h-3.5 text-muted-foreground" />
-            {["all", "member_added", "member_removed", "section_granted", "section_revoked", "team_created", "team_updated"].map((f) => (
-              <button key={f} onClick={() => setAuditFilter(f)}
-                className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${auditFilter === f ? "border-primary bg-primary/10 text-primary" : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/40"}`}>
-                {f === "all" ? "All" : ACTION_ICON[f]?.label ?? f}
-              </button>
-            ))}
-          </div>
+                {/* Team Members List */}
+                <div className="space-y-2 pt-2 border-t border-border/40">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Members ({team.members.length})
+                    </span>
+                    <button
+                      onClick={() => openMembersModal(team)}
+                      className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" /> Manage Roster
+                    </button>
+                  </div>
 
-          {auditLoading ? (
-            <div className="space-y-2">{[1,2,3,4,5].map((i) => <div key={i} className="h-10 rounded-lg bg-muted/20 animate-pulse" />)}</div>
-          ) : (auditData ?? []).length === 0 ? (
-            <EmptyState
-              icon={<History className="w-5 h-5" />}
-              message="No audit events yet"
-              hint="Changes to teams are automatically logged here."
-            />
-          ) : (
-            <div className="rounded-xl border border-border/60 overflow-hidden">
-              <table className="w-full text-xs">
-                <thead className="bg-muted/40 text-muted-foreground uppercase tracking-wide">
-                  <tr>
-                    <th className="px-3 py-2 text-left">Action</th>
-                    <th className="px-3 py-2 text-left">Team</th>
-                    <th className="px-3 py-2 text-left">Detail</th>
-                    <th className="px-3 py-2 text-left">Performed by</th>
-                    <th className="px-3 py-2 text-left">Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(auditData ?? []).map((log: any) => {
-                    const cfg = ACTION_ICON[log.action] ?? { label: log.action, dot: "bg-muted" };
-                    return (
-                      <tr key={log.id} className="border-t border-border/30 hover:bg-muted/10 transition-colors">
-                        <td className="px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${cfg.dot} shrink-0`} />
-                            <span className="font-medium">{cfg.label}</span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 text-muted-foreground">{log.team_name ?? "—"}</td>
-                        <td className="px-3 py-2">
-                          {log.target?.full_name && <span className="text-foreground">{log.target.full_name}</span>}
-                          {log.section_key && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium"
-                              style={{ backgroundColor: `${SECTION_LABELS[log.section_key]?.color ?? "#94a3b8"}22`, color: SECTION_LABELS[log.section_key]?.color ?? "#94a3b8" }}>
-                              {SECTION_LABELS[log.section_key]?.label ?? log.section_key}
-                            </span>
+                  {team.members.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic py-1">No members assigned yet</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                      {team.members.map((m) => (
+                        <div
+                          key={m.user_id}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 pl-1 pr-2.5 py-0.5 text-xs text-foreground border border-border/50"
+                        >
+                          {m.avatar_url ? (
+                            <img
+                              src={m.avatar_url}
+                              alt={m.full_name || "member"}
+                              className="w-4 h-4 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-bold text-primary">
+                              {(m.full_name || "?")[0]?.toUpperCase()}
+                            </div>
                           )}
-                          {!log.target?.full_name && !log.section_key && <span className="text-muted-foreground">—</span>}
-                        </td>
-                        <td className="px-3 py-2 text-muted-foreground">{log.profiles?.full_name ?? "—"}</td>
-                        <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
-                          <div className="flex items-center gap-1"><Clock className="w-3 h-3" />{fmt(log.created_at)}</div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+                          <span className="max-w-[120px] truncate">{m.full_name || m.user_id.slice(0, 8)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Team Assigned Sections */}
+                <div className="space-y-2 pt-2 border-t border-border/40">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Shared Sections ({team.sections.length})
+                    </span>
+                    <button
+                      onClick={() => openSectionsModal(team)}
+                      className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
+                    >
+                      <Settings2 className="w-3.5 h-3.5" /> Edit Access
+                    </button>
+                  </div>
+
+                  {team.sections.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic py-1">No shared sections assigned</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {team.sections.map((s) => {
+                        const secInfo = SECTION_LABELS[s] || { label: s, color: "#6366f1" };
+                        return (
+                          <span
+                            key={s}
+                            className="text-[10px] px-2 py-0.5 rounded-md font-medium border"
+                            style={{
+                              backgroundColor: `${secInfo.color}15`,
+                              color: secInfo.color,
+                              borderColor: `${secInfo.color}35`,
+                            }}
+                          >
+                            {secInfo.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          ))}
         </div>
       )}
 
-      {/* ── Create / Edit Dialog ── */}
-      <Dialog open={createOpen || !!editTeam} onOpenChange={(o) => { if (!o) { setCreateOpen(false); setEditTeam(null); } }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>{editTeam ? "Edit Team" : "Create Team"}</DialogTitle></DialogHeader>
+      {/* Create Team Modal */}
+      <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-primary" /> Create Department / Team
+            </DialogTitle>
+            <DialogDescription>
+              Create a group to grant team-wide section permissions automatically.
+            </DialogDescription>
+          </DialogHeader>
+
           <div className="space-y-4 py-2">
+            {/* Starter Templates */}
             <div>
-              <label className="text-xs text-muted-foreground">Team name *</label>
-              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Catalog Team" />
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                Starter Department Templates
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {DEPARTMENT_TEMPLATES.map((tpl) => (
+                  <button
+                    key={tpl.name}
+                    type="button"
+                    onClick={() => applyDepartmentTemplate(tpl)}
+                    className="flex flex-col items-start p-2 rounded-lg border border-border/70 bg-card hover:bg-muted/40 hover:border-primary/40 text-left transition-colors"
+                  >
+                    <span className="text-xs font-semibold text-foreground truncate w-full">{tpl.name}</span>
+                    <span className="text-[10px] text-muted-foreground truncate w-full mt-0.5">
+                      {tpl.sections.length} sections included
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Description</label>
-              <Input value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Optional" />
+
+            {/* Team Name */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Department / Team Name *</label>
+              <Input
+                value={teamForm.name}
+                onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
+                placeholder="e.g. Order Fulfillment"
+              />
             </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-2 block">Color</label>
-              <div className="flex flex-wrap gap-2">
-                {TEAM_COLORS.map((c) => (
-                  <button key={c} onClick={() => setForm((f) => ({ ...f, color: c }))}
-                    className="w-7 h-7 rounded-full transition-all"
-                    style={{ backgroundColor: c, outline: form.color === c ? `3px solid ${c}` : "none", outlineOffset: "2px" }} />
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Description</label>
+              <Textarea
+                value={teamForm.description}
+                onChange={(e) => setTeamForm({ ...teamForm, description: e.target.value })}
+                placeholder="Department responsibilities and purpose"
+                rows={2}
+              />
+            </div>
+
+            {/* Color Theme */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Color Accent</label>
+              <div className="flex items-center gap-2">
+                {PRESET_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setTeamForm({ ...teamForm, color: c })}
+                    className={`w-6 h-6 rounded-full transition-transform ${
+                      teamForm.color === c ? "scale-125 ring-2 ring-primary ring-offset-2" : "hover:scale-110"
+                    }`}
+                    style={{ backgroundColor: c }}
+                  />
                 ))}
               </div>
             </div>
           </div>
+
           <DialogFooter>
-            <Button variant="ghost" onClick={() => { setCreateOpen(false); setEditTeam(null); }}>Cancel</Button>
-            <Button disabled={!form.name.trim() || createMut.isPending || updateMut.isPending}
-              onClick={() => editTeam ? updateMut.mutate({ id: editTeam.id, data: form }) : createMut.mutate(form)}>
-              <Save className="w-4 h-4 mr-1.5" />{editTeam ? "Save" : "Create"}
+            <Button variant="ghost" onClick={() => setCreateModalOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!teamForm.name.trim() || createMut.isPending}
+              onClick={() => createMut.mutate()}
+              className="gap-1.5"
+            >
+              {createMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Create Team
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── Members Dialog ── */}
-      <Dialog open={!!membersTeam} onOpenChange={(o) => { if (!o) setMembersTeam(null); }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Members — {membersTeam?.name}</DialogTitle></DialogHeader>
+      {/* Edit Team Modal */}
+      <Dialog open={!!editTeamModal} onOpenChange={(v) => !v && setEditTeamModal(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Team Details</DialogTitle>
+          </DialogHeader>
+
           <div className="space-y-4 py-2">
-            <div className="space-y-1 max-h-48 overflow-y-auto">
-              {membersTeam && teamMembers(membersTeam.id).length === 0 && (
-                <p className="text-xs text-muted-foreground py-3 text-center">No members yet</p>
-              )}
-              {membersTeam && teamMembers(membersTeam.id).map((m: any) => (
-                <div key={m.user_id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/30">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold">
-                      {(m.full_name || "?")[0]?.toUpperCase()}
-                    </div>
-                    <p className="text-sm font-medium">{m.full_name || m.user_id.slice(0, 8)}</p>
-                  </div>
-                  <button onClick={() => removeMemberMut.mutate({ teamId: membersTeam.id, userId: m.user_id })}
-                    className="p-1.5 rounded-md hover:bg-destructive/10">
-                    <X className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
-                  </button>
-                </div>
-              ))}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Team Name *</label>
+              <Input
+                value={teamForm.name}
+                onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
+              />
             </div>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Add from staff</p>
-              <div className="space-y-1 max-h-48 overflow-y-auto">
-                {(staffList ?? [])
-                  .filter((s: any) => membersTeam && !teamMembers(membersTeam.id).some((m: any) => m.user_id === s.id))
-                  .map((s: any) => (
-                    <div key={s.id} className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/30">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold">
-                          {(s.full_name || "?")[0]?.toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{s.full_name || s.id.slice(0, 8)}</p>
-                          <div className="flex gap-1">{s.roles.map((r: string) => <span key={r} className="text-[9px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{r}</span>)}</div>
-                        </div>
-                      </div>
-                      <Button size="sm" variant="ghost" disabled={addMemberMut.isPending}
-                        onClick={() => addMemberMut.mutate({ teamId: membersTeam.id, userId: s.id })}>
-                        <UserPlus className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  ))}
-                {(staffList ?? []).length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-3">No staff yet. Add via Employees page first.</p>
-                )}
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Description</label>
+              <Textarea
+                value={teamForm.description}
+                onChange={(e) => setTeamForm({ ...teamForm, description: e.target.value })}
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Color</label>
+              <div className="flex items-center gap-2">
+                {PRESET_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setTeamForm({ ...teamForm, color: c })}
+                    className={`w-6 h-6 rounded-full transition-transform ${
+                      teamForm.color === c ? "scale-125 ring-2 ring-primary ring-offset-2" : "hover:scale-110"
+                    }`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
               </div>
             </div>
           </div>
-          <DialogFooter><Button variant="ghost" onClick={() => setMembersTeam(null)}>Done</Button></DialogFooter>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditTeamModal(null)}>Cancel</Button>
+            <Button
+              disabled={!teamForm.name.trim() || updateMut.isPending}
+              onClick={() => updateMut.mutate()}
+            >
+              {updateMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── Sections Dialog ── */}
-      <Dialog open={!!sectionsTeam} onOpenChange={(o) => { if (!o) setSectionsTeam(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Section Access — {sectionsTeam?.name}</DialogTitle></DialogHeader>
-          <p className="text-xs text-muted-foreground -mt-1">Toggle sections. Members with 1 section are redirected there on login.</p>
-          <div className="grid grid-cols-1 gap-1.5 py-2 max-h-80 overflow-y-auto">
-            {ALL_SECTIONS.map((skey) => {
-              const meta = SECTION_LABELS[skey];
-              const has = sectionsTeam ? teamSections(sectionsTeam.id).includes(skey) : false;
+      {/* Manage Members Modal */}
+      <Dialog open={!!membersModalTeam} onOpenChange={(v) => !v && setMembersModalTeam(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" /> Manage Members — {membersModalTeam?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Select which staff members belong to this department.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Search bar */}
+          <div className="relative pt-2">
+            <Search className="w-4 h-4 absolute left-3 top-5 text-muted-foreground" />
+            <Input
+              value={memberSearchQuery}
+              onChange={(e) => setMemberSearchQuery(e.target.value)}
+              placeholder="Search staff to add or remove..."
+              className="pl-9 h-9 text-xs"
+            />
+          </div>
+
+          {/* Staff checklist */}
+          <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1 py-2">
+            {staff
+              .filter((s: any) => {
+                const needle = memberSearchQuery.trim().toLowerCase();
+                return (
+                  !needle ||
+                  (s.full_name && s.full_name.toLowerCase().includes(needle)) ||
+                  (s.email && s.email.toLowerCase().includes(needle)) ||
+                  s.user_id.toLowerCase().includes(needle)
+                );
+              })
+              .map((s: any) => {
+                const isSelected = selectedMemberIds.has(s.user_id);
+
+                return (
+                  <label
+                    key={s.user_id}
+                    className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer text-xs transition-colors ${
+                      isSelected ? "border-primary/40 bg-primary/5" : "border-border bg-card hover:bg-muted/30"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={(checked) => {
+                          setSelectedMemberIds((prev) => {
+                            const next = new Set(prev);
+                            if (checked) next.add(s.user_id);
+                            else next.delete(s.user_id);
+                            return next;
+                          });
+                        }}
+                      />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground truncate">{s.full_name || "Staff"}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{s.email || "No email"}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-1 shrink-0">
+                      {s.roles.map((r: string) => (
+                        <Badge key={r} variant="outline" className="text-[9px] py-0 px-1">
+                          {r}
+                        </Badge>
+                      ))}
+                    </div>
+                  </label>
+                );
+              })}
+          </div>
+
+          <DialogFooter className="border-t border-border pt-3">
+            <div className="text-xs text-muted-foreground mr-auto self-center">
+              {selectedMemberIds.size} selected
+            </div>
+            <Button variant="ghost" onClick={() => setMembersModalTeam(null)}>Cancel</Button>
+            <Button
+              disabled={saveMembersMut.isPending}
+              onClick={() => saveMembersMut.mutate()}
+            >
+              {saveMembersMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Roster"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Sections Modal */}
+      <Dialog open={!!sectionsModalTeam} onOpenChange={(v) => !v && setSectionsModalTeam(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-primary" /> Shared Section Grants — {sectionsModalTeam?.name}
+            </DialogTitle>
+            <DialogDescription>
+              All members assigned to this team will inherit access to these sections.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1 py-2">
+            {ALL_SECTIONS.map((secKey) => {
+              const secInfo = SECTION_LABELS[secKey];
+              const isChecked = selectedSections.has(secKey);
+
               return (
-                <button key={skey} disabled={toggleSectionMut.isPending}
-                  onClick={() => toggleSectionMut.mutate({ teamId: sectionsTeam.id, section: skey, has })}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all ${has ? "border-primary/40 bg-primary/10" : "border-border/50 bg-muted/20 hover:bg-muted/40"}`}>
-                  <span className="text-sm font-medium">{meta.label}</span>
-                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${has ? "bg-primary border-primary" : "border-muted-foreground/40"}`}>
-                    {has && <div className="w-2 h-2 bg-white rounded-sm" />}
+                <label
+                  key={secKey}
+                  className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer text-xs transition-colors ${
+                    isChecked ? "border-primary/40 bg-primary/5" : "border-border bg-card hover:bg-muted/30"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Checkbox
+                      checked={isChecked}
+                      onCheckedChange={(checked) => {
+                        setSelectedSections((prev) => {
+                          const next = new Set(prev);
+                          if (checked) next.add(secKey);
+                          else next.delete(secKey);
+                          return next;
+                        });
+                      }}
+                    />
+                    <span className="font-semibold text-foreground">{secInfo.label}</span>
                   </div>
-                </button>
+
+                  <code className="text-[10px] text-muted-foreground font-mono">{secKey}</code>
+                </label>
               );
             })}
           </div>
-          <DialogFooter><Button variant="ghost" onClick={() => setSectionsTeam(null)}>Done</Button></DialogFooter>
+
+          <DialogFooter className="border-t border-border pt-3">
+            <div className="text-xs text-muted-foreground mr-auto self-center">
+              {selectedSections.size} sections selected
+            </div>
+            <Button variant="ghost" onClick={() => setSectionsModalTeam(null)}>Cancel</Button>
+            <Button
+              disabled={saveSectionsMut.isPending}
+              onClick={() => saveSectionsMut.mutate()}
+            >
+              {saveSectionsMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Permissions"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
-
 }
-// code:4ce0

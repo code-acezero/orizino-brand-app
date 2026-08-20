@@ -29,16 +29,26 @@ export const getPublicIdentity = createServerFn({ method: "GET" })
   )
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data: row, error } = await (sb as any)
+    let { data: row, error } = await (sb as any)
       .from("employee_identity_public")
       .select("*")
       .eq("slug", data.slug)
       .maybeSingle();
+
+    if (!row && !error) {
+      const { data: rowIlike } = await (sb as any)
+        .from("employee_identity_public")
+        .select("*")
+        .ilike("slug", data.slug)
+        .maybeSingle();
+      row = rowIlike;
+    }
+
     if (error) return { identity: null as any, error: error.message };
     if (!row) return { identity: null as any, error: null };
     // Fire-and-forget scan recording (SECURITY DEFINER RPC handles counters).
     (sb as any).rpc("record_identity_scan", {
-      _slug: data.slug,
+      _slug: row.slug || data.slug,
       _source: data.source ?? "direct",
       _user_agent: data.userAgent ?? null,
       _referrer: data.referrer ?? null,
