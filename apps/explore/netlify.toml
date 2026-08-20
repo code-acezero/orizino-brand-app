@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS    = "--legacy-peer-deps"
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_PROJECT_ID,VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
