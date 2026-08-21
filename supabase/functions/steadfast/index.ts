@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
       ).slice(0, 250);
 
       const isCod = order ? (order.payment_method === "cod" || order.payment_status !== "paid") : (body.is_cod !== false);
-      const codAmount = isCod ? Number(order?.total ?? body.cod_amount ?? 0) : 0;
+      const codAmount = isCod ? Number(body.cod_amount ?? order?.total ?? 0) : 0;
       const orderInvoice = String(invoice || order?.order_number || `ORD-${Date.now()}`);
 
       let itemDesc = item_description;

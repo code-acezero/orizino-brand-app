@@ -454,7 +454,7 @@ export async function POST(req: NextRequest) {
       ).slice(0, 220);
 
       const isCod = order ? (order.payment_method === "cod" || order.payment_status !== "paid") : (body.is_cod !== false);
-      const amountToCollect = isCod ? Math.round(Number(order?.total ?? body.amount_to_collect ?? 0)) : 0;
+      const amountToCollect = isCod ? Math.round(Number(body.amount_to_collect ?? order?.total ?? 0)) : 0;
       const merchantOrderId = String(body.merchant_order_id || order?.order_number || `ORD-${Date.now()}`);
 
       let itemDesc = item_description;
