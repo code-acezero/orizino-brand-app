@@ -1,6 +1,6 @@
 [build]
   command = "npm --workspace=@orizino/brandhome run build || npm run build"
-  publish = ".next"
+  publish = "apps/brandhome/.next"
 
 [build.environment]
   NODE_VERSION = "20"

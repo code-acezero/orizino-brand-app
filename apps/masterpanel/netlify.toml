@@ -1,6 +1,6 @@
 [build]
   command = "npm --workspace=@orizino/masterpanel run build || npm run build"
-  publish = ".next"
+  publish = "apps/masterpanel/.next"
 
 [build.environment]
   NODE_VERSION = "20"
