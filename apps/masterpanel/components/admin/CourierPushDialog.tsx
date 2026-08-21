@@ -37,6 +37,37 @@ const CourierPushDialog: React.FC<Props> = ({ open, onOpenChange, orderId, order
   const [zoneName, setZoneName] = useState("");
 
   // Existing shipments
+  const { data: orderDetails } = useQuery({
+    queryKey: ["courier-dialog-order", orderId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("orders")
+        .select("id, total, shipping_fee, payment_method, payment_status, is_delivery_prepaid, delivery_prepaid_amount, delivery_prepaid_trx")
+        .eq("id", orderId)
+        .maybeSingle();
+      return data;
+    },
+    enabled: open && !!orderId,
+  });
+
+  const [customCodAmount, setCustomCodAmount] = useState<number | undefined>(undefined);
+  const [isPrepaidChecked, setIsPrepaidChecked] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (orderDetails) {
+      const isPrepaid = !!orderDetails.is_delivery_prepaid;
+      setIsPrepaidChecked(isPrepaid);
+      if (orderDetails.payment_status === "paid") {
+        setCustomCodAmount(0);
+      } else if (isPrepaid) {
+        const fee = orderDetails.delivery_prepaid_amount || orderDetails.shipping_fee || 0;
+        setCustomCodAmount(Math.max(0, orderDetails.total - fee));
+      } else {
+        setCustomCodAmount(orderDetails.total);
+      }
+    }
+  }, [orderDetails]);
+
   const { data: pathaoExisting } = useQuery({
     queryKey: ["pathao-shipment", orderId],
     queryFn: async () => {
@@ -129,6 +160,7 @@ const CourierPushDialog: React.FC<Props> = ({ open, onOpenChange, orderId, order
         item_weight: itemWeight,
         special_instruction: note || undefined,
         item_description: itemDesc || undefined,
+        amount_to_collect: customCodAmount,
       });
     },
     onSuccess: () => {
@@ -146,6 +178,7 @@ const CourierPushDialog: React.FC<Props> = ({ open, onOpenChange, orderId, order
       note,
       item_description: itemDesc || undefined,
       delivery_type: deliveryType,
+      cod_amount: customCodAmount,
     }),
     onSuccess: () => {
       toast({ title: "Order successfully pushed to Steadfast!" });
@@ -383,15 +416,56 @@ const CourierPushDialog: React.FC<Props> = ({ open, onOpenChange, orderId, order
               />
             </div>
 
-            <div>
-              <Label className="text-xs">Special Instructions / Notes</Label>
-              <Input
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="e.g. Call customer before delivery"
-                className="h-9 rounded-xl text-xs mt-1"
-              />
-            </div>
+            {/* COD & Pre-paid Delivery Controls */}
+            {orderDetails && (
+              <div className="p-3 rounded-xl bg-muted/40 border border-border/70 space-y-2 text-xs">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={isPrepaidChecked}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setIsPrepaidChecked(checked);
+                        const fee = orderDetails.delivery_prepaid_amount || orderDetails.shipping_fee || 0;
+                        const newCod = checked ? Math.max(0, orderDetails.total - fee) : orderDetails.total;
+                        setCustomCodAmount(orderDetails.payment_status === "paid" ? 0 : newCod);
+                      }}
+                      className="w-4 h-4 rounded accent-primary cursor-pointer"
+                    />
+                    <span>Delivery Charge Pre-paid (Deduct ৳{orderDetails.delivery_prepaid_amount || orderDetails.shipping_fee || 0} from COD)</span>
+                  </label>
+
+                  {orderDetails.payment_status === "paid" && (
+                    <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                      Full Order Paid (COD = ৳0)
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="space-y-1 pt-1">
+                  <Label className="text-xs font-bold text-foreground">COD Amount to Collect (৳)</Label>
+                  <Input
+                    type="number"
+                    value={customCodAmount ?? (
+                      orderDetails.payment_status === "paid"
+                        ? 0
+                        : isPrepaidChecked
+                        ? Math.max(0, orderDetails.total - (orderDetails.delivery_prepaid_amount || orderDetails.shipping_fee || 0))
+                        : orderDetails.total
+                    )}
+                    onChange={(e) => setCustomCodAmount(Number(e.target.value))}
+                    placeholder="e.g. 1000"
+                    className="h-9 rounded-xl font-mono font-bold text-xs bg-background"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    {orderDetails.is_delivery_prepaid
+                      ? `Prepaid Trx ID: ${orderDetails.delivery_prepaid_trx || "Verified"}. Driver collects ৳${customCodAmount}.`
+                      : `Amount driver will collect at doorstep.`}
+                  </p>
+                </div>
+              </div>
+            )}
 
             <DialogFooter className="pt-2">
               <Button
@@ -448,15 +522,56 @@ const CourierPushDialog: React.FC<Props> = ({ open, onOpenChange, orderId, order
               />
             </div>
 
-            <div>
-              <Label className="text-xs">Note / Delivery Instructions (Optional)</Label>
-              <Input
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="e.g. Fragile / Call before delivery"
-                className="h-9 rounded-xl text-xs mt-1"
-              />
-            </div>
+            {/* COD & Pre-paid Delivery Controls */}
+            {orderDetails && (
+              <div className="p-3 rounded-xl bg-muted/40 border border-border/70 space-y-2 text-xs">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <label className="flex items-center gap-2 cursor-pointer font-semibold text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={isPrepaidChecked}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setIsPrepaidChecked(checked);
+                        const fee = orderDetails.delivery_prepaid_amount || orderDetails.shipping_fee || 0;
+                        const newCod = checked ? Math.max(0, orderDetails.total - fee) : orderDetails.total;
+                        setCustomCodAmount(orderDetails.payment_status === "paid" ? 0 : newCod);
+                      }}
+                      className="w-4 h-4 rounded accent-primary cursor-pointer"
+                    />
+                    <span>Delivery Charge Pre-paid (Deduct ৳{orderDetails.delivery_prepaid_amount || orderDetails.shipping_fee || 0} from COD)</span>
+                  </label>
+
+                  {orderDetails.payment_status === "paid" && (
+                    <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                      Full Order Paid (COD = ৳0)
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="space-y-1 pt-1">
+                  <Label className="text-xs font-bold text-foreground">COD Amount to Collect (৳)</Label>
+                  <Input
+                    type="number"
+                    value={customCodAmount ?? (
+                      orderDetails.payment_status === "paid"
+                        ? 0
+                        : isPrepaidChecked
+                        ? Math.max(0, orderDetails.total - (orderDetails.delivery_prepaid_amount || orderDetails.shipping_fee || 0))
+                        : orderDetails.total
+                    )}
+                    onChange={(e) => setCustomCodAmount(Number(e.target.value))}
+                    placeholder="e.g. 1000"
+                    className="h-9 rounded-xl font-mono font-bold text-xs bg-background"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    {orderDetails.is_delivery_prepaid
+                      ? `Prepaid Trx ID: ${orderDetails.delivery_prepaid_trx || "Verified"}. Driver collects ৳${customCodAmount}.`
+                      : `Amount driver will collect at doorstep.`}
+                  </p>
+                </div>
+              </div>
+            )}
 
             <DialogFooter className="pt-2">
               <Button

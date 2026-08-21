@@ -32,6 +32,7 @@ interface DispatchOrder {
   guest_phone: string | null;
   shipping_address: any;
   total: number;
+  shipping_fee?: number;
   status: string;
   payment_status: string;
   payment_method: string;
@@ -40,6 +41,10 @@ interface DispatchOrder {
   courier_name?: string | null;
   consignment_id?: string | null;
   tracking_code?: string | null;
+  is_delivery_prepaid?: boolean;
+  delivery_prepaid_amount?: number;
+  delivery_prepaid_trx?: string;
+  cod_amount?: number;
 }
 
 const COURIER_PROVIDERS = [
@@ -57,6 +62,8 @@ export function CourierDispatch() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [trackingInput, setTrackingInput] = useState("");
   const [consignmentInput, setConsignmentInput] = useState("");
+  const [customCodAmount, setCustomCodAmount] = useState<number | undefined>(undefined);
+  const [isPrepaidChecked, setIsPrepaidChecked] = useState<boolean>(false);
   const [filter, setFilter] = useState<"ready" | "dispatched" | "all">("ready");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -65,7 +72,7 @@ export function CourierDispatch() {
     queryFn: async () => {
       let q = (supabase as any)
         .from("orders")
-        .select("id, order_number, customer_name, guest_phone, shipping_address, total, status, payment_status, payment_method, order_source, created_at, courier_name, consignment_id, tracking_code")
+        .select("id, order_number, customer_name, guest_phone, shipping_address, total, shipping_fee, status, payment_status, payment_method, order_source, created_at, courier_name, consignment_id, tracking_code, is_delivery_prepaid, delivery_prepaid_amount, delivery_prepaid_trx, cod_amount")
         .order("created_at", { ascending: false })
         .limit(100);
 
@@ -91,11 +98,13 @@ export function CourierDispatch() {
       courierName,
       trackingCode,
       consignmentId,
+      codAmount,
     }: {
       orderId: string;
       courierName: string;
       trackingCode: string;
       consignmentId?: string;
+      codAmount?: number;
     }) => {
       const { error } = await (supabase as any)
         .from("orders")
@@ -104,6 +113,7 @@ export function CourierDispatch() {
           courier_name: courierName,
           tracking_code: trackingCode || null,
           consignment_id: consignmentId || null,
+          cod_amount: codAmount !== undefined ? codAmount : null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", orderId);
@@ -276,6 +286,31 @@ export function CourierDispatch() {
               {/* Dispatch Form Expansion */}
               {isSelected && (
                 <div className="p-4 border-t border-border/60 bg-muted/10 space-y-4 animate-in fade-in">
+                  {/* Financial & Pre-paid Summary Banner */}
+                  <div className="p-3 rounded-xl bg-card border border-border/70 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-foreground">Order Total: ৳{order.total.toLocaleString()}</span>
+                        {order.shipping_fee ? (
+                          <span className="text-muted-foreground">(Delivery Fee: ৳{order.shipping_fee})</span>
+                        ) : null}
+                      </div>
+                      {order.is_delivery_prepaid && (
+                        <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Delivery Fee Pre-Paid via MFS
+                          {order.delivery_prepaid_trx ? ` (Trx ID: ${order.delivery_prepaid_trx})` : ""}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[11px] uppercase font-mono font-bold">
+                        {order.payment_method} ({order.payment_status})
+                      </Badge>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1.5">
                       <Label className="text-xs font-bold text-muted-foreground">Select Partner</Label>
@@ -313,6 +348,65 @@ export function CourierDispatch() {
                     </div>
                   </div>
 
+                  {/* COD & Pre-paid Delivery Controls */}
+                  <div className="p-3 rounded-xl bg-card/80 border border-border/70 space-y-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={isPrepaidChecked}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setIsPrepaidChecked(checked);
+                            const fee = order.delivery_prepaid_amount || order.shipping_fee || 0;
+                            const newCod = checked ? Math.max(0, order.total - fee) : order.total;
+                            setCustomCodAmount(order.payment_status === "paid" ? 0 : newCod);
+                          }}
+                          className="w-4 h-4 rounded accent-primary cursor-pointer"
+                        />
+                        <span>Delivery Charge Pre-paid (Deduct ৳{order.delivery_prepaid_amount || order.shipping_fee || 0} from COD)</span>
+                      </label>
+
+                      {order.payment_status === "paid" && (
+                        <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                          Full Order Paid (COD = ৳0)
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div className="space-y-1">
+                        <Label className="text-xs font-bold text-foreground">COD Amount to Collect (৳)</Label>
+                        <Input
+                          type="number"
+                          value={customCodAmount ?? (
+                            order.payment_status === "paid"
+                              ? 0
+                              : order.is_delivery_prepaid || isPrepaidChecked
+                              ? Math.max(0, order.total - (order.delivery_prepaid_amount || order.shipping_fee || 0))
+                              : order.total
+                          )}
+                          onChange={(e) => setCustomCodAmount(Number(e.target.value))}
+                          placeholder="e.g. 1000"
+                          className="h-9 rounded-xl font-mono font-bold text-xs bg-background"
+                        />
+                        <p className="text-[10px] text-muted-foreground">Amount driver will collect at customer's doorstep.</p>
+                      </div>
+
+                      <div className="flex items-center text-xs text-muted-foreground p-2 rounded-lg bg-muted/40 border border-border/40 self-end">
+                        <span>
+                          {order.payment_status === "paid" ? (
+                            "Customer paid full bill online/MFS. Courier COD is set to ৳0."
+                          ) : (isPrepaidChecked || order.is_delivery_prepaid) ? (
+                            `Delivery fee (৳${order.delivery_prepaid_amount || order.shipping_fee || 0}) is deducted. Driver collects ৳${customCodAmount ?? Math.max(0, order.total - (order.delivery_prepaid_amount || order.shipping_fee || 0))}.`
+                          ) : (
+                            `Standard COD: Driver collects full ৳${order.total} at doorstep.`
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex justify-end gap-2 pt-1">
                     <Button
                       variant="outline"
@@ -331,6 +425,13 @@ export function CourierDispatch() {
                           courierName: selectedCourier,
                           trackingCode: trackingInput,
                           consignmentId: consignmentInput,
+                          codAmount: customCodAmount ?? (
+                            order.payment_status === "paid"
+                              ? 0
+                              : (order.is_delivery_prepaid || isPrepaidChecked)
+                              ? Math.max(0, order.total - (order.delivery_prepaid_amount || order.shipping_fee || 0))
+                              : order.total
+                          ),
                         })
                       }
                       className="h-9 px-4 rounded-xl text-xs font-bold gap-1.5"
