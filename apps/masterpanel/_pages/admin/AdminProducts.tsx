@@ -2014,7 +2014,7 @@ export default function AdminProducts() {
                           <Images className="w-4 h-4 text-primary" /> Product Photos ({editing.images?.length || 0}/8)
                         </h3>
                         <p className="text-[11px] text-muted-foreground">
-                          Upload high-resolution apparel images. Click ⭐ to set any photo as the cover thumbnail.
+                          Upload high-resolution product images. Select any photo to set it as the main cover thumbnail.
                         </p>
                       </div>
                     </div>
