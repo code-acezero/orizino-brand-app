@@ -84,6 +84,7 @@ import {
   Boxes,
   Link2,
   UploadCloud,
+  GripVertical,
   Printer,
   ArrowLeft,
   ArrowRight,
@@ -341,6 +342,50 @@ export default function AdminProducts() {
       return true;
     });
   }, [products, search, statusFilter, categoryFilter, categories]);
+
+  // Drag to rearrange state
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [reorderedProducts, setReorderedProducts] = useState<any[] | null>(null);
+
+  const displayProducts = useMemo(() => reorderedProducts ?? filtered, [reorderedProducts, filtered]);
+
+  useEffect(() => {
+    setReorderedProducts(null);
+  }, [search, statusFilter, categoryFilter]);
+
+  const handleSort = async () => {
+    if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) {
+      setDraggedIndex(null);
+      return;
+    }
+    const copy = [...displayProducts];
+    const draggedItem = copy[dragItem.current];
+    copy.splice(dragItem.current, 1);
+    copy.splice(dragOverItem.current, 0, draggedItem);
+    dragItem.current = null;
+    dragOverItem.current = null;
+    setDraggedIndex(null);
+    setReorderedProducts(copy);
+
+    qc.setQueryData(['admin-products'], (old: any[] = []) => {
+      const map = new Map(copy.map((item, idx) => [item.id, idx]));
+      return [...old].sort((a, b) => (map.get(a.id) ?? 999) - (map.get(b.id) ?? 999));
+    });
+
+    toast.success('Product order updated');
+
+    try {
+      await Promise.all(
+        copy.map((item, idx) =>
+          supabase.from('products').update({ sort_order: idx }).eq('id', item.id)
+        )
+      );
+    } catch (e) {
+      /* ignore if column absent */
+    }
+  };
 
   // Quick active toggle
   const toggleActiveMutation = useMutation({
@@ -1271,6 +1316,9 @@ export default function AdminProducts() {
             <Table>
               <TableHeader className="bg-muted/40">
                 <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-8 text-center text-muted-foreground/60" title="Drag to rearrange">
+                    <GripVertical className="w-4 h-4 mx-auto opacity-50" />
+                  </TableHead>
                   <TableHead className="w-12 text-center">
                     <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} aria-label="Select all" />
                   </TableHead>
@@ -1285,16 +1333,16 @@ export default function AdminProducts() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableLoadingRow cols={8} />
+                  <TableLoadingRow cols={9} />
                 ) : filtered.length === 0 ? (
                   <TableEmptyRow
-                    cols={8}
+                    cols={9}
                     icon={<Package className="w-6 h-6 text-muted-foreground" />}
                     message="No products found"
                     hint={search ? "Try adjusting your search query or filters." : "Click '+ Add Product' to list your first item."}
                   />
                 ) : (
-                  filtered.map((p: any) => {
+                  displayProducts.map((p: any, index: number) => {
                     const thumb = p.thumbnail || (Array.isArray(p.images) && p.images[0]);
                     const hasDiscount = p.compare_at_price && p.compare_at_price > p.price;
                     const prodVariants = variantsByProductId.get(p.id) || [];
@@ -1309,8 +1357,27 @@ export default function AdminProducts() {
                     return (
                       <TableRow
                         key={p.id}
-                        className={`transition-colors ${selected.has(p.id) ? "bg-primary/5" : "hover:bg-muted/30"}`}
+                        draggable
+                        onDragStart={() => {
+                          dragItem.current = index;
+                          setDraggedIndex(index);
+                        }}
+                        onDragEnter={() => (dragOverItem.current = index)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDragEnd={handleSort}
+                        className={`transition-colors cursor-move ${
+                          draggedIndex === index
+                            ? "opacity-30 bg-primary/10 border-dashed border-primary"
+                            : selected.has(p.id)
+                            ? "bg-primary/5"
+                            : "hover:bg-muted/30"
+                        }`}
                       >
+                        <TableCell className="w-8 text-center cursor-grab active:cursor-grabbing p-0" title="Drag to rearrange">
+                          <div className="flex items-center justify-center text-muted-foreground/40 hover:text-foreground transition-colors py-2">
+                            <GripVertical className="w-4 h-4" />
+                          </div>
+                        </TableCell>
                         <TableCell className="text-center">
                           <Checkbox
                             checked={selected.has(p.id)}
@@ -1538,7 +1605,7 @@ export default function AdminProducts() {
               </div>
             )}
 
-            {filtered.map((p: any) => {
+            {displayProducts.map((p: any, index: number) => {
               const thumb = p.thumbnail || (Array.isArray(p.images) && p.images[0]);
               const prodVariants = variantsByProductId.get(p.id) || [];
               const uniqueColors = Array.from(new Set(prodVariants.map((v: any) => v.color).filter(Boolean)));
