@@ -94,7 +94,7 @@ const ParallaxStackGallery: React.FC<ParallaxStackGalleryProps> = ({
                   opacity: absOffset > 2 ? 0 : 1 - absOffset * 0.25,
                 }}
                 transition={{ type: "spring", stiffness: 260, damping: 28 }}
-                className="absolute inset-2 sm:inset-3 rounded-2xl overflow-hidden border border-border/80 shadow-2xl bg-card/60"
+                className="absolute inset-2 sm:inset-3 rounded-2xl overflow-hidden border border-border/80 shadow-none bg-card/60"
                 style={{ transformStyle: "preserve-3d", zIndex: images.length - absOffset }}
               >
                 <img
@@ -110,7 +110,7 @@ const ParallaxStackGallery: React.FC<ParallaxStackGalleryProps> = ({
         </motion.div>
 
         {discount > 0 && (
-          <span className="absolute top-4 left-4 z-20 text-[10px] font-mono font-bold py-1 px-3 rounded-full bg-rose-500 text-white shadow-sm">
+          <span className="absolute top-4 left-4 z-20 text-[10px] font-mono font-bold py-1 px-3 rounded-full bg-rose-500 text-white shadow-none">
             -{discount}% OFF
           </span>
         )}

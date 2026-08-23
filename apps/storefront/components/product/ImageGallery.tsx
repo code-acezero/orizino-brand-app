@@ -171,7 +171,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
               ? "rounded-2xl bg-secondary/15 border border-border/40"
               : isEditorial
               ? "rounded-none aspect-[4/3] bg-card border border-border/40"
-              : "rounded-3xl aspect-[1/1] sm:aspect-[4/5] border border-border/80 shadow-xl"
+              : "rounded-3xl aspect-[1/1] sm:aspect-[4/5] border border-border/80 shadow-none"
           }`}
           style={{
             background: `radial-gradient(ellipse 120% 85% at 50% 15%, ${dominantColor.rgba(0.22)} 0%, ${dominantColor.rgba(0.08)} 50%, var(--card) 100%)`,
@@ -327,10 +327,10 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                 }}
                 className={`absolute left-1.5 sm:left-3 top-1/2 -translate-y-1/2 z-20 p-2 text-foreground/85 hover:text-primary transition-all duration-300 ${
                   arrowsVisible ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
-                } cursor-pointer bg-background/50 sm:bg-background/40 hover:bg-background/80 backdrop-blur-md rounded-full border border-border/40 shadow-sm outline-none`}
+                } cursor-pointer bg-background/50 sm:bg-background/40 hover:bg-background/80 backdrop-blur-md rounded-full border border-border/40 shadow-none outline-none`}
                 aria-label="Previous image"
               >
-                <ChevronLeft className="w-5 h-5 sm:w-7 sm:h-7 drop-shadow-sm" strokeWidth={2} />
+                <ChevronLeft className="w-5 h-5 sm:w-7 sm:h-7 drop-shadow-none" strokeWidth={2} />
               </button>
               <button
                 type="button"
@@ -341,17 +341,17 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                 }}
                 className={`absolute right-1.5 sm:right-3 top-1/2 -translate-y-1/2 z-20 p-2 text-foreground/85 hover:text-primary transition-all duration-300 ${
                   arrowsVisible ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
-                } cursor-pointer bg-background/50 sm:bg-background/40 hover:bg-background/80 backdrop-blur-md rounded-full border border-border/40 shadow-sm outline-none`}
+                } cursor-pointer bg-background/50 sm:bg-background/40 hover:bg-background/80 backdrop-blur-md rounded-full border border-border/40 shadow-none outline-none`}
                 aria-label="Next image"
               >
-                <ChevronRight className="w-5 h-5 sm:w-7 sm:h-7 drop-shadow-sm" strokeWidth={2} />
+                <ChevronRight className="w-5 h-5 sm:w-7 sm:h-7 drop-shadow-none" strokeWidth={2} />
               </button>
             </>
           )}
 
           {/* Discount Badge */}
           {discount > 0 && (
-            <span className="absolute top-3.5 left-3.5 z-10 text-[11px] font-bold py-0.5 px-2.5 rounded-full bg-rose-500 text-white font-mono tracking-tight shadow-sm">
+            <span className="absolute top-3.5 left-3.5 z-10 text-[11px] font-bold py-0.5 px-2.5 rounded-full bg-rose-500 text-white font-mono tracking-tight shadow-none">
               -{discount}%
             </span>
           )}
@@ -359,7 +359,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
           {/* Image Counter & Fullscreen Icon — Guaranteed Tiny Micro Dots */}
           <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
             {images.length > 1 && (
-              <div className="flex items-center gap-1.5 bg-background/85 backdrop-blur-md rounded-full px-2.5 py-1 border border-border/50 shadow-xs pointer-events-auto">
+              <div className="flex items-center gap-1.5 bg-background/85 backdrop-blur-md rounded-full px-2.5 py-1 border border-border/50 shadow-none pointer-events-auto">
                 <div className="flex items-center gap-1">
                   {images.map((_, i) => (
                     <button
@@ -385,7 +385,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                 </span>
               </div>
             )}
-            <span className="ml-auto bg-background/85 backdrop-blur-md rounded-full p-2 text-foreground border border-border/50 transition-opacity pointer-events-auto cursor-pointer hover:bg-background shadow-xs">
+            <span className="ml-auto bg-background/85 backdrop-blur-md rounded-full p-2 text-foreground border border-border/50 transition-opacity pointer-events-auto cursor-pointer hover:bg-background shadow-none">
               <Maximize2 className="w-3.5 h-3.5" />
             </span>
           </div>
@@ -550,7 +550,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                     className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 z-20 p-2 sm:p-3 text-white/80 hover:text-white transition-all cursor-pointer bg-transparent border-0 outline-none hover:scale-110"
                     aria-label="Previous photo"
                   >
-                    <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-lg" strokeWidth={2} />
+                    <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-none" strokeWidth={2} />
                   </button>
                   <button
                     type="button"
@@ -561,7 +561,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                     className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 z-20 p-2 sm:p-3 text-white/80 hover:text-white transition-all cursor-pointer bg-transparent border-0 outline-none hover:scale-110"
                     aria-label="Next photo"
                   >
-                    <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-lg" strokeWidth={2} />
+                    <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-none" strokeWidth={2} />
                   </button>
                 </>
               )}

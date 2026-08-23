@@ -243,7 +243,7 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
                     setActiveIndex(idx);
                   }
                 }}
-                className={`cursor-pointer rounded-2xl overflow-hidden shadow-2xl transition-all ${
+                className={`cursor-pointer rounded-2xl overflow-hidden shadow-none transition-all ${
                   isCenter
                     ? "border border-border/80 ring-1 ring-primary/40"
                     : "border border-border/40 hover:border-border"
@@ -270,7 +270,7 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
         {/* ── 3. HUD CONTROLS & FLOATING BADGES ── */}
         {/* Discount Badge */}
         {discount > 0 && (
-          <span className="absolute top-4 left-4 z-30 text-[10px] font-mono font-bold py-1 px-3 rounded-full bg-rose-500 text-white tracking-tight shadow-sm">
+          <span className="absolute top-4 left-4 z-30 text-[10px] font-mono font-bold py-1 px-3 rounded-full bg-rose-500 text-white tracking-tight shadow-none">
             -{discount}% OFF
           </span>
         )}
@@ -283,7 +283,7 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
             pauseAutoPlay();
             navigate(-1);
           }}
-          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background text-foreground flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border border-border/70 shadow-md backdrop-blur-md"
+          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background text-foreground flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border border-border/70 shadow-none backdrop-blur-md"
           aria-label="Previous image"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -297,14 +297,14 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
             pauseAutoPlay();
             navigate(1);
           }}
-          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background text-foreground flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border border-border/70 shadow-md backdrop-blur-md"
+          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background text-foreground flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border border-border/70 shadow-none backdrop-blur-md"
           aria-label="Next image"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
 
         {/* Bottom Pill Indicators & Counter */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-background/85 backdrop-blur-md px-3 py-1 rounded-full border border-border/60 shadow-xs">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-background/85 backdrop-blur-md px-3 py-1 rounded-full border border-border/60 shadow-none">
           <div className="flex items-center gap-1">
             {images.map((_, i) => (
               <button
@@ -336,7 +336,7 @@ const InfinityGallery: React.FC<InfinityGalleryProps> = ({
         {/* Fullscreen Lightbox Trigger Button */}
         <button
           type="button"
-          className="absolute top-4 right-4 z-30 bg-background/80 hover:bg-background backdrop-blur-md rounded-full p-2 text-foreground cursor-pointer transition-all hover:scale-105 border border-border/60 shadow-xs"
+          className="absolute top-4 right-4 z-30 bg-background/80 hover:bg-background backdrop-blur-md rounded-full p-2 text-foreground cursor-pointer transition-all hover:scale-105 border border-border/60 shadow-none"
           onClick={() => setLightboxOpen(true)}
           title="Fullscreen Zoom"
         >

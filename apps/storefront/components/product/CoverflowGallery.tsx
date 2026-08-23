@@ -129,7 +129,7 @@ const CoverflowGallery: React.FC<CoverflowGalleryProps> = ({
                 key={idx}
                 animate={style}
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className={`absolute cursor-pointer rounded-2xl overflow-hidden border shadow-2xl transition-colors ${
+                className={`absolute cursor-pointer rounded-2xl overflow-hidden border shadow-none transition-colors ${
                   isCenter ? "border-primary ring-1 ring-primary/40" : "border-border/60"
                 }`}
                 style={{
@@ -167,7 +167,7 @@ const CoverflowGallery: React.FC<CoverflowGalleryProps> = ({
         </div>
 
         {discount > 0 && (
-          <span className="absolute top-4 left-4 z-20 text-[10px] font-mono font-bold py-1 px-3 rounded-full bg-rose-500 text-white shadow-sm">
+          <span className="absolute top-4 left-4 z-20 text-[10px] font-mono font-bold py-1 px-3 rounded-full bg-rose-500 text-white shadow-none">
             -{discount}% OFF
           </span>
         )}

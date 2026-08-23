@@ -42,7 +42,7 @@ export default function EditorialSplitGallery({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full">
         {/* Primary View */}
         <div
-          className="relative h-[420px] sm:h-[540px] md:h-[580px] rounded-3xl overflow-hidden border border-border/80 group cursor-pointer shadow-lg transition-all duration-700"
+          className="relative h-[420px] sm:h-[540px] md:h-[580px] rounded-3xl overflow-hidden border border-border/80 group cursor-pointer shadow-none transition-all duration-700"
           style={{
             background: `radial-gradient(ellipse 120% 85% at 50% 15%, ${primaryColor.rgba(0.22)} 0%, ${primaryColor.rgba(0.08)} 50%, var(--card) 100%)`,
           }}
@@ -78,7 +78,7 @@ export default function EditorialSplitGallery({
           {/* Badges */}
           <div className="absolute top-3.5 left-3.5 flex items-center gap-2 z-20">
             {discount > 0 && (
-              <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1 shadow-sm">
+              <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1 shadow-none">
                 -{discount}%
               </span>
             )}
@@ -86,20 +86,20 @@ export default function EditorialSplitGallery({
 
           <button
             type="button"
-            className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-105 z-20 backdrop-blur-md shadow-sm"
+            className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-105 z-20 backdrop-blur-md shadow-none"
             title="Inspect fullscreen"
           >
             <Maximize2 className="w-4 h-4" />
           </button>
 
-          <div className="absolute bottom-3.5 left-3.5 bg-background/85 backdrop-blur-md rounded-full px-3.5 py-1 text-[9.5px] font-mono text-foreground border border-border/60 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity z-20 shadow-xs">
+          <div className="absolute bottom-3.5 left-3.5 bg-background/85 backdrop-blur-md rounded-full px-3.5 py-1 text-[9.5px] font-mono text-foreground border border-border/60 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity z-20 shadow-none">
             <Eye className="w-3.5 h-3.5 text-primary" /> Silhouette View
           </div>
         </div>
 
         {/* Secondary Detail View */}
         <div
-          className="relative h-[420px] sm:h-[540px] md:h-[580px] rounded-3xl overflow-hidden border border-border/80 group cursor-pointer hidden sm:block shadow-lg transition-all duration-700"
+          className="relative h-[420px] sm:h-[540px] md:h-[580px] rounded-3xl overflow-hidden border border-border/80 group cursor-pointer hidden sm:block shadow-none transition-all duration-700"
           style={{
             background: `radial-gradient(ellipse 120% 85% at 50% 15%, ${secondaryColor.rgba(0.22)} 0%, ${secondaryColor.rgba(0.08)} 50%, var(--card) 100%)`,
           }}
@@ -134,13 +134,13 @@ export default function EditorialSplitGallery({
 
           <button
             type="button"
-            className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-105 z-20 backdrop-blur-md shadow-sm"
+            className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-105 z-20 backdrop-blur-md shadow-none"
             title="Inspect fullscreen"
           >
             <Maximize2 className="w-4 h-4" />
           </button>
 
-          <div className="absolute bottom-3.5 left-3.5 bg-background/85 backdrop-blur-md rounded-full px-3.5 py-1 text-[9.5px] font-mono text-foreground border border-border/60 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity z-20 shadow-xs">
+          <div className="absolute bottom-3.5 left-3.5 bg-background/85 backdrop-blur-md rounded-full px-3.5 py-1 text-[9.5px] font-mono text-foreground border border-border/60 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity z-20 shadow-none">
             <Eye className="w-3.5 h-3.5 text-primary" /> Detail &amp; Craft
           </div>
         </div>

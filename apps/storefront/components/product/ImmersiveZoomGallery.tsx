@@ -77,7 +77,7 @@ export default function ImmersiveZoomGallery({
         {/* Floating Interactive Loupe Reticle */}
         {isHovered && (
           <motion.div
-            className="absolute w-28 h-28 rounded-full border-2 border-primary/80 shadow-2xl pointer-events-none -translate-x-1/2 -translate-y-1/2 overflow-hidden backdrop-brightness-110"
+            className="absolute w-28 h-28 rounded-full border-2 border-primary/80 shadow-none pointer-events-none -translate-x-1/2 -translate-y-1/2 overflow-hidden backdrop-brightness-110"
             style={{
               left: `${mousePos.x}%`,
               top: `${mousePos.y}%`,

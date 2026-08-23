@@ -141,12 +141,12 @@ export default function StudioTurntableGallery({
       {/* ── TOP TELEMETRY HUD ── */}
       <div className="w-full flex items-center justify-between z-20">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-background/80 text-foreground backdrop-blur-md uppercase tracking-wider border border-border/60 flex items-center gap-1.5 shadow-xs">
+          <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-background/80 text-foreground backdrop-blur-md uppercase tracking-wider border border-border/60 flex items-center gap-1.5 shadow-none">
             <Compass className="w-3.5 h-3.5 text-primary animate-spin" style={{ animationDuration: "12s" }} />
             {angleLabel}
           </span>
           {discount > 0 && (
-            <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-rose-500 text-white font-bold shadow-xs">
+            <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-rose-500 text-white font-bold shadow-none">
               -{discount}%
             </span>
           )}
@@ -157,7 +157,7 @@ export default function StudioTurntableGallery({
           <button
             type="button"
             onClick={() => setIsAutoSpinning(!isAutoSpinning)}
-            className={`px-3 py-1 rounded-full text-[10px] font-mono border backdrop-blur-md flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+            className={`px-3 py-1 rounded-full text-[10px] font-mono border backdrop-blur-md flex items-center gap-1.5 transition-all cursor-pointer shadow-none ${
               isAutoSpinning
                 ? "bg-primary text-primary-foreground border-primary"
                 : "bg-background/80 hover:bg-background text-foreground border-border/60"
@@ -171,7 +171,7 @@ export default function StudioTurntableGallery({
           <button
             type="button"
             onClick={() => setLightboxOpen(true)}
-            className="w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center transition-all hover:scale-105 backdrop-blur-md cursor-pointer shadow-xs"
+            className="w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center transition-all hover:scale-105 backdrop-blur-md cursor-pointer shadow-none"
             title="Inspect Fullscreen"
           >
             <Maximize2 className="w-4 h-4" />
@@ -191,7 +191,7 @@ export default function StudioTurntableGallery({
         <div className="absolute bottom-1 w-72 sm:w-96 h-12 rounded-[100%] bg-radial from-primary/30 via-background/80 to-transparent blur-md pointer-events-none" />
 
         {/* Center Garment View */}
-        <div className="relative w-[19rem] sm:w-[21.5rem] md:w-[23rem] h-[26.5rem] sm:h-[29.5rem] max-h-[92%] rounded-2xl overflow-hidden border border-border/80 ring-1 ring-primary/40 shadow-2xl bg-card/40">
+        <div className="relative w-[19rem] sm:w-[21.5rem] md:w-[23rem] h-[26.5rem] sm:h-[29.5rem] max-h-[92%] rounded-2xl overflow-hidden border border-border/80 ring-1 ring-primary/40 shadow-none bg-card/40">
           <AnimatePresence mode="wait">
             <motion.img
               key={images[activeIdx]}
@@ -211,7 +211,7 @@ export default function StudioTurntableGallery({
         </div>
 
         {/* Drag Hint overlay on first view */}
-        <div className="absolute bottom-3 bg-background/85 backdrop-blur-md rounded-full px-3.5 py-1 text-[9.5px] font-mono text-foreground border border-border/60 flex items-center gap-1.5 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity shadow-sm">
+        <div className="absolute bottom-3 bg-background/85 backdrop-blur-md rounded-full px-3.5 py-1 text-[9.5px] font-mono text-foreground border border-border/60 flex items-center gap-1.5 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity shadow-none">
           <RotateCw className="w-3 h-3 text-primary animate-spin" style={{ animationDuration: "8s" }} />
           DRAG TO ROTATE 360°
         </div>
@@ -226,7 +226,7 @@ export default function StudioTurntableGallery({
                 setIsAutoSpinning(false);
                 setActiveIdx((prev) => (prev - 1 + total) % total);
               }}
-              className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background border border-border/70 text-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 shadow-md backdrop-blur-md"
+              className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background border border-border/70 text-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 shadow-none backdrop-blur-md"
               aria-label="Previous frame"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -238,7 +238,7 @@ export default function StudioTurntableGallery({
                 setIsAutoSpinning(false);
                 setActiveIdx((prev) => (prev + 1) % total);
               }}
-              className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background border border-border/70 text-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 shadow-md backdrop-blur-md"
+              className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-background/80 hover:bg-background border border-border/70 text-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 shadow-none backdrop-blur-md"
               aria-label="Next frame"
             >
               <ChevronRight className="w-5 h-5" />
@@ -276,7 +276,7 @@ export default function StudioTurntableGallery({
                   }}
                   className={`relative w-12 h-10 sm:w-14 sm:h-11 rounded-lg overflow-hidden border cursor-pointer transition-all shrink-0 flex flex-col items-center justify-end p-0.5 ${
                     isSelected
-                      ? "border-primary ring-1 ring-primary/40 opacity-100 scale-105 shadow-xs"
+                      ? "border-primary ring-1 ring-primary/40 opacity-100 scale-105 shadow-none"
                       : "border-border/60 opacity-40 hover:opacity-80"
                   }`}
                 >
@@ -289,7 +289,7 @@ export default function StudioTurntableGallery({
             })}
           </div>
 
-          <span className="text-[9.5px] font-mono text-foreground/80 bg-background/80 backdrop-blur-md px-3 py-1 rounded-full border border-border/60 shrink-0 shadow-xs">
+          <span className="text-[9.5px] font-mono text-foreground/80 bg-background/80 backdrop-blur-md px-3 py-1 rounded-full border border-border/60 shrink-0 shadow-none">
             {activeIdx + 1} / {total}
           </span>
         </div>

@@ -50,7 +50,7 @@ const GridMosaicGallery: React.FC<GridMosaicGalleryProps> = ({
           isMobile
             ? "grid-rows-[repeat(3,minmax(130px,1fr))]"
             : "grid-rows-[repeat(3,minmax(160px,200px))]"
-        } rounded-3xl overflow-hidden border border-border/80 p-2.5 shadow-lg transition-all duration-700`}
+        } rounded-3xl overflow-hidden border border-border/80 p-2.5 shadow-none transition-all duration-700`}
         style={{
           background: `radial-gradient(ellipse 120% 85% at 50% 15%, ${dominantColor.rgba(0.22)} 0%, ${dominantColor.rgba(0.08)} 50%, var(--card) 100%)`,
         }}
@@ -58,7 +58,7 @@ const GridMosaicGallery: React.FC<GridMosaicGalleryProps> = ({
         {displayed.map((img, idx) => (
           <motion.div
             key={idx}
-            className={`relative overflow-hidden rounded-2xl cursor-pointer group border border-border/50 shadow-md ${getSpan(
+            className={`relative overflow-hidden rounded-2xl cursor-pointer group border border-border/50 shadow-none ${getSpan(
               idx,
               images.length
             )}`}
@@ -75,7 +75,7 @@ const GridMosaicGallery: React.FC<GridMosaicGalleryProps> = ({
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
             
             {idx === 0 && discount > 0 && (
-              <span className="absolute top-3 left-3 z-10 text-[10px] font-mono font-bold py-1 px-3 rounded-full bg-rose-500 text-white shadow-sm">
+              <span className="absolute top-3 left-3 z-10 text-[10px] font-mono font-bold py-1 px-3 rounded-full bg-rose-500 text-white shadow-none">
                 -{discount}% OFF
               </span>
             )}

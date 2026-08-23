@@ -168,7 +168,7 @@ export default function HorizonCarouselGallery({
       <div className="w-full flex items-center justify-between z-20">
         <div>
           {discount > 0 && (
-            <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1 shadow-sm">
+            <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-rose-500 text-white font-bold flex items-center gap-1 shadow-none">
               <Flame className="w-3 h-3" /> -{discount}% OFF
             </span>
           )}
@@ -177,7 +177,7 @@ export default function HorizonCarouselGallery({
         <button
           type="button"
           onClick={() => setLightboxOpen(true)}
-          className="w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center transition-all hover:scale-105 backdrop-blur-md cursor-pointer shadow-sm"
+          className="w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center transition-all hover:scale-105 backdrop-blur-md cursor-pointer shadow-none"
           title="Inspect Fullscreen"
         >
           <Maximize2 className="w-4 h-4" />
@@ -230,7 +230,7 @@ export default function HorizonCarouselGallery({
                     setActiveIdx(i);
                   }
                 }}
-                className={`cursor-pointer rounded-2xl overflow-hidden shadow-2xl transition-all ${
+                className={`cursor-pointer rounded-2xl overflow-hidden shadow-none transition-all ${
                   isCenter
                     ? "border border-border/80 ring-1 ring-primary/40 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_30px_hsl(var(--primary)/0.2)]"
                     : "border border-border/40 hover:border-border"
@@ -264,7 +264,7 @@ export default function HorizonCarouselGallery({
               className="absolute left-1 sm:left-3 top-1/2 -translate-y-1/2 z-30 p-2 text-foreground/75 hover:text-primary focus:text-primary transition-opacity duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer bg-transparent border-0 outline-none hover:scale-105"
               aria-label="Previous image"
             >
-              <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-md" strokeWidth={1.75} />
+              <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-none" strokeWidth={1.75} />
             </button>
             <button
               type="button"
@@ -275,7 +275,7 @@ export default function HorizonCarouselGallery({
               className="absolute right-1 sm:right-3 top-1/2 -translate-y-1/2 z-30 p-2 text-foreground/75 hover:text-primary focus:text-primary transition-opacity duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer bg-transparent border-0 outline-none hover:scale-105"
               aria-label="Next image"
             >
-              <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-md" strokeWidth={1.75} />
+              <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-none" strokeWidth={1.75} />
             </button>
           </>
         )}
@@ -283,7 +283,7 @@ export default function HorizonCarouselGallery({
 
       {/* ── FOOTER TELEMETRY & PROGRESS — Sleek Micro Dots ── */}
       <div className="z-20 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-1 bg-background/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-border/50 shadow-xs">
+        <div className="flex items-center gap-1 bg-background/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-border/50 shadow-none">
           {images.map((_, i) => (
             <button
               key={i}
@@ -301,7 +301,7 @@ export default function HorizonCarouselGallery({
           ))}
         </div>
 
-        <span className="text-[10px] font-mono text-foreground/80 bg-background/80 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-border/60 shadow-xs">
+        <span className="text-[10px] font-mono text-foreground/80 bg-background/80 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-border/60 shadow-none">
           {activeIdx + 1} / {total}
         </span>
       </div>

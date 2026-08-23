@@ -46,7 +46,7 @@ const FilmstripGallery: React.FC<FilmstripGalleryProps> = ({
       <div className="space-y-3">
         {/* Main 35mm Film Frame */}
         <div
-          className="relative overflow-hidden rounded-3xl border border-border/80 cursor-pointer group shadow-xl transition-all duration-700"
+          className="relative overflow-hidden rounded-3xl border border-border/80 cursor-pointer group shadow-none transition-all duration-700"
           style={{
             aspectRatio: isMobile ? "4/5" : "1/1",
             background: `radial-gradient(ellipse 120% 85% at 50% 15%, ${dominantColor.rgba(0.22)} 0%, ${dominantColor.rgba(0.08)} 50%, var(--card) 100%)`,
@@ -96,7 +96,7 @@ const FilmstripGallery: React.FC<FilmstripGalleryProps> = ({
           </AnimatePresence>
 
           {discount > 0 && (
-            <span className="absolute top-4 left-9 z-20 text-[10px] font-mono font-bold py-1 px-3 rounded-full bg-rose-500 text-white shadow-sm">
+            <span className="absolute top-4 left-9 z-20 text-[10px] font-mono font-bold py-1 px-3 rounded-full bg-rose-500 text-white shadow-none">
               -{discount}% OFF
             </span>
           )}
@@ -108,7 +108,7 @@ const FilmstripGallery: React.FC<FilmstripGalleryProps> = ({
                   e.stopPropagation();
                   go(-1);
                 }}
-                className="absolute left-8 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer shadow-md backdrop-blur-md"
+                className="absolute left-8 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer shadow-none backdrop-blur-md"
                 aria-label="Previous frame"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -118,7 +118,7 @@ const FilmstripGallery: React.FC<FilmstripGalleryProps> = ({
                   e.stopPropagation();
                   go(1);
                 }}
-                className="absolute right-8 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer shadow-md backdrop-blur-md"
+                className="absolute right-8 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-background/80 hover:bg-background border border-border/60 text-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer shadow-none backdrop-blur-md"
                 aria-label="Next frame"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -127,7 +127,7 @@ const FilmstripGallery: React.FC<FilmstripGalleryProps> = ({
           )}
 
           {/* Film Frame Counter */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 bg-background/85 backdrop-blur-md rounded-full px-3.5 py-0.5 text-[10px] text-foreground font-mono font-bold border border-border/60 shadow-xs">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 bg-background/85 backdrop-blur-md rounded-full px-3.5 py-0.5 text-[10px] text-foreground font-mono font-bold border border-border/60 shadow-none">
             FRAME {String(active + 1).padStart(2, "0")} / {String(images.length).padStart(2, "0")}
           </div>
 
