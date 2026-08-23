@@ -1316,11 +1316,11 @@ export default function AdminProducts() {
             <Table>
               <TableHeader className="bg-muted/40">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-8 text-center text-muted-foreground/60" title="Drag to rearrange">
-                    <GripVertical className="w-4 h-4 mx-auto opacity-50" />
-                  </TableHead>
-                  <TableHead className="w-12 text-center">
-                    <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} aria-label="Select all" />
+                  <TableHead className="w-16 px-3 text-center">
+                    <div className="flex items-center justify-center gap-1.5" title="Select / Drag to rearrange">
+                      <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} aria-label="Select all" />
+                      <GripVertical className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0 opacity-50" />
+                    </div>
                   </TableHead>
                   <TableHead className="w-[340px]">Product</TableHead>
                   <TableHead className="w-[140px]">SKU</TableHead>
@@ -1333,10 +1333,10 @@ export default function AdminProducts() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableLoadingRow cols={9} />
+                  <TableLoadingRow cols={8} />
                 ) : filtered.length === 0 ? (
                   <TableEmptyRow
-                    cols={9}
+                    cols={8}
                     icon={<Package className="w-6 h-6 text-muted-foreground" />}
                     message="No products found"
                     hint={search ? "Try adjusting your search query or filters." : "Click '+ Add Product' to list your first item."}
@@ -1373,17 +1373,21 @@ export default function AdminProducts() {
                             : "hover:bg-muted/30"
                         }`}
                       >
-                        <TableCell className="w-8 text-center cursor-grab active:cursor-grabbing p-0" title="Drag to rearrange">
-                          <div className="flex items-center justify-center text-muted-foreground/40 hover:text-foreground transition-colors py-2">
-                            <GripVertical className="w-4 h-4" />
+                        <TableCell className="w-16 px-3 py-2 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <Checkbox
+                              checked={selected.has(p.id)}
+                              onCheckedChange={() => toggleSelect(p.id)}
+                              aria-label={`Select ${p.name}`}
+                              className="shrink-0"
+                            />
+                            <div
+                              className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-foreground transition-colors p-0.5"
+                              title="Drag to rearrange"
+                            >
+                              <GripVertical className="w-3.5 h-3.5 shrink-0" />
+                            </div>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Checkbox
-                            checked={selected.has(p.id)}
-                            onCheckedChange={() => toggleSelect(p.id)}
-                            aria-label={`Select ${p.name}`}
-                          />
                         </TableCell>
 
                         {/* Product info with high-res thumbnail */}
@@ -1614,19 +1618,37 @@ export default function AdminProducts() {
               return (
                 <div
                   key={p.id}
-                  className={`rounded-xl border bg-card p-2.5 transition-all shadow-xs ${
-                    isSelected ? "border-primary/60 bg-primary/5" : "border-border/70 hover:border-border"
+                  draggable
+                  onDragStart={() => {
+                    dragItem.current = index;
+                    setDraggedIndex(index);
+                  }}
+                  onDragEnter={() => (dragOverItem.current = index)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragEnd={handleSort}
+                  className={`rounded-xl border bg-card p-2.5 transition-all shadow-xs cursor-move ${
+                    draggedIndex === index
+                      ? "opacity-30 bg-primary/10 border-dashed border-primary"
+                      : isSelected
+                      ? "border-primary/60 bg-primary/5"
+                      : "border-border/70 hover:border-border"
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    {/* Checkbox */}
-                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {/* Checkbox & Drag Point */}
+                    <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={() => toggleSelect(p.id)}
                         aria-label={`Select ${p.name}`}
                         className="h-4 w-4 rounded-md"
                       />
+                      <div
+                        className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-foreground transition-colors p-1 touch-none"
+                        title="Drag to rearrange"
+                      >
+                        <GripVertical className="w-3.5 h-3.5" />
+                      </div>
                     </div>
 
                     {/* Thumbnail */}
