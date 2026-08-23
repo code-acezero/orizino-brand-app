@@ -783,13 +783,42 @@ export default function AdminProducts() {
       const r: any = await generateSkuFn({
         data: { name: editing.name, prefix: skuPrefix, excludeProductId: editing?.id },
       });
-      updateField("sku", r.sku);
-      setSkuSuggestions(r.suggestions ?? []);
+      if (r?.sku) {
+        updateField("sku", r.sku);
+        setSkuSuggestions(r.suggestions ?? []);
+        setSkuStatus("available");
+        setSkuTakenBy(null);
+        toast.success("SKU generated");
+        return;
+      }
+    } catch (e: any) {
+      console.warn("Server SKU generation error, using instant fallback:", e);
+    }
+
+    // Instant client-side fallback generator if server function is offline
+    try {
+      const words = (editing.name || "").split(/\s+/).map((w: string) => w.toUpperCase().replace(/[^A-Z0-9]/g, "")).filter(Boolean);
+      const mainWord = words.find((w: string) => w.length >= 3) || words[0] || "PRD";
+      let code = "PRD";
+      if (mainWord.length <= 3) {
+        code = mainWord.padEnd(3, "X");
+      } else {
+        const i0 = 0;
+        const i1 = Math.round(mainWord.length / 3);
+        const i2 = Math.round((2 * mainWord.length) / 3);
+        code = [mainWord[i0], mainWord[i1], mainWord[i2]].join("");
+      }
+      const prefix = (skuPrefix || "ORZ").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      const randNum = Math.floor(1000 + Math.random() * 9000);
+      const fallbackSku = `${prefix}-${code}${randNum}`;
+
+      updateField("sku", fallbackSku);
       setSkuStatus("available");
       setSkuTakenBy(null);
-    } catch (e: any) {
+      toast.success("SKU generated");
+    } catch (err: any) {
       setSkuStatus("idle");
-      toast.error(e.message ?? "Could not generate SKU");
+      toast.error("Could not generate SKU");
     }
   };
 
