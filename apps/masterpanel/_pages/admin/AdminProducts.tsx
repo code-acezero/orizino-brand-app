@@ -1912,10 +1912,10 @@ export default function AdminProducts() {
                           value={productType}
                           onValueChange={(v) => updateSpec("product_type", v)}
                         >
-                          <SelectTrigger className="rounded-xl h-9 mt-1 text-xs">
+                          <SelectTrigger className="rounded-xl h-10 mt-1 text-xs font-medium bg-background/80 border-border/80 shadow-xs focus:ring-1 focus:ring-primary/40 px-3.5">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="rounded-xl">
+                          <SelectContent className="rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground shadow-2xl backdrop-blur-xl z-[9999] p-1">
                             {PRODUCT_TYPES.map((t) => (
                               <SelectItem key={t.value} value={t.value}>
                                 {t.label}
@@ -1931,10 +1931,10 @@ export default function AdminProducts() {
                           value={effectiveParentId ?? "none"}
                           onValueChange={(v) => updateField("category_id", v === "none" ? null : v)}
                         >
-                          <SelectTrigger className="rounded-xl h-9 mt-1 text-xs">
+                          <SelectTrigger className="rounded-xl h-10 mt-1 text-xs font-medium bg-background/80 border-border/80 shadow-xs focus:ring-1 focus:ring-primary/40 px-3.5">
                             <SelectValue placeholder="Select Category" />
                           </SelectTrigger>
-                          <SelectContent className="rounded-xl">
+                          <SelectContent className="rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground shadow-2xl backdrop-blur-xl z-[9999] p-1">
                             <SelectItem value="none">Uncategorized</SelectItem>
                             {parentCategories.map((c) => (
                               <SelectItem key={c.id} value={c.id}>
@@ -1952,10 +1952,10 @@ export default function AdminProducts() {
                           onValueChange={(v) => updateField("category_id", v === "none" ? effectiveParentId : v)}
                           disabled={!effectiveParentId || effectiveParentId === "none"}
                         >
-                          <SelectTrigger className="rounded-xl h-9 mt-1 text-xs">
+                          <SelectTrigger className="rounded-xl h-10 mt-1 text-xs font-medium bg-background/80 border-border/80 shadow-xs focus:ring-1 focus:ring-primary/40 px-3.5">
                             <SelectValue placeholder="Select Subcategory" />
                           </SelectTrigger>
-                          <SelectContent className="rounded-xl">
+                          <SelectContent className="rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground shadow-2xl backdrop-blur-xl z-[9999] p-1">
                             <SelectItem value="none">None</SelectItem>
                             {effectiveParentId &&
                               effectiveParentId !== "none" &&
@@ -2341,10 +2341,10 @@ export default function AdminProducts() {
                           value={editing.sticker_preset_id ?? "__default__"}
                           onValueChange={(v) => updateField("sticker_preset_id", v === "__default__" ? null : v)}
                         >
-                          <SelectTrigger className="rounded-xl h-10 mt-1 text-xs">
+                          <SelectTrigger className="rounded-xl h-10 mt-1 text-xs font-medium bg-background/80 border-border/80 shadow-xs focus:ring-1 focus:ring-primary/40 px-3.5">
                             <SelectValue placeholder="Default active preset" />
                           </SelectTrigger>
-                          <SelectContent className="rounded-xl">
+                          <SelectContent className="rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground shadow-2xl backdrop-blur-xl z-[9999] p-1">
                             <SelectItem value="__default__">Default active preset</SelectItem>
                             {stickerPresets.map((p: any) => (
                               <SelectItem key={p.id} value={p.id}>
