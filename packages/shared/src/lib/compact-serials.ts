@@ -59,12 +59,13 @@ export function formatCompactSerialCode(prefix: string, sequenceNumber: number):
  */
 export function getNextCompactSequence(existingCodes: string[], prefix: string): number {
   let max = 0;
-  const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\]/g, "\$&");
-  const re = new RegExp("^" + escapedPrefix + "-(\\d+)$", "i");
+  const cleanPrefix = (prefix || "").toUpperCase();
+  const searchTag = `${cleanPrefix}-`;
   for (const c of existingCodes) {
-    const m = (c || "").trim().match(re);
-    if (m) {
-      const n = parseInt(m[1], 10);
+    const trimmed = (c || "").trim().toUpperCase();
+    if (trimmed.startsWith(searchTag)) {
+      const numPart = trimmed.slice(searchTag.length);
+      const n = parseInt(numPart, 10);
       if (!isNaN(n)) max = Math.max(max, n);
     }
   }
