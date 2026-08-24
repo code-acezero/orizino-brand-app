@@ -247,47 +247,58 @@ const CartPage: React.FC = () => {
   const total = Math.max(0, subtotal - couponDiscount + giftWrapFee);
 
   return (
-    <div className="min-h-screen pb-20 lg:pb-0">
+    <div className="min-h-screen pb-24 lg:pb-12">
       <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-10 space-y-6 sm:space-y-8">
         {/* ── Header Section ── */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border/40 pb-6">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-bold font-display text-foreground tracking-tight">
-              {t("nav.cart") || "Shopping Cart"}
-            </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1 flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4 text-primary shrink-0" />
-              <span>{itemCount} {itemCount === 1 ? "item" : "items"} in your cart</span>
-            </p>
+        <div className="border-b border-border/40 pb-6 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-display text-foreground tracking-tight">
+                  {t("nav.cart") || "Shopping Cart"}
+                </h1>
+                <Badge variant="secondary" className="font-mono text-xs px-2 py-0.5 rounded-full">
+                  {itemCount} {itemCount === 1 ? "item" : "items"}
+                </Badge>
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                <ShoppingBag className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span>{itemCount > 0 ? `${itemCount} items ready for checkout.` : "Your bag is currently empty."}</span>
+              </p>
+            </div>
+            {itemCount > 0 && (
+              <Link
+                to="/inventory"
+                className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5 shrink-0 hover:gap-2"
+              >
+                {t("cart.continueShopping") || "Continue Shopping"} <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
           </div>
-          <Link
-            to="/inventory"
-            className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5 shrink-0 hover:gap-2"
-          >
-            {t("cart.continueShopping") || "Continue Shopping"} <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
         </div>
-
 
         {isLoading ? (
           <div className="space-y-4">{[1, 2, 3].map((i) => <div key={i} className="rounded-2xl border border-border/50 bg-card/60 p-6 h-32 animate-pulse" />)}</div>
         ) : !cartItems || cartItems.length === 0 ? (
-          <div className="text-center py-16 px-6 sm:py-24 sm:px-10 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md w-full shadow-sm space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3 text-primary shadow-xs">
+          <div className="text-center py-24 px-4 rounded-3xl border border-border/40 bg-card/40 max-w-lg mx-auto space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto">
               <ShoppingBag className="w-8 h-8 stroke-[1.75]" />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold font-display text-foreground tracking-tight">
-              {t("cart.empty") || "Your cart is empty"}
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-              Explore our handcrafted streetwear collections and find pieces crafted just for you.
-            </p>
-            <div className="pt-2">
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold font-display text-foreground">
+                {t("cart.empty") || "Your cart is empty"}
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mx-auto">
+                Explore our handcrafted streetwear collections and find pieces crafted just for you.
+              </p>
+            </div>
+            <div className="pt-3">
               <Link
                 to="/inventory"
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-primary text-primary-foreground font-bold text-xs sm:text-sm shadow-md hover:bg-primary/90 transition-all hover:gap-3"
+                className="rounded-full bg-primary text-primary-foreground font-bold px-8 py-3.5 text-sm inline-flex items-center gap-2 hover:opacity-95 transition-opacity"
               >
-                {t("cart.continueShopping") || "Continue Shopping"} <ArrowRight className="w-4 h-4" />
+                <span>{t("cart.continueShopping") || "Continue Shopping"}</span>
+                <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -607,24 +618,46 @@ const GuestCartView: React.FC<{ formatPrice: (n: number) => string; t: (k: strin
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen pb-20 lg:pb-0">
-        <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-10">
-          <div className="text-center py-16 px-6 sm:py-24 sm:px-10 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md w-full shadow-sm space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3 text-primary shadow-xs">
+      <div className="min-h-screen pb-24 lg:pb-12">
+        <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-10 space-y-6 sm:space-y-8">
+          <div className="border-b border-border/40 pb-6 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-display text-foreground tracking-tight">
+                    {t("nav.cart") || "Shopping Cart"}
+                  </h1>
+                  <Badge variant="secondary" className="font-mono text-xs px-2 py-0.5 rounded-full">
+                    0 items
+                  </Badge>
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                  <ShoppingBag className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>Your bag is currently empty.</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center py-24 px-4 rounded-3xl border border-border/40 bg-card/40 max-w-lg mx-auto space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto">
               <ShoppingBag className="w-8 h-8 stroke-[1.75]" />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold font-display text-foreground tracking-tight">
-              {t("cart.empty") || "Your cart is empty"}
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-              Explore our handcrafted streetwear collections and find pieces crafted just for you.
-            </p>
-            <div className="pt-2">
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold font-display text-foreground">
+                {t("cart.empty") || "Your cart is empty"}
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mx-auto">
+                Explore our handcrafted streetwear collections and find pieces crafted just for you.
+              </p>
+            </div>
+            <div className="pt-3">
               <Link
                 to="/inventory"
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-primary text-primary-foreground font-bold text-xs sm:text-sm shadow-md hover:bg-primary/90 transition-all hover:gap-3"
+                className="rounded-full bg-primary text-primary-foreground font-bold px-8 py-3.5 text-sm inline-flex items-center gap-2 hover:opacity-95 transition-opacity"
               >
-                {t("cart.continueShopping") || "Continue Shopping"} <ArrowRight className="w-4 h-4" />
+                <span>{t("cart.continueShopping") || "Continue Shopping"}</span>
+                <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
