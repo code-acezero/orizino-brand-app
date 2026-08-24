@@ -320,7 +320,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ onSearchClick, onAuthClick, produ
               <div className="grid grid-cols-3 gap-2">
                 {parentCategories.map((cat) => (
                   <Link key={cat.id} to={`/categories/${cat.slug}`} onClick={() => setCatOpen(false)}
-                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors border border-border/30">
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-2xl sm:rounded-xl bg-secondary/50 hover:bg-secondary transition-colors border border-border/30">
                     <CategoryMonochromeIcon
                       icon={cat.icon}
                       iconUrl={cat.icon_url}
@@ -331,7 +331,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ onSearchClick, onAuthClick, produ
                 ))}
               </div>
               <Link to="/inventory" onClick={() => setCatOpen(false)}
-                className="block mt-3 text-center text-sm text-primary font-medium py-2 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors">
+                className="block mt-3 text-center text-sm text-primary font-medium py-2 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors">
                 View All Products
               </Link>
             </div>
@@ -421,7 +421,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ onSearchClick, onAuthClick, produ
                   key={item.label}
                   ref={el => { itemRefs.current[index] = el; }}
                   onClick={() => handleClick(item, index)}
-                  className="flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-xl bg-transparent border-none cursor-pointer relative"
+                  className="flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-full bg-transparent border-none cursor-pointer relative"
                   style={{ WebkitTapHighlightColor: "transparent" }}
                 >
                   {/* Top notch bar indicator - centered via layoutId */}

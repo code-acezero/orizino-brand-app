@@ -352,8 +352,8 @@ export function AdminSidebar() {
             } : undefined}
             className={
               (isParentActive
-                ? "h-9 text-[13px] bg-primary/15 text-foreground dark:text-[#FAF6EE] border border-primary/35 hover:bg-primary/20 font-semibold rounded-lg shadow-2xs"
-                : "h-9 text-[13px] text-muted-foreground hover:bg-muted/50 hover:text-foreground rounded-lg") +
+                ? "h-9 text-[13px] bg-primary/15 text-foreground dark:text-[#FAF6EE] border border-primary/35 hover:bg-primary/20 font-semibold rounded-full sm:rounded-lg shadow-2xs"
+                : "h-9 text-[13px] text-muted-foreground hover:bg-muted/50 hover:text-foreground rounded-full sm:rounded-lg") +
               (showPin ? " group-data-[collapsible=icon]:pr-2 " + (hasChildren ? " pr-12" : " pr-7") : "")
             }
           >
@@ -420,7 +420,7 @@ export function AdminSidebar() {
                         onClick={() => {
                           setOpenGroups((p) => ({ ...p, [child.url]: !(p[child.url] ?? subOpen) }));
                         }}
-                        className={`flex-1 flex items-center justify-between h-7 px-2 rounded-md text-[12px] transition-colors ${
+                        className={`flex-1 flex items-center justify-between h-7 px-2 rounded-full sm:rounded-md text-[12px] transition-colors ${
                           cActive
                             ? "text-foreground dark:text-[#FAF6EE] bg-primary/15 border border-primary/25 font-semibold"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
@@ -435,7 +435,7 @@ export function AdminSidebar() {
                       <NavLink
                         to={child.url}
                         onClick={closeOnMobile}
-                        className={`flex-1 flex items-center h-7 px-2 rounded-md text-[12px] transition-colors ${
+                        className={`flex-1 flex items-center h-7 px-2 rounded-full sm:rounded-md text-[12px] transition-colors ${
                           cActive
                             ? "text-foreground dark:text-[#FAF6EE] bg-primary/15 border border-primary/25 font-semibold"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/40"

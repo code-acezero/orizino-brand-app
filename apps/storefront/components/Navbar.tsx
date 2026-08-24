@@ -928,8 +928,8 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                   </div>
                 ) : (
                   <div className="flex gap-2">
-                    <Link href="/auth" className="flex-1 py-2 text-center text-xs font-bold rounded-xl bg-primary text-primary-foreground shadow-xs hover:opacity-90 transition-opacity" onClick={() => setMobileOpen(false)}>Sign In</Link>
-                    <Link href="/auth?tab=signup" className="flex-1 py-2 text-center text-xs font-semibold rounded-xl border border-border/60 text-foreground hover:bg-secondary/40 transition-colors" onClick={() => setMobileOpen(false)}>Register</Link>
+                    <Link href="/auth" className="flex-1 py-2 text-center text-xs font-bold rounded-full bg-primary text-primary-foreground shadow-xs hover:opacity-90 transition-opacity" onClick={() => setMobileOpen(false)}>Sign In</Link>
+                    <Link href="/auth?tab=signup" className="flex-1 py-2 text-center text-xs font-semibold rounded-full border border-border/60 text-foreground hover:bg-secondary/40 transition-colors" onClick={() => setMobileOpen(false)}>Register</Link>
                   </div>
                 )}
               </div>
@@ -954,7 +954,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                         key={item.href}
                         href={item.href}
                         onClick={() => setMobileOpen(false)}
-                        className={`flex items-center justify-between px-3 py-2 rounded-xl font-sans-brand text-xs font-semibold tracking-wide transition-colors ${
+                        className={`flex items-center justify-between px-3.5 py-2 rounded-full font-sans-brand text-xs font-semibold tracking-wide transition-colors ${
                           isActive(item.href) ? "text-primary bg-primary/10" : "text-foreground/80 hover:text-foreground hover:bg-secondary/50"
                         }`}
                       >
@@ -980,7 +980,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                         key={item.href}
                         href={item.href}
                         onClick={() => setMobileOpen(false)}
-                        className="flex items-center justify-between px-3 py-2 rounded-xl font-sans-brand text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                        className="flex items-center justify-between px-3.5 py-2 rounded-full font-sans-brand text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
                       >
                         <span>{item.label}</span>
                       </Link>
@@ -1009,7 +1009,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                         key={item.href}
                         href={item.href}
                         onClick={() => setMobileOpen(false)}
-                        className="flex items-center justify-between px-3 py-2 rounded-xl font-sans-brand text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                        className="flex items-center justify-between px-3.5 py-2 rounded-full font-sans-brand text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
                       >
                         <span>{item.label}</span>
                       </Link>
@@ -1031,7 +1031,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                         key={item.href}
                         href={item.href}
                         onClick={() => setMobileOpen(false)}
-                        className="flex items-center justify-between px-3 py-2 rounded-xl font-sans-brand text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                        className="flex items-center justify-between px-3.5 py-2 rounded-full font-sans-brand text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
                       >
                         <span>{item.label}</span>
                       </Link>
@@ -1044,11 +1044,11 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
               <div className="px-3 py-2.5 border-t border-border/40 shrink-0 bg-card/40">
                 <div className="flex items-center justify-between gap-1.5 relative" ref={currencyMenuRef}>
                   {/* 1. Ultra-Compact Icon-Only Theme Switcher (Light / Dark / Auto) */}
-                  <div className="flex items-center p-0.5 rounded-xl bg-secondary/50 border border-border/40 shrink-0">
+                  <div className="flex items-center p-0.5 rounded-full bg-secondary/50 border border-border/40 shrink-0">
                     <button
                       type="button"
                       onClick={() => setTheme('light')}
-                      className={`w-7 h-7 rounded-lg transition-all flex items-center justify-center cursor-pointer ${
+                      className={`w-7 h-7 rounded-full transition-all flex items-center justify-center cursor-pointer ${
                         mounted && theme === 'light'
                           ? 'bg-primary text-primary-foreground shadow-xs'
                           : 'text-muted-foreground hover:text-foreground'
@@ -1061,7 +1061,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                     <button
                       type="button"
                       onClick={() => setTheme('dark')}
-                      className={`w-7 h-7 rounded-lg transition-all flex items-center justify-center cursor-pointer ${
+                      className={`w-7 h-7 rounded-full transition-all flex items-center justify-center cursor-pointer ${
                         mounted && theme === 'dark'
                           ? 'bg-primary text-primary-foreground shadow-xs'
                           : 'text-muted-foreground hover:text-foreground'
@@ -1074,7 +1074,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                     <button
                       type="button"
                       onClick={() => setTheme('system')}
-                      className={`w-7 h-7 rounded-lg transition-all flex items-center justify-center cursor-pointer ${
+                      className={`w-7 h-7 rounded-full transition-all flex items-center justify-center cursor-pointer ${
                         mounted && (theme === 'system' || !theme)
                           ? 'bg-primary text-primary-foreground shadow-xs'
                           : 'text-muted-foreground hover:text-foreground'
@@ -1098,7 +1098,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                         type="button"
                         translate="no"
                         onClick={() => setCurrencyMenuOpen((prev) => !prev)}
-                        className="notranslate skiptranslate w-full h-8 flex items-center justify-between gap-1 px-2.5 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/40 text-[11px] font-semibold text-foreground transition-all truncate cursor-pointer"
+                        className="notranslate skiptranslate w-full h-8 flex items-center justify-between gap-1 px-3 rounded-full bg-secondary/50 hover:bg-secondary border border-border/40 text-[11px] font-semibold text-foreground transition-all truncate cursor-pointer"
                         title="Select currency"
                       >
                         <span className="flex items-center gap-1 truncate notranslate" translate="no">
@@ -1134,7 +1134,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                                     setCurrency(c.code);
                                     setCurrencyMenuOpen(false);
                                   }}
-                                  className={`notranslate skiptranslate w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                  className={`notranslate skiptranslate w-full flex items-center justify-between px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                                     currency === c.code
                                       ? "bg-primary text-primary-foreground shadow-xs"
                                       : "text-foreground hover:bg-secondary/50"
@@ -1255,7 +1255,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                       <button
                         type="button"
                         onClick={(e) => handleSearch(e)}
-                        className="w-full mt-2 py-2.5 rounded-xl bg-primary text-primary-foreground font-sans-brand text-xs font-bold transition-all text-center shadow-xs active:scale-[0.98]"
+                        className="w-full mt-2 py-2.5 rounded-full bg-primary text-primary-foreground font-sans-brand text-xs font-bold transition-all text-center shadow-xs active:scale-[0.98]"
                       >
                         View all results for "{searchQuery}" →
                       </button>
