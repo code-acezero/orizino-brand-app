@@ -90,23 +90,32 @@ function OrderScannerModal({
   const { data: orderDetails, isLoading } = useQuery({
     queryKey: ["orderops-order-details", order.id],
     queryFn: async () => {
-      const { data, error } = await sb
-        .from("orders")
-        .select(`
-          id, order_number, status, total,
-          order_items (
-            id, product_id, variant_id, product_name, quantity, unit_price,
-            products ( name, sku, price )
-          ),
-          product_serials (
-            id, serial_code, product_id
-          )
-        `)
-        .eq("id", order.id)
-        .maybeSingle();
+      try {
+        const { data, error } = await sb
+          .from("orders")
+          .select(`
+            id, order_number, status, total,
+            order_items (
+              id, product_id, variant_id, product_name, quantity, unit_price
+            )
+          `)
+          .eq("id", order.id)
+          .maybeSingle();
 
-      if (error || !data) return null;
-      return data;
+        if (error || !data) return null;
+
+        const { data: serials } = await sb
+          .from("product_serials")
+          .select("id, serial_code, product_id")
+          .eq("sold_order_id", order.id);
+
+        return {
+          ...data,
+          product_serials: serials || [],
+        };
+      } catch {
+        return null;
+      }
     },
   });
 

@@ -231,28 +231,54 @@ export function StatusScanner() {
   const { data: rawOrders = [], isLoading: loadingOrders, refetch: refetchOrders } = useQuery<OrderRecord[]>({
     queryKey: ["orderops-scanner-target-orders"],
     queryFn: async () => {
-      const { data, error } = await sb
-        .from("orders")
-        .select(`
-          id, order_number, status, total, subtotal, order_source, created_at,
-          customer_name, guest_name, guest_phone, guest_email, shipping_address,
-          order_items (
-            id, product_id, variant_id, product_name, quantity, unit_price,
-            products ( name, sku, price )
-          ),
-          product_serials (
-            id, serial_code, product_id
-          )
-        `)
-        .not("status", "in", '("delivered","rejected","returned","cancelled","in_transit","dispatched")')
-        .order("created_at", { ascending: false })
-        .limit(60);
+      try {
+        const { data: orders, error } = await sb
+          .from("orders")
+          .select(`
+            id, order_number, status, total, subtotal, order_source, created_at,
+            customer_name, guest_name, guest_phone, guest_email, shipping_address,
+            order_items (
+              id, product_id, variant_id, product_name, quantity, unit_price
+            )
+          `)
+          .not("status", "in", '("delivered","rejected","returned","cancelled","in_transit","dispatched")')
+          .order("created_at", { ascending: false })
+          .limit(60);
 
-      if (error) {
-        toast.error("Failed to load eligible orders");
+        if (error) {
+          console.warn("[orderops-scanner] Eligible orders fetch note:", error.message);
+          return [];
+        }
+        if (!orders || orders.length === 0) return [];
+
+        const orderIds = orders.map((o: any) => o.id);
+        const { data: serials } = await sb
+          .from("product_serials")
+          .select("id, serial_code, product_id, sold_order_id")
+          .in("sold_order_id", orderIds);
+
+        const serialsMap: Record<string, any[]> = {};
+        if (serials) {
+          for (const s of serials) {
+            if (s.sold_order_id) {
+              if (!serialsMap[s.sold_order_id]) serialsMap[s.sold_order_id] = [];
+              serialsMap[s.sold_order_id].push({
+                id: s.id,
+                serial_code: s.serial_code,
+                product_id: s.product_id,
+              });
+            }
+          }
+        }
+
+        return orders.map((o: any) => ({
+          ...o,
+          product_serials: serialsMap[o.id] || [],
+        }));
+      } catch (err: any) {
+        console.warn("[orderops-scanner] Query error:", err);
         return [];
       }
-      return data || [];
     },
   });
 
