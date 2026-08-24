@@ -685,136 +685,65 @@ const AIChatWidget: React.FC = () => {
   const [dragging, setDragging] = useState(false);
   const [dragXY, setDragXY] = useState<{ x: number; y: number } | null>(null);
 
-  // Attach non-passive native touch listeners to prevent browser page scrolling during drag
-  useEffect(() => {
-    const el = launcherBtnRef.current;
-    if (!el) return;
-
-    let startX = 0;
-    let startY = 0;
-    // Offset from finger to widget center — so it follows exactly where you grabbed it
-    let grabOffsetX = 0;
-    let grabOffsetY = 0;
-    let moved = false;
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length !== 1) return;
-      const touch = e.touches[0];
-      startX = touch.clientX;
-      startY = touch.clientY;
-      moved = false;
-      // Measure the widget's current bounding center so we can preserve the grab offset
-      const rect = el.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      grabOffsetX = touch.clientX - centerX;
-      grabOffsetY = touch.clientY - centerY;
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length !== 1) return;
-      const touch = e.touches[0];
-      const dx = touch.clientX - startX;
-      const dy = touch.clientY - startY;
-
-      if (!moved && Math.hypot(dx, dy) > 6) {
-        moved = true;
-        setDragging(true);
-      }
-
-      if (moved) {
-        e.preventDefault(); // Stop mobile page scroll!
-        // Subtract the grab offset so the widget follows exactly where the finger landed
-        const halfSize = el.offsetWidth / 2;
-        const targetX = touch.clientX - grabOffsetX;
-        const targetY = touch.clientY - grabOffsetY;
-        const x = Math.max(halfSize, Math.min(window.innerWidth - halfSize, targetX));
-        const y = Math.max(50, Math.min(window.innerHeight - 70, targetY));
-        setDragXY({ x, y });
-      }
-    };
-
-    const onTouchEnd = (e: TouchEvent) => {
-      if (moved) {
-        const lastTouch = e.changedTouches[0];
-        // The final center position (accounting for grab offset)
-        const rawX = lastTouch ? lastTouch.clientX - grabOffsetX : startX;
-        const rawY = lastTouch ? lastTouch.clientY - grabOffsetY : startY;
-        const clientX = Math.max(0, Math.min(window.innerWidth, rawX));
-        const clientY = Math.max(0, Math.min(window.innerHeight, rawY));
-        const edge: "left" | "right" = clientX < window.innerWidth / 2 ? "left" : "right";
-        const margin = 80;
-        const clampedY = Math.max(margin, Math.min(window.innerHeight - margin, clientY));
-        const yPercent = clampedY / window.innerHeight;
-        const next = { edge, yPercent };
-        setLauncherPos(next);
-        try { localStorage.setItem("ai-launcher-pos", JSON.stringify(next)); } catch {}
-
-        dragRef.current = { moved: true };
-        setTimeout(() => {
-          dragRef.current = null;
-          setDragging(false);
-          setDragXY(null);
-        }, 150);
-      } else {
-        dragRef.current = null;
-        setDragging(false);
-        setDragXY(null);
-      }
-    };
-
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchmove", onTouchMove, { passive: false });
-    el.addEventListener("touchend", onTouchEnd, { passive: true });
-    el.addEventListener("touchcancel", onTouchEnd, { passive: true });
-
-    return () => {
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
-      el.removeEventListener("touchend", onTouchEnd);
-      el.removeEventListener("touchcancel", onTouchEnd);
-    };
-  }, []);
-
-  // Desktop Pointer Drag Handlers
+  // Unified Pointer Drag Handler (Touch & Mouse) with Pointer Capture
   const handleLauncherPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (e.pointerType === "touch") return; // Touch is handled by native touch listeners with passive: false
-    if (e.button !== 0) return;
+    // Only handle primary button for mouse
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+
+    const el = e.currentTarget;
+    const pointerId = e.pointerId;
+
+    try {
+      el.setPointerCapture(pointerId);
+    } catch {}
+
     const startX = e.clientX;
     const startY = e.clientY;
     let hasMoved = false;
 
-    // Measure grab offset from cursor to widget center so drag is 1:1 without snapping
-    const el = launcherBtnRef.current;
-    const rect = el ? el.getBoundingClientRect() : null;
-    const grabOffsetX = rect ? e.clientX - (rect.left + rect.width / 2) : 0;
-    const grabOffsetY = rect ? e.clientY - (rect.top + rect.height / 2) : 0;
-    const halfSize = rect ? rect.width / 2 : 28;
+    // Measure grab offset from pointer to widget center so there is 0 snap / jump
+    const rect = el.getBoundingClientRect();
+    const grabOffsetX = e.clientX - (rect.left + rect.width / 2);
+    const grabOffsetY = e.clientY - (rect.top + rect.height / 2);
+    const halfSize = rect.width / 2;
 
     const onPointerMove = (moveEvent: PointerEvent) => {
+      if (moveEvent.pointerId !== pointerId) return;
+
       const dx = moveEvent.clientX - startX;
       const dy = moveEvent.clientY - startY;
+
       if (!hasMoved && Math.hypot(dx, dy) > 6) {
         hasMoved = true;
         setDragging(true);
+        dragRef.current = { moved: true };
       }
+
       if (hasMoved) {
-        // Subtract grab offset so the widget doesn't snap center to cursor
+        if (moveEvent.cancelable) moveEvent.preventDefault();
+
         const targetX = moveEvent.clientX - grabOffsetX;
         const targetY = moveEvent.clientY - grabOffsetY;
         const x = Math.max(halfSize, Math.min(window.innerWidth - halfSize, targetX));
-        const y = Math.max(50, Math.min(window.innerHeight - 60, targetY));
+        const y = Math.max(48, Math.min(window.innerHeight - 56, targetY));
         setDragXY({ x, y });
       }
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
+      if (upEvent.pointerId !== pointerId) return;
+
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("pointercancel", onPointerUp);
 
+      try {
+        if (el.hasPointerCapture(pointerId)) {
+          el.releasePointerCapture(pointerId);
+        }
+      } catch {}
+
       if (hasMoved) {
-        // Final center position accounting for grab offset
         const finalX = upEvent.clientX - grabOffsetX;
         const finalY = upEvent.clientY - grabOffsetY;
         const edge: "left" | "right" = finalX < window.innerWidth / 2 ? "left" : "right";
@@ -823,14 +752,17 @@ const AIChatWidget: React.FC = () => {
         const yPercent = y / window.innerHeight;
         const next = { edge, yPercent };
         setLauncherPos(next);
-        try { localStorage.setItem("ai-launcher-pos", JSON.stringify(next)); } catch {}
+        try {
+          localStorage.setItem("ai-launcher-pos", JSON.stringify(next));
+        } catch {}
 
+        // Keep moved flag active for 350ms to completely suppress synthetic click events on mobile
         dragRef.current = { moved: true };
         setTimeout(() => {
           dragRef.current = null;
           setDragging(false);
           setDragXY(null);
-        }, 120);
+        }, 350);
       } else {
         dragRef.current = null;
         setDragging(false);
@@ -838,9 +770,9 @@ const AIChatWidget: React.FC = () => {
       }
     };
 
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-    window.addEventListener("pointercancel", onPointerUp);
+    window.addEventListener("pointermove", onPointerMove, { passive: false });
+    window.addEventListener("pointerup", onPointerUp, { passive: true });
+    window.addEventListener("pointercancel", onPointerUp, { passive: true });
   };
 
 
@@ -1675,7 +1607,8 @@ const AIChatWidget: React.FC = () => {
   if (isAdminPage || isLandingPage || !isEnabled) return null;
 
   // Keep the bubble visible during calls so it can morph into the call UI.
-  const showMascot = !open && (scrollVisible || welcomeVisible);
+  // Keep the bubble visible during calls or while dragging so it never disappears mid-drag.
+  const showMascot = !open && (scrollVisible || welcomeVisible || dragging);
   const showCallRing = incomingCall && !open;
   const showCallPill = false; // replaced by in-bubble call UI
 
@@ -1730,29 +1663,37 @@ const AIChatWidget: React.FC = () => {
                     bottom: "auto",
                     transform: "translate(-50%, -50%)",
                     transition: "none",
+                    touchAction: "none",
                     WebkitTouchCallout: "none",
                     userSelect: "none",
                   }
                 : launcherPos.yPercent != null
-                ? {
-                    [launcherPos.edge]: "clamp(16px, 2.5vw, 40px)",
+                ? ({
+                    left: launcherPos.edge === "left" ? "clamp(16px, 2.5vw, 40px)" : "auto",
+                    right: launcherPos.edge === "right" ? "clamp(16px, 2.5vw, 40px)" : "auto",
                     top: `${Math.max(8, Math.min(88, launcherPos.yPercent * 100))}%`,
+                    bottom: "auto",
                     transform: "translateY(-50%)",
+                    touchAction: "none",
                     WebkitTouchCallout: "none",
                     userSelect: "none",
                     transition: isMascotIdle
                       ? "opacity 1.5s ease-out, transform 1.5s ease-out"
                       : "opacity 0.3s ease-in, transform 0.3s ease-in, top 0.35s cubic-bezier(0.16, 1, 0.3, 1), left 0.35s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
-                  } as React.CSSProperties
-                : {
-                    [launcherPos.edge]: "clamp(16px, 2.5vw, 40px)",
+                  } as React.CSSProperties)
+                : ({
+                    left: launcherPos.edge === "left" ? "clamp(16px, 2.5vw, 40px)" : "auto",
+                    right: launcherPos.edge === "right" ? "clamp(16px, 2.5vw, 40px)" : "auto",
                     bottom: `${mascotBottomPx}px`,
+                    top: "auto",
+                    transform: "none",
+                    touchAction: "none",
                     WebkitTouchCallout: "none",
                     userSelect: "none",
                     transition: isMascotIdle
                       ? "opacity 1.5s ease-out, transform 1.5s ease-out"
                       : "opacity 0.3s ease-in, transform 0.3s ease-in, bottom 0.35s cubic-bezier(0.16, 1, 0.3, 1), left 0.35s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
-                  }
+                  } as React.CSSProperties)
             }
             aria-label="Open support chat (drag to reposition)"
           >
