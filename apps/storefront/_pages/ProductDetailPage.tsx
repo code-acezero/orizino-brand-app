@@ -4,7 +4,8 @@ import { useLayout } from "@/contexts/LayoutContext";
 import { useParams, Link, useNavigate } from "@/lib/router-compat";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Shield, Truck, RotateCcw, Package, X, Zap, Tag, Flame, TicketPercent, Copy, Check } from "lucide-react";
+import { Star, Shield, Truck, RotateCcw, Package, X, Zap, Tag, Flame, TicketPercent, Copy, Check, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/lib/app-toast";
@@ -33,7 +34,6 @@ import ProductVideo from "@/components/product/ProductVideo";
 import { addToGuestCart } from "@/lib/guest-cart";
 import { useGuestCheckoutAllowed } from "@/lib/use-guest-checkout-allowed";
 
-// Lazy load gallery variants
 const CoverflowGallery = lazy(() => import("@/components/product/CoverflowGallery"));
 const FilmstripGallery = lazy(() => import("@/components/product/FilmstripGallery"));
 const GridMosaicGallery = lazy(() => import("@/components/product/GridMosaicGallery"));
@@ -41,6 +41,12 @@ const ParallaxStackGallery = lazy(() => import("@/components/product/ParallaxSta
 const EditorialSplitGallery = lazy(() => import("@/components/product/EditorialSplitGallery"));
 const HorizonCarouselGallery = lazy(() => import("@/components/product/HorizonCarouselGallery"));
 const StudioTurntableGallery = lazy(() => import("@/components/product/StudioTurntableGallery"));
+
+const GalleryLoader = () => (
+  <div className="w-full aspect-square rounded-3xl bg-muted/30 border border-border/30 flex items-center justify-center animate-pulse">
+    <LogoLoader size="sm" />
+  </div>
+);
 
 // Helper component to set product tray in layout context
 const ProductTrayEffect: React.FC<{
@@ -296,6 +302,7 @@ const ProductDetailPage: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
   const [comparing, setComparing] = useState(false);
+  const [specsExpandedMobile, setSpecsExpandedMobile] = useState(false);
 
   // Fetch product page layout setting
   const { data: pageSettings } = useQuery({
@@ -1002,76 +1009,6 @@ const ProductDetailPage: React.FC = () => {
 
   // === MAGAZINE layout: full-width gallery, then split content ===
   const isMagazine = layout === "magazine";
-
-  if (isLoading || !product) {
-    return (
-      <div className="min-h-screen bg-background/50 animate-pulse">
-        <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 space-y-6">
-          {/* Breadcrumb Skeleton */}
-          <div className="flex items-center gap-2 h-4 w-48 bg-muted/60 rounded-md" />
-
-          {/* Product Grid Skeleton */}
-          <div className="grid lg:grid-cols-12 gap-6 lg:gap-12 items-start">
-            {/* Gallery Skeleton */}
-            <div className="lg:col-span-7 space-y-4">
-              <div className="w-full aspect-square rounded-3xl bg-muted/50 border border-border/40" />
-              <div className="grid grid-cols-4 gap-3">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="aspect-square rounded-2xl bg-muted/40 border border-border/30" />
-                ))}
-              </div>
-            </div>
-
-            {/* Details Skeleton */}
-            <div className="lg:col-span-5 space-y-6">
-              <div className="space-y-3">
-                <div className="h-4 w-24 bg-primary/20 rounded-md" />
-                <div className="h-8 w-3/4 bg-muted/70 rounded-lg" />
-                <div className="h-4 w-32 bg-muted/50 rounded-md" />
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <div className="h-9 w-36 bg-muted/80 rounded-lg" />
-                <div className="h-6 w-24 bg-muted/50 rounded-full" />
-              </div>
-
-              <div className="h-px bg-border/60" />
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="h-4 w-20 bg-muted/60 rounded" />
-                  <div className="flex gap-2">
-                    {[0, 1, 2, 3].map((i) => (
-                      <div key={i} className="h-9 w-14 rounded-xl bg-muted/50 border border-border/40" />
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="h-4 w-20 bg-muted/60 rounded" />
-                  <div className="flex gap-2">
-                    {[0, 1, 2].map((i) => (
-                      <div key={i} className="h-9 w-16 rounded-xl bg-muted/50 border border-border/40" />
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 pt-4">
-                <div className="h-12 w-full rounded-full bg-muted/70" />
-                <div className="h-12 w-full rounded-full bg-primary/30" />
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 pt-4">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="h-16 rounded-2xl bg-muted/40 border border-border/30" />
-                ))}
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className={`min-h-screen transition-colors duration-500 ${cfg.containerClass}`}>
