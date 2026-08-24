@@ -666,3 +666,71 @@ export const importStickerPresets = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { created: inserted?.length ?? 0 };
   });
+
+export const migrateAllExistingSerialsToCompact = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdminOrMod(context.supabase, context.userId);
+    const sb: any = context.supabase;
+
+    // 1. Fetch all product serials joined with product and variant details
+    const { data: allSerials, error } = await sb
+      .from("product_serials")
+      .select(`
+        id, serial_code, product_id, variant_id, created_at,
+        products ( id, sku, name ),
+        product_variants ( id, sku, size, color )
+      `)
+      .order("created_at", { ascending: true });
+
+    if (error) throw new Error(error.message);
+    if (!allSerials || allSerials.length === 0) {
+      return { total: 0, updated: 0, message: "No serials found to migrate" };
+    }
+
+    // 2. Group serials by (product_id, variant_id) to assign clean sequence numbers starting from 1
+    const groups = new Map<string, any[]>();
+    for (const s of allSerials) {
+      const key = `${s.product_id}::${s.variant_id ?? "simple"}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(s);
+    }
+
+    let updatedCount = 0;
+    const updates: { id: string; serial_code: string }[] = [];
+
+    for (const [_, serialList] of groups) {
+      if (serialList.length === 0) continue;
+      const first = serialList[0];
+      const productSkuOrName = first.products?.sku || first.products?.name || "PRD";
+      const variantInfo = first.product_variants || null;
+
+      const prefix = buildCompactSerialPrefix(productSkuOrName, variantInfo);
+      let seq = 1;
+
+      for (const item of serialList) {
+        const compactCode = formatCompactSerialCode(prefix, seq++);
+        if (item.serial_code !== compactCode) {
+          updates.push({ id: item.id, serial_code: compactCode });
+        }
+      }
+    }
+
+    // 3. Batch update the serials
+    for (const u of updates) {
+      const { error: updErr } = await sb
+        .from("product_serials")
+        .update({ serial_code: u.serial_code, updated_at: new Date().toISOString() })
+        .eq("id", u.id);
+      if (!updErr) updatedCount++;
+    }
+
+    // 4. Run two-way stock synchronization to ensure quantities match
+    await runTwoWayStockSync(sb);
+
+    return {
+      total: allSerials.length,
+      updated: updatedCount,
+      message: `Successfully migrated ${updatedCount} serials to the compact format!`,
+    };
+  });

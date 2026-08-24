@@ -107,29 +107,20 @@ export const generateSku = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertStaff(context.supabase, context.userId);
     const sb: any = context.supabase;
-    const prefix = clean(data.prefix || "") || (await defaultPrefix(sb));
     const code = nameToCode(data.name);
     const tag = variantTag(data.color, data.size);
-    const base = `${prefix}-${code}`;
-    const taken = await existingSkus(sb, prefix);
+    const taken = await existingSkus(sb, code);
 
-    // Version number = how many times this base code has been used before
-    // (a genuinely new name gets 0001; re-adding a similar product bumps it).
-    const versionRe = new RegExp(`^${base}(\\d{4,})`, "i");
-    let maxVersion = 0;
-    for (const sku of taken) {
-      const m = sku.match(versionRe);
-      if (m) maxVersion = Math.max(maxVersion, parseInt(m[1], 10));
-    }
-    let version = maxVersion + 1;
+    // Compact SKU Format (e.g. TS01 or TS01-BL)
+    let version = 1;
     let candidate = "";
-    // Guard against an already-taken combination (e.g. same version, same tag).
     for (let attempt = 0; attempt < 50; attempt++) {
-      candidate = `${base}${String(version).padStart(4, "0")}${tag}`;
+      const verStr = String(version).padStart(2, "0");
+      candidate = tag ? `${code}${verStr}-${tag}` : `${code}${verStr}`;
       if (!taken.has(candidate.toUpperCase())) break;
       version++;
     }
-    return { sku: candidate, suggestions: await nearMatches(sb, base, data.excludeProductId) };
+    return { sku: candidate, suggestions: await nearMatches(sb, candidate, data.excludeProductId) };
   });
 
 async function nearMatches(sb: any, base: string, excludeProductId?: string) {

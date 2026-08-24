@@ -20,6 +20,7 @@ import { Package, Tag, ScanLine, QrCode, Printer, RefreshCw, Plus, Trash2, Uploa
 import { useTabParam } from "@/hooks/use-tab-param";
 import {
   listSerials,
+  migrateAllExistingSerialsToCompact,
   generateSerials,
   importSerials,
   scanSerial,
@@ -301,6 +302,24 @@ function StockAndSerialsTab() {
     }
   };
 
+    const migrateSerials = useMutation({
+    mutationFn: () => useServerFn(migrateAllExistingSerialsToCompact)({}),
+    onSuccess: (res: any) => {
+      refetch();
+      toast({
+        title: "Serials Migrated",
+        description: res.message || `Migrated ${res.updated} serials to compact format!`,
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Migration failed",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const sync = useMutation({
     mutationFn: () => syncFn(),
     onSuccess: (r: any) => {
@@ -528,6 +547,17 @@ function StockAndSerialsTab() {
                 <DropdownMenuItem onClick={() => setBulkExportOpen(true)} className="gap-2 cursor-pointer">
                   <PackageSearch className="w-4 h-4 text-muted-foreground" />
                   <span>Bulk Labels Export</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (confirm("Migrate ALL existing product serials to the new compact [SKU][VAR]-[NUM] format?")) {
+                      migrateSerials.mutate();
+                    }
+                  }}
+                  className="gap-2 cursor-pointer text-amber-500 font-semibold"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <span>Migrate All to Compact Format</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-[11px] text-muted-foreground flex items-center justify-between">
