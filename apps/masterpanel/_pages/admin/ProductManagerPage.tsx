@@ -1574,13 +1574,11 @@ function AddStockDialog({ onClose, onCreated }: { onClose: () => void; onCreated
                     </span>
                   </div>
                   <div className="font-mono text-xs font-semibold text-foreground tracking-wide bg-background/80 px-2.5 py-1.5 rounded-lg border border-border/60 truncate">
-                    {selectedProduct.sku
-                      ? `${selectedProduct.sku}-000001`
-                      : `ORZ-${selectedProduct.name.slice(0, 4).toUpperCase()}-000001`}
-                    {" → "}
-                    {selectedProduct.sku
-                      ? `${selectedProduct.sku}-${String(quantity).padStart(6, "0")}`
-                      : `ORZ-${selectedProduct.name.slice(0, 4).toUpperCase()}-${String(quantity).padStart(6, "0")}`}
+                    {(() => {
+                      const v = variantId ? selectedProduct.variants?.find((vr: any) => vr.id === variantId) : null;
+                      const pfx = buildCompactSerialPrefix(selectedProduct.sku || selectedProduct.name, v);
+                      return `${formatCompactSerialCode(pfx, 1)} → ${formatCompactSerialCode(pfx, quantity)}`;
+                    })()}
                   </div>
                   <p className="text-[10px] text-muted-foreground">
                     Each serial is uniquely registered with status <strong className="text-emerald-500">Available</strong> and encodes a smart QR verification URL.
@@ -3674,7 +3672,7 @@ export function StickerSetupTab({
   });
 
   const preview = useMemo(() => {
-    let serial = `${s.serial_prefix ?? "ORZ"}-SAMPLE-000123`;
+    let serial = "TS01BL-001";
     let productName = "Gachiakuta Oversized Heavyweight Tee";
     let size = "L";
     let price = 1250;
@@ -3687,7 +3685,7 @@ export function StickerSetupTab({
       price = 2450;
       compareAtPrice = null;
     } else if (previewMode === "custom") {
-      serial = customSerialText.trim() || `${s.serial_prefix ?? "ORZ"}-TEST-0001`;
+      serial = customSerialText.trim() || "TS01BL-001";
       productName = "Custom Test Product";
     }
 
@@ -3714,7 +3712,7 @@ export function StickerSetupTab({
     () =>
       Array.from({ length: sampleCount }, (_, i) => ({
         ...preview,
-        serialCode: `${s.serial_prefix ?? "ORZ"}-SAMPLE-${String(i + 1).padStart(4, "0")}`,
+        serialCode: formatCompactSerialCode("TS01BL", i + 1),
       })),
     [preview, s.serial_prefix],
   );

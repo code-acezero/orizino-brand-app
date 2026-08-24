@@ -1838,7 +1838,7 @@ export function InventoryStudio() {
                   <div ref={productStickerRef} className="shadow-lg rounded-[2px] overflow-hidden bg-white">
                     <Sticker
                       data={{
-                        serialCode: customSerialText || "ORZ-SAMPLE-000123",
+                        serialCode: customSerialText || "TS01BL-001",
                         productName: selectedProduct?.name || "Premium Oxford Shirt",
                         size: selectedProduct?.product_variants?.[0]?.size || "L",
                         price: selectedProduct?.price || 2450,

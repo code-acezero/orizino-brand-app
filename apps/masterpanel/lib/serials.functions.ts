@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerFn } from "@/lib/server-fn-compat";
+import { buildCompactSerialPrefix, formatCompactSerialCode, getNextCompactSequence } from "@orizino/shared";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -121,7 +122,8 @@ export const lookupSerial = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
     const sb = context.supabase as any;
-    const raw = data.code.trim().replace(/[
+    const raw = data.code.trim().replace(/[
+
 	]/g, "");
     
     // 1. Extract code if URL or JSON
@@ -277,23 +279,24 @@ export const generateSerials = createServerFn({ method: "POST" })
     const sb: any = context.supabase;
     const { data: product, error: pe } = await sb.from("products").select("id, sku, name").eq("id", data.productId).maybeSingle();
     if (pe || !product) throw new Error("Product not found");
+
+    let variantInfo: any = null;
     if (data.variantId) {
-      const { data: variant } = await sb.from("product_variants").select("id, product_id").eq("id", data.variantId).maybeSingle();
+      const { data: variant } = await sb.from("product_variants").select("id, product_id, sku, size, color").eq("id", data.variantId).maybeSingle();
       if (!variant || variant.product_id !== data.productId) throw new Error("That variant doesn't belong to this product");
+      variantInfo = variant;
     }
 
-    const { data: settings } = await sb.from("sticker_settings").select("serial_prefix").limit(1).maybeSingle();
-    const brandPrefix = (settings?.serial_prefix ?? "ORZ").toUpperCase();
-    const codePart = (product.sku || product.name || "PRD").toString().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "PRD";
-    const prefix = `${brandPrefix}-${codePart}`;
+    // Option 1: Segmented Compact Code (e.g. TS01BL-001)
+    const prefix = buildCompactSerialPrefix(product.sku || product.name || "PRD", variantInfo);
 
     const { data: existing } = await sb.from("product_serials").select("serial_code").ilike("serial_code", `${prefix}-%`);
-    let seq = nextSeq((existing ?? []).map((r: any) => r.serial_code), prefix);
+    let seq = getNextCompactSequence((existing ?? []).map((r: any) => r.serial_code), prefix);
 
     const toInsert = Array.from({ length: data.quantity }, () => ({
       product_id: data.productId,
       variant_id: data.variantId ?? null,
-      serial_code: `${prefix}-${String(seq++).padStart(6, "0")}`,
+      serial_code: formatCompactSerialCode(prefix, seq++),
       status: "available" as const,
       created_by: context.userId,
     }));
@@ -355,23 +358,25 @@ export const reconcileProductSerialsFromStock = createServerFn({ method: "POST" 
 
       if (targetStock > currentCount) {
         const missing = targetStock - currentCount;
-        const skuPart = (item.sku || product.sku || product.name || "PRD")
-          .toString()
-          .toUpperCase()
-          .replace(/[^A-Z0-9]/g, "")
-          .slice(0, 8) || "PRD";
-        const prefix = `${brandPrefix}-${skuPart}`;
+        let variantInfo: any = null;
+        if (variantId) {
+          const { data: vRow } = await sb.from("product_variants").select("id, sku, size, color").eq("id", variantId).maybeSingle();
+          variantInfo = vRow;
+        }
+
+        // Option 1: Segmented Compact Code (e.g. TS01BL-001)
+        const prefix = buildCompactSerialPrefix(product.sku || product.name || "PRD", item.sku || variantInfo);
 
         const { data: existing } = await sb
           .from("product_serials")
           .select("serial_code")
           .ilike("serial_code", `${prefix}-%`);
-        let seq = nextSeq((existing ?? []).map((r: any) => r.serial_code), prefix);
+        let seq = getNextCompactSequence((existing ?? []).map((r: any) => r.serial_code), prefix);
 
         const toInsert = Array.from({ length: missing }, () => ({
           product_id: productId,
           variant_id: variantId,
-          serial_code: `${prefix}-${String(seq++).padStart(6, "0")}`,
+          serial_code: formatCompactSerialCode(prefix, seq++),
           status: "available" as const,
           created_by: context.userId,
         }));

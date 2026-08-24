@@ -32,3 +32,5 @@ export * from "./utils/revenue-calculator";
 export * from "./lib/image-optimizer";
 
 export * from "./lib/ai-chat-orchestrator";
+
+export * from "./lib/compact-serials";
