@@ -3,13 +3,72 @@ import "@/src/styles/app.css";
 import Providers from "@/src/app/providers";
 
 export const metadata: Metadata = {
-  title: "Orizino — Official Brand Website",
-  description: "Official Orizino luxury streetwear brand site. Premium drop shoulder t-shirts crafted in Dhaka.",
+  title: {
+    template: "%s — ORIZINO",
+    default: "ORIZINO — From Beyond Ordinary | Official Brand Website",
+  },
+  description:
+    "ORIZINO — From Beyond Ordinary. The official home of luxury fashion & premium streetwear. Discover collections, brand story & the art of modern elegance crafted in Dhaka.",
+  keywords: [
+    "ORIZINO",
+    "luxury fashion brand",
+    "premium streetwear",
+    "from beyond ordinary",
+    "designer clothing",
+    "Dhaka fashion brand",
+    "official brand website",
+    "luxury apparel",
+    "modern elegance",
+    "oversized clothing",
+    "heavyweight tee",
+    "drop shoulder",
+  ],
+  authors: [{ name: "ORIZINO" }],
+  creator: "ORIZINO",
+  publisher: "ORIZINO",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+      "max-video-preview": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "ORIZINO",
+    title: "ORIZINO — From Beyond Ordinary | Official Brand",
+    description:
+      "The official home of ORIZINO luxury fashion. Discover premium streetwear collections & the art of modern elegance.",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "ORIZINO — From Beyond Ordinary",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ORIZINO — From Beyond Ordinary",
+    description:
+      "The official home of ORIZINO luxury fashion & premium streetwear.",
+    images: ["/og-image.jpg"],
+  },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Orizino Brand",
+    title: "ORIZINO",
+  },
+  other: {
+    "theme-color": "#0a0a0a",
+    "msapplication-TileColor": "#0a0a0a",
   },
 };
 

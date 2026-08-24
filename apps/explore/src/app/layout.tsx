@@ -7,8 +7,50 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swa
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-display", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "ORIZINO · Explore",
-  description: "Explore every channel, universe collection, and character wardrobe across the ORIZINO fashion maison.",
+  title: {
+    template: "%s — ORIZINO Explore",
+    default: "ORIZINO Explore — Discover Collections, Universes & Character Wardrobes",
+  },
+  description:
+    "Explore every collection, universe & character wardrobe across the ORIZINO fashion maison. From Beyond Ordinary.",
+  keywords: [
+    "ORIZINO explore",
+    "fashion collections",
+    "character wardrobe",
+    "universe collection",
+    "luxury fashion maison",
+    "from beyond ordinary",
+    "ORIZINO channels",
+  ],
+  authors: [{ name: "ORIZINO" }],
+  creator: "ORIZINO",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "ORIZINO Explore",
+    title: "ORIZINO Explore — Collections & Universes",
+    description:
+      "Explore every collection, universe & character wardrobe across the ORIZINO fashion maison.",
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "ORIZINO Explore" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ORIZINO Explore",
+    description:
+      "Explore collections, universes & character wardrobes across the ORIZINO fashion maison.",
+    images: ["/og-image.jpg"],
+  },
+  manifest: "/manifest.webmanifest",
   icons: {
     icon: [
       { url: "/favicon.png?v=4", type: "image/png" },
@@ -17,6 +59,9 @@ export const metadata: Metadata = {
     ],
     shortcut: "/favicon.png?v=4",
     apple: "/apple-touch-icon.png?v=4",
+  },
+  other: {
+    "theme-color": "#080808",
   },
 };
 

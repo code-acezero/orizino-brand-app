@@ -60,7 +60,7 @@ export function Login() {
               {brand.siteName} OrderOps
             </h1>
             <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
-              {brand.brandTagline || "The mark of what's next."}
+              {brand.brandTagline || "From Beyond Ordinary."}
             </p>
           </div>
         </div>

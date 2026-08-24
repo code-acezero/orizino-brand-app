@@ -1,10 +1,20 @@
+# ORIZINO Brand Home — robots.txt
+
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 2
 
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /_next/
 
-Sitemap: /sitemap.xml
+# Sitemaps
+Sitemap: https://brand.orizino.com/sitemap.xml
+
+# Host
+Host: https://brand.orizino.com

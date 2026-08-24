@@ -5,13 +5,75 @@ import Providers from "@/src/app/providers";
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: "Orizino — Premium Drop Shoulder Streetwear",
-  description: "Orizino — premium drop shoulder t-shirts & streetwear. Crafted for those who carry themselves with quiet intention.",
+  title: {
+    template: "%s — ORIZINO",
+    default: "ORIZINO — From Beyond Ordinary | Luxury Fashion & Premium Streetwear",
+  },
+  description:
+    "Shop ORIZINO luxury fashion — premium oversized streetwear, heavyweight tees & designer hoodies crafted in Dhaka. From Beyond Ordinary.",
+  keywords: [
+    "ORIZINO",
+    "luxury fashion",
+    "premium streetwear",
+    "oversized tee",
+    "heavyweight cotton",
+    "designer hoodie",
+    "drop shoulder",
+    "luxury clothing Bangladesh",
+    "Dhaka fashion brand",
+    "from beyond ordinary",
+    "luxury streetwear brand",
+    "premium oversized clothing",
+    "designer streetwear",
+    "elegant fashion",
+    "modern luxury apparel",
+  ],
+  authors: [{ name: "ORIZINO", url: "https://orizino.com" }],
+  creator: "ORIZINO",
+  publisher: "ORIZINO",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+      "max-video-preview": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "ORIZINO",
+    title: "ORIZINO — From Beyond Ordinary | Luxury Fashion",
+    description:
+      "Shop ORIZINO luxury fashion — premium oversized streetwear, heavyweight tees & designer hoodies crafted in Dhaka.",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "ORIZINO — From Beyond Ordinary",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ORIZINO — From Beyond Ordinary",
+    description:
+      "Shop ORIZINO luxury fashion — premium oversized streetwear & designer hoodies.",
+    images: ["/og-image.jpg"],
+  },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Orizino",
+    title: "ORIZINO",
+  },
+  other: {
+    "theme-color": "#0a0a0a",
+    "msapplication-TileColor": "#0a0a0a",
   },
 };
 

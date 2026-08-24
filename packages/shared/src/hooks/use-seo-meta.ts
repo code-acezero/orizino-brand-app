@@ -105,20 +105,24 @@ export const useSeoMeta = (pageId: string, defaultTitle: string, appId: "storefr
     const globalSeo: GlobalSeoData = typeof appGlobal === "object" ? appGlobal : rawGlobalVal;
 
     // 1. Document Title
-    const suffix = globalSeo.site_title_suffix || (globalSeo.site_title_suffix === "" ? "" : " | ORIZINO");
+    const suffix = globalSeo.site_title_suffix || (globalSeo.site_title_suffix === "" ? "" : " — ORIZINO");
     const pageTitle = pageSeo.title?.trim() || defaultTitle;
     document.title = pageSeo.title ? `${pageTitle}${suffix}` : defaultTitle;
 
     // 2. Meta description & Keywords
-    setMeta("description", pageSeo.description || "Discover premium luxury streetwear and oversized apparel by ORIZINO.");
-    setMeta("keywords", pageSeo.keywords || "luxury streetwear, oversized hoodie, heavy cotton tee, orizino");
+    setMeta("description", pageSeo.description || "ORIZINO — From Beyond Ordinary. Shop luxury fashion, premium oversized streetwear & designer hoodies crafted in Dhaka.");
+    setMeta("keywords", pageSeo.keywords || "ORIZINO, luxury fashion, premium streetwear, from beyond ordinary, oversized tee, heavyweight cotton, designer hoodie, drop shoulder, luxury clothing Bangladesh, Dhaka fashion brand");
+
+    // Author & Theme
+    setMeta("author", "ORIZINO");
+    setMeta("theme-color", "#0a0a0a");
 
     // 3. Robots Directives
     setMeta("robots", pageSeo.robots || "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1");
 
     // 4. Open Graph Tags
     const ogTitle = pageSeo.og_title || pageTitle;
-    const ogDesc = pageSeo.og_description || pageSeo.description || "Discover luxury streetwear essentials by ORIZINO.";
+    const ogDesc = pageSeo.og_description || pageSeo.description || "ORIZINO — From Beyond Ordinary. Premium luxury fashion & streetwear.";
     const ogImage = pageSeo.og_image || globalSeo.default_og_image || "https://shop.orizino.com/og-image.jpg";
 
     setMeta("og:site_name", globalSeo.brand_name || "ORIZINO", "property");
@@ -126,6 +130,10 @@ export const useSeoMeta = (pageId: string, defaultTitle: string, appId: "storefr
     setMeta("og:description", ogDesc, "property");
     setMeta("og:image", ogImage, "property");
     setMeta("og:type", "website", "property");
+    setMeta("og:locale", "en_US", "property");
+    setMeta("og:image:width", "1200", "property");
+    setMeta("og:image:height", "630", "property");
+    setMeta("og:image:alt", ogTitle + " — ORIZINO", "property");
     if (typeof window !== "undefined") {
       setMeta("og:url", window.location.href, "property");
     }
@@ -136,6 +144,7 @@ export const useSeoMeta = (pageId: string, defaultTitle: string, appId: "storefr
     setMeta("twitter:description", ogDesc);
     setMeta("twitter:image", ogImage);
     setMeta("twitter:site", "@orizinobrand");
+    setMeta("twitter:image:alt", ogTitle + " — ORIZINO");
 
     // 6. Canonical Link
     const canonical = pageSeo.canonical_url || (typeof window !== "undefined" ? window.location.origin + window.location.pathname : "");

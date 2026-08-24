@@ -9,6 +9,7 @@ interface Category {
   slug: string;
   description?: string;
   image_url?: string;
+  product_count?: number;
 }
 
 const setMeta = (name: string, content: string, attr = "name") => {
@@ -33,15 +34,15 @@ const setLink = (rel: string, href: string) => {
   el.setAttribute("href", href);
 };
 
-const setJsonLd = (json: string) => {
-  const existing = document.querySelector('script[data-seo-jsonld-category]');
+const setJsonLd = (json: string, id = "category") => {
+  const existing = document.querySelector(`script[data-seo-jsonld-${id}]`);
   if (existing) existing.remove();
   if (!json) return;
   try {
     JSON.parse(json); // validate
     const script = document.createElement("script");
     script.type = "application/ld+json";
-    script.setAttribute("data-seo-jsonld-category", "true");
+    script.setAttribute(`data-seo-jsonld-${id}`, "true");
     script.textContent = json;
     document.head.appendChild(script);
   } catch {
@@ -50,65 +51,117 @@ const setJsonLd = (json: string) => {
 };
 
 /**
- * Hook that applies SEO metadata for category pages.
- * Uses category-specific meta_title, meta_description, and generates JSON-LD breadcrumb/collection data.
+ * SEO hook for category listing pages.
+ * Generates rich meta tags, Open Graph, Twitter Card, and JSON-LD CollectionPage + BreadcrumbList structured data.
  */
 export const useCategorySeoMeta = (category: Category | undefined) => {
   useEffect(() => {
     if (!category) {
-      document.title = "Category | Store";
+      document.title = "Collections — ORIZINO";
       return;
     }
 
-    // Title
-    const title = category.meta_title || category.name;
-    document.title = `${title} | Store`;
+    // Title — brand-suffixed
+    const title = category.meta_title || `${category.name} Collection`;
+    document.title = `${title} — ORIZINO`;
 
-    // Meta description
-    const description = category.meta_description || category.description || "";
+    // Meta description — rich, keyword-aware
+    const description =
+      category.meta_description ||
+      category.description ||
+      `Explore the ${category.name} collection by ORIZINO. Premium luxury fashion — From Beyond Ordinary.`;
     setMeta("description", description);
 
     // Keywords
-    setMeta("keywords", category.meta_keywords || "");
+    const keywords =
+      category.meta_keywords ||
+      `${category.name}, ORIZINO, luxury fashion, premium streetwear, ${category.name} collection, shop online`;
+    setMeta("keywords", keywords);
 
     // Robots
-    setMeta("robots", "index, follow");
+    setMeta("robots", "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1");
+
+    // Author
+    setMeta("author", "ORIZINO");
 
     // Open Graph
-    setMeta("og:title", title, "property");
+    setMeta("og:title", `${title} — ORIZINO`, "property");
     setMeta("og:description", description, "property");
-    const ogImageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/og-image?type=category&slug=${encodeURIComponent(category.slug)}`;
+    setMeta("og:site_name", "ORIZINO", "property");
+    setMeta("og:type", "website", "property");
+    setMeta("og:locale", "en_US", "property");
+
+    const ogImageUrl = category.image_url
+      ? category.image_url
+      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/og-image?type=category&slug=${encodeURIComponent(category.slug)}`;
     setMeta("og:image", ogImageUrl, "property");
     setMeta("og:image:width", "1200", "property");
     setMeta("og:image:height", "630", "property");
-    setMeta("og:type", "website", "property");
+    setMeta("og:image:alt", `${category.name} — ORIZINO`, "property");
 
     // Twitter Card
     setMeta("twitter:card", "summary_large_image");
-    setMeta("twitter:title", title);
+    setMeta("twitter:title", `${title} — ORIZINO`);
     setMeta("twitter:description", description);
     setMeta("twitter:image", ogImageUrl);
+    setMeta("twitter:image:alt", `${category.name} — ORIZINO`);
 
+    // Canonical
     if (typeof window !== "undefined") {
-      setLink("canonical", `${window.location.origin}/categories/${category.slug}`);
+      const canonical = `${window.location.origin}/categories/${category.slug}`;
+      setLink("canonical", canonical);
+      setMeta("og:url", canonical, "property");
     }
 
-    // JSON-LD Collection/Category Schema
-    const jsonLd = {
+    // JSON-LD CollectionPage
+    const categoryUrl =
+      typeof window !== "undefined" ? `${window.location.origin}/categories/${category.slug}` : "";
+    const collectionLd = {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
-      name: category.name,
+      name: `${category.name} — ORIZINO`,
       description: description || category.name,
       image: category.image_url || "",
-      url: typeof window !== "undefined" ? `${window.location.origin}/categories/${category.slug}` : "",
+      url: categoryUrl,
+      isPartOf: {
+        "@type": "WebSite",
+        name: "ORIZINO",
+        url: typeof window !== "undefined" ? window.location.origin : "",
+      },
     };
+    setJsonLd(JSON.stringify(collectionLd), "category");
 
-    setJsonLd(JSON.stringify(jsonLd));
+    // JSON-LD BreadcrumbList
+    const breadcrumbLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: typeof window !== "undefined" ? window.location.origin : "",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Collections",
+          item: typeof window !== "undefined" ? `${window.location.origin}/categories` : "",
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: category.name,
+          item: categoryUrl,
+        },
+      ],
+    };
+    setJsonLd(JSON.stringify(breadcrumbLd), "breadcrumb");
 
     // Cleanup
     return () => {
-      const script = document.querySelector('script[data-seo-jsonld-category]');
-      if (script) script.remove();
+      document.querySelector("script[data-seo-jsonld-category]")?.remove();
+      document.querySelector("script[data-seo-jsonld-breadcrumb]")?.remove();
     };
   }, [category]);
 };

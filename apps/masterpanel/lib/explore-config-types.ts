@@ -182,7 +182,7 @@ export const DEFAULT_CONFIG: OrizinoConfig = {
   ],
   footer: {
     brandName: "ORIZINO",
-    tagline: "The Mark of What's Next",
+    tagline: "From Beyond Ordinary",
     copyright: "© 2026 ORIZINO — ALL RIGHTS RESERVED",
   },
   motion: { speed: 1, intensity: 1, logoRotateInterval: 10 },
