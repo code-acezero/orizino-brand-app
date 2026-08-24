@@ -42,12 +42,6 @@ const EditorialSplitGallery = lazy(() => import("@/components/product/EditorialS
 const HorizonCarouselGallery = lazy(() => import("@/components/product/HorizonCarouselGallery"));
 const StudioTurntableGallery = lazy(() => import("@/components/product/StudioTurntableGallery"));
 
-const GalleryLoader = () => (
-  <div className="w-full aspect-square rounded-3xl bg-muted/30 border border-border/30 flex items-center justify-center animate-pulse">
-    <LogoLoader size="sm" />
-  </div>
-);
-
 // Helper component to set product tray in layout context
 const ProductTrayEffect: React.FC<{
   product: any; effectivePrice: number; selectedVariant: any;
