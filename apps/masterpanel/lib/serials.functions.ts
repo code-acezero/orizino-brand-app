@@ -122,9 +122,7 @@ export const lookupSerial = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
     const sb = context.supabase as any;
-    const raw = data.code.trim().replace(/[
-
-	]/g, "");
+    const raw = data.code.trim().replace(/[\r\n\t]/g, "");
     
     // 1. Extract code if URL or JSON
     let code = raw;
