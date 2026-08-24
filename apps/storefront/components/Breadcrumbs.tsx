@@ -46,16 +46,16 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className = "" }) => {
   }, [items]);
 
   return (
-    <nav aria-label="Breadcrumb" className={`w-full ${className}`}>
-      <ol className="flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap select-none py-0.5 overflow-x-auto scrollbar-none max-w-full">
+    <nav aria-label="Breadcrumb" className={`w-full overflow-hidden ${className}`}>
+      <ol className="flex items-center flex-wrap gap-1.5 text-xs sm:text-sm select-none py-0.5 max-w-full">
         {items.map((item, i) => {
           const isLast = i === items.length - 1;
           const isFirst = i === 0;
 
           return (
-            <li key={i} className="inline-flex items-center gap-1.5 shrink-0 min-w-0">
+            <li key={i} className={`inline-flex items-center gap-1.5 ${isLast ? "min-w-0 max-w-full" : "shrink-0"}`}>
               {isLast || !item.href ? (
-                <span className="inline-flex items-center gap-1.5 text-foreground/90 font-medium max-w-[220px] sm:max-w-[340px] md:max-w-none truncate leading-none">
+                <span className="inline-flex items-center gap-1.5 text-foreground/90 font-medium truncate leading-normal" title={item.label}>
                   {isFirst && (
                     <Home className="w-3.5 h-3.5 text-muted-foreground shrink-0" strokeWidth={1.75} />
                   )}
@@ -64,12 +64,12 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className = "" }) => {
               ) : (
                 <Link
                   to={item.href}
-                  className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors max-w-[160px] sm:max-w-[240px] truncate leading-none group"
+                  className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors shrink-0 leading-normal group"
                 >
                   {isFirst && (
                     <Home className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" strokeWidth={1.75} />
                   )}
-                  <span className="truncate">{item.label}</span>
+                  <span>{item.label}</span>
                 </Link>
               )}
               {!isLast && (
