@@ -120,14 +120,142 @@ export const lookupSerial = createServerFn({ method: "GET" })
   .inputValidator((d: { code: string }) => z.object({ code: z.string().min(1) }).parse(d))
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
-    const { data: row, error } = await (context.supabase as any)
+    const sb = context.supabase as any;
+    const raw = data.code.trim().replace(/[
+	]/g, "");
+    
+    // 1. Extract code if URL or JSON
+    let code = raw;
+    if (raw.startsWith("{") && raw.endsWith("}")) {
+      try {
+        const parsed = JSON.parse(raw);
+        code = parsed.serial_code || parsed.serial || parsed.sku || parsed.barcode || parsed.code || parsed.id || raw;
+      } catch {}
+    } else if (raw.startsWith("http://") || raw.startsWith("https://")) {
+      try {
+        const url = new URL(raw);
+        const param = url.searchParams.get("serial") || url.searchParams.get("code") || url.searchParams.get("s") || url.searchParams.get("sku") || url.searchParams.get("barcode") || url.searchParams.get("id") || url.searchParams.get("v");
+        if (param) code = param;
+        else {
+          const parts = url.pathname.split("/").filter(Boolean);
+          if (parts.length > 0) code = parts[parts.length - 1];
+        }
+      } catch {}
+    }
+
+    // Step 1: Direct match on product_serials (case-insensitive)
+    const { data: serialRow } = await sb
       .from("product_serials")
-      .select("id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku)")
-      .eq("serial_code", data.code.trim())
+      .select(
+        "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku)",
+      )
+      .ilike("serial_code", code)
+      .limit(1)
       .maybeSingle();
-    if (error) throw new Error(error.message);
-    return row;
+
+    if (serialRow) {
+      return serialRow;
+    }
+
+    // Step 2: Try variant barcode or SKU
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);
+    let variantQuery = sb
+      .from("product_variants")
+      .select(
+        "id, product_id, size, color, sku, barcode, stock_quantity, products(name, sku, price, compare_at_price, thumbnail)",
+      );
+
+    if (isUuid) {
+      variantQuery = variantQuery.or(`id.eq.${code},sku.ilike.${code},barcode.ilike.${code}`);
+    } else {
+      variantQuery = variantQuery.or(`sku.ilike.${code},barcode.ilike.${code}`);
+    }
+
+    const { data: variantRow } = await variantQuery.limit(1).maybeSingle();
+
+    if (variantRow) {
+      const { data: availableSerial } = await sb
+        .from("product_serials")
+        .select(
+          "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku)",
+        )
+        .eq("variant_id", variantRow.id)
+        .eq("status", "available")
+        .limit(1)
+        .maybeSingle();
+
+      if (availableSerial) {
+        return availableSerial;
+      }
+
+      return {
+        id: variantRow.id,
+        serial_code: variantRow.sku || variantRow.barcode || code,
+        status: "available",
+        product_id: variantRow.product_id,
+        variant_id: variantRow.id,
+        sold_order_id: null,
+        sold_at: null,
+        products: variantRow.products,
+        product_variants: {
+          size: variantRow.size,
+          color: variantRow.color,
+          sku: variantRow.sku,
+        },
+      };
+    }
+
+    // Step 3: Try product barcode, SKU, slug, or ID
+    let prodQuery = sb
+      .from("products")
+      .select("id, name, sku, barcode, slug, price, compare_at_price, thumbnail, stock_quantity");
+
+    if (isUuid) {
+      prodQuery = prodQuery.or(`id.eq.${code},sku.ilike.${code},barcode.ilike.${code}`);
+    } else {
+      prodQuery = prodQuery.or(`sku.ilike.${code},barcode.ilike.${code},slug.ilike.${code},name.ilike.%${code}%`);
+    }
+
+    const { data: productRow } = await prodQuery.limit(1).maybeSingle();
+
+    if (productRow) {
+      const { data: availableSerial } = await sb
+        .from("product_serials")
+        .select(
+          "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku)",
+        )
+        .eq("product_id", productRow.id)
+        .eq("status", "available")
+        .limit(1)
+        .maybeSingle();
+
+      if (availableSerial) {
+        return availableSerial;
+      }
+
+      return {
+        id: productRow.id,
+        serial_code: productRow.sku || productRow.barcode || code,
+        status: "available",
+        product_id: productRow.id,
+        variant_id: null,
+        sold_order_id: null,
+        sold_at: null,
+        products: {
+          name: productRow.name,
+          sku: productRow.sku,
+          price: Number(productRow.price || 0),
+          compare_at_price: productRow.compare_at_price ? Number(productRow.compare_at_price) : null,
+          thumbnail: productRow.thumbnail,
+        },
+        product_variants: null,
+      };
+    }
+
+    return null;
   });
+
+
 
 function nextSeq(existing: string[], prefix: string): number {
   let max = 0;

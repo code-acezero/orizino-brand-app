@@ -370,7 +370,7 @@ export function BarcodeScanner({
     : "border-white";
 
   return (
-    <div className="relative w-full h-full flex flex-col bg-black text-white select-none overflow-hidden font-sans">
+    <div className="fixed inset-0 z-[9999] h-[100dvh] w-screen flex flex-col bg-black text-white select-none overflow-hidden font-sans">
       <style>{`
         @keyframes scanSweepVertical {
           0% {
@@ -392,7 +392,7 @@ export function BarcodeScanner({
       `}</style>
 
       {/* Top Header Bar */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0 bg-black/60 backdrop-blur-md z-20 border-b border-white/10">
+      <div className="flex items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 shrink-0 bg-black/75 backdrop-blur-md z-20 border-b border-white/10">
         {/* Top Left Back Button (Closes & Navigates Back) */}
         <button
           type="button"
@@ -564,7 +564,7 @@ export function BarcodeScanner({
       </div>
 
       {/* Bottom Action Controls */}
-      <div className="flex items-center justify-between px-8 py-3 shrink-0 bg-black/70 backdrop-blur-md border-t border-white/10 z-20">
+      <div className="flex items-center justify-between px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shrink-0 bg-black/80 backdrop-blur-md border-t border-white/10 z-20">
         {/* Left: Sound Toggle */}
         <button
           type="button"

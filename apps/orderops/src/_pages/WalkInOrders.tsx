@@ -330,20 +330,23 @@ export function WalkInOrders() {
     }
   };
 
-  const handleScan = async (code: string) => {
+  const handleScan = async (rawCode: string) => {
+    const code = extractSerialCode(rawCode);
     if (!code) return;
-    if (units.some((u) => u.serialCode === code)) {
-      toast.info(`Already scanned: ${code}`);
+    if (units.some((u) => u.serialCode.toLowerCase() === code.toLowerCase())) {
+      toast.info(`Already added: ${code}`);
       return;
     }
     try {
       const row = await lookupSerial(code);
       if (!row) {
-        toast.error(`Serial ${code} not found`);
+        toast.error(`Item '${code}' not found`, {
+          description: "Check barcode, SKU, or serial number and try again.",
+        });
         return;
       }
       if (row.status !== "available" && row.status !== "cancelled" && !(row.status === "returned" && !(row as any).is_defective)) {
-        toast.error(`Serial is not available for sale (status: ${row.status})`);
+        toast.error(`Item is not available for sale (status: ${row.status})`);
         return;
       }
       const variantLabel = [row.product_variants?.size, row.product_variants?.color].filter(Boolean).join(" / ");
@@ -360,6 +363,9 @@ export function WalkInOrders() {
           unitPrice: Number(row.products?.price ?? 0),
         },
       ]);
+      toast.success(`Added: ${name}`, {
+        description: `Price: ৳${Number(row.products?.price ?? 0).toLocaleString()}`,
+      });
     } catch (e: any) {
       toast.error("Lookup failed", { description: e.message });
     }

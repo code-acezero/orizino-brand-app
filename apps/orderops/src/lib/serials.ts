@@ -1,20 +1,8 @@
+"use client";
+
 import { supabase } from "./supabase";
 
-// The @orizino/sb generated Database type predates product_serials,
-// product_serial_events, and the orders.order_source/customer_name columns
-// (added in later migrations) — masterpanel's own server functions work
-// around the same drift with `as any` at these exact call sites. Same fix
-// here, scoped to just the tables/columns affected.
 const sb = supabase as any;
-
-/**
- * Direct client-side ports of masterpanel's serial-related server functions.
- * They're safe to run straight from the browser because they were already
- * only using the RLS-scoped (anon-key + user session) Supabase client, never
- * the service role — see requireSupabaseAuth in packages/sb. The real
- * security boundary is the `product_serials` / `orders` / `order_items` RLS
- * policies (has_section_access(uid, 'sales')), which apply identically here.
- */
 
 export interface SerialLookupRow {
   id: string;
@@ -39,16 +27,174 @@ export interface SerialLookupRow {
   } | null;
 }
 
-export async function lookupSerial(code: string): Promise<SerialLookupRow | null> {
-  const { data, error } = await sb
-    .from("product_serials")
-    .select(
-      "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_name, guest_phone, status, total, created_at, shipping_address)",
-    )
-    .eq("serial_code", code)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return data as any;
+export function extractSerialCode(raw: string): string {
+  if (!raw) return "";
+  let trimmed = raw.trim().replace(/[\r\n\t]/g, "");
+
+  // 1. JSON parsing
+  if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed.serial_code) return String(parsed.serial_code).trim();
+      if (parsed.serial) return String(parsed.serial).trim();
+      if (parsed.sku) return String(parsed.sku).trim();
+      if (parsed.barcode) return String(parsed.barcode).trim();
+      if (parsed.code) return String(parsed.code).trim();
+      if (parsed.id) return String(parsed.id).trim();
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // 2. URL parsing (QR codes)
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    try {
+      const url = new URL(trimmed);
+      const param =
+        url.searchParams.get("serial") ||
+        url.searchParams.get("code") ||
+        url.searchParams.get("s") ||
+        url.searchParams.get("sku") ||
+        url.searchParams.get("barcode") ||
+        url.searchParams.get("id") ||
+        url.searchParams.get("v");
+      if (param) return param.trim();
+      const parts = url.pathname.split("/").filter(Boolean);
+      if (parts.length > 0) return parts[parts.length - 1].trim();
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return trimmed;
+}
+
+/**
+ * Universal Smart Product & Serial Resolver
+ * Resolves Serial Codes, Product SKUs, Variant Barcodes, Product Barcodes, IDs, and Slugs
+ */
+export async function lookupSerial(rawCode: string): Promise<SerialLookupRow | null> {
+  const code = extractSerialCode(rawCode);
+  if (!code) return null;
+
+  try {
+    // Step 1: Direct match on product_serials (case-insensitive)
+    const { data: serialRow } = await sb
+      .from("product_serials")
+      .select(
+        "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_name, guest_phone, status, total, created_at, shipping_address)",
+      )
+      .ilike("serial_code", code)
+      .limit(1)
+      .maybeSingle();
+
+    if (serialRow) {
+      return serialRow as any;
+    }
+
+    // Step 2: Try variant barcode or SKU
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);
+    let variantQuery = sb
+      .from("product_variants")
+      .select(
+        "id, product_id, size, color, sku, barcode, stock_quantity, products(name, sku, price, compare_at_price, thumbnail)",
+      );
+
+    if (isUuid) {
+      variantQuery = variantQuery.or(`id.eq.${code},sku.ilike.${code},barcode.ilike.${code}`);
+    } else {
+      variantQuery = variantQuery.or(`sku.ilike.${code},barcode.ilike.${code}`);
+    }
+
+    const { data: variantRow } = await variantQuery.limit(1).maybeSingle();
+
+    if (variantRow) {
+      // Check if an available serial exists for this variant
+      const { data: availableSerial } = await sb
+        .from("product_serials")
+        .select(
+          "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_name, guest_phone, status, total, created_at, shipping_address)",
+        )
+        .eq("variant_id", variantRow.id)
+        .eq("status", "available")
+        .limit(1)
+        .maybeSingle();
+
+      if (availableSerial) {
+        return availableSerial as any;
+      }
+
+      // Synthesize available inventory unit
+      return {
+        id: variantRow.id,
+        serial_code: variantRow.sku || variantRow.barcode || code,
+        status: "available",
+        product_id: variantRow.product_id,
+        variant_id: variantRow.id,
+        sold_order_id: null,
+        sold_at: null,
+        products: variantRow.products as any,
+        product_variants: {
+          size: variantRow.size,
+          color: variantRow.color,
+          sku: variantRow.sku,
+        },
+      };
+    }
+
+    // Step 3: Try product barcode, SKU, slug, or ID
+    let prodQuery = sb
+      .from("products")
+      .select("id, name, sku, barcode, slug, price, compare_at_price, thumbnail, stock_quantity");
+
+    if (isUuid) {
+      prodQuery = prodQuery.or(`id.eq.${code},sku.ilike.${code},barcode.ilike.${code}`);
+    } else {
+      prodQuery = prodQuery.or(`sku.ilike.${code},barcode.ilike.${code},slug.ilike.${code},name.ilike.%${code}%`);
+    }
+
+    const { data: productRow } = await prodQuery.limit(1).maybeSingle();
+
+    if (productRow) {
+      // Check if an available serial exists for this product
+      const { data: availableSerial } = await sb
+        .from("product_serials")
+        .select(
+          "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_name, guest_phone, status, total, created_at, shipping_address)",
+        )
+        .eq("product_id", productRow.id)
+        .eq("status", "available")
+        .limit(1)
+        .maybeSingle();
+
+      if (availableSerial) {
+        return availableSerial as any;
+      }
+
+      // Synthesize available inventory unit
+      return {
+        id: productRow.id,
+        serial_code: productRow.sku || productRow.barcode || code,
+        status: "available",
+        product_id: productRow.id,
+        variant_id: null,
+        sold_order_id: null,
+        sold_at: null,
+        products: {
+          name: productRow.name,
+          sku: productRow.sku,
+          price: Number(productRow.price || 0),
+          compare_at_price: productRow.compare_at_price ? Number(productRow.compare_at_price) : null,
+          thumbnail: productRow.thumbnail,
+        },
+        product_variants: null,
+      };
+    }
+  } catch (err) {
+    console.error("lookupSerial error:", err);
+  }
+
+  return null;
 }
 
 export async function searchOrdersForAssignment(search?: string) {
