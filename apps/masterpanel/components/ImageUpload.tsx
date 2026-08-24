@@ -1,4 +1,5 @@
 "use client";
+import { optimizeImageForUpload } from "@/lib/image-optimizer";
 import React, { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, X, Loader2 } from "lucide-react";
@@ -24,8 +25,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
-  const upload = async (file: File) => {
+  const upload = async (rawFile: File) => {
     setUploading(true);
+    const file = await optimizeImageForUpload(rawFile);
     const ext = file.name.split(".").pop();
     const path = `${folder ? folder + "/" : ""}${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 

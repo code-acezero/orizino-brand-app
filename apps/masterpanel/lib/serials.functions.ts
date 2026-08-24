@@ -182,12 +182,12 @@ export const reconcileProductSerialsFromStock = createServerFn({ method: "POST" 
     stockItems: Array<{ variantId?: string | null; stock: number; sku?: string | null }>;
   }) =>
     z.object({
-      productId: z.string().uuid(),
+      productId: z.string(),
       stockItems: z.array(
         z.object({
-          variantId: z.string().uuid().nullable().optional(),
-          stock: z.number().int().min(0).max(5000),
-          sku: z.string().nullable().optional(),
+          variantId: z.any().optional().transform((v) => (v && typeof v === "string" && v.trim() ? v.trim() : null)),
+          stock: z.coerce.number().int().min(0).max(50000),
+          sku: z.any().optional().transform((s) => (s && typeof s === "string" && s.trim() ? s.trim() : null)),
         })
       ),
     }).parse(d)

@@ -82,13 +82,13 @@ const NotifyWhenAvailable: React.FC<NotifyWhenAvailableProps> = ({
 
   if (!user) {
     return (
-      <div className={cn("flex items-center gap-2.5 p-3.5 rounded-2xl border border-border/60 bg-card/60", className)}>
-        <Bell className="w-4 h-4 text-primary shrink-0" />
-        <p className="text-xs sm:text-sm text-muted-foreground">
+      <div className={cn("flex items-center justify-center gap-1.5 pt-1 text-xs text-muted-foreground", className)}>
+        <Bell className="w-3.5 h-3.5 text-primary shrink-0" />
+        <p>
           <button
             type="button"
             onClick={() => toast({ title: "Please sign in", description: "Sign in to get notified when this item is back in stock.", variant: "destructive" })}
-            className="text-primary hover:underline font-semibold"
+            className="text-primary hover:underline font-bold cursor-pointer"
           >
             Sign in
           </button>
@@ -100,22 +100,20 @@ const NotifyWhenAvailable: React.FC<NotifyWhenAvailableProps> = ({
 
   if (isLoading) {
     return (
-      <div className={cn("flex items-center justify-center gap-2 p-3.5 rounded-2xl border border-border/50 bg-card/60", className)}>
-        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">Checking waitlist...</span>
+      <div className={cn("flex items-center justify-center gap-2 pt-1 text-xs text-muted-foreground", className)}>
+        <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+        <span>Checking waitlist...</span>
       </div>
     );
   }
 
   if (subscription) {
     return (
-      <div className={cn("flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-primary/30 bg-primary/10 shadow-xs", className)}>
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-primary/15 border border-primary/20">
-            <Mail className="w-4 h-4 text-primary" />
-          </div>
+      <div className={cn("flex items-center justify-between gap-3 p-3 rounded-xl border border-primary/30 bg-primary/10 shadow-xs", className)}>
+        <div className="flex items-center gap-2">
+          <Mail className="w-4 h-4 text-primary shrink-0" />
           <div>
-            <p className="text-xs sm:text-sm font-bold text-foreground">You're on the waitlist</p>
+            <p className="text-xs font-bold text-foreground">You're on the waitlist</p>
             <p className="text-[11px] text-muted-foreground">
               We'll notify you{variantLabel ? ` about ${variantLabel}` : ""} when available
             </p>
@@ -126,7 +124,7 @@ const NotifyWhenAvailable: React.FC<NotifyWhenAvailableProps> = ({
           size="sm"
           onClick={() => unsubscribe.mutate()}
           disabled={unsubscribe.isPending}
-          className="text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl shrink-0 transition-all"
+          className="text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg shrink-0 transition-all h-8 px-2.5"
         >
           {unsubscribe.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BellOff className="w-3.5 h-3.5 mr-1" />}
           Remove
@@ -140,7 +138,7 @@ const NotifyWhenAvailable: React.FC<NotifyWhenAvailableProps> = ({
       onClick={() => subscribe.mutate()}
       disabled={subscribe.isPending}
       className={cn(
-        "group w-full h-11 flex items-center justify-center gap-2 text-sm font-bold rounded-2xl transition-all duration-200 border-2 border-primary/40 bg-primary/15 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary hover:shadow-[0_0_20px_hsl(var(--primary)/0.35)] active:scale-[0.99]",
+        "group w-full h-11 flex items-center justify-center gap-2 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 border-2 border-primary/40 bg-primary/15 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary active:scale-[0.99]",
         className
       )}
     >
@@ -155,4 +153,3 @@ const NotifyWhenAvailable: React.FC<NotifyWhenAvailableProps> = ({
 };
 
 export default NotifyWhenAvailable;
-// code:4ce0

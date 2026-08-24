@@ -729,6 +729,125 @@ const AdminAISettings = () => {
         </Card>
       </div>
 
+      
+        {/* Omnichannel Social AI Gateway (WhatsApp, Messenger, Instagram, TikTok) */}
+        <Card className="md:col-span-2 border-border/70 bg-card/80 backdrop-blur-sm">
+          <CardHeader>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="space-y-1">
+                <CardTitle className="flex items-center gap-2 text-base font-bold">
+                  <Globe2 className="w-5 h-5 text-emerald-500" /> Omnichannel Social AI Gateway (Option A)
+                </CardTitle>
+                <CardDescription>
+                  Direct in-house AI automated customer support and conversational sales across WhatsApp, Facebook Page, Instagram, and TikTok.
+                </CardDescription>
+              </div>
+              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider">
+                100% In-House / Zero Monthly Fees
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* WhatsApp Card */}
+              <div className="rounded-2xl border border-border/60 bg-secondary/15 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold">
+                      <MessageCircle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-foreground">WhatsApp Business Cloud</p>
+                      <p className="text-[10px] text-muted-foreground">Official Meta Cloud API Webhook</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                    Active
+                  </Badge>
+                </div>
+                <div className="space-y-1.5 text-[11px] bg-background/60 p-2.5 rounded-xl border border-border/40 font-mono">
+                  <div className="text-muted-foreground text-[10px]">Webhook URL:</div>
+                  <div className="text-emerald-400 select-all truncate">https://yourdomain.com/api/webhooks/whatsapp</div>
+                  <div className="text-muted-foreground text-[10px] pt-1">Verify Token:</div>
+                  <div className="text-foreground select-all font-semibold">orizino_whatsapp_secure_webhook_token</div>
+                </div>
+              </div>
+
+              {/* Facebook Messenger Card */}
+              <div className="rounded-2xl border border-border/60 bg-secondary/15 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold">
+                      <MessageSquare className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-foreground">Facebook Page Messenger</p>
+                      <p className="text-[10px] text-muted-foreground">Meta Graph Messenger Platform</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/20">
+                    Connected
+                  </Badge>
+                </div>
+                <div className="space-y-1.5 text-[11px] bg-background/60 p-2.5 rounded-xl border border-border/40 font-mono">
+                  <div className="text-muted-foreground text-[10px]">Webhook URL:</div>
+                  <div className="text-blue-400 select-all truncate">https://yourdomain.com/api/webhooks/meta-chat</div>
+                  <div className="text-muted-foreground text-[10px] pt-1">Verify Token:</div>
+                  <div className="text-foreground select-all font-semibold">orizino_meta_chat_secure_token</div>
+                </div>
+              </div>
+
+              {/* Instagram DMs Card */}
+              <div className="rounded-2xl border border-border/60 bg-secondary/15 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-pink-500/10 text-pink-500 flex items-center justify-center font-bold">
+                      <Zap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-foreground">Instagram Direct (DMs)</p>
+                      <p className="text-[10px] text-muted-foreground">Meta Instagram Messaging API</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] bg-pink-500/10 text-pink-400 border-pink-500/20">
+                    Connected
+                  </Badge>
+                </div>
+                <div className="space-y-1.5 text-[11px] bg-background/60 p-2.5 rounded-xl border border-border/40 font-mono">
+                  <div className="text-muted-foreground text-[10px]">Webhook URL:</div>
+                  <div className="text-pink-400 select-all truncate">https://yourdomain.com/api/webhooks/meta-chat</div>
+                  <div className="text-muted-foreground text-[10px] pt-1">Verify Token:</div>
+                  <div className="text-foreground select-all font-semibold">orizino_meta_chat_secure_token</div>
+                </div>
+              </div>
+
+              {/* TikTok DMs Card */}
+              <div className="rounded-2xl border border-border/60 bg-secondary/15 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center font-bold">
+                      <Bot className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-foreground">TikTok Direct Messaging</p>
+                      <p className="text-[10px] text-muted-foreground">TikTok for Business API Webhook</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/20">
+                    Ready
+                  </Badge>
+                </div>
+                <div className="space-y-1.5 text-[11px] bg-background/60 p-2.5 rounded-xl border border-border/40 font-mono">
+                  <div className="text-muted-foreground text-[10px]">Webhook URL:</div>
+                  <div className="text-purple-400 select-all truncate">https://yourdomain.com/api/webhooks/tiktok</div>
+                  <div className="text-muted-foreground text-[10px] pt-1">Event Type:</div>
+                  <div className="text-foreground font-semibold">direct_message.receive</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
       <GeminiFallbackPanel />
     </div>
   );

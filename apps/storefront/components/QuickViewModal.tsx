@@ -92,7 +92,14 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
   );
 
   const sizeRequired = sizes.length > 0;
-  const colorRequired = colors.length > 0;
+  const colorRequired = colors.length > 1;
+
+  // Auto-select if only 1 color exists
+  useEffect(() => {
+    if (colors.length === 1 && !selectedColor) {
+      setSelectedColor(colors[0]);
+    }
+  }, [colors, selectedColor]);
   const requiresVariantSelection = sizeRequired || colorRequired;
   const hasCompleteSelection = (!sizeRequired || !!selectedSize) && (!colorRequired || !!selectedColor);
 
@@ -307,7 +314,7 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
               )}
 
               {discount > 0 && (
-                <span className="absolute top-3 left-3 bg-destructive text-destructive-foreground text-xs py-1 px-3 rounded-full font-semibold z-10">
+                <span className="absolute top-3 left-3 inline-flex items-center text-[10.5px] font-bold font-mono px-2.5 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/35 backdrop-blur-md shadow-xs z-10">
                   -{discount}%
                 </span>
               )}
@@ -332,11 +339,12 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
             <div className="p-5 sm:p-6 flex flex-col overflow-y-auto min-h-0">
               <h2 className="text-lg font-bold text-foreground mb-1 leading-tight">{product.name}</h2>
 
-              <div className="flex items-center gap-1 mb-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(product.avg_rating || 0) ? "fill-primary text-primary" : "text-muted-foreground/30"}`} />
-                ))}
-                <span className="text-xs text-muted-foreground ml-1">({product.review_count || 0})</span>
+              <div className="flex items-center gap-1.5 mb-3">
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                <span className="text-xs font-bold text-foreground">
+                  {product.avg_rating ? Number(product.avg_rating).toFixed(1) : "0.0"}
+                </span>
+                <span className="text-xs text-muted-foreground">({product.review_count || 0})</span>
               </div>
 
               <div className="flex items-center gap-2 mb-4 flex-wrap">
@@ -371,7 +379,7 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 </div>
               )}
 
-              {colors.length > 0 && (
+              {colors.length > 1 && (
                 <div className="mb-4">
                   <p className="text-xs font-semibold text-foreground mb-2">Color <span className="text-destructive">*</span></p>
                   <div className="flex flex-wrap gap-2">

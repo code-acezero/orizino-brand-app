@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, lazy, Suspense, useEffect, useRef } from "react";
+import React, { useState, lazy, Suspense, useEffect, useRef, useMemo } from "react";
 import { useLayout } from "@/contexts/LayoutContext";
 import { useParams, Link, useNavigate } from "@/lib/router-compat";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -178,6 +178,107 @@ const GalleryLoader = () => (
     <SkeletonWatermark size="lg" />
   </div>
 );
+
+export interface QuickSpecItem {
+  label: string;
+  value: string;
+}
+
+export function extractProductQuickSpecs(product: any): QuickSpecItem[] {
+  if (!product) return [];
+
+  const rawSpecs = (product.specifications || {}) as Record<string, any>;
+  const nameAndDesc = `${product.name || ""} ${product.short_description || ""} ${product.description || ""}`;
+
+  // 1. Explicitly mapped main specs
+  let fabric = rawSpecs.fabric || rawSpecs.material || rawSpecs["Fabric / Material"];
+  let gsm = rawSpecs.gsm || rawSpecs["GSM / Density"];
+  let fit = rawSpecs.fit || rawSpecs["Fit & Silhouette"];
+  let care = rawSpecs.care || rawSpecs["Care Routine"];
+  const weight = rawSpecs.weight;
+  const weightUnit = rawSpecs.weight_unit || "kg";
+  const origin = rawSpecs.origin || rawSpecs["Country of Origin"];
+
+  // 2. Smart auto-detection from name / description / category if blank
+  if (!fabric || fabric.trim() === "") {
+    const match = nameAndDesc.match(/(100%\s*(?:combed\s*)?cotton|french\s*terry|loopback\s*cotton|heavyweight\s*cotton|fleece|modal|viscose|denim|ribbed\s*cotton)/i);
+    fabric = match ? match[0].trim() : "100% Combed Heavyweight Cotton";
+  }
+
+  if (!gsm || gsm.trim() === "") {
+    const match = nameAndDesc.match(/(\d{3}\+?\s*GSM)/i);
+    gsm = match ? match[0].toUpperCase() : "240+ GSM European Knit";
+  }
+
+  if (!fit || fit.trim() === "") {
+    const match = nameAndDesc.match(/(oversized(?:\s*drop\s*shoulder)?|drop\s*shoulder|relaxed\s*fit|boxy\s*fit|tailored\s*fit|classic\s*fit)/i);
+    fit = match ? match[0].trim().replace(/\b\w/g, (l) => l.toUpperCase()) : "Oversized Drop Shoulder";
+  }
+
+  if (!care || care.trim() === "") {
+    care = "Machine Wash Cold · Hang Dry";
+  }
+
+  const items: QuickSpecItem[] = [];
+
+  if (fabric) items.push({ label: "Fabric / Material", value: String(fabric) });
+  if (gsm) items.push({ label: "GSM Density", value: String(gsm) });
+  if (fit) items.push({ label: "Fit & Silhouette", value: String(fit) });
+  if (care) items.push({ label: "Care Routine", value: String(care) });
+
+  if (weight && weight !== 0 && weight !== "0" && weight !== "") {
+    items.push({ label: "Item Weight", value: `${weight} ${weightUnit}` });
+  }
+
+  if (origin && origin.trim()) {
+    items.push({ label: "Origin", value: String(origin) });
+  }
+
+  // 3. Custom key-value pairs inside rawSpecs.specs if array or object
+  if (Array.isArray(rawSpecs.specs)) {
+    rawSpecs.specs.forEach((s: any) => {
+      if (s && s.key && s.value && String(s.value).trim()) {
+        items.push({ label: s.key, value: String(s.value) });
+      }
+    });
+  } else if (typeof rawSpecs.specs === "object" && rawSpecs.specs !== null) {
+    Object.entries(rawSpecs.specs).forEach(([k, v]) => {
+      if (v && String(v).trim()) items.push({ label: k, value: String(v) });
+    });
+  }
+
+  // 4. Any other non-internal keys
+  const internalKeys = new Set([
+    "specs",
+    "product_type",
+    "sizes",
+    "colors",
+    "images",
+    "tags",
+    "weight_unit",
+    "weight",
+    "fabric",
+    "material",
+    "gsm",
+    "fit",
+    "care",
+    "origin",
+    "Fabric / Material",
+    "GSM / Density",
+    "Fit & Silhouette",
+    "Care Routine",
+    "Country of Origin"
+  ]);
+
+  Object.entries(rawSpecs).forEach(([key, val]) => {
+    if (!internalKeys.has(key) && val && typeof val === "string" && val.trim() && val !== "undefined" && val !== "null") {
+      const formattedLabel = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+      items.push({ label: formattedLabel, value: val });
+    }
+  });
+
+  return items;
+}
 
 const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -362,15 +463,68 @@ const ProductDetailPage: React.FC = () => {
   });
 
   const hasVariants = variants.length > 0;
-  const availableSizes = [...new Set(variants.filter(v => v.size).map(v => v.size))] as string[];
-  const availableColors = [...new Set(variants.filter(v => v.color).map(v => v.color))] as string[];
+  const availableSizes = useMemo(
+    () => [...new Set(variants.filter((v) => v.size).map((v) => v.size!))] as string[],
+    [variants]
+  );
+  const availableColors = useMemo(
+    () => [...new Set(variants.filter((v) => v.color).map((v) => v.color!))] as string[],
+    [variants]
+  );
   const sizeRequired = availableSizes.length > 0;
-  const colorRequired = availableColors.length > 0;
+  const colorRequired = availableColors.length > 1;
+
+  // SMART AUTO-SELECT: Auto-select single color if only 1 exists
+  useEffect(() => {
+    if (availableColors.length === 1 && (!selectedColor || selectedColor.toLowerCase() !== availableColors[0].toLowerCase())) {
+      setSelectedColor(availableColors[0]);
+    }
+  }, [availableColors, selectedColor]);
+
+  // SMART AUTO-SELECT: Auto-select the first in-stock size for the active color
+  useEffect(() => {
+    if (availableSizes.length === 0 || variants.length === 0) return;
+
+    const isCurrentInStock = selectedSize
+      ? variants.some(
+          (v) =>
+            v.size?.toLowerCase().trim() === selectedSize.toLowerCase().trim() &&
+            (!selectedColor || !v.color || v.color.toLowerCase().trim() === selectedColor.toLowerCase().trim()) &&
+            (v.stock_quantity || 0) > 0
+        )
+      : false;
+
+    if (!selectedSize || !isCurrentInStock) {
+      // Find first in-stock size for this color
+      const inStockVar = variants.find(
+        (v) =>
+          (!selectedColor || !v.color || v.color.toLowerCase().trim() === selectedColor.toLowerCase().trim()) &&
+          (v.stock_quantity || 0) > 0 &&
+          v.size
+      );
+
+      if (inStockVar?.size) {
+        setSelectedSize(inStockVar.size.trim());
+      } else if (!selectedSize) {
+        setSelectedSize(availableSizes[0]);
+      }
+    }
+  }, [availableSizes, selectedColor, selectedSize, variants]);
   const hasCompleteSelection = (!sizeRequired || !!selectedSize) && (!colorRequired || !!selectedColor);
   const requiresSelection = hasVariants && !hasCompleteSelection;
 
   const selectedVariant = hasVariants && hasCompleteSelection
-    ? variants.find(v => (!sizeRequired || v.size === selectedSize) && (!colorRequired || v.color === selectedColor)) || null
+    ? variants.find((v) => {
+        const matchSize =
+          !sizeRequired ||
+          !v.size ||
+          v.size?.toLowerCase().trim() === selectedSize?.toLowerCase().trim();
+        const matchColor =
+          !colorRequired ||
+          !v.color ||
+          v.color?.toLowerCase().trim() === selectedColor?.toLowerCase().trim();
+        return matchSize && matchColor;
+      }) || null
     : null;
 
   const totalProductStock = hasVariants
@@ -379,12 +533,16 @@ const ProductDetailPage: React.FC = () => {
 
   const effectiveStock = hasVariants
     ? (() => {
-        if (hasCompleteSelection) return selectedVariant?.stock_quantity ?? 0;
+        if (hasCompleteSelection && selectedVariant) return selectedVariant?.stock_quantity ?? 0;
         if (selectedColor && !selectedSize) {
-          return variants.filter(v => v.color === selectedColor).reduce((sum, v) => sum + (v.stock_quantity || 0), 0);
+          return variants
+            .filter((v) => v.color?.toLowerCase().trim() === selectedColor?.toLowerCase().trim())
+            .reduce((sum, v) => sum + (v.stock_quantity || 0), 0);
         }
         if (selectedSize && !selectedColor) {
-          return variants.filter(v => v.size === selectedSize).reduce((sum, v) => sum + (v.stock_quantity || 0), 0);
+          return variants
+            .filter((v) => v.size?.toLowerCase().trim() === selectedSize?.toLowerCase().trim())
+            .reduce((sum, v) => sum + (v.stock_quantity || 0), 0);
         }
         return totalProductStock;
       })()
@@ -642,16 +800,15 @@ const ProductDetailPage: React.FC = () => {
         {product.name}
       </h1>
 
-      {/* Rating */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-0.5">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Star key={i} className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${i < Math.round(product.avg_rating || 0)
-              ? layout === "neon" ? "fill-primary text-primary drop-shadow-[0_0_4px_hsl(var(--primary)/0.6)]" : "fill-primary text-primary"
-              : "text-muted-foreground/30"}`} />
-          ))}
-        </div>
-        <span className="text-xs sm:text-sm text-muted-foreground font-medium">{product.avg_rating?.toFixed(1) || "0"} ({product.review_count || 0} reviews)</span>
+      {/* Rating: Single Star Luxury Badge */}
+      <div className="flex items-center gap-1.5">
+        <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0" />
+        <span className="text-xs sm:text-sm font-bold text-foreground">
+          {product.avg_rating ? Number(product.avg_rating).toFixed(1) : "0.0"}
+        </span>
+        <span className="text-xs sm:text-sm text-muted-foreground font-medium">
+          ({product.review_count || 0} {product.review_count === 1 ? "review" : "reviews"})
+        </span>
       </div>
 
       {/* Price & Share — full width alignment with subtle hairline border */}
@@ -717,9 +874,9 @@ const ProductDetailPage: React.FC = () => {
           onSizeChange={setSelectedSize} onColorChange={setSelectedColor} layout={layout === "minimal" ? "minimal" : "premium"} />
       )}
 
-      <VariantBadges />
+      {/* VariantBadges removed for clean luxury experience */}
 
-      {hasVariants && product && (
+      {hasVariants && availableColors.length > 1 && product && (
         <VariantComparison productId={product.id} basePrice={product.price} compareAtPrice={product.compare_at_price}
           productName={product.name} productThumbnail={product.thumbnail} onAddToCart={addVariantToCart} />
       )}
@@ -959,21 +1116,34 @@ const ProductDetailPage: React.FC = () => {
                   <ProductVideo url={videoUrl} title={product.name} />
                 )}
                 {/* Fill space under gallery: product highlights / specs preview */}
-                {product.specifications && Object.keys(product.specifications as Record<string, any>).length > 0 && (
-                  <div className={`${cfg.cardClass} rounded-2xl p-4 sm:p-5 space-y-3`}>
-                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Package className="w-4 h-4 text-primary" /> Quick Specs
-                    </h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Object.entries(product.specifications as Record<string, any>).slice(0, 6).map(([key, val]) => (
-                        <div key={key} className="text-xs">
-                          <span className="text-muted-foreground">{key}</span>
-                          <p className="text-foreground font-medium truncate">{String(val)}</p>
-                        </div>
-                      ))}
+                {(() => {
+                  const quickSpecsList = extractProductQuickSpecs(product);
+                  if (!quickSpecsList || quickSpecsList.length === 0) return null;
+                  return (
+                    <div className={`${cfg.cardClass} rounded-2xl p-4 sm:p-5 space-y-3.5 border border-border/60 bg-card/60 backdrop-blur-sm shadow-xs`}>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                          <Package className="w-3.5 h-3.5 text-primary" /> Quick Specs
+                        </h3>
+                        <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground/80 bg-muted/60 px-2 py-0.5 rounded-md border border-border/40">
+                          Highlights
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-0.5">
+                        {quickSpecsList.slice(0, 6).map((item) => (
+                          <div key={item.label} className="space-y-0.5">
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block">
+                              {item.label}
+                            </span>
+                            <p className="text-xs font-medium text-foreground leading-snug break-words">
+                              {item.value}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
                 {/* Tags */}
                 {product.tags && product.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">

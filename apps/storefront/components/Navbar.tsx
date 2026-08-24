@@ -150,13 +150,24 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
   const { data: siteSettings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ["site-settings-nav"],
     queryFn: async () => {
+      try {
+        const res = await fetch("/api/site-settings?keys=site_name,logo_url,title_image_url,title_source,site_icon_url,logo_display_style,title_font,brand_title_size_nav,brand_logo_title_ratio,title_letter_spacing,title_group_mode,title_letter_colors,title_group_custom", {
+          headers: { Accept: "application/json" }
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json && typeof json === "object" && !json.error) {
+            return json;
+          }
+        }
+      } catch {}
       const { data } = await supabase
         .from("site_settings")
         .select("key, value")
         .in("key", [
           "site_name", "logo_url", "title_image_url", "title_source",
           "site_icon_url", "logo_display_style", "title_font",
-          "brand_title_size_nav", "brand_logo_title_ratio",
+          "brand_title_size_nav", "brand_logo_title_ratio", "title_letter_spacing",
           "title_group_mode", "title_letter_colors", "title_group_custom"
         ]);
       const map: Record<string, any> = {};
@@ -180,6 +191,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
   const titleFont = (siteSettings?.title_font as string) || "";
   const brandTitleSizeNav = Number(siteSettings?.brand_title_size_nav) || 20;
   const brandLogoTitleRatio = Number(siteSettings?.brand_logo_title_ratio) || 1.0;
+  const titleLetterSpacing = siteSettings?.title_letter_spacing !== undefined && siteSettings?.title_letter_spacing !== null ? Number(siteSettings?.title_letter_spacing) : 0;
 
   useEffect(() => {
     if (titleFont) loadGoogleFont(titleFont);
@@ -286,8 +298,9 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                       className="w-auto transition-transform duration-300 group-hover:scale-105"
                       style={{
                         height: `${Math.round((brandTitleSizeNav * 1.35) * brandLogoTitleRatio)}px`,
-                        maxHeight: "44px",
-                        minHeight: "20px",
+                        width: `${Math.round((brandTitleSizeNav * 1.35) * brandLogoTitleRatio * (539 / 565))}px`,
+                        maxHeight: "48px",
+                        minHeight: "16px",
                       }}
                     />
                   </Link>
@@ -323,8 +336,9 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
                       />
                     ) : (
                       <BrandTitle
-                        className="brand-name notranslate skiptranslate uppercase text-foreground group-hover:text-primary transition-colors duration-300 font-bold leading-none select-none tracking-[0.16em]"
+                        className="brand-name notranslate skiptranslate uppercase text-foreground group-hover:text-primary transition-colors duration-300 font-bold leading-none select-none"
                         fontSize={brandTitleSizeNav}
+                        letterSpacing={titleLetterSpacing}
                         fallback="ORIZINO"
                       />
                     )}

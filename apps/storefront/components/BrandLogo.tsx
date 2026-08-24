@@ -11,7 +11,7 @@ interface BrandLogoProps {
 const BrandLogo: React.FC<BrandLogoProps> = ({
   logoUrl,
   alt = "Orizino",
-  className = "h-6 sm:h-7 w-8 sm:w-10",
+  className = "",
   style,
 }) => {
   const isCustomLogo = Boolean(
@@ -21,9 +21,12 @@ const BrandLogo: React.FC<BrandLogoProps> = ({
     !logoUrl.endsWith("/orizino.svg")
   );
 
+  const hasExplicitSize = Boolean(style?.height || style?.width || className?.includes("h-"));
+  const defaultSizeClass = hasExplicitSize ? "" : "h-6 sm:h-7 w-8 sm:w-10";
+
   return (
     <div
-      className={`relative inline-flex items-center justify-center shrink-0 aspect-[539/565] ${className}`}
+      className={`relative inline-flex items-center justify-center shrink-0 aspect-[539/565] ${defaultSizeClass} ${className}`.trim()}
       style={style}
     >
       {isCustomLogo ? (

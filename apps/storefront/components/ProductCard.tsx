@@ -271,11 +271,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
     <>
       <article
         onContextMenu={(e) => e.preventDefault()}
-        className={`group relative flex flex-col overflow-hidden bg-card select-none [-webkit-touch-callout:none] [-webkit-user-select:none] transition-all duration-500 w-full max-w-[280px] mx-auto ${className}`}
+        className={`group relative flex flex-col overflow-hidden bg-card select-none [-webkit-touch-callout:none] [-webkit-user-select:none] transition-all duration-500 w-full max-w-[280px] mx-auto rounded-xl border border-border/40 ${className}`}
         style={{
-          borderRadius: 0,
           transform: hovered ? "translateY(-3px)" : "translateY(0)",
-          boxShadow: hovered ? "0 12px 28px -8px hsl(var(--primary) / 0.14)" : "0 0 0 1px hsl(var(--border) / 0.3)",
+          boxShadow: hovered ? "0 12px 28px -8px hsl(var(--primary) / 0.14)" : "none",
           transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
           willChange: "transform, box-shadow",
           WebkitTouchCallout: "none",
@@ -327,8 +326,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
             />
           )}
 
-          {/* Elegant bottom blend gradient */}
-          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-card via-card/15 to-transparent opacity-50 z-10 pointer-events-none transition-opacity duration-300 group-hover:opacity-30" />
+          {/* ── Seamless Edge Shadow & Gradient Blend with Card Title BG ── */}
+          <div
+            className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-card via-card/75 via-card/30 to-transparent pointer-events-none z-10"
+            aria-hidden="true"
+          />
 
           {/* Sold out overlay */}
           {isSoldOut && (
@@ -353,19 +355,19 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </div>
           )}
 
-          <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
+          <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1 z-10 pointer-events-none">
             {isNew && !isSoldOut && (
-              <span className="bg-foreground text-background text-[9px] font-sans-brand font-semibold px-2 py-0.5 rounded-full tracking-wide uppercase">
+              <span className="inline-flex items-center text-[10px] font-bold font-mono tracking-wider uppercase px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 backdrop-blur-md shadow-xs">
                 New
               </span>
             )}
             {discount > 0 && !isSoldOut && (
-              <span className="bg-primary text-primary-foreground text-[9px] font-sans-brand font-semibold px-2 py-0.5 rounded-full tracking-wide">
+              <span className="inline-flex items-center text-[10px] font-bold font-mono tracking-tight px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/35 backdrop-blur-md shadow-xs">
                 -{discount}%
               </span>
             )}
             {isLowStock && (
-              <span className="bg-amber-500/90 text-white text-[9px] font-sans-brand font-semibold px-2 py-0.5 rounded-full tracking-wide uppercase">
+              <span className="inline-flex items-center text-[9.5px] font-bold font-mono tracking-wider uppercase px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/35 backdrop-blur-md shadow-xs opacity-0 -translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 ease-out">
                 Only {totalStock} left
               </span>
             )}
@@ -454,46 +456,40 @@ const ProductCard: React.FC<ProductCardProps> = ({
           />
         </Link>
 
-        {/* ── Product Info: Perfectly Symmetrical Fixed Height + 3-Row Auto-Fitting Title ── */}
-        <div className="flex flex-col items-center text-center px-2 py-2 sm:px-3 sm:py-2.5 w-full min-h-[96px] sm:min-h-[108px] justify-between">
-          {/* 3 Rows Max with Auto-Resizing Font for Short vs Long Titles */}
-          <div className="w-full h-[3.8em] sm:h-[4em] flex items-center justify-center overflow-hidden">
+        {/* ── Product Info: 3-Row Compact Typography & Low Height ── */}
+        <div className="flex flex-col items-center text-center px-2.5 py-2 sm:px-3 sm:py-2.5 w-full justify-between gap-1">
+          {/* Title: 3 Rows with slightly larger font and tight leading for low height */}
+          <div className="w-full flex items-center justify-center min-h-[3.6em] max-h-[3.8em] overflow-hidden">
             <Link
               href={`/product/${slug}`}
-              className={`font-sans-brand font-medium tracking-tight text-foreground/90 line-clamp-3 leading-[1.25] text-center hover:text-primary transition-colors w-full ${
-                name.length <= 22
-                  ? "text-[12px] sm:text-[13px] font-semibold"
-                  : name.length <= 42
-                    ? "text-[11px] sm:text-[12px]"
-                    : "text-[10px] sm:text-[11px]"
-              }`}
+              className="font-sans-brand font-semibold tracking-tight text-foreground/90 line-clamp-3 leading-[1.2] text-center hover:text-primary transition-colors w-full text-[12.5px] sm:text-[13.5px]"
               title={name}
             >
               {name}
             </Link>
           </div>
 
-          {/* Fixed-height color swatch dots slot for perfect vertical alignment */}
-          <div className="h-4 sm:h-5 flex items-center justify-center">
-            {variantColors.length > 1 ? (
-              <div className="flex items-center justify-center gap-1">
-                {variantColors.slice(0, 5).map((color, i) => (
-                  <span
-                    key={i}
-                    className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full border border-foreground/15 shrink-0"
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  />
-                ))}
-                {variantColors.length > 5 && (
-                  <span className="text-[7.5px] sm:text-[8px] text-muted-foreground font-sans-brand">+{variantColors.length - 5}</span>
-                )}
-              </div>
-            ) : null}
-          </div>
+          {/* Swatches (only rendered when variants exist) */}
+          {variantColors.length > 1 && (
+            <div className="flex items-center justify-center gap-1 py-0.5">
+              {variantColors.slice(0, 5).map((color, i) => (
+                <span
+                  key={i}
+                  className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full border border-foreground/15 shrink-0"
+                  style={{ backgroundColor: color }}
+                  title={color}
+                />
+              ))}
+              {variantColors.length > 5 && (
+                <span className="text-[7.5px] sm:text-[8px] text-muted-foreground font-sans-brand">
+                  +{variantColors.length - 5}
+                </span>
+              )}
+            </div>
+          )}
 
-          {/* Price display with consistent fixed height */}
-          <div className="flex items-baseline justify-center gap-1.5 h-5 sm:h-6 notranslate skiptranslate" translate="no">
+          {/* Price display */}
+          <div className="flex items-baseline justify-center gap-1.5 notranslate skiptranslate pt-0.5" translate="no">
             <span className="text-xs sm:text-sm md:text-base font-bold text-foreground tracking-tight notranslate" translate="no">
               {formatPrice(price)}
             </span>

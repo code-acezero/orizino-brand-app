@@ -200,19 +200,23 @@ const WishlistPage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center px-4 py-16">
-        <div className="max-w-md w-full text-center space-y-4 p-8 rounded-3xl border border-border/60 bg-card/80 backdrop-blur-md shadow-lg">
+      <div className="min-h-[70vh] w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-12 flex items-center justify-center">
+        <div className="w-full text-center space-y-5 p-8 sm:p-16 md:p-20 rounded-3xl border border-border/60 bg-card/60 backdrop-blur-md">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto">
-            <Heart className="w-8 h-8 fill-primary/30" />
+            <Heart className="w-8 h-8 fill-primary/30 text-primary" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-display text-foreground">Your Wishlist</h1>
-          <p className="text-sm text-muted-foreground">
-            Sign in to your account to view and synchronize your saved items across devices.
-          </p>
-          <div className="pt-2">
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-4xl font-bold font-display text-foreground tracking-tight">
+              Your Wishlist
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto">
+              Sign in to your account to view and synchronize your saved items across devices.
+            </p>
+          </div>
+          <div className="pt-3">
             <Link
               to="/auth"
-              className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground font-bold px-8 py-3 text-sm shadow-md hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground font-bold px-8 sm:px-10 py-3.5 text-sm hover:bg-primary/90 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               Sign In to View Wishlist
             </Link>
@@ -224,7 +228,7 @@ const WishlistPage: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-24 lg:pb-12">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-10 space-y-6 sm:space-y-8">
         {/* ── Luxury Header ── */}
         <div className="border-b border-border/40 pb-6 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -247,7 +251,7 @@ const WishlistPage: React.FC = () => {
               {inStockCount > 0 && (
                 <Button
                   onClick={addAllInStockToCart}
-                  className="rounded-2xl gap-2 font-bold text-xs sm:text-sm h-10 px-5 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="rounded-2xl gap-2 font-bold text-xs sm:text-sm h-10 px-5  bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   <ShoppingBag className="w-4 h-4" />
                   <span>Add In-Stock to Bag ({inStockCount})</span>
@@ -300,7 +304,7 @@ const WishlistPage: React.FC = () => {
             <div className="pt-3">
               <Link
                 to="/inventory"
-                className="rounded-full bg-primary text-primary-foreground font-bold px-8 py-3.5 text-sm inline-flex items-center gap-2 shadow-md hover:opacity-95 transition-opacity"
+                className="rounded-full bg-primary text-primary-foreground font-bold px-8 py-3.5 text-sm inline-flex items-center gap-2  hover:opacity-95 transition-opacity"
               >
                 <span>Explore Catalog</span>
                 <ArrowRight className="w-4 h-4" />
@@ -310,7 +314,7 @@ const WishlistPage: React.FC = () => {
         ) : (
           <div className="space-y-6">
             {/* Filter & View Bar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-2.5 rounded-2xl bg-card/80 border border-border/50 shadow-xs">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-2.5 rounded-2xl bg-card/80 border border-border/50 ">
               <div className="flex flex-1 items-center gap-2">
                 <div className="relative flex-1 max-w-xs">
                   <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -328,7 +332,7 @@ const WishlistPage: React.FC = () => {
                     type="button"
                     onClick={() => setStockFilter("all")}
                     className={`px-2.5 py-1 rounded-lg transition-all ${
-                      stockFilter === "all" ? "bg-background font-bold text-foreground shadow-xs" : "text-muted-foreground"
+                      stockFilter === "all" ? "bg-background font-bold text-foreground " : "text-muted-foreground"
                     }`}
                   >
                     All ({items.length})
@@ -337,7 +341,7 @@ const WishlistPage: React.FC = () => {
                     type="button"
                     onClick={() => setStockFilter("in_stock")}
                     className={`px-2.5 py-1 rounded-lg transition-all ${
-                      stockFilter === "in_stock" ? "bg-background font-bold text-foreground shadow-xs" : "text-muted-foreground"
+                      stockFilter === "in_stock" ? "bg-background font-bold text-foreground " : "text-muted-foreground"
                     }`}
                   >
                     In Stock ({inStockCount})
@@ -347,7 +351,7 @@ const WishlistPage: React.FC = () => {
                       type="button"
                       onClick={() => setStockFilter("out_of_stock")}
                       className={`px-2.5 py-1 rounded-lg transition-all ${
-                        stockFilter === "out_of_stock" ? "bg-background font-bold text-foreground shadow-xs" : "text-muted-foreground"
+                        stockFilter === "out_of_stock" ? "bg-background font-bold text-foreground " : "text-muted-foreground"
                       }`}
                     >
                       Out of Stock ({items.length - inStockCount})
@@ -380,12 +384,12 @@ const WishlistPage: React.FC = () => {
                   </div>
                 )}
 
-                <div className="h-8.5 flex items-center rounded-xl border border-border/50 overflow-hidden bg-background p-0.5 shadow-xs">
+                <div className="h-8.5 flex items-center rounded-xl border border-border/50 overflow-hidden bg-background p-0.5 ">
                   <button
                     type="button"
                     onClick={() => setViewMode("grid")}
                     className={`h-7.5 w-7.5 rounded-lg flex items-center justify-center transition-all ${
-                      viewMode === "grid" ? "bg-primary text-primary-foreground font-bold shadow-xs" : "text-muted-foreground hover:text-foreground"
+                      viewMode === "grid" ? "bg-primary text-primary-foreground font-bold " : "text-muted-foreground hover:text-foreground"
                     }`}
                     title="Grid View"
                   >
@@ -395,7 +399,7 @@ const WishlistPage: React.FC = () => {
                     type="button"
                     onClick={() => setViewMode("list")}
                     className={`h-7.5 w-7.5 rounded-lg flex items-center justify-center transition-all ${
-                      viewMode === "list" ? "bg-primary text-primary-foreground font-bold shadow-xs" : "text-muted-foreground hover:text-foreground"
+                      viewMode === "list" ? "bg-primary text-primary-foreground font-bold " : "text-muted-foreground hover:text-foreground"
                     }`}
                     title="List View"
                   >
@@ -422,7 +426,7 @@ const WishlistPage: React.FC = () => {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        className="relative group flex flex-col rounded-2xl border border-border/50 bg-card overflow-hidden transition-all duration-300 hover:border-primary/40 hover:shadow-md"
+                        className="relative group flex flex-col rounded-2xl border border-border/50 bg-card overflow-hidden transition-all duration-300 hover:border-primary/40 hover:"
                       >
                         {/* Select checkbox overlay */}
                         <button
@@ -450,7 +454,7 @@ const WishlistPage: React.FC = () => {
                             removeItem.mutate(item.id);
                           }}
                           aria-label="Remove item"
-                          className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full bg-background/80 backdrop-blur-xs border border-border/40 text-muted-foreground hover:text-destructive hover:bg-destructive/15 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-xs"
+                          className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full bg-background/80 backdrop-blur-xs border border-border/40 text-muted-foreground hover:text-destructive hover:bg-destructive/15 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all "
                           title="Remove from wishlist"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -494,7 +498,7 @@ const WishlistPage: React.FC = () => {
                             <Button
                               size="sm"
                               onClick={() => addToCart(product.id)}
-                              className="w-full text-xs font-bold rounded-xl h-8 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+                              className="w-full text-xs font-bold rounded-xl h-8 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 "
                             >
                               <ShoppingBag className="w-3.5 h-3.5" />
                               <span>Add to Bag</span>
@@ -523,7 +527,7 @@ const WishlistPage: React.FC = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, x: -100 }}
-                        className={`rounded-2xl border border-border/50 bg-card/80 p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between hover:border-primary/40 shadow-xs transition-all ${
+                        className={`rounded-2xl border border-border/50 bg-card/80 p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between hover:border-primary/40  transition-all ${
                           outOfStock ? "opacity-85" : ""
                         }`}
                       >
@@ -599,7 +603,7 @@ const WishlistPage: React.FC = () => {
                             <Button
                               size="sm"
                               onClick={() => addToCart(product.id)}
-                              className="rounded-xl text-xs font-bold h-9 px-4 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+                              className="rounded-xl text-xs font-bold h-9 px-4 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 "
                             >
                               <ShoppingBag className="w-3.5 h-3.5" />
                               <span>Add to Bag</span>

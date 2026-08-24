@@ -1,4 +1,49 @@
 "use client";
+
+function formatSpecsList(rawSpecs?: Record<string, any> | null) {
+  if (!rawSpecs || typeof rawSpecs !== "object") return [];
+
+  const items: Array<{ key: string; value: string }> = [];
+
+  // Mapped main specs
+  if (rawSpecs.fabric || rawSpecs.material) items.push({ key: "Fabric / Material", value: String(rawSpecs.fabric || rawSpecs.material) });
+  if (rawSpecs.gsm) items.push({ key: "GSM Density", value: String(rawSpecs.gsm) });
+  if (rawSpecs.fit) items.push({ key: "Fit & Silhouette", value: String(rawSpecs.fit) });
+  if (rawSpecs.care) items.push({ key: "Care Instructions", value: String(rawSpecs.care) });
+  if (rawSpecs.weight && rawSpecs.weight !== 0 && rawSpecs.weight !== "0" && rawSpecs.weight !== "") {
+    items.push({ key: "Package Weight", value: `${rawSpecs.weight} ${rawSpecs.weight_unit || "kg"}` });
+  }
+  if (rawSpecs.origin) items.push({ key: "Country of Origin", value: String(rawSpecs.origin) });
+
+  // Custom key-values inside rawSpecs.specs
+  if (Array.isArray(rawSpecs.specs)) {
+    rawSpecs.specs.forEach((s: any) => {
+      if (s && s.key && s.value && String(s.value).trim()) {
+        items.push({ key: s.key, value: String(s.value) });
+      }
+    });
+  } else if (typeof rawSpecs.specs === "object" && rawSpecs.specs !== null) {
+    Object.entries(rawSpecs.specs).forEach(([k, v]) => {
+      if (v && String(v).trim()) items.push({ key: k, value: String(v) });
+    });
+  }
+
+  // Other non-internal keys
+  const internalKeys = new Set([
+    "specs", "product_type", "sizes", "colors", "images", "tags",
+    "weight_unit", "weight", "fabric", "material", "gsm", "fit", "care", "origin"
+  ]);
+
+  Object.entries(rawSpecs).forEach(([k, v]) => {
+    if (!internalKeys.has(k) && v && typeof v === "string" && v.trim() && v !== "undefined" && v !== "null") {
+      const formattedLabel = k.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+      items.push({ key: formattedLabel, value: v });
+    }
+  });
+
+  return items;
+}
+
 import React from "react";
 import { FileText, ListChecks, MessageSquare } from "lucide-react";
 import ReviewForm from "@/components/ReviewForm";
@@ -34,8 +79,8 @@ const SectionHead: React.FC<{ icon: React.ComponentType<React.SVGProps<SVGSVGEle
 );
 
 const ProductTabs: React.FC<ProductTabsProps> = ({ product, reviews, ownReviewIds, layout = "premium" }) => {
-  const specs = product.specifications;
-  const hasSpecs = specs && Object.keys(specs).length > 0;
+  const formattedSpecs = formatSpecsList(product.specifications);
+  const hasSpecs = formattedSpecs.length > 0;
 
   return (
     <div className="space-y-8 sm:space-y-12">
@@ -95,10 +140,10 @@ const ProductTabs: React.FC<ProductTabsProps> = ({ product, reviews, ownReviewId
         <section>
           <SectionHead icon={ListChecks} label="Specifications" id="specifications" />
           <div className="divide-y divide-border/40 border-y border-border/40">
-            {Object.entries(specs!).map(([key, val]) => (
-              <div key={key} className="flex justify-between gap-4 text-xs sm:text-sm px-1 py-2.5 sm:py-3">
-                <span className="text-muted-foreground uppercase tracking-wide text-[11px] sm:text-xs shrink-0">{key}</span>
-                <span className="text-foreground font-medium text-right break-words min-w-0">{val}</span>
+            {formattedSpecs.map((item) => (
+              <div key={item.key} className="flex justify-between gap-4 text-xs sm:text-sm px-1 py-2.5 sm:py-3">
+                <span className="text-muted-foreground uppercase tracking-wide text-[11px] sm:text-xs shrink-0 font-medium">{item.key}</span>
+                <span className="text-foreground font-medium text-right break-words min-w-0">{item.value}</span>
               </div>
             ))}
           </div>

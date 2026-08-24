@@ -284,6 +284,7 @@ const SiteCustomizer = () => {
           "body_font",
           "brand_title_size_nav",
           "brand_logo_title_ratio",
+          "title_letter_spacing",
           "site_name",
           "logo_url",
           "site_icon_url",
@@ -324,6 +325,7 @@ const SiteCustomizer = () => {
       if (map.body_font) merged.body_font = String(map.body_font);
       if (map.brand_title_size_nav) merged.brand_title_size_nav = Number(map.brand_title_size_nav);
       if (map.brand_logo_title_ratio) merged.brand_logo_title_ratio = Number(map.brand_logo_title_ratio);
+      if (map.title_letter_spacing !== undefined && map.title_letter_spacing !== null) merged.letter_spacing = Number(map.title_letter_spacing);
 
       // Sync with footer config
       if (map.footer_config && typeof map.footer_config === "object") {
@@ -374,6 +376,7 @@ const SiteCustomizer = () => {
         { key: "body_font", value: config.body_font as any, updated_at: new Date().toISOString() },
         { key: "brand_title_size_nav", value: config.brand_title_size_nav as any, updated_at: new Date().toISOString() },
         { key: "brand_logo_title_ratio", value: config.brand_logo_title_ratio as any, updated_at: new Date().toISOString() },
+        { key: "title_letter_spacing", value: config.letter_spacing as any, updated_at: new Date().toISOString() },
         { key: "footer_config", value: updatedFooterConfig as any, updated_at: new Date().toISOString() },
       ];
 

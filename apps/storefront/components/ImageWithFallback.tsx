@@ -33,7 +33,7 @@ const ImageWithFallback = forwardRef<HTMLImageElement, ImageWithFallbackProps>((
 
   if (isInvalid) {
     return (
-      <div className={`relative inset-0 w-full h-full bg-secondary/20 flex items-center justify-center p-4 overflow-hidden border border-border/20 ${containerClassName}`}>
+      <div className={`relative inset-0 w-full h-full bg-gradient-to-br from-[#3b0204] via-[#1a0102] to-[#0a0001] flex items-center justify-center p-4 overflow-hidden border border-red-950/40 shadow-inner ${containerClassName}`}>
         {/* Subtle ORIZINO shadow watermark */}
         <SkeletonWatermark size="md" />
       </div>

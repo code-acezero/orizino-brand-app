@@ -10,6 +10,8 @@ import { toast } from "@/lib/app-toast";
 import { Badge } from "@/components/ui/badge";
 import {
   Palette,
+  Filter,
+  Search,
   Monitor,
   Smartphone,
   Globe,
@@ -32,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { BrandImage, LOGO_FILTERS, type LogoFilter } from "@/lib/brand-image";
 import { useTabParam } from "@/hooks/use-tab-param";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SiteThemePanel from "@/components/admin/SiteThemePanel";
 import { useRegisterUniversalSave } from "@/contexts/UniversalSaveContext";
 
@@ -229,27 +232,29 @@ function TypographyPicker({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex flex-wrap gap-1 bg-muted/40 rounded-full p-1">
-          {groupTabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setGroup(t.id)}
-              className={cn(
-                "px-2.5 py-1 text-[11px] rounded-full transition-colors",
-                group === t.id ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
+      <div className="flex items-center gap-2">
+        <Select value={group} onValueChange={setGroup}>
+          <SelectTrigger className="h-8 text-xs px-3 rounded-xl border-border/60 bg-card/80 backdrop-blur-sm font-medium gap-2 min-w-[130px] w-auto shadow-xs">
+            <Filter className="w-3.5 h-3.5 text-primary" />
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover/95 backdrop-blur-md border-border/80 rounded-xl">
+            {groupTabs.map((t) => (
+              <SelectItem key={t.id} value={t.id} className="text-xs cursor-pointer">
+                {t.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="relative flex-1">
+          <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Input
+            placeholder="Search font family…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-8 text-xs pl-8 rounded-xl border-border/60 bg-muted/20"
+          />
         </div>
-        <Input
-          placeholder="Search font…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="h-8 text-xs flex-1 min-w-[140px]"
-        />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[340px] overflow-y-auto pr-1">
@@ -379,7 +384,7 @@ const AdminBranding = () => {
   const [logoTint, setLogoTint] = useState<string>("#ffffff");
   const [iconFilter, setIconFilter] = useState<LogoFilter>("none");
   const [iconTint, setIconTint] = useState<string>("#ffffff");
-  const [siteName, setSiteName] = useState("");
+  const [siteName, setSiteName] = useState("ORIZINO");
   const [siteDescription, setSiteDescription] = useState("");
   const [brandSuffix, setBrandSuffix] = useState("");
   const [brandPrefix, setBrandPrefix] = useState("");
@@ -397,6 +402,7 @@ const AdminBranding = () => {
   const [titleGroupCustom, setTitleGroupCustom] = useState<number[]>([]);
   const [brandTitleSizeNav, setBrandTitleSizeNav] = useState<number>(20);
   const [brandLogoTitleRatio, setBrandLogoTitleRatio] = useState<number>(1.0);
+  const [titleLetterSpacing, setTitleLetterSpacing] = useState<number>(0);
   const [initialSnapshot, setInitialSnapshot] = useState<string>("");
 
   // Ensure the currently selected Google font is loaded for live preview.
@@ -415,7 +421,7 @@ const AdminBranding = () => {
         "support_url", "address", "title_letter_colors", "title_font",
         "title_source", "title_image_url", "title_group_mode", "title_group_custom",
         "title_color_filter", "title_tint_color",
-        "brand_title_size_nav", "brand_logo_title_ratio",
+        "brand_title_size_nav", "brand_logo_title_ratio", "title_letter_spacing",
       ];
       const map: Record<string, any> = {};
 
@@ -456,7 +462,7 @@ const AdminBranding = () => {
       setIconFilter(((settings.icon_color_filter as string) || "none") as LogoFilter);
       setIconTint((settings.icon_tint_color as string) || "#ffffff");
       const rawName = settings.site_name;
-      setSiteName(String(typeof rawName === "object" && rawName !== null ? (rawName as any).value ?? "" : rawName ?? ""));
+      setSiteName(String(typeof rawName === "object" && rawName !== null ? (rawName as any).value ?? "ORIZINO" : rawName || "ORIZINO"));
       const rawDesc = settings.site_description;
       setSiteDescription(String(typeof rawDesc === "object" && rawDesc !== null ? (rawDesc as any).value ?? "" : rawDesc ?? ""));
       setBrandSuffix(String(settings.brand_suffix || ""));
@@ -481,6 +487,8 @@ const AdminBranding = () => {
         : []);
       setBrandTitleSizeNav(Number(settings.brand_title_size_nav) || 20);
       setBrandLogoTitleRatio(Number(settings.brand_logo_title_ratio) || 1.0);
+    setTitleLetterSpacing(Number(settings.title_letter_spacing) || 0);
+      setTitleLetterSpacing(settings.title_letter_spacing !== undefined && settings.title_letter_spacing !== null ? Number(settings.title_letter_spacing) : 0);
       setInitialSnapshot(JSON.stringify(settings));
     }
   }, [settings]);
@@ -499,7 +507,7 @@ const AdminBranding = () => {
     title_group_custom: titleGroupCustom,
     title_color_filter: titleFilter, title_tint_color: titleTint,
     brand_title_size_nav: brandTitleSizeNav,
-    brand_logo_title_ratio: brandLogoTitleRatio,
+    brand_logo_title_ratio: brandLogoTitleRatio, title_letter_spacing: titleLetterSpacing,
   });
 
   const isDirty = useMemo(() => {
@@ -532,7 +540,7 @@ const AdminBranding = () => {
         title_color_filter: init.title_color_filter || "none",
         title_tint_color: init.title_tint_color || "#ffffff",
         brand_title_size_nav: Number(init.brand_title_size_nav) || 20,
-        brand_logo_title_ratio: Number(init.brand_logo_title_ratio) || 1.0,
+        brand_logo_title_ratio: Number(init.brand_logo_title_ratio) || 1.0, title_letter_spacing: Number(init.title_letter_spacing) || 0,
       });
       return initNormalized !== currentSnapshot;
     } catch {
@@ -569,6 +577,7 @@ const AdminBranding = () => {
         { key: "title_tint_color", value: titleTint },
         { key: "brand_title_size_nav", value: brandTitleSizeNav },
         { key: "brand_logo_title_ratio", value: brandLogoTitleRatio },
+        { key: "title_letter_spacing", value: titleLetterSpacing },
       ];
 
       try {
@@ -613,7 +622,7 @@ const AdminBranding = () => {
     setIconFilter(((settings.icon_color_filter as string) || "none") as LogoFilter);
     setIconTint((settings.icon_tint_color as string) || "#ffffff");
     const rawName = settings.site_name;
-    setSiteName(String(typeof rawName === "object" && rawName !== null ? (rawName as any).value ?? "" : rawName ?? ""));
+    setSiteName(String(typeof rawName === "object" && rawName !== null ? (rawName as any).value ?? "ORIZINO" : rawName || "ORIZINO"));
     const rawDesc = settings.site_description;
     setSiteDescription(String(typeof rawDesc === "object" && rawDesc !== null ? (rawDesc as any).value ?? "" : rawDesc ?? ""));
     setBrandSuffix(String(settings.brand_suffix || ""));
@@ -640,6 +649,8 @@ const AdminBranding = () => {
     setTitleTint((settings.title_tint_color as string) || "#ffffff");
     setBrandTitleSizeNav(Number(settings.brand_title_size_nav) || 20);
     setBrandLogoTitleRatio(Number(settings.brand_logo_title_ratio) || 1.0);
+    setTitleLetterSpacing(Number(settings.title_letter_spacing) || 0);
+      setTitleLetterSpacing(settings.title_letter_spacing !== undefined && settings.title_letter_spacing !== null ? Number(settings.title_letter_spacing) : 0);
   };
 
   const getEffectClass = (effect: string) => {
@@ -706,10 +717,11 @@ const AdminBranding = () => {
         />
       );
     }
-    const text = siteName || "Your Brand";
+    const text = siteName.trim() || "ORIZINO";
     const style: React.CSSProperties = {
       fontFamily: titleFont ? `'${titleFont}', sans-serif` : undefined,
       fontSize: customSize ? `${customSize}px` : undefined,
+      letterSpacing: `${titleLetterSpacing}em`,
     };
 
     // When single mode, render as a single continuous text string without breaking into spans,
@@ -1394,6 +1406,80 @@ const AdminBranding = () => {
           </SectionCard>
           )}
 
+          {/* Brand Wordmark Letter Spacing (Tracking) */}
+          {show("typography") && (
+          <SectionCard
+            icon={Sliders}
+            title="Brand Title Letter Spacing (Tracking)"
+            description="Fine-tune character spacing (kerning/tracking) for the brand title wordmark across Top Nav, Footer, and Landing headers."
+          >
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/60 bg-muted/20">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-foreground flex items-center gap-2">
+                    <span>Letter Spacing</span>
+                    <Badge variant="outline" className="font-mono text-[11px] px-2 py-0.5 bg-background">
+                      {titleLetterSpacing >= 0 ? `+${titleLetterSpacing.toFixed(2)}em` : `${titleLetterSpacing.toFixed(2)}em`}
+                    </Badge>
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Adjusts distance between characters. Set to 0.00em for the font's natural default spacing.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 w-full sm:w-72">
+                  <Slider
+                    min={-0.05}
+                    max={0.35}
+                    step={0.01}
+                    value={[titleLetterSpacing]}
+                    onValueChange={([val]) => setTitleLetterSpacing(Number(val.toFixed(2)))}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTitleLetterSpacing(0)}
+                    className="h-8 text-[11px] px-2.5 font-bold rounded-lg border-border/60 hover:bg-secondary/40 shrink-0 cursor-pointer"
+                    title="Reset to natural default font spacing"
+                  >
+                    Default
+                  </Button>
+                </div>
+              </div>
+
+              {/* Spacing Presets */}
+              <div className="space-y-1.5">
+                <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Tracking Presets</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {[
+                    { label: "Default (0)", val: 0.0, desc: "0.00em Normal" },
+                    { label: "Tight", val: -0.02, desc: "-0.02em Condensed" },
+                    { label: "Balanced", val: 0.05, desc: "+0.05em Subtle" },
+                    { label: "Wide", val: 0.12, desc: "+0.12em Spaced" },
+                    { label: "Cinematic", val: 0.20, desc: "+0.20em Expanded" },
+                  ].map((preset) => (
+                    <button
+                      key={preset.val}
+                      type="button"
+                      onClick={() => setTitleLetterSpacing(preset.val)}
+                      className={cn(
+                        "flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all cursor-pointer",
+                        Math.abs(titleLetterSpacing - preset.val) < 0.005
+                          ? "border-primary bg-primary/10 shadow-sm"
+                          : "border-border/50 hover:border-primary/40 hover:bg-muted/40"
+                      )}
+                    >
+                      <span className="text-xs font-semibold text-foreground">{preset.label}</span>
+                      <span className="text-[10px] text-muted-foreground font-mono">{preset.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+          )}
+
           {/* Hybrid site title: image or grouped text */}
           {show("typography") && (
           <SectionCard
@@ -1722,31 +1808,7 @@ const AdminBranding = () => {
         </div>
       </div>
 
-      {/* Sticky save bar */}
-      <div
-        className={cn(
-          "fixed bottom-4 left-1/2 -translate-x-1/2 z-40 transition-all duration-300",
-          isDirty ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0 pointer-events-none"
-        )}
-      >
-        <div className="flex items-center gap-3 px-4 py-2.5 rounded-full bg-background/95 backdrop-blur-xl border border-border/60 shadow-2xl">
-          <div className="flex items-center gap-2 pl-1">
-            <span className="relative flex w-2 h-2">
-              <span className="absolute inline-flex w-full h-full rounded-full bg-amber-500 opacity-75 animate-ping" />
-              <span className="relative inline-flex rounded-full w-2 h-2 bg-amber-500" />
-            </span>
-            <span className="text-xs font-medium">Unsaved changes</span>
-          </div>
-          <div className="h-5 w-px bg-border/60" />
-          <Button variant="ghost" size="sm" onClick={resetChanges} className="h-8 text-xs">
-            <RotateCcw className="w-3 h-3 mr-1.5" /> Discard
-          </Button>
-          <Button size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="h-8 text-xs">
-            <Save className="w-3 h-3 mr-1.5" />
-            {saveMutation.isPending ? "Saving…" : "Save changes"}
-          </Button>
-        </div>
-      </div>
+      
     </div>
   );
 };

@@ -67,19 +67,25 @@ const EditorialProductGrid: React.FC<EditorialProductGridProps> = ({
         ) : null}
       </motion.div>
 
-      {/* Grid: 2 columns on mobile, 3 on tablet, 4 on desktop */}
+      {/* Center-aligned dynamic product grid */}
       <motion.div
-        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5"
+        className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-5 w-full mx-auto"
         variants={containerVariants}
         initial="hidden"
         animate={inView ? "visible" : "hidden"}
       >
         {isLoading
           ? Array.from({ length: 4 }).map((_, i) => (
-              <ProductCardSkeleton key={i} />
+              <div key={i} className="w-[calc(50%-0.5rem)] sm:w-[210px] md:w-[230px] lg:w-[250px] xl:w-[260px] shrink-0">
+                <ProductCardSkeleton />
+              </div>
             ))
           : displayed.map((product) => (
-              <motion.div key={product.id} variants={cardVariants}>
+              <motion.div
+                key={product.id}
+                variants={cardVariants}
+                className="w-[calc(50%-0.5rem)] sm:w-[210px] md:w-[230px] lg:w-[250px] xl:w-[260px] shrink-0"
+              >
                 <ProductCard
                   id={product.id}
                   name={product.name}

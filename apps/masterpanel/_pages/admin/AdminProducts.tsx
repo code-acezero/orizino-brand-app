@@ -1,4 +1,6 @@
 "use client";
+import { optimizeImageForUpload } from "@/lib/image-optimizer";
+import { cn } from "@/lib/utils";
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation, useNavigate } from "@/lib/router-compat";
@@ -78,6 +80,7 @@ import {
   Search,
   CheckCircle2,
   Box,
+  Scale,
   SlidersHorizontal,
   Palette,
   Tag,
@@ -198,7 +201,8 @@ export default function AdminProducts() {
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   // Options & Variants state
-  const [hasVariantsMode, setHasVariantsMode] = useState(false);
+  const [variantMode, setVariantMode] = useState<"simple" | "single_variant" | "multi_variant">("simple");
+  const hasVariantsMode = variantMode !== "simple";
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [customColorInput, setCustomColorInput] = useState("");
@@ -259,12 +263,55 @@ export default function AdminProducts() {
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*, categories(name)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data || [];
+      const [{ data: rawProducts, error: prodErr }, { data: orderSetting }] = await Promise.all([
+        supabase
+          .from("products")
+          .select("*, categories(name)")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("site_settings")
+          .select("value")
+          .eq("key", "product_order")
+          .maybeSingle(),
+      ]);
+      if (prodErr) throw prodErr;
+      const list = ((rawProducts as any[]) || []).slice();
+
+      let savedOrder: string[] = [];
+      if (orderSetting?.value) {
+        if (Array.isArray(orderSetting.value)) {
+          savedOrder = orderSetting.value;
+        } else if (typeof orderSetting.value === "string") {
+          try {
+            const parsed = JSON.parse(orderSetting.value);
+            if (Array.isArray(parsed)) savedOrder = parsed;
+          } catch {}
+        } else if (typeof orderSetting.value === "object" && Array.isArray((orderSetting.value as any)?.order)) {
+          savedOrder = (orderSetting.value as any).order;
+        }
+      }
+
+      if (savedOrder.length > 0) {
+        const orderMap = new Map<string, number>(savedOrder.map((id, index) => [id, index]));
+        list.sort((a, b) => {
+          const posA = orderMap.has(a.id) ? orderMap.get(a.id)! : 9999;
+          const posB = orderMap.has(b.id) ? orderMap.get(b.id)! : 9999;
+          if (posA !== posB) return posA - posB;
+          const specA = (a.specifications as any)?.sort_order ?? 9999;
+          const specB = (b.specifications as any)?.sort_order ?? 9999;
+          if (specA !== specB) return specA - specB;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+      } else {
+        list.sort((a, b) => {
+          const specA = (a.specifications as any)?.sort_order ?? 9999;
+          const specB = (b.specifications as any)?.sort_order ?? 9999;
+          if (specA !== specB) return specA - specB;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+      }
+
+      return list;
     },
   });
 
@@ -369,21 +416,40 @@ export default function AdminProducts() {
     setDraggedIndex(null);
     setReorderedProducts(copy);
 
-    qc.setQueryData(['admin-products'], (old: any[] = []) => {
-      const map = new Map(copy.map((item, idx) => [item.id, idx]));
-      return [...old].sort((a, b) => (map.get(a.id) ?? 999) - (map.get(b.id) ?? 999));
-    });
+    // Optimistically update React Query cache
+    qc.setQueryData(['admin-products'], copy);
 
-    toast.success('Product order updated');
+    const orderedIds = copy.map((item) => item.id);
 
     try {
+      // 1. Save global order array to site_settings
+      await supabase.from("site_settings").upsert(
+        { key: "product_order", value: orderedIds },
+        { onConflict: "key" }
+      );
+
+      // 2. Also save sort_order inside each product's specifications JSON
       await Promise.all(
         copy.map((item, idx) =>
-          supabase.from('products').update({ sort_order: idx }).eq('id', item.id)
+          supabase
+            .from("products")
+            .update({
+              specifications: {
+                ...((item.specifications as any) || {}),
+                sort_order: idx,
+              },
+            })
+            .eq("id", item.id)
         )
       );
-    } catch (e) {
-      /* ignore if column absent */
+
+      qc.invalidateQueries({ queryKey: ["admin-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["featured-products"] });
+      toast.success("Product order saved to database");
+    } catch (e: any) {
+      console.error("Failed to persist product order:", e);
+      toast.error("Failed to save product order to database");
     }
   };
 
@@ -434,7 +500,8 @@ export default function AdminProducts() {
         stock_quantity: calculatedStock,
         specifications: {
           ...(product.specifications || {}),
-          colors: selectedColors,
+          variant_mode: variantMode,
+          colors: variantMode === "single_variant" ? selectedColors.slice(0, 1) : selectedColors,
           sizes: selectedSizes,
         },
       };
@@ -500,22 +567,29 @@ export default function AdminProducts() {
               .eq("product_id", productId);
 
             const stockItems = (savedVars || []).map((v: any) => ({
-              variantId: v.id,
-              stock: Number(v.stock_quantity) || 0,
-              sku: v.sku || product.sku,
+              variantId: v.id ? String(v.id) : null,
+              stock: Math.max(0, Number(v.stock_quantity) || 0),
+              sku: v.sku || product.sku || null,
             }));
 
-            await reconcileStockFn({ data: { productId, stockItems } });
+            const reconcileRes = await reconcileStockFn({ data: { productId, stockItems } });
+            if (reconcileRes?.generated && reconcileRes.generated > 0) {
+              toast.success(`Generated ${reconcileRes.generated} serial code(s) for variations`);
+            }
           } else {
-            await reconcileStockFn({
+            const reconcileRes = await reconcileStockFn({
               data: {
                 productId,
-                stockItems: [{ variantId: null, stock: calculatedStock, sku: product.sku }],
+                stockItems: [{ variantId: null, stock: Math.max(0, calculatedStock), sku: product.sku || null }],
               },
             });
+            if (reconcileRes?.generated && reconcileRes.generated > 0) {
+              toast.success(`Generated ${reconcileRes.generated} serial code(s)`);
+            }
           }
-        } catch (err) {
-          console.warn("Serial reconciliation note:", err);
+        } catch (err: any) {
+          console.error("Serial reconciliation error:", err);
+          toast.error(`Serial reconciliation notice: ${err?.message || err}`);
         }
 
         if (deletedImageUrls.length > 0) {
@@ -624,9 +698,13 @@ export default function AdminProducts() {
     if (product) {
       setEditing({ ...product, specifications: product.specifications || {} });
       const specs = product.specifications || {};
-      setSelectedColors(Array.isArray(specs.colors) ? specs.colors : []);
-      setSelectedSizes(Array.isArray(specs.sizes) ? specs.sizes : []);
-      loadVariants(product.id);
+      const colors = Array.isArray(specs.colors) ? specs.colors : [];
+      const sizes = Array.isArray(specs.sizes) ? specs.sizes : [];
+      setSelectedColors(colors);
+      setSelectedSizes(sizes);
+      const initialMode = specs.variant_mode || (colors.length > 1 ? "multi_variant" : colors.length === 1 && sizes.length > 0 ? "single_variant" : "simple");
+      setVariantMode(initialMode);
+      loadVariants(product.id, initialMode);
     } else {
       setEditing({
         name: "",
@@ -653,7 +731,7 @@ export default function AdminProducts() {
       setSelectedColors(["Black"]);
       setSelectedSizes(["M", "L"]);
       setVariants([]);
-      setHasVariantsMode(false);
+      setVariantMode("simple");
     }
     setCustomColorInput("");
     setCustomSizeInput("");
@@ -694,7 +772,8 @@ export default function AdminProducts() {
   };
 
   // Upload helpers
-  const uploadSingleFile = async (file: File): Promise<string | null> => {
+  const uploadSingleFile = async (rawFile: File): Promise<string | null> => {
+    const file = await optimizeImageForUpload(rawFile);
     const ext = file.name.split(".").pop();
     const path = `gallery/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     try {
@@ -849,9 +928,18 @@ export default function AdminProducts() {
   };
 
   const toggleColorOption = (colorName: string) => {
+    if (variantMode === "single_variant") {
+      // In single variant mode, picking a color replaces the selection with this single color
+      setSelectedColors([colorName]);
+      return;
+    }
     const exists = selectedColors.includes(colorName);
     const updated = exists ? selectedColors.filter((c) => c !== colorName) : [...selectedColors, colorName];
     setSelectedColors(updated);
+  };
+
+  const setSingleColorOption = (colorName: string) => {
+    setSelectedColors([colorName]);
   };
 
   const toggleSizeOption = (sizeName: string) => {
@@ -875,7 +963,7 @@ export default function AdminProducts() {
   };
 
   // Load variants from backend
-  const loadVariants = async (productId: string) => {
+  const loadVariants = async (productId: string, preferredMode?: "simple" | "single_variant" | "multi_variant") => {
     setVariantsLoading(true);
     const { data } = await supabase
       .from("product_variants" as any)
@@ -885,13 +973,26 @@ export default function AdminProducts() {
 
     const rows = (data as any[]) || [];
     setVariants(rows);
-    setHasVariantsMode(rows.length > 0);
 
     // Populate selected colors & sizes from actual loaded variants if empty
     const extractedColors = Array.from(new Set(rows.map((r) => r.color).filter(Boolean)));
     const extractedSizes = Array.from(new Set(rows.map((r) => r.size).filter(Boolean)));
     if (extractedColors.length > 0) setSelectedColors(extractedColors);
     if (extractedSizes.length > 0) setSelectedSizes(extractedSizes);
+
+    if (preferredMode) {
+      setVariantMode(preferredMode);
+    } else if (rows.length > 0) {
+      if (extractedColors.length > 1) {
+        setVariantMode("multi_variant");
+      } else if (extractedColors.length === 1 && extractedSizes.length > 0) {
+        setVariantMode(editing?.specifications?.variant_mode || "single_variant");
+      } else {
+        setVariantMode("multi_variant");
+      }
+    } else {
+      setVariantMode("simple");
+    }
 
     // Expand all color groups by default
     const exp: Record<string, boolean> = {};
@@ -913,8 +1014,21 @@ export default function AdminProducts() {
   };
 
   // Generate matrix combinations (Color x Size)
-  const generateMatrixCombinations = () => {
-    if (selectedColors.length === 0 && selectedSizes.length === 0) {
+  const generateMatrixCombinations = (
+    modeOverride?: "simple" | "single_variant" | "multi_variant",
+    colorsOverride?: string[],
+    sizesOverride?: string[]
+  ) => {
+    const activeMode = modeOverride || variantMode;
+    if (activeMode === "simple") {
+      setVariants([]);
+      return;
+    }
+
+    const currentColors = colorsOverride || selectedColors;
+    const currentSizes = sizesOverride || selectedSizes;
+
+    if (currentColors.length === 0 && currentSizes.length === 0) {
       toast.error("Please pick at least one Color or Size option");
       return;
     }
@@ -927,8 +1041,11 @@ export default function AdminProducts() {
       .slice(0, 4);
 
     const newVariants: any[] = [];
-    const colors = selectedColors.length > 0 ? selectedColors : [""];
-    const sizes = selectedSizes.length > 0 ? selectedSizes : [""];
+    const colors =
+      activeMode === "single_variant"
+        ? (currentColors.length > 0 ? [currentColors[0]] : ["Black"])
+        : (currentColors.length > 0 ? currentColors : [""]);
+    const sizes = currentSizes.length > 0 ? currentSizes : [""];
 
     for (const color of colors) {
       for (const size of sizes) {
@@ -961,7 +1078,7 @@ export default function AdminProducts() {
     }
 
     setVariants(newVariants);
-    setHasVariantsMode(true);
+    setVariantMode(activeMode);
 
     const exp: Record<string, boolean> = {};
     for (const c of colors) exp[c || "Default"] = true;
@@ -1044,21 +1161,38 @@ export default function AdminProducts() {
 
   const autoGenerateAllSkus = async () => {
     const basePrefix = skuPrefix || "ORZ";
-    const productName = editing?.name || "PRD";
-    const cleanProd = productName
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, "")
-      .slice(0, 4);
+    // If base SKU exists, use it as the parent root; otherwise fallback to base formula
+    let parentSku = (editing?.sku || "").trim();
+    if (!parentSku) {
+      const productName = editing?.name || "PRD";
+      const words = productName.split(/\s+/).map((w: string) => w.toUpperCase().replace(/[^A-Z0-9]/g, "")).filter(Boolean);
+      const cleanProd = words[0]?.slice(0, 4) || "PRD";
+      parentSku = `${basePrefix}-${cleanProd}`;
+      updateField("sku", parentSku);
+    }
+
+    // Determine if multiple colors exist to know if color code is required
+    const distinctColors = Array.from(new Set(variants.map((v) => v.color).filter(Boolean)));
+    const hasMultipleColors = distinctColors.length > 1;
 
     setVariants((prev) =>
       prev.map((v) => {
-        const colorCode = v.color ? v.color.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) : "";
+        const colorCode = v.color ? v.color.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3) : "";
         const sizeCode = v.size ? v.size.toUpperCase().replace(/[^A-Z0-9]/g, "") : "";
-        const autoSku = [basePrefix, cleanProd, colorCode, sizeCode].filter(Boolean).join("-");
+        
+        // If multiple colors, include color; otherwise parentSku-SIZE
+        const parts = [parentSku];
+        if (hasMultipleColors && colorCode && !parentSku.includes(colorCode)) {
+          parts.push(colorCode);
+        }
+        if (sizeCode) {
+          parts.push(sizeCode);
+        }
+        const autoSku = parts.filter(Boolean).join("-");
         return { ...v, sku: autoSku };
       })
     );
-    toast.success("Generated SKUs for all variations");
+    toast.success("Synchronized SKUs from base product code");
   };
 
   // Total stock computed dynamically
@@ -1097,7 +1231,7 @@ export default function AdminProducts() {
       <PageHeader
         icon={<Package className="w-5 h-5 text-primary" />}
         title="Products"
-        description="Design, manage inventory, barcodes, and storefront listing details"
+        description="Design, manage inventory, barcodes, and product listing details"
         actions={
           <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
             <DropdownMenu>
@@ -1664,20 +1798,14 @@ export default function AdminProducts() {
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    {/* Checkbox & Drag Point */}
-                    <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {/* Checkbox */}
+                    <div className="flex items-center shrink-0" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={() => toggleSelect(p.id)}
                         aria-label={`Select ${p.name}`}
                         className="h-4 w-4 rounded-md"
                       />
-                      <div
-                        className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-foreground transition-colors p-1 touch-none"
-                        title="Drag to rearrange"
-                      >
-                        <GripVertical className="w-3.5 h-3.5" />
-                      </div>
                     </div>
 
                     {/* Thumbnail */}
@@ -1732,6 +1860,14 @@ export default function AdminProducts() {
 
                   {/* Compact Bottom Action Bar */}
                   <div className="flex items-center gap-1.5 w-full pt-2 mt-2 border-t border-border/40">
+                    {/* Drag Point under Checkbox */}
+                    <div
+                      className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-foreground transition-colors p-1 shrink-0 touch-none flex items-center justify-center -ml-0.5"
+                      title="Drag to rearrange"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <GripVertical className="w-3.5 h-3.5" />
+                    </div>
                     <Button
                       size="sm"
                       variant="outline"
@@ -1805,39 +1941,47 @@ export default function AdminProducts() {
         <DialogContent className="w-full sm:max-w-4xl h-[92vh] sm:h-[88vh] max-h-[92vh] overflow-hidden p-0 rounded-2xl sm:rounded-3xl border border-border/80 shadow-2xl flex flex-col bg-card">
           {/* Studio Header with Center-Aligned Tab Pills */}
           <div className="px-4 sm:px-6 py-3.5 border-b border-border/70 bg-muted/20 shrink-0 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
+            <div className="flex items-center justify-between gap-2.5">
+              {/* Left group on desktop (Icon + Title & Subtitle) / Responsive structure */}
+              <div className="flex items-center gap-2.5 sm:gap-3 flex-1 sm:flex-initial min-w-0">
                 <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                   <Package className="w-4 h-4" />
                 </div>
-                <div>
-                  <DialogTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
+
+                {/* Title & Subtitle: Center-aligned on mobile, Left-aligned next to icon on desktop */}
+                <div className="flex-1 sm:flex-initial min-w-0 text-center sm:text-left px-1 sm:px-0">
+                  <DialogTitle className="text-xs sm:text-base font-bold text-foreground truncate">
                     {editing?.id ? `Edit: ${editing.name || "Product"}` : "Create New Product"}
                   </DialogTitle>
-                  <DialogDescription className="text-[11px] text-muted-foreground">
+                  <DialogDescription className="text-[10px] sm:text-xs text-muted-foreground truncate mt-0.5">
                     Step through each tab to configure details, visuals, pricing, and variants.
                   </DialogDescription>
                 </div>
               </div>
-              {editing?.slug && (
-                <a
-                  href={`/product/${editing.slug}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hidden sm:flex items-center gap-1.5 text-xs text-primary hover:underline font-semibold bg-primary/10 px-2.5 py-1 rounded-lg"
-                >
-                  Storefront Preview <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
+
+              {/* Right Action / Balance spacer */}
+              <div className="w-8 sm:w-auto shrink-0 flex items-center justify-end">
+                {editing?.slug && (
+                  <a
+                    href={`/product/${editing.slug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hidden sm:flex items-center gap-1.5 text-xs text-primary hover:underline font-semibold bg-primary/10 px-2.5 py-1 rounded-lg mr-8 shrink-0"
+                    title="Product Preview"
+                  >
+                    Preview <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
             </div>
 
             {/* Small center-aligned tab navigation pills */}
-            <div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap pt-0.5">
+            <div className="flex items-center justify-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar w-full pt-0.5 pb-1 sm:pb-0 px-1">
               {[
-                { id: "info", label: "Basic Info", icon: Box },
-                { id: "media", label: "Visuals & Media", icon: Images },
-                { id: "pricing", label: "Pricing & Stock", icon: TrendingUp },
-                { id: "variants", label: "Options & Variations", icon: Layers },
+                { id: "info", label: "Basic Info", shortLabel: "Info", icon: Box },
+                { id: "media", label: "Visuals & Media", shortLabel: "Media", icon: Images },
+                { id: "pricing", label: "Pricing & Stock", shortLabel: "Pricing", icon: TrendingUp },
+                { id: "variants", label: "Options & Variations", shortLabel: "Variants", icon: Layers },
               ].map((tab, idx) => {
                 const Icon = tab.icon;
                 const isActive = modalTab === tab.id;
@@ -1846,24 +1990,25 @@ export default function AdminProducts() {
                     key={tab.id}
                     type="button"
                     onClick={() => setModalTab(tab.id as any)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                    className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold shrink-0 transition-all duration-200 cursor-pointer ${
                       isActive
-                        ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/20 scale-[1.02]"
+                        ? "bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/20 scale-[1.02]"
                         : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/50"
                     }`}
                   >
-                    <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold bg-black/15 dark:bg-white/15">
+                    <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-bold bg-black/15 dark:bg-white/15">
                       {idx + 1}
                     </span>
-                    <Icon className="w-3.5 h-3.5" />
-                    <span>{tab.label}</span>
+                    <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    <span className="sm:hidden">{tab.shortLabel}</span>
+                    <span className="hidden sm:inline">{tab.label}</span>
                     {tab.id === "media" && (editing?.images?.length || 0) > 0 && (
-                      <span className="text-[10px] px-1 py-0 rounded-full bg-background/20 font-mono">
+                      <span className="text-[9px] sm:text-[10px] px-1 py-0 rounded-full bg-background/20 font-mono">
                         {editing.images.length}
                       </span>
                     )}
                     {tab.id === "variants" && hasVariantsMode && variants.length > 0 && (
-                      <span className="text-[10px] px-1 py-0 rounded-full bg-background/20 font-mono">
+                      <span className="text-[9px] sm:text-[10px] px-1 py-0 rounded-full bg-background/20 font-mono">
                         {variants.length}
                       </span>
                     )}
@@ -1944,7 +2089,7 @@ export default function AdminProducts() {
                           <SelectTrigger className="rounded-xl h-10 mt-1 text-xs font-medium bg-background/80 border-border/80 shadow-xs focus:ring-1 focus:ring-primary/40 px-3.5">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground shadow-2xl backdrop-blur-xl z-[9999] p-1">
+                          <SelectContent className="rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground shadow-2xl backdrop-blur-xl z-[999999] p-1">
                             {PRODUCT_TYPES.map((t) => (
                               <SelectItem key={t.value} value={t.value}>
                                 {t.label}
@@ -1963,7 +2108,7 @@ export default function AdminProducts() {
                           <SelectTrigger className="rounded-xl h-10 mt-1 text-xs font-medium bg-background/80 border-border/80 shadow-xs focus:ring-1 focus:ring-primary/40 px-3.5">
                             <SelectValue placeholder="Select Category" />
                           </SelectTrigger>
-                          <SelectContent className="rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground shadow-2xl backdrop-blur-xl z-[9999] p-1">
+                          <SelectContent className="rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground shadow-2xl backdrop-blur-xl z-[999999] p-1">
                             <SelectItem value="none">Uncategorized</SelectItem>
                             {parentCategories.map((c) => (
                               <SelectItem key={c.id} value={c.id}>
@@ -1984,7 +2129,7 @@ export default function AdminProducts() {
                           <SelectTrigger className="rounded-xl h-10 mt-1 text-xs font-medium bg-background/80 border-border/80 shadow-xs focus:ring-1 focus:ring-primary/40 px-3.5">
                             <SelectValue placeholder="Select Subcategory" />
                           </SelectTrigger>
-                          <SelectContent className="rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground shadow-2xl backdrop-blur-xl z-[9999] p-1">
+                          <SelectContent className="rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground shadow-2xl backdrop-blur-xl z-[999999] p-1">
                             <SelectItem value="none">None</SelectItem>
                             {effectiveParentId &&
                               effectiveParentId !== "none" &&
@@ -1999,16 +2144,110 @@ export default function AdminProducts() {
                     </div>
                   </div>
 
+                  {/* Card: Weight & Physical Specifications */}
+                  <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <Scale className="w-4 h-4 text-primary" /> Physical Specs &amp; Courier Weight
+                      </h3>
+                      <span className="text-[10px] font-semibold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md border border-border/50">
+                        For Shipping &amp; Product Details
+                      </span>
+                    </div>
+
+                    {/* Weight & Unit Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs font-semibold text-muted-foreground">Parcel / Item Weight</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={specs.weight === 0 ? "" : (specs.weight ?? "")}
+                          onChange={(e) => updateSpec("weight", e.target.value === "" ? "" : +e.target.value)}
+                          onFocus={(e) => e.target.select()}
+                          placeholder="e.g. 0.35"
+                          className="rounded-xl h-10 mt-1 text-sm font-medium"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">Used by Steadfast &amp; Pathao to calculate exact shipping rates.</p>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs font-semibold text-muted-foreground">Weight Unit</Label>
+                        <Select
+                          value={specs.weight_unit || "kg"}
+                          onValueChange={(v) => updateSpec("weight_unit", v)}
+                        >
+                          <SelectTrigger className="rounded-xl h-10 mt-1 text-xs font-medium bg-background/80 border-border/80 shadow-xs focus:ring-1 focus:ring-primary/40 px-3.5">
+                            <SelectValue placeholder="kg" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground shadow-2xl backdrop-blur-xl z-[999999] p-1">
+                            <SelectItem value="kg">kg (Kilograms - Recommended)</SelectItem>
+                            <SelectItem value="g">g (Grams)</SelectItem>
+                            <SelectItem value="lb">lb (Pounds)</SelectItem>
+                            <SelectItem value="oz">oz (Ounces)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Structured Garment / Item Specs */}
+                    <div className="pt-2 border-t border-border/50 space-y-3">
+                      <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                        <span>Product Specifications</span>
+                        <span className="text-[10px] font-normal text-muted-foreground">Fabric, GSM, Fit & Details</span>
+                      </Label>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-[11px] text-muted-foreground">Fabric / Material</Label>
+                          <Input
+                            value={specs.fabric ?? ""}
+                            onChange={(e) => updateSpec("fabric", e.target.value)}
+                            placeholder="e.g. 100% Combed Cotton"
+                            className="rounded-xl h-9 mt-1 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[11px] text-muted-foreground">GSM / Fabric Density</Label>
+                          <Input
+                            value={specs.gsm ?? ""}
+                            onChange={(e) => updateSpec("gsm", e.target.value)}
+                            placeholder="e.g. 240+ GSM Heavyweight"
+                            className="rounded-xl h-9 mt-1 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[11px] text-muted-foreground">Fit &amp; Cut</Label>
+                          <Input
+                            value={specs.fit ?? ""}
+                            onChange={(e) => updateSpec("fit", e.target.value)}
+                            placeholder="e.g. Oversized Drop Shoulder"
+                            className="rounded-xl h-9 mt-1 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[11px] text-muted-foreground">Care Instructions</Label>
+                          <Input
+                            value={specs.care ?? ""}
+                            onChange={(e) => updateSpec("care", e.target.value)}
+                            placeholder="e.g. Machine wash cold, hang dry"
+                            className="rounded-xl h-9 mt-1 text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Card: Visibility & Publishing */}
                   <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-3 shadow-sm">
                     <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Eye className="w-4 h-4 text-primary" /> Storefront Visibility
+                      <Eye className="w-4 h-4 text-primary" /> Product Visibility
                     </h3>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-muted/20">
                         <div>
-                          <p className="text-xs font-semibold text-foreground">Active in Storefront</p>
+                          <p className="text-xs font-semibold text-foreground">Active & Published</p>
                           <p className="text-[10px] text-muted-foreground">Visible to customers for purchase</p>
                         </div>
                         <Switch
@@ -2038,13 +2277,26 @@ export default function AdminProducts() {
                   {/* Photo Gallery Multi-Upload */}
                   <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-4 shadow-sm">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                          <Images className="w-4 h-4 text-primary" /> Product Photos ({editing.images?.length || 0}/8)
-                        </h3>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                            <Images className="w-4 h-4 text-primary" /> Product Photos ({editing.images?.length || 0}/8)
+                          </h3>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            Auto-Optimized (WebP · Fast Load)
+                          </span>
+                        </div>
                         <p className="text-[11px] text-muted-foreground">
-                          Upload high-resolution product images. Select any photo to set it as the main cover thumbnail.
+                          Upload crystal-clear product visuals. First image or starred image serves as the main cover.
                         </p>
+                        <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground/80 pt-0.5">
+                          <span className="bg-muted/60 px-2 py-0.5 rounded-md border border-border/50">
+                            <strong>Recommended Ratio:</strong> 1:1 Square (1200×1200px) or 3:4 Portrait (1200×1600px)
+                          </span>
+                          <span className="bg-muted/60 px-2 py-0.5 rounded-md border border-border/50">
+                            <strong>Formats:</strong> WebP, PNG, JPG (Auto-optimized to modern WebP for 10x faster load)
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -2346,12 +2598,14 @@ export default function AdminProducts() {
                         </div>
                         <Input
                           type="number"
-                          value={totalStockComputed}
+                          value={totalStockComputed === 0 ? "" : totalStockComputed}
                           onChange={(e) => {
                             if (!hasVariantsMode) {
-                              updateField("stock_quantity", +e.target.value);
+                              updateField("stock_quantity", e.target.value ? +e.target.value : 0);
                             }
                           }}
+                          onFocus={(e) => e.target.select()}
+                          placeholder="0"
                           disabled={hasVariantsMode}
                           className={`rounded-xl h-10 mt-1 font-bold text-sm ${
                             hasVariantsMode ? "bg-muted/60 text-primary cursor-not-allowed" : ""
@@ -2373,7 +2627,7 @@ export default function AdminProducts() {
                           <SelectTrigger className="rounded-xl h-10 mt-1 text-xs font-medium bg-background/80 border-border/80 shadow-xs focus:ring-1 focus:ring-primary/40 px-3.5">
                             <SelectValue placeholder="Default active preset" />
                           </SelectTrigger>
-                          <SelectContent className="rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground shadow-2xl backdrop-blur-xl z-[9999] p-1">
+                          <SelectContent className="rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground shadow-2xl backdrop-blur-xl z-[999999] p-1">
                             <SelectItem value="__default__">Default active preset</SelectItem>
                             {stickerPresets.map((p: any) => (
                               <SelectItem key={p.id} value={p.id}>
@@ -2392,40 +2646,187 @@ export default function AdminProducts() {
               {modalTab === "variants" && (
                 <div className="max-w-3xl mx-auto space-y-5">
                   <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5 space-y-5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                          <Layers className="w-4 h-4 text-primary" /> Product Options & Variations Studio
-                        </h3>
-                        <p className="text-[11px] text-muted-foreground">
-                          Turn on to configure color & size variations matrix with individual stock tracking.
-                        </p>
+                    {/* 3-Mode Variations Architecture Selector */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                            <Layers className="w-4 h-4 text-primary" /> Product Variations Architecture
+                          </h3>
+                          <p className="text-[11px] text-muted-foreground">
+                            Choose how variations, color swatches, and sizing attributes are structured.
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-muted-foreground">
-                          {hasVariantsMode ? "Multi-Option Product" : "Simple Product"}
-                        </span>
-                        <Switch
-                          checked={hasVariantsMode}
-                          onCheckedChange={(enabled) => {
-                            setHasVariantsMode(enabled);
-                            if (enabled && variants.length === 0) {
-                              generateMatrixCombinations();
-                            }
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                        {/* Option 1: Simple Product */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVariantMode("simple");
+                            updateSpec("variant_mode", "simple");
                           }}
-                        />
+                          className={cn(
+                            "p-3.5 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer",
+                            variantMode === "simple"
+                              ? "border-primary bg-primary/10 ring-1 ring-primary/40 shadow-sm"
+                              : "border-border/70 bg-card/60 hover:border-primary/40 hover:bg-muted/30"
+                          )}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-center gap-2 font-bold text-xs text-foreground">
+                                <Box className={cn("w-4 h-4", variantMode === "simple" ? "text-primary" : "text-muted-foreground")} />
+                                <span>Simple Product</span>
+                              </div>
+                              {variantMode === "simple" && (
+                                <span className="w-2 h-2 rounded-full bg-primary" />
+                              )}
+                            </div>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                              Standalone single SKU with flat stock & price. No variation matrices.
+                            </p>
+                          </div>
+                          <Badge variant="outline" className={cn("mt-3 w-fit text-[10px] py-0", variantMode === "simple" ? "border-primary/40 text-primary bg-primary/10" : "")}>
+                            Direct Stock
+                          </Badge>
+                        </button>
+
+                        {/* Option 2: Single Variant */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const singleColor = selectedColors.length > 0 ? [selectedColors[0]] : ["Black"];
+                            const currentSizes = selectedSizes.length > 0 ? selectedSizes : ["M", "L"];
+                            setSelectedColors(singleColor);
+                            setSelectedSizes(currentSizes);
+                            setVariantMode("single_variant");
+                            updateSpec("variant_mode", "single_variant");
+                            generateMatrixCombinations("single_variant", singleColor, currentSizes);
+                          }}
+                          className={cn(
+                            "p-3.5 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer",
+                            variantMode === "single_variant"
+                              ? "border-primary bg-primary/10 ring-1 ring-primary/40 shadow-sm"
+                              : "border-border/70 bg-card/60 hover:border-primary/40 hover:bg-muted/30"
+                          )}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-center gap-2 font-bold text-xs text-foreground">
+                                <Tag className={cn("w-4 h-4", variantMode === "single_variant" ? "text-primary" : "text-muted-foreground")} />
+                                <span>Single Variant</span>
+                              </div>
+                              {variantMode === "single_variant" && (
+                                <span className="w-2 h-2 rounded-full bg-primary" />
+                              )}
+                            </div>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                              1 Fixed Color/Style with Multi-Attributes (Sizes M, L, XL). No color switch on storefront.
+                            </p>
+                          </div>
+                          <Badge variant="outline" className={cn("mt-3 w-fit text-[10px] py-0", variantMode === "single_variant" ? "border-amber-500/40 text-amber-500 bg-amber-500/10" : "")}>
+                            1 Color + Multi-Sizes
+                          </Badge>
+                        </button>
+
+                        {/* Option 3: Multi-Variant */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentColors = selectedColors.length > 0 ? selectedColors : ["Black", "Charcoal"];
+                            const currentSizes = selectedSizes.length > 0 ? selectedSizes : ["M", "L"];
+                            setSelectedColors(currentColors);
+                            setSelectedSizes(currentSizes);
+                            setVariantMode("multi_variant");
+                            updateSpec("variant_mode", "multi_variant");
+                            generateMatrixCombinations("multi_variant", currentColors, currentSizes);
+                          }}
+                          className={cn(
+                            "p-3.5 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer",
+                            variantMode === "multi_variant"
+                              ? "border-primary bg-primary/10 ring-1 ring-primary/40 shadow-sm"
+                              : "border-border/70 bg-card/60 hover:border-primary/40 hover:bg-muted/30"
+                          )}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-center gap-2 font-bold text-xs text-foreground">
+                                <Palette className={cn("w-4 h-4", variantMode === "multi_variant" ? "text-primary" : "text-muted-foreground")} />
+                                <span>Multi-Variant</span>
+                              </div>
+                              {variantMode === "multi_variant" && (
+                                <span className="w-2 h-2 rounded-full bg-primary" />
+                              )}
+                            </div>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                              Full matrix of multiple colors, sizes, gallery links & individual barcodes.
+                            </p>
+                          </div>
+                          <Badge variant="outline" className={cn("mt-3 w-fit text-[10px] py-0", variantMode === "multi_variant" ? "border-blue-500/40 text-blue-500 bg-blue-500/10" : "")}>
+                            Full Multi-Matrix
+                          </Badge>
+                        </button>
                       </div>
                     </div>
 
-                    {hasVariantsMode ? (
+                    {variantMode === "simple" ? (
+                      <div className="p-5 rounded-2xl bg-muted/20 border border-border/60 text-center space-y-3 pt-6 pb-6">
+                        <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
+                          <Box className="w-5 h-5" />
+                        </div>
+                        <div className="space-y-1 max-w-md mx-auto">
+                          <p className="text-xs font-bold text-foreground">Simple Product Mode Active</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            This product has direct inventory and price tracking without variation matrices. Sizing & color options will not appear on the storefront.
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 pt-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setVariantMode("single_variant");
+                              updateSpec("variant_mode", "single_variant");
+                              if (selectedColors.length === 0) setSelectedColors(["Black"]);
+                              if (selectedSizes.length === 0) setSelectedSizes(["M", "L"]);
+                              setTimeout(() => generateMatrixCombinations("single_variant"), 50);
+                            }}
+                            className="rounded-xl text-xs gap-1.5 font-bold"
+                          >
+                            <Tag className="w-3.5 h-3.5 text-primary" /> Enable Single Variant (1 Color + Sizes)
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setVariantMode("multi_variant");
+                              updateSpec("variant_mode", "multi_variant");
+                              if (selectedColors.length === 0) setSelectedColors(["Black", "Charcoal"]);
+                              if (selectedSizes.length === 0) setSelectedSizes(["M", "L"]);
+                              setTimeout(() => generateMatrixCombinations("multi_variant"), 50);
+                            }}
+                            className="rounded-xl text-xs gap-1.5 font-bold"
+                          >
+                            <Palette className="w-3.5 h-3.5 text-primary" /> Enable Multi-Variant
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
                       <div className="space-y-5 pt-2 border-t border-border/50">
                         {/* Step A: Colors */}
                         <div className="space-y-2 p-3.5 rounded-2xl bg-muted/30 border border-border/60">
                           <div className="flex items-center justify-between">
                             <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                              <Palette className="w-3.5 h-3.5 text-primary" /> Step 1: Available Colors ({selectedColors.length})
+                              <Palette className="w-3.5 h-3.5 text-primary" />
+                              {variantMode === "single_variant" ? "Step 1: Primary Variant Color (Select 1 Only)" : `Step 1: Available Colors (${selectedColors.length})`}
                             </Label>
-                            <span className="text-[11px] text-muted-foreground">Click chips to toggle</span>
+                            <span className="text-[11px] text-muted-foreground font-medium">
+                              {variantMode === "single_variant" ? "Click any color chip to set the single variant" : "Click chips to multi-select"}
+                            </span>
                           </div>
 
                           <div className="flex flex-wrap gap-1.5 pt-1">
@@ -2531,7 +2932,7 @@ export default function AdminProducts() {
                           <Button
                             type="button"
                             size="sm"
-                            onClick={generateMatrixCombinations}
+                            onClick={() => generateMatrixCombinations(variantMode)}
                             className="rounded-xl text-xs font-bold bg-primary text-primary-foreground gap-1.5 shadow-sm"
                           >
                             <RefreshCw className="w-3.5 h-3.5" /> Re-generate Matrix
@@ -2682,15 +3083,18 @@ export default function AdminProducts() {
                                                 <span className="text-[10px] font-semibold text-muted-foreground sm:hidden mb-0.5 block">Price (৳)</span>
                                                 <Input
                                                   type="number"
-                                                  value={v.price_override ?? ""}
-                                                  onChange={(e) =>
+                                                  min={0}
+                                                  value={v.price_override === null || v.price_override === undefined || v.price_override === 0 ? "" : v.price_override}
+                                                  onFocus={(e) => e.target.select()}
+                                                  onChange={(e) => {
+                                                    const raw = e.target.value;
                                                     updateVariantByCombo(
                                                       group.color,
                                                       v.size || "",
                                                       "price_override",
-                                                      e.target.value === "" ? null : +e.target.value
-                                                    )
-                                                  }
+                                                      raw === "" ? null : +raw
+                                                    );
+                                                  }}
                                                   placeholder={String(editing.price || 0)}
                                                   title="Leave empty to use main product price"
                                                   className="h-8 text-xs"
@@ -2702,15 +3106,20 @@ export default function AdminProducts() {
                                                 <div className="relative">
                                                   <Input
                                                     type="number"
-                                                    value={v.stock_quantity ?? 0}
-                                                    onChange={(e) =>
+                                                    min={0}
+                                                    value={!v.stock_quantity || v.stock_quantity === 0 ? "" : v.stock_quantity}
+                                                    placeholder="0"
+                                                    onFocus={(e) => e.target.select()}
+                                                    onChange={(e) => {
+                                                      const raw = e.target.value;
+                                                      const parsed = raw === "" ? 0 : Math.max(0, parseInt(raw, 10) || 0);
                                                       updateVariantByCombo(
                                                         group.color,
                                                         v.size || "",
                                                         "stock_quantity",
-                                                        +e.target.value
-                                                      )
-                                                    }
+                                                        parsed
+                                                      );
+                                                    }}
                                                     className="h-8 text-xs font-bold"
                                                   />
                                                   {variantSerialCounts[v.id] > 0 && (
@@ -2740,16 +3149,6 @@ export default function AdminProducts() {
                             </div>
                           </div>
                         )}
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl border border-dashed border-border/80 p-6 text-center text-xs text-muted-foreground space-y-2">
-                        <p className="font-semibold text-foreground">
-                          This product is currently configured as a Simple Item (Single Variation).
-                        </p>
-                        <p>
-                          Total stock is tracked directly via the <strong>Global Stock Units</strong> input on the Pricing &amp; Stock tab.
-                          Turn on the switch above if you need color/size variations.
-                        </p>
                       </div>
                     )}
                   </div>

@@ -207,8 +207,50 @@ const ShopPage: React.FC = () => {
         case "popular":    q = q.order("review_count", { ascending: false }); break;
         default:           q = q.order("created_at",   { ascending: false });
       }
-      const { data } = await q;
-      return data || [];
+      const [{ data }, { data: orderSetting }] = await Promise.all([
+        q,
+        sort === "default"
+          ? supabase.from("site_settings").select("value").eq("key", "product_order").maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+
+      const list = ((data as any[]) || []).slice();
+
+      if (sort === "default") {
+        let savedOrder: string[] = [];
+        if (orderSetting?.value) {
+          if (Array.isArray(orderSetting.value)) {
+            savedOrder = orderSetting.value;
+          } else if (typeof orderSetting.value === "string") {
+            try {
+              const parsed = JSON.parse(orderSetting.value);
+              if (Array.isArray(parsed)) savedOrder = parsed;
+            } catch {}
+          }
+        }
+
+        if (savedOrder.length > 0) {
+          const orderMap = new Map<string, number>(savedOrder.map((id, index) => [id, index]));
+          list.sort((a, b) => {
+            const posA = orderMap.has(a.id) ? orderMap.get(a.id)! : 9999;
+            const posB = orderMap.has(b.id) ? orderMap.get(b.id)! : 9999;
+            if (posA !== posB) return posA - posB;
+            const specA = (a.specifications as any)?.sort_order ?? 9999;
+            const specB = (b.specifications as any)?.sort_order ?? 9999;
+            if (specA !== specB) return specA - specB;
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          });
+        } else {
+          list.sort((a, b) => {
+            const specA = (a.specifications as any)?.sort_order ?? 9999;
+            const specB = (b.specifications as any)?.sort_order ?? 9999;
+            if (specA !== specB) return specA - specB;
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          });
+        }
+      }
+
+      return list;
     },
   });
 

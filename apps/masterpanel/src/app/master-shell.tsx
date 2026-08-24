@@ -59,6 +59,7 @@ import AdminEmailTemplates from "@/_pages/admin/AdminEmailTemplates";
 import AdminEmailAutomations from "@/_pages/admin/AdminEmailAutomations";
 import AdminSmsProvider from "@/_pages/admin/AdminSmsProvider";
 import AdminWhatsAppProvider from "@/_pages/admin/WhatsAppConfigPage";
+import AdminSocialAutomations from "@/_pages/admin/SocialAutomationsPage";
 import AdminMarketingAudiences from "@/_pages/admin/AdminMarketingAudiences";
 import AffiliateHub from "@/_pages/admin/AffiliateHub";
 
@@ -156,9 +157,11 @@ const ROUTE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   "/email/announcements": AdminAnnouncements,
   "/email/popups": AdminPopups,
   "/settings-ai/sms": AdminSmsProvider,
-  "/settings-ai/whatsapp": AdminWhatsAppProvider,
+  "/settings-ai/whatsapp": AdminSocialAutomations,
+  "/settings-ai/social-automations": AdminSocialAutomations,
   "/settings/sms": AdminSmsProvider,
-  "/settings/whatsapp": AdminWhatsAppProvider,
+  "/settings/whatsapp": AdminSocialAutomations,
+  "/settings/social-automations": AdminSocialAutomations,
   "/affiliate": AffiliateHub,
 
   // Brand (Public Contents & UI)

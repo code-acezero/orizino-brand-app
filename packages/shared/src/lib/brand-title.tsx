@@ -22,6 +22,7 @@ export interface BrandIdentity {
   titleLetterColors: Record<number, string>;
   brandTitleSizeNav: number;
   brandLogoTitleRatio: number;
+  titleLetterSpacing: number;
 }
 
 const readVal = (v: unknown) =>
@@ -36,18 +37,20 @@ const BRAND_KEYS = [
   "title_source", "title_image_url", "title_group_mode", "title_group_custom",
   "title_font", "title_letter_colors",
   "title_color_filter", "title_tint_color",
-  "brand_title_size_nav", "brand_logo_title_ratio",
+  "brand_title_size_nav", "brand_logo_title_ratio", "title_letter_spacing",
 ] as const;
 
 const loadedGoogleFonts = new Set<string>();
-export function loadGoogleFont(family: string, weight = 700) {
+export function loadGoogleFont(family: string, weight?: number) {
   if (typeof document === "undefined" || !family) return;
-  const key = `${family}@${weight}`;
+  const key = `${family}@${weight || "all"}`;
   if (loadedGoogleFonts.has(key)) return;
   loadedGoogleFonts.add(key);
+
+  const cleanFamily = family.replace(/ /g, "+");
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, "+")}:wght@${weight}&display=swap`;
+  link.href = `https://fonts.googleapis.com/css2?family=${cleanFamily}&display=swap`;
   link.setAttribute("data-brand-font", "1");
   document.head.appendChild(link);
 }
@@ -108,6 +111,7 @@ export function useBrandIdentity(app?: BrandApp) {
           : {},
         brandTitleSizeNav: Number(m.brand_title_size_nav) || 20,
         brandLogoTitleRatio: Number(m.brand_logo_title_ratio) || 1.0,
+        titleLetterSpacing: m.title_letter_spacing !== undefined && m.title_letter_spacing !== null ? Number(m.title_letter_spacing) : 0,
       };
     },
   });
@@ -158,6 +162,7 @@ interface BrandTitleProps {
   app?: BrandApp;
   /** Optional override font size */
   fontSize?: string | number;
+  letterSpacing?: string | number;
 }
 
 /**
@@ -172,6 +177,7 @@ export function BrandTitle({
   forceText = false,
   app,
   fontSize,
+  letterSpacing,
 }: BrandTitleProps) {
   const { language } = useLanguage();
   const { data } = useBrandIdentity(app);
@@ -187,13 +193,18 @@ export function BrandTitle({
   const useImage = !forceText && data?.titleSource === "image" && !!data.titleImageUrl;
 
   if (useImage) {
+    const calcHeight = fontSize !== undefined
+      ? (typeof fontSize === "number" ? Math.round(fontSize * 1.35 * (data?.brandLogoTitleRatio || 1.0)) : fontSize)
+      : (data?.brandTitleSizeNav ? Math.round(data.brandTitleSizeNav * 1.35 * (data.brandLogoTitleRatio || 1.0)) : undefined);
+
     return (
       <BrandImage
         src={data!.titleImageUrl}
         alt={siteName || "Site title"}
         filter={data!.titleColorFilter}
         customColor={data!.titleTintColor}
-        className={imageClassName || "h-6 w-auto"}
+        className={imageClassName || "w-auto object-contain shrink-0"}
+        style={calcHeight ? { height: typeof calcHeight === "number" ? `${calcHeight}px` : calcHeight, maxHeight: "48px" } : undefined}
       />
     );
   }
@@ -201,9 +212,14 @@ export function BrandTitle({
   if (!siteName) return null;
   const mode = data?.titleGroupMode || "single";
   const colors = data?.titleLetterColors || {};
+  const spacingVal = letterSpacing !== undefined
+    ? (typeof letterSpacing === "number" ? `${letterSpacing}em` : letterSpacing)
+    : (data?.titleLetterSpacing !== undefined ? `${data.titleLetterSpacing}em` : undefined);
+
   const style: React.CSSProperties = {
     fontFamily: data?.titleFont ? `'${data.titleFont}', sans-serif` : undefined,
-    fontSize: fontSize !== undefined ? (typeof fontSize === "number" ? `${fontSize}px` : fontSize) : undefined,
+    fontSize: fontSize !== undefined ? (typeof fontSize === "number" ? `${fontSize}px` : fontSize) : (data?.brandTitleSizeNav ? `${data.brandTitleSizeNav}px` : undefined),
+    letterSpacing: spacingVal,
   };
 
   // When in "single" mode (single word), render continuously so custom font ligatures,
