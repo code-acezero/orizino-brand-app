@@ -7,10 +7,10 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: {
     template: "%s — ORIZINO",
-    default: "ORIZINO — From Beyond Ordinary | Luxury Fashion & Premium Streetwear",
+    default: "ORIZINO — Form Beyond Ordinary | Luxury Fashion & Premium Streetwear",
   },
   description:
-    "Shop ORIZINO luxury fashion — premium oversized streetwear, heavyweight tees & designer hoodies crafted in Dhaka. From Beyond Ordinary.",
+    "Shop ORIZINO luxury fashion — premium oversized streetwear, heavyweight tees & designer hoodies crafted in Dhaka. Form Beyond Ordinary.",
   keywords: [
     "ORIZINO",
     "luxury fashion",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     "drop shoulder",
     "luxury clothing Bangladesh",
     "Dhaka fashion brand",
-    "from beyond ordinary",
+    "form beyond ordinary",
     "luxury streetwear brand",
     "premium oversized clothing",
     "designer streetwear",
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     siteName: "ORIZINO",
-    title: "ORIZINO — From Beyond Ordinary | Luxury Fashion",
+    title: "ORIZINO — Form Beyond Ordinary | Luxury Fashion",
     description:
       "Shop ORIZINO luxury fashion — premium oversized streetwear, heavyweight tees & designer hoodies crafted in Dhaka.",
     images: [
@@ -54,13 +54,13 @@ export const metadata: Metadata = {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "ORIZINO — From Beyond Ordinary",
+        alt: "ORIZINO — Form Beyond Ordinary",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ORIZINO — From Beyond Ordinary",
+    title: "ORIZINO — Form Beyond Ordinary",
     description:
       "Shop ORIZINO luxury fashion — premium oversized streetwear & designer hoodies.",
     images: ["/og-image.jpg"],

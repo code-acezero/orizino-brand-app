@@ -182,7 +182,7 @@ export const DEFAULT_CONFIG: OrizinoConfig = {
   ],
   footer: {
     brandName: "ORIZINO",
-    tagline: "From Beyond Ordinary",
+    tagline: "Form Beyond Ordinary",
     copyright: "© 2026 ORIZINO — ALL RIGHTS RESERVED",
   },
   motion: { speed: 1, intensity: 1, logoRotateInterval: 10 },

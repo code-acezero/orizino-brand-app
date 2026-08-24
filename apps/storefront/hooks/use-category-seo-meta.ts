@@ -69,7 +69,7 @@ export const useCategorySeoMeta = (category: Category | undefined) => {
     const description =
       category.meta_description ||
       category.description ||
-      `Explore the ${category.name} collection by ORIZINO. Premium luxury fashion — From Beyond Ordinary.`;
+      `Explore the ${category.name} collection by ORIZINO. Premium luxury fashion — Form Beyond Ordinary.`;
     setMeta("description", description);
 
     // Keywords

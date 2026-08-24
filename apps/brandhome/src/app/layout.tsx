@@ -5,15 +5,15 @@ import Providers from "@/src/app/providers";
 export const metadata: Metadata = {
   title: {
     template: "%s — ORIZINO",
-    default: "ORIZINO — From Beyond Ordinary | Official Brand Website",
+    default: "ORIZINO — Form Beyond Ordinary | Official Brand Website",
   },
   description:
-    "ORIZINO — From Beyond Ordinary. The official home of luxury fashion & premium streetwear. Discover collections, brand story & the art of modern elegance crafted in Dhaka.",
+    "ORIZINO — Form Beyond Ordinary. The official home of luxury fashion & premium streetwear. Discover collections, brand story & the art of modern elegance crafted in Dhaka.",
   keywords: [
     "ORIZINO",
     "luxury fashion brand",
     "premium streetwear",
-    "from beyond ordinary",
+    "form beyond ordinary",
     "designer clothing",
     "Dhaka fashion brand",
     "official brand website",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     siteName: "ORIZINO",
-    title: "ORIZINO — From Beyond Ordinary | Official Brand",
+    title: "ORIZINO — Form Beyond Ordinary | Official Brand",
     description:
       "The official home of ORIZINO luxury fashion. Discover premium streetwear collections & the art of modern elegance.",
     images: [
@@ -49,13 +49,13 @@ export const metadata: Metadata = {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "ORIZINO — From Beyond Ordinary",
+        alt: "ORIZINO — Form Beyond Ordinary",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ORIZINO — From Beyond Ordinary",
+    title: "ORIZINO — Form Beyond Ordinary",
     description:
       "The official home of ORIZINO luxury fashion & premium streetwear.",
     images: ["/og-image.jpg"],

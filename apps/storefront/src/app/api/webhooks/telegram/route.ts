@@ -78,7 +78,7 @@ async function generateAiTelegramReply(
   });
 
   const brandName = settingsMap.site_name || "ORIZINO";
-  const brandTagline = settingsMap.site_tagline || settingsMap.site_description || "From Beyond Ordinary. Premium luxury fashion from Dhaka.";
+  const brandTagline = settingsMap.site_tagline || settingsMap.site_description || "Form Beyond Ordinary. Premium luxury fashion from Dhaka.";
   const contactPhone = settingsMap.contact_phone || "+880 1700-000000";
   const contactEmail = settingsMap.contact_email || "concierge@orizino.com";
 
