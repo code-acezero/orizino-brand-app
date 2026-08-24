@@ -40,7 +40,7 @@ const ProductActions: React.FC<ProductActionsProps> = ({
       {/* ── Perfectly Parallel & Symmetrical Actions Bar ── */}
       <div className="flex items-center gap-2 sm:gap-2.5 w-full">
         {/* 1. Quantity Stepper */}
-        <div className="h-12 sm:h-13 shrink-0 px-1 rounded-xl border-2 border-border/90 bg-card flex items-center justify-between shadow-2xs select-none">
+        <div className="h-12 sm:h-13 shrink-0 px-1 rounded-full sm:rounded-xl border-2 border-border/90 bg-card flex items-center justify-between shadow-2xs select-none">
           <button
             type="button"
             onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -73,7 +73,7 @@ const ProductActions: React.FC<ProductActionsProps> = ({
           onClick={onAddToCart}
           disabled={addingToCart || !inStock}
           className={cn(
-            "h-12 sm:h-13 flex-1 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 border-2 shadow-2xs select-none",
+            "h-12 sm:h-13 flex-1 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold rounded-full sm:rounded-xl transition-all duration-200 border-2 shadow-2xs select-none",
             !inStock
               ? "bg-muted/40 border-border/60 text-muted-foreground/50 cursor-not-allowed"
               : "bg-card text-foreground border-border/90 hover:border-primary/80 hover:bg-primary/5 hover:text-primary cursor-pointer active:scale-[0.98]"
@@ -96,7 +96,7 @@ const ProductActions: React.FC<ProductActionsProps> = ({
           onClick={onBuyNow}
           disabled={!inStock}
           className={cn(
-            "h-12 sm:h-13 flex-1 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 border-2 shadow-md select-none",
+            "h-12 sm:h-13 flex-1 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold rounded-full sm:rounded-xl transition-all duration-200 border-2 shadow-md select-none",
             !inStock
               ? "bg-muted/40 border-border/60 text-muted-foreground/50 cursor-not-allowed"
               : "bg-primary border-primary text-primary-foreground hover:brightness-110 shadow-primary/25 cursor-pointer active:scale-[0.98]"
@@ -113,7 +113,7 @@ const ProductActions: React.FC<ProductActionsProps> = ({
           onClick={onToggleWishlist}
           title={inWishlist ? "Saved in Wishlist" : "Add to Wishlist"}
           className={cn(
-            "h-12 w-12 sm:h-13 sm:w-13 shrink-0 flex items-center justify-center rounded-xl border-2 transition-all duration-200 shadow-2xs cursor-pointer",
+            "h-12 w-12 sm:h-13 sm:w-13 shrink-0 flex items-center justify-center rounded-full sm:rounded-xl border-2 transition-all duration-200 shadow-2xs cursor-pointer",
             inWishlist
               ? "bg-primary text-primary-foreground border-primary shadow-primary/20 hover:bg-primary/90"
               : "bg-card border-border/90 text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5"

@@ -1115,21 +1115,40 @@ const ProductDetailPage: React.FC = () => {
                 {videoUrl && (
                   <ProductVideo url={videoUrl} title={product.name} />
                 )}
-                {/* Fill space under gallery: product highlights / specs preview */}
+                {/* Fill space under gallery: product highlights / specs preview (collapsible on mobile) */}
                 {(() => {
                   const quickSpecsList = extractProductQuickSpecs(product);
                   if (!quickSpecsList || quickSpecsList.length === 0) return null;
                   return (
-                    <div className={`${cfg.cardClass} rounded-2xl p-4 sm:p-5 space-y-3.5 border border-border/60 bg-card/60 backdrop-blur-sm shadow-xs`}>
-                      <div className="flex items-center justify-between">
+                    <div className={`${cfg.cardClass} rounded-2xl p-3.5 sm:p-5 border border-border/60 bg-card/60 backdrop-blur-sm shadow-xs transition-all`}>
+                      {/* Header with mobile tap-to-expand toggle */}
+                      <button
+                        type="button"
+                        onClick={() => setSpecsExpandedMobile((prev) => !prev)}
+                        className="w-full flex items-center justify-between cursor-pointer select-none text-left focus:outline-none"
+                        aria-expanded={specsExpandedMobile}
+                      >
                         <h3 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
                           <Package className="w-3.5 h-3.5 text-primary" /> Quick Specs
                         </h3>
-                        <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground/80 bg-muted/60 px-2 py-0.5 rounded-md border border-border/40">
-                          Highlights
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground/80 bg-muted/60 px-2 py-0.5 rounded-md border border-border/40">
+                            Highlights
+                          </span>
+                          <ChevronDown
+                            className={cn(
+                              "w-4 h-4 text-muted-foreground transition-transform duration-200 md:hidden",
+                              specsExpandedMobile && "rotate-180 text-primary"
+                            )}
+                          />
+                        </div>
+                      </button>
+                      
+                      {/* Grid: collapsible on mobile, always visible on desktop */}
+                      <div className={cn(
+                        "grid grid-cols-2 gap-x-4 gap-y-3 pt-3 border-t border-border/40 mt-3",
+                        specsExpandedMobile ? "grid" : "hidden md:grid"
+                      )}>
                         {quickSpecsList.slice(0, 6).map((item) => (
                           <div key={item.label} className="space-y-0.5">
                             <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block">

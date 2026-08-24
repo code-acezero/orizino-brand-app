@@ -473,7 +473,7 @@ const CartPage: React.FC = () => {
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                         placeholder="Coupon code"
-                        className="rounded-xl text-xs h-10 border-border/60 bg-background/80"
+                        className="rounded-full sm:rounded-xl text-xs h-10 border-border/60 bg-background/80"
                         onKeyDown={(e) => e.key === "Enter" && applyCoupon()}
                       />
                       <Button size="sm" onClick={applyCoupon} disabled={couponLoading} className="rounded-xl px-4 h-10 font-bold text-xs whitespace-nowrap">

@@ -109,7 +109,7 @@ const NotifyWhenAvailable: React.FC<NotifyWhenAvailableProps> = ({
 
   if (subscription) {
     return (
-      <div className={cn("flex items-center justify-between gap-3 p-3 rounded-xl border border-primary/30 bg-primary/10 shadow-xs", className)}>
+      <div className={cn("flex items-center justify-between gap-3 p-3 rounded-full sm:rounded-xl border border-primary/30 bg-primary/10 shadow-xs", className)}>
         <div className="flex items-center gap-2">
           <Mail className="w-4 h-4 text-primary shrink-0" />
           <div>
@@ -138,7 +138,7 @@ const NotifyWhenAvailable: React.FC<NotifyWhenAvailableProps> = ({
       onClick={() => subscribe.mutate()}
       disabled={subscribe.isPending}
       className={cn(
-        "group w-full h-11 flex items-center justify-center gap-2 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 border-2 border-primary/40 bg-primary/15 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary active:scale-[0.99]",
+        "group w-full h-11 flex items-center justify-center gap-2 text-xs sm:text-sm font-bold rounded-full sm:rounded-xl transition-all duration-200 border-2 border-primary/40 bg-primary/15 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary active:scale-[0.99]",
         className
       )}
     >

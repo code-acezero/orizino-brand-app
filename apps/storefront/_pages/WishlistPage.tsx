@@ -327,7 +327,7 @@ const WishlistPage: React.FC = () => {
                 </div>
 
                 {/* Stock filter chips */}
-                <div className="hidden md:flex items-center gap-1 bg-secondary/50 p-0.5 rounded-xl text-xs">
+                <div className="hidden md:flex items-center gap-1 bg-secondary/50 p-0.5 rounded-full sm:rounded-xl text-xs">
                   <button
                     type="button"
                     onClick={() => setStockFilter("all")}
@@ -585,7 +585,7 @@ const WishlistPage: React.FC = () => {
                               size="sm"
                               variant="outline"
                               onClick={() => toggleNotify(product.id)}
-                              className="rounded-xl text-xs font-semibold h-9 gap-1.5"
+                              className="rounded-full sm:rounded-xl text-xs font-semibold h-9 gap-1.5"
                             >
                               {stockNotifs.includes(product.id) ? (
                                 <>
@@ -603,7 +603,7 @@ const WishlistPage: React.FC = () => {
                             <Button
                               size="sm"
                               onClick={() => addToCart(product.id)}
-                              className="rounded-xl text-xs font-bold h-9 px-4 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 "
+                              className="rounded-full sm:rounded-xl text-xs font-bold h-9 px-4 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 "
                             >
                               <ShoppingBag className="w-3.5 h-3.5" />
                               <span>Add to Bag</span>
