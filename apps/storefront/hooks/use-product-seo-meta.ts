@@ -77,7 +77,7 @@ export const useProductSeoMeta = (product: Product | undefined) => {
     const description =
       product.meta_description ||
       product.short_description ||
-      `Shop ${product.name} by ${brand}. Premium luxury fashion from ORIZINO — Form Beyond Ordinary.`;
+      `Shop ${product.name} by ${brand}. Premium luxury fashion from ORIZINO — Beyond Simplicity.`;
     setMeta("description", description);
 
     // Keywords

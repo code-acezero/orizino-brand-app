@@ -110,8 +110,8 @@ export const useSeoMeta = (pageId: string, defaultTitle: string, appId: "storefr
     document.title = pageSeo.title ? `${pageTitle}${suffix}` : defaultTitle;
 
     // 2. Meta description & Keywords
-    setMeta("description", pageSeo.description || "ORIZINO — Form Beyond Ordinary. Shop luxury fashion, premium oversized streetwear & designer hoodies crafted in Dhaka.");
-    setMeta("keywords", pageSeo.keywords || "ORIZINO, luxury fashion, premium streetwear, form beyond ordinary, oversized tee, heavyweight cotton, designer hoodie, drop shoulder, luxury clothing Bangladesh, Dhaka fashion brand");
+    setMeta("description", pageSeo.description || "ORIZINO — Beyond Simplicity. Shop luxury fashion, premium oversized streetwear & designer hoodies crafted in Dhaka.");
+    setMeta("keywords", pageSeo.keywords || "ORIZINO, luxury fashion, premium streetwear, beyond simplicity, oversized tee, heavyweight cotton, designer hoodie, drop shoulder, luxury clothing Bangladesh, Dhaka fashion brand");
 
     // Author & Theme
     setMeta("author", "ORIZINO");
@@ -122,7 +122,7 @@ export const useSeoMeta = (pageId: string, defaultTitle: string, appId: "storefr
 
     // 4. Open Graph Tags
     const ogTitle = pageSeo.og_title || pageTitle;
-    const ogDesc = pageSeo.og_description || pageSeo.description || "ORIZINO — Form Beyond Ordinary. Premium luxury fashion & streetwear.";
+    const ogDesc = pageSeo.og_description || pageSeo.description || "ORIZINO — Beyond Simplicity. Premium luxury fashion & streetwear.";
     const ogImage = pageSeo.og_image || globalSeo.default_og_image || "https://shop.orizino.com/og-image.jpg";
 
     setMeta("og:site_name", globalSeo.brand_name || "ORIZINO", "property");

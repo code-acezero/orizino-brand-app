@@ -12,14 +12,14 @@ export const metadata: Metadata = {
     default: "ORIZINO Explore — Discover Collections, Universes & Character Wardrobes",
   },
   description:
-    "Explore every collection, universe & character wardrobe across the ORIZINO fashion maison. Form Beyond Ordinary.",
+    "Explore every collection, universe & character wardrobe across the ORIZINO fashion maison. Beyond Simplicity.",
   keywords: [
     "ORIZINO explore",
     "fashion collections",
     "character wardrobe",
     "universe collection",
     "luxury fashion maison",
-    "form beyond ordinary",
+    "beyond simplicity",
     "ORIZINO channels",
   ],
   authors: [{ name: "ORIZINO" }],

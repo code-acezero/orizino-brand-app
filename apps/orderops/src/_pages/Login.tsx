@@ -60,7 +60,7 @@ export function Login() {
               {brand.siteName} OrderOps
             </h1>
             <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
-              {brand.brandTagline || "Form Beyond Ordinary."}
+              {brand.brandTagline || "Beyond Simplicity."}
             </p>
           </div>
         </div>

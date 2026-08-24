@@ -60,7 +60,7 @@ const LandingPage: React.FC = () => {
   const siteName = (siteSettings?.site_name as string) || "Orizino";
   const logoUrl = (siteSettings?.logo_url as string) || "";
   const siteDesc = (siteSettings?.site_description as string) || "Premium drop shoulder streetwear from Dhaka.";
-  const siteTagline = (siteSettings?.site_tagline as string) || (siteSettings?.landing_config as any)?.hero_tagline || "Form Beyond Ordinary.";
+  const siteTagline = (siteSettings?.site_tagline as string) || (siteSettings?.landing_config as any)?.hero_tagline || "Beyond Simplicity.";
   const instagram = (siteSettings?.social_instagram as string) || "";
   const contactEmail = (siteSettings?.contact_email as string) || "";
   const contactPhone = (siteSettings?.contact_phone as string) || "";
