@@ -1,7 +1,13 @@
 "use server";
 
 import { createServerFn } from "@/lib/server-fn-compat";
-import { buildCompactSerialPrefix, formatCompactSerialCode, getNextCompactSequence } from "@orizino/shared";
+import {
+  extractSerialCandidates,
+  extractSerialCode,
+  buildCompactSerialPrefix,
+  formatCompactSerialCode,
+  getNextCompactSequence,
+} from "@orizino/shared";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -40,51 +46,45 @@ export async function runTwoWayStockSync(sb: any) {
   const { data: variantCounts } = await sb
     .from("product_serials")
     .select("variant_id")
-    .in("status", ["available", "returned", "cancelled"])
-    .is("sold_order_id", null)
-    .not("variant_id", "is", null);
+    .not("variant_id", "is", null)
+    .in("status", ["available", "returned", "cancelled"]);
 
   const vMap: Record<string, number> = {};
-  for (const row of variantCounts || []) {
-    if (row.variant_id) vMap[row.variant_id] = (vMap[row.variant_id] || 0) + 1;
-  }
-
-  // 2. Fetch sellable serial counts grouped by product (where variant is null)
-  const { data: simpleCounts } = await sb
-    .from("product_serials")
-    .select("product_id")
-    .in("status", ["available", "returned", "cancelled"])
-    .is("sold_order_id", null)
-    .is("variant_id", null);
-
-  const pSimpleMap: Record<string, number> = {};
-  for (const row of simpleCounts || []) {
-    if (row.product_id) pSimpleMap[row.product_id] = (pSimpleMap[row.product_id] || 0) + 1;
-  }
-
-  // 3. Update all product variants to match exact serial counts
-  const { data: allVariants } = await sb.from("product_variants").select("id, product_id, stock_quantity");
-  for (const v of allVariants || []) {
-    const count = vMap[v.id] || 0;
-    if (v.stock_quantity !== count) {
-      await sb.from("product_variants").update({ stock_quantity: count }).eq("id", v.id);
+  for (const row of variantCounts ?? []) {
+    if (row.variant_id) {
+      vMap[row.variant_id] = (vMap[row.variant_id] || 0) + 1;
     }
   }
 
-  // 4. Update all products: sum of variants if variants exist, or simple serials count
+  // 2. Fetch sellable serial counts grouped by product
+  const { data: prodCounts } = await sb
+    .from("product_serials")
+    .select("product_id")
+    .not("product_id", "is", null)
+    .in("status", ["available", "returned", "cancelled"]);
+
+  const pMap: Record<string, number> = {};
+  for (const row of prodCounts ?? []) {
+    if (row.product_id) {
+      pMap[row.product_id] = (pMap[row.product_id] || 0) + 1;
+    }
+  }
+
+  // 3. Update variant stock counts
+  const { data: allVariants } = await sb.from("product_variants").select("id, stock_quantity");
+  for (const v of allVariants ?? []) {
+    const target = vMap[v.id] ?? 0;
+    if (v.stock_quantity !== target) {
+      await sb.from("product_variants").update({ stock_quantity: target }).eq("id", v.id);
+    }
+  }
+
+  // 4. Update product stock counts
   const { data: allProducts } = await sb.from("products").select("id, stock_quantity");
-  for (const p of allProducts || []) {
-    const pVariants = (allVariants || []).filter((v: any) => v.product_id === p.id);
-    if (pVariants.length > 0) {
-      const sum = pVariants.reduce((acc: number, v: any) => acc + (vMap[v.id] || 0), 0);
-      if (p.stock_quantity !== sum) {
-        await sb.from("products").update({ stock_quantity: sum }).eq("id", p.id);
-      }
-    } else {
-      const simpleCount = pSimpleMap[p.id] || 0;
-      if (p.stock_quantity !== simpleCount) {
-        await sb.from("products").update({ stock_quantity: simpleCount }).eq("id", p.id);
-      }
+  for (const p of allProducts ?? []) {
+    const target = pMap[p.id] ?? 0;
+    if (p.stock_quantity !== target) {
+      await sb.from("products").update({ stock_quantity: target }).eq("id", p.id);
     }
   }
 }
@@ -99,19 +99,47 @@ export const syncStockFromSerials = createServerFn({ method: "POST" })
 
 export const listSerials = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { productId?: string; productIds?: string[]; status?: string; search?: string; limit?: number } | undefined) => d ?? {})
+  .inputValidator(
+    (d: {
+      productId?: string;
+      variantId?: string;
+      status?: string;
+      search?: string;
+      limit?: number;
+      offset?: number;
+    }) =>
+      z
+        .object({
+          productId: z.string().uuid().optional(),
+          variantId: z.string().uuid().optional(),
+          status: z.string().optional(),
+          search: z.string().optional(),
+          limit: z.number().optional(),
+          offset: z.number().optional(),
+        })
+        .parse(d),
+  )
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
-    let q = (context.supabase as any)
+    const sb = context.supabase as any;
+    let query = sb
       .from("product_serials")
-      .select("id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, created_at, updated_at, print_count, last_printed_at, products(name, sku, price, compare_at_price, sticker_preset_id), product_variants(size, color, sku)")
-      .order("created_at", { ascending: false })
-      .limit(data?.limit ?? 500);
-    if (data?.productId) q = q.eq("product_id", data.productId);
-    if (data?.productIds?.length) q = q.in("product_id", data.productIds);
-    if (data?.status && data.status !== "all") q = q.eq("status", data.status);
-    if (data?.search && data.search.trim()) q = q.ilike("serial_code", `%${data.search.trim()}%`);
-    const { data: rows, error } = await q;
+      .select(
+        "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, print_count, last_printed_at, created_at, products(id, name, sku), product_variants(id, size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_name, total, status)",
+      )
+      .order("created_at", { ascending: false });
+
+    if (data.productId) query = query.eq("product_id", data.productId);
+    if (data.variantId) query = query.eq("variant_id", data.variantId);
+    if (data.status && data.status !== "all") query = query.eq("status", data.status);
+    if (data.search?.trim()) {
+      query = query.ilike("serial_code", `%${data.search.trim()}%`);
+    }
+    const limit = data.limit ?? 100;
+    const offset = data.offset ?? 0;
+    query = query.range(offset, offset + limit - 1);
+
+    const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
@@ -122,140 +150,145 @@ export const lookupSerial = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
     const sb = context.supabase as any;
-    const raw = data.code.trim().replace(/[\r\n\t]/g, "");
-    
-    // 1. Extract code if URL or JSON
-    let code = raw;
-    if (raw.startsWith("{") && raw.endsWith("}")) {
-      try {
-        const parsed = JSON.parse(raw);
-        code = parsed.serial_code || parsed.serial || parsed.sku || parsed.barcode || parsed.code || parsed.id || raw;
-      } catch {}
-    } else if (raw.startsWith("http://") || raw.startsWith("https://")) {
-      try {
-        const url = new URL(raw);
-        const param = url.searchParams.get("serial") || url.searchParams.get("code") || url.searchParams.get("s") || url.searchParams.get("sku") || url.searchParams.get("barcode") || url.searchParams.get("id") || url.searchParams.get("v");
-        if (param) code = param;
-        else {
-          const parts = url.pathname.split("/").filter(Boolean);
-          if (parts.length > 0) code = parts[parts.length - 1];
+    const candidates = extractSerialCandidates(data.code);
+    if (candidates.length === 0) return null;
+
+    // Strategy 1: Direct case-insensitive match on product_serials
+    for (const cand of candidates) {
+      const { data: serialRow } = await sb
+        .from("product_serials")
+        .select(
+          "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku)",
+        )
+        .ilike("serial_code", cand)
+        .limit(1)
+        .maybeSingle();
+
+      if (serialRow) {
+        return serialRow;
+      }
+    }
+
+    // Strategy 2: Fuzzy / substring match for serial numbers
+    for (const cand of candidates) {
+      if (cand.length >= 4 && /\d{2,}/.test(cand)) {
+        const { data: fuzzySerial } = await sb
+          .from("product_serials")
+          .select(
+            "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku)",
+          )
+          .ilike("serial_code", `%${cand}%`)
+          .limit(1)
+          .maybeSingle();
+
+        if (fuzzySerial) {
+          return fuzzySerial;
         }
-      } catch {}
+      }
     }
 
-    // Step 1: Direct match on product_serials (case-insensitive)
-    const { data: serialRow } = await sb
-      .from("product_serials")
-      .select(
-        "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku)",
-      )
-      .ilike("serial_code", code)
-      .limit(1)
-      .maybeSingle();
-
-    if (serialRow) {
-      return serialRow;
-    }
-
-    // Step 2: Try variant barcode or SKU
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);
-    let variantQuery = sb
-      .from("product_variants")
-      .select(
-        "id, product_id, size, color, sku, barcode, stock_quantity, products(name, sku, price, compare_at_price, thumbnail)",
-      );
-
-    if (isUuid) {
-      variantQuery = variantQuery.or(`id.eq.${code},sku.ilike.${code},barcode.ilike.${code}`);
-    } else {
-      variantQuery = variantQuery.or(`sku.ilike.${code},barcode.ilike.${code}`);
-    }
-
-    const { data: variantRow } = await variantQuery.limit(1).maybeSingle();
-
-    if (variantRow) {
-      const { data: availableSerial } = await sb
-        .from("product_serials")
+    // Strategy 3: Try variant SKU or ID (safe query without non-existent barcode column)
+    for (const cand of candidates) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cand);
+      let variantQuery = sb
+        .from("product_variants")
         .select(
-          "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku)",
-        )
-        .eq("variant_id", variantRow.id)
-        .eq("status", "available")
-        .limit(1)
-        .maybeSingle();
+          "id, product_id, size, color, sku, products(name, sku, price, compare_at_price, thumbnail)",
+        );
 
-      if (availableSerial) {
-        return availableSerial;
+      if (isUuid) {
+        variantQuery = variantQuery.or(`id.eq.${cand},sku.ilike.${cand}`);
+      } else {
+        variantQuery = variantQuery.ilike("sku", cand);
       }
 
-      return {
-        id: variantRow.id,
-        serial_code: variantRow.sku || variantRow.barcode || code,
-        status: "available",
-        product_id: variantRow.product_id,
-        variant_id: variantRow.id,
-        sold_order_id: null,
-        sold_at: null,
-        products: variantRow.products,
-        product_variants: {
-          size: variantRow.size,
-          color: variantRow.color,
-          sku: variantRow.sku,
-        },
-      };
+      const { data: variantRow } = await variantQuery.limit(1).maybeSingle();
+
+      if (variantRow) {
+        const { data: availableSerial } = await sb
+          .from("product_serials")
+          .select(
+            "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku)",
+          )
+          .eq("variant_id", variantRow.id)
+          .eq("status", "available")
+          .limit(1)
+          .maybeSingle();
+
+        if (availableSerial) {
+          return availableSerial;
+        }
+
+        return {
+          id: variantRow.id,
+          serial_code: variantRow.sku || cand,
+          status: "available",
+          product_id: variantRow.product_id,
+          variant_id: variantRow.id,
+          sold_order_id: null,
+          sold_at: null,
+          products: variantRow.products,
+          product_variants: {
+            size: variantRow.size,
+            color: variantRow.color,
+            sku: variantRow.sku,
+          },
+        };
+      }
     }
 
-    // Step 3: Try product barcode, SKU, slug, or ID
-    let prodQuery = sb
-      .from("products")
-      .select("id, name, sku, barcode, slug, price, compare_at_price, thumbnail, stock_quantity");
+    // Strategy 4: Try product SKU, slug, or ID
+    for (const cand of candidates) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cand);
+      let prodQuery = sb
+        .from("products")
+        .select("id, name, sku, slug, price, compare_at_price, thumbnail");
 
-    if (isUuid) {
-      prodQuery = prodQuery.or(`id.eq.${code},sku.ilike.${code},barcode.ilike.${code}`);
-    } else {
-      prodQuery = prodQuery.or(`sku.ilike.${code},barcode.ilike.${code},slug.ilike.${code},name.ilike.%${code}%`);
-    }
-
-    const { data: productRow } = await prodQuery.limit(1).maybeSingle();
-
-    if (productRow) {
-      const { data: availableSerial } = await sb
-        .from("product_serials")
-        .select(
-          "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku)",
-        )
-        .eq("product_id", productRow.id)
-        .eq("status", "available")
-        .limit(1)
-        .maybeSingle();
-
-      if (availableSerial) {
-        return availableSerial;
+      if (isUuid) {
+        prodQuery = prodQuery.or(`id.eq.${cand},sku.ilike.${cand}`);
+      } else {
+        prodQuery = prodQuery.or(`sku.ilike.${cand},slug.ilike.${cand},name.ilike.%${cand}%`);
       }
 
-      return {
-        id: productRow.id,
-        serial_code: productRow.sku || productRow.barcode || code,
-        status: "available",
-        product_id: productRow.id,
-        variant_id: null,
-        sold_order_id: null,
-        sold_at: null,
-        products: {
-          name: productRow.name,
-          sku: productRow.sku,
-          price: Number(productRow.price || 0),
-          compare_at_price: productRow.compare_at_price ? Number(productRow.compare_at_price) : null,
-          thumbnail: productRow.thumbnail,
-        },
-        product_variants: null,
-      };
+      const { data: productRow } = await prodQuery.limit(1).maybeSingle();
+
+      if (productRow) {
+        const { data: availableSerial } = await sb
+          .from("product_serials")
+          .select(
+            "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku)",
+          )
+          .eq("product_id", productRow.id)
+          .eq("status", "available")
+          .limit(1)
+          .maybeSingle();
+
+        if (availableSerial) {
+          return availableSerial;
+        }
+
+        return {
+          id: productRow.id,
+          serial_code: productRow.sku || cand,
+          status: "available",
+          product_id: productRow.id,
+          variant_id: null,
+          sold_order_id: null,
+          sold_at: null,
+          products: {
+            name: productRow.name,
+            sku: productRow.sku,
+            price: Number(productRow.price || 0),
+            compare_at_price: productRow.compare_at_price ? Number(productRow.compare_at_price) : null,
+            thumbnail: productRow.thumbnail,
+          },
+          product_variants: null,
+        };
+      }
     }
 
     return null;
   });
-
-
 
 function nextSeq(existing: string[], prefix: string): number {
   let max = 0;
@@ -485,9 +518,43 @@ export const scanSerial = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdminOrMod(context.supabase, context.userId);
     const sb: any = context.supabase;
-    const { data: row, error } = await sb.from("product_serials").select("id, status").eq("serial_code", data.code).maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!row) throw new Error("Serial not found");
+    const candidates = extractSerialCandidates(data.code);
+
+    let row: any = null;
+    for (const cand of candidates) {
+      const { data: found } = await sb
+        .from("product_serials")
+        .select("id, status, serial_code")
+        .ilike("serial_code", cand)
+        .limit(1)
+        .maybeSingle();
+
+      if (found) {
+        row = found;
+        break;
+      }
+    }
+
+    // Fuzzy serial fallback if not found directly
+    if (!row) {
+      for (const cand of candidates) {
+        if (cand.length >= 4 && /\d{2,}/.test(cand)) {
+          const { data: found } = await sb
+            .from("product_serials")
+            .select("id, status, serial_code")
+            .ilike("serial_code", `%${cand}%`)
+            .limit(1)
+            .maybeSingle();
+
+          if (found) {
+            row = found;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!row) throw new Error(`Serial not found for code "${data.code}"`);
 
     const update: Record<string, any> = { updated_at: new Date().toISOString() };
     if (data.action === "sell") {
