@@ -1179,8 +1179,9 @@ function StockAndSerialsTab() {
       {manualAddOpen && (
         <ManualAddSerialDialog
           onClose={() => setManualAddOpen(false)}
-          onCreated={() => {
+          onCreated={(code) => {
             setManualAddOpen(false);
+            if (code) setPrintCodes([code]);
             qc.invalidateQueries({ queryKey: ["serials"] });
             qc.invalidateQueries({ queryKey: ["serials-all-stats"] });
           }}
@@ -1848,7 +1849,7 @@ function AddStockDialog({ onClose, onCreated }: { onClose: () => void; onCreated
 }
 
 
-function ManualAddSerialDialog({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function ManualAddSerialDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (code?: string) => void }) {
   const addFn = useServerFn(manualAddSerial);
   const [productId, setProductId] = useState("");
   const [variantId, setVariantId] = useState<string>("");
@@ -1871,9 +1872,10 @@ function ManualAddSerialDialog({ onClose, onCreated }: { onClose: () => void; on
     if (!serialCode.trim()) { toast({ title: "Enter a serial code", variant: "destructive" }); return; }
     setBusy(true);
     try {
-      await addFn({ data: { productId, variantId: variantId || null, serialCode: serialCode.trim(), status: status as any } });
+      const code = serialCode.trim();
+      await addFn({ data: { productId, variantId: variantId || null, serialCode: code, status: status as any } });
       toast({ title: "Serial added" });
-      onCreated();
+      onCreated(code);
     } catch (e: any) {
       toast({ title: "Could not add serial", description: e.message, variant: "destructive" });
     } finally {
@@ -2233,17 +2235,22 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
 
   // ── Filter & selection state ───────────────────────────────────────────────
   type FilterMode = "unprinted" | "never" | "most" | "all" | "manual";
-  const [filterMode, setFilterMode] = useState<FilterMode>("never");
+  const [filterMode, setFilterMode] = useState<FilterMode>("all");
   const [quantity, setQuantity] = useState<number | "">(codes.length);
   const [manualSelected, setManualSelected] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (allRows.length > 0 && (quantity === "" || quantity === codes.length)) {
+    if (allRows.length > 0) {
       const neverCount = allRows.filter((r: any) => !r.last_printed_at && (r.print_count ?? 0) === 0).length;
-      setQuantity(neverCount > 0 ? neverCount : allRows.length);
+      if (neverCount > 0) {
+        setFilterMode("never");
+        setQuantity(neverCount);
+      } else {
+        setFilterMode("all");
+        setQuantity(allRows.length);
+      }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allRows.length]);
+  }, [allRows]);
 
   const neverPrintedCount = useMemo(() => allRows.filter((r: any) => !r.last_printed_at && (r.print_count ?? 0) === 0).length, [allRows]);
   const printedOnceCount = useMemo(() => allRows.filter((r: any) => (r.print_count ?? 0) > 0).length, [allRows]);
@@ -3702,12 +3709,25 @@ export function StickerSetupTab({
     },
   });
 
+  // Query most recent product and serial to auto-update live preview with real inventory
+  const { data: latestInventorySerial } = useQuery({
+    queryKey: ["latest-inventory-serial"],
+    queryFn: async () => {
+      const { data } = await (supabase.from as any)("product_serials")
+        .select("serial_code, products(name, sku, price, compare_at_price), product_variants(size, color, sku)")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data ?? null;
+    },
+  });
+
   const preview = useMemo(() => {
-    let serial = "TS01BL-001";
-    let productName = "Gachiakuta Oversized Heavyweight Tee";
-    let size = "L";
-    let price = 1250;
-    let compareAtPrice = 1450;
+    let serial = latestInventorySerial?.serial_code || "TS01BL-001";
+    let productName = latestInventorySerial?.products?.name || "Gachiakuta Oversized Heavyweight Tee";
+    let size = [latestInventorySerial?.product_variants?.color, latestInventorySerial?.product_variants?.size].filter(Boolean).join(" · ") || latestInventorySerial?.product_variants?.size || "L";
+    let price = Number(latestInventorySerial?.products?.price ?? 1250);
+    let compareAtPrice = latestInventorySerial?.products?.compare_at_price ? Number(latestInventorySerial.products.compare_at_price) : 1450;
 
     if (previewMode === "order") {
       serial = "ORD-2026-08492";
@@ -3716,7 +3736,7 @@ export function StickerSetupTab({
       price = 2450;
       compareAtPrice = null;
     } else if (previewMode === "custom") {
-      serial = customSerialText.trim() || "TS01BL-001";
+      serial = customSerialText.trim() || latestInventorySerial?.serial_code || "TS01BL-001";
       productName = "Custom Test Product";
     }
 
@@ -3733,20 +3753,21 @@ export function StickerSetupTab({
       showOriginalPrice: s.show_original_price ?? true,
       config: s,
     };
-  }, [s, brandLogoUrl, previewMode, customSerialText]);
+  }, [s, brandLogoUrl, previewMode, customSerialText, latestInventorySerial]);
 
   const warnings = useMemo(() => validateStickerConfig(s ?? {}), [s]);
   const hasErrors = warnings.some((w) => w.level === "error");
 
   const sampleCount = 12;
-  const sampleItems = useMemo(
-    () =>
-      Array.from({ length: sampleCount }, (_, i) => ({
-        ...preview,
-        serialCode: formatCompactSerialCode("TS01BL", i + 1),
-      })),
-    [preview, s.serial_prefix],
-  );
+  const sampleItems = useMemo(() => {
+    const rawPrefix = preview.serialCode.includes("-")
+      ? preview.serialCode.substring(0, preview.serialCode.lastIndexOf("-"))
+      : (s.serial_prefix || "ORZ-PRD");
+    return Array.from({ length: sampleCount }, (_, i) => ({
+      ...preview,
+      serialCode: formatCompactSerialCode(rawPrefix, i + 1),
+    }));
+  }, [preview, s.serial_prefix]);
 
   async function exportSamplePdf() {
     setExporting("pdf");

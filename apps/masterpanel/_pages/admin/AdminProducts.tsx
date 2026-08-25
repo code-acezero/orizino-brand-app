@@ -1695,6 +1695,7 @@ export default function AdminProducts() {
                                 .select("serial_code")
                                 .eq("product_id", p.id)
                                 .eq("status", "available")
+                                .order("created_at", { ascending: false })
                                 .limit(500);
                               const codes = (data ?? []).map((r: any) => r.serial_code);
                               if (!codes.length) {
