@@ -2,6 +2,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@orizino/shared/lib/server-fn-compat";
+import { buildCompactSerialPrefix, formatCompactSerialCode } from "@orizino/shared";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,7 +79,7 @@ export default function AdminProductsManagement() {
   }, [tab]);
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-8 max-w-full overflow-x-hidden">
       {tab !== "products" && tab !== "categories" && (
         <div className="flex flex-col gap-2">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-bold flex items-center gap-2">
@@ -334,19 +335,19 @@ function StockAndSerialsTab() {
   });
 
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-4 sm:space-y-5 max-w-full overflow-x-hidden">
       {/* 1. Top KPI Summary Cards (Mobile 2x2, Desktop 4-Col) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 max-w-full">
         {/* Card 1: Total Serials */}
-        <div className="rounded-xl border border-border/70 bg-card/60 backdrop-blur-md p-3 sm:p-4 shadow-xs flex flex-col justify-between hover:border-primary/40 transition-all">
+        <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3 sm:p-4 shadow-xs flex flex-col justify-between hover:border-primary/40 transition-all min-w-0">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Tracked</span>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+            <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">Total Tracked</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
               <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-1.5 sm:mt-2">
-            <div className="text-xl sm:text-2xl font-bold font-display text-foreground tracking-tight">{stats.total.toLocaleString()}</div>
+          <div className="mt-1.5 sm:mt-2 min-w-0">
+            <div className="text-xl sm:text-2xl font-bold font-display text-foreground tracking-tight truncate">{stats.total.toLocaleString()}</div>
             <div className="flex items-center gap-1 text-[11px] sm:text-xs text-muted-foreground mt-0.5 truncate">
               <span>{stats.printed} printed</span>
               <span>·</span>
@@ -356,17 +357,17 @@ function StockAndSerialsTab() {
         </div>
 
         {/* Card 2: Available Stock */}
-        <div className="rounded-xl border border-border/70 bg-card/60 backdrop-blur-md p-3 sm:p-4 shadow-xs flex flex-col justify-between hover:border-emerald-500/40 transition-all">
+        <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3 sm:p-4 shadow-xs flex flex-col justify-between hover:border-emerald-500/40 transition-all min-w-0">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Available Stock</span>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+            <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">Available Stock</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
               <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-1.5 sm:mt-2">
+          <div className="mt-1.5 sm:mt-2 min-w-0">
             <div className="flex items-baseline gap-1.5 sm:gap-2">
-              <div className="text-xl sm:text-2xl font-bold font-display text-emerald-500 tracking-tight">{stats.available.toLocaleString()}</div>
-              <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+              <div className="text-xl sm:text-2xl font-bold font-display text-emerald-500 tracking-tight truncate">{stats.available.toLocaleString()}</div>
+              <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1.5 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/30 rounded-full shrink-0">
                 {stats.availablePct}% ready
               </Badge>
             </div>
@@ -375,17 +376,17 @@ function StockAndSerialsTab() {
         </div>
 
         {/* Card 3: Sold & Dispatched */}
-        <div className="rounded-xl border border-border/70 bg-card/60 backdrop-blur-md p-3 sm:p-4 shadow-xs flex flex-col justify-between hover:border-blue-500/40 transition-all">
+        <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3 sm:p-4 shadow-xs flex flex-col justify-between hover:border-blue-500/40 transition-all min-w-0">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sold &amp; Fulfilled</span>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+            <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">Sold &amp; Fulfilled</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
               <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-1.5 sm:mt-2">
+          <div className="mt-1.5 sm:mt-2 min-w-0">
             <div className="flex items-baseline gap-1.5 sm:gap-2">
-              <div className="text-xl sm:text-2xl font-bold font-display text-blue-500 tracking-tight">{stats.sold.toLocaleString()}</div>
-              <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0 bg-blue-500/10 text-blue-600 border-blue-500/30">
+              <div className="text-xl sm:text-2xl font-bold font-display text-blue-500 tracking-tight truncate">{stats.sold.toLocaleString()}</div>
+              <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1.5 py-0 bg-blue-500/10 text-blue-600 border-blue-500/30 rounded-full shrink-0">
                 {stats.soldPct}% sold
               </Badge>
             </div>
@@ -396,45 +397,45 @@ function StockAndSerialsTab() {
         {/* Card 4: Google Sheets Cloud Hub */}
         <div
           onClick={() => setSheetsModalOpen(true)}
-          className="rounded-xl border border-border/70 bg-card/60 backdrop-blur-md p-3 sm:p-4 shadow-xs flex flex-col justify-between hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all cursor-pointer group"
+          className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3 sm:p-4 shadow-xs flex flex-col justify-between hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all cursor-pointer group min-w-0"
           title="Click to open Google Sheets 2-Way Sync & Setup"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider group-hover:text-emerald-500 transition-colors">Cloud Sheets</span>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-600/10 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+            <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider group-hover:text-emerald-500 transition-colors truncate">Cloud Sheets</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-600/10 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform shrink-0">
               <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-1.5 sm:mt-2">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs sm:text-sm font-semibold text-foreground">Google Sheets</span>
+          <div className="mt-1.5 sm:mt-2 min-w-0">
+            <div className="flex items-center gap-1.5 truncate">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="text-xs sm:text-sm font-semibold text-foreground truncate">Google Sheets</span>
             </div>
             <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 truncate flex items-center gap-1">
               <span>Open 2-Way Sync Hub</span>
-              <ChevronRight className="w-3 h-3 opacity-60" />
+              <ChevronRight className="w-3 h-3 opacity-60 shrink-0" />
             </p>
           </div>
         </div>
       </div>
 
       {/* 2. Responsive Action Command Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-muted/25 p-2.5 sm:p-3 rounded-xl border border-border/60">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-muted/25 p-2.5 sm:p-3 rounded-2xl border border-border/60 max-w-full overflow-hidden">
         {/* Search Input + Compact 1-Button Filter */}
-        <div className="flex items-center gap-2 flex-1 w-full sm:max-w-xl">
+        <div className="flex items-center gap-2 flex-1 w-full sm:max-w-xl min-w-0">
           <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search serial, product, SKU…"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="pl-9 pr-8 h-9 text-xs bg-background rounded-lg border-border/70 w-full"
+              className="pl-9 pr-8 h-9 text-xs bg-background rounded-full border-border/70 w-full"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => { setSearch(""); setPage(1); }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-0.5"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-0.5 rounded-full"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -447,11 +448,11 @@ function StockAndSerialsTab() {
               <Button
                 variant="outline"
                 size="sm"
-                className={`h-9 text-xs gap-1.5 border-border/70 bg-background hover:bg-muted font-medium shrink-0 px-2.5 sm:px-3 ${
+                className={`h-9 text-xs gap-1.5 border-border/70 bg-background hover:bg-muted font-semibold shrink-0 px-3 rounded-full cursor-pointer shadow-2xs ${
                   status !== "all" ? "border-primary/40 text-primary bg-primary/5" : "text-foreground"
                 }`}
               >
-                <Filter className="w-3.5 h-3.5 opacity-70" />
+                <Filter className="w-3.5 h-3.5 text-primary" />
                 {status === "all" ? (
                   <span>Status</span>
                 ) : (
@@ -460,15 +461,15 @@ function StockAndSerialsTab() {
                     <span className="truncate">{STATUS_CONFIG[status]?.label || status}</span>
                   </span>
                 )}
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-semibold ${
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
                   status !== "all" ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
                 }`}>
                   {status === "all" ? stats.total : (stats as any)[status] ?? 0}
                 </span>
-                <ChevronDown className="w-3 h-3 opacity-60" />
+                <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-52 text-xs">
+            <DropdownMenuContent align="start" className="w-52 text-xs rounded-xl">
               <DropdownMenuLabel className="text-[11px] text-muted-foreground flex items-center justify-between">
                 <span>Filter by Status</span>
                 {status !== "all" && (
@@ -493,7 +494,7 @@ function StockAndSerialsTab() {
                 <DropdownMenuItem
                   key={item.id}
                   onClick={() => { setStatus(item.id); setPage(1); }}
-                  className={`flex items-center justify-between text-xs cursor-pointer py-1.5 ${
+                  className={`flex items-center justify-between text-xs cursor-pointer py-1.5 rounded-lg ${
                     status === item.id ? "bg-accent font-semibold text-accent-foreground" : ""
                   }`}
                 >
@@ -505,7 +506,7 @@ function StockAndSerialsTab() {
                     )}
                     <span>{item.label}</span>
                   </div>
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
                     status === item.id ? "bg-primary text-primary-foreground font-bold" : "bg-muted text-muted-foreground"
                   }`}>
                     {item.count}
@@ -525,7 +526,7 @@ function StockAndSerialsTab() {
               size="sm"
               onClick={() => sync.mutate()}
               disabled={sync.isPending}
-              className="h-9 px-2.5 text-xs gap-1.5 border-border/70 bg-background"
+              className="h-9 px-3 text-xs gap-1.5 border-border/70 bg-background rounded-full font-medium shadow-2xs"
               title="Sync stock counts"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${sync.isPending ? "animate-spin text-primary" : "text-muted-foreground"}`} />
@@ -534,18 +535,18 @@ function StockAndSerialsTab() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 px-2.5 text-xs gap-1 border-border/70 bg-background">
+                <Button variant="outline" size="sm" className="h-9 px-3 text-xs gap-1 border-border/70 bg-background rounded-full font-medium shadow-2xs">
                   <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
                   <span>More</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56 text-xs">
+              <DropdownMenuContent align="start" className="w-56 text-xs rounded-xl">
                 <DropdownMenuLabel className="text-[11px] text-muted-foreground">Inventory Tools</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => setManualAddOpen(true)} className="gap-2 cursor-pointer">
+                <DropdownMenuItem onClick={() => setManualAddOpen(true)} className="gap-2 cursor-pointer rounded-lg">
                   <Pencil className="w-4 h-4 text-muted-foreground" />
                   <span>Manual Add Serial</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setBulkExportOpen(true)} className="gap-2 cursor-pointer">
+                <DropdownMenuItem onClick={() => setBulkExportOpen(true)} className="gap-2 cursor-pointer rounded-lg">
                   <PackageSearch className="w-4 h-4 text-muted-foreground" />
                   <span>Bulk Labels Export</span>
                 </DropdownMenuItem>
@@ -555,7 +556,7 @@ function StockAndSerialsTab() {
                       migrateSerials.mutate();
                     }
                   }}
-                  className="gap-2 cursor-pointer text-amber-500 font-semibold"
+                  className="gap-2 cursor-pointer text-amber-500 font-semibold rounded-lg"
                 >
                   <Sparkles className="w-4 h-4 text-amber-500" />
                   <span>Migrate All to Compact Format</span>
@@ -565,15 +566,15 @@ function StockAndSerialsTab() {
                   <span>Google Sheets</span>
                   <Badge variant="outline" className="text-[9px] px-1 py-0 border-emerald-500/30 text-emerald-600 bg-emerald-500/10">Free API</Badge>
                 </DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => setSheetsModalOpen(true)} className="gap-2 cursor-pointer font-semibold text-emerald-600 dark:text-emerald-400">
+                <DropdownMenuItem onClick={() => setSheetsModalOpen(true)} className="gap-2 cursor-pointer font-semibold text-emerald-600 dark:text-emerald-400 rounded-lg">
                   <FileSpreadsheet className="w-4 h-4" />
                   <span>Open 2-Way Sync Hub</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => pull.mutate()} disabled={pull.isPending} className="gap-2 cursor-pointer">
+                <DropdownMenuItem onClick={() => pull.mutate()} disabled={pull.isPending} className="gap-2 cursor-pointer rounded-lg">
                   <Download className="w-4 h-4 text-primary" />
                   <span>Pull from Sheets</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => push.mutate()} disabled={push.isPending} className="gap-2 cursor-pointer">
+                <DropdownMenuItem onClick={() => push.mutate()} disabled={push.isPending} className="gap-2 cursor-pointer rounded-lg">
                   <Upload className="w-4 h-4 text-emerald-500" />
                   <span>Push to Sheets</span>
                 </DropdownMenuItem>
@@ -588,7 +589,7 @@ function StockAndSerialsTab() {
               size="sm"
               onClick={() => sync.mutate()}
               disabled={sync.isPending}
-              className="h-9 text-xs gap-1.5 border-border/70 bg-background hover:bg-muted"
+              className="h-9 text-xs gap-1.5 border-border/70 bg-background hover:bg-muted rounded-full font-medium shadow-2xs"
               title="Recompute stock numbers for all variants from serials"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${sync.isPending ? "animate-spin text-primary" : "text-muted-foreground"}`} />
@@ -597,42 +598,42 @@ function StockAndSerialsTab() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 text-xs gap-1.5 border-border/70 bg-background hover:bg-emerald-500/5 hover:border-emerald-500/40">
+                <Button variant="outline" size="sm" className="h-9 text-xs gap-1.5 border-border/70 bg-background hover:bg-emerald-500/5 hover:border-emerald-500/40 rounded-full font-medium shadow-2xs">
                   <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
                   <span>Google Sheets</span>
                   <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-0.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-60 text-xs">
+              <DropdownMenuContent align="end" className="w-60 text-xs rounded-xl">
                 <DropdownMenuLabel className="text-[11px] text-muted-foreground">
                   Google Sheets Integration
                 </DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => setSheetsModalOpen(true)} className="gap-2 cursor-pointer font-semibold text-emerald-600 dark:text-emerald-400">
+                <DropdownMenuItem onClick={() => setSheetsModalOpen(true)} className="gap-2 cursor-pointer font-semibold text-emerald-600 dark:text-emerald-400 rounded-lg">
                   <FileSpreadsheet className="w-4 h-4" />
                   <span>Open 2-Way Sync Hub</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => pull.mutate()} disabled={pull.isPending} className="gap-2 cursor-pointer">
+                <DropdownMenuItem onClick={() => pull.mutate()} disabled={pull.isPending} className="gap-2 cursor-pointer rounded-lg">
                   <Download className="w-4 h-4 text-primary" />
                   <span>Quick Pull Serials</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => push.mutate()} disabled={push.isPending} className="gap-2 cursor-pointer">
+                <DropdownMenuItem onClick={() => push.mutate()} disabled={push.isPending} className="gap-2 cursor-pointer rounded-lg">
                   <Upload className="w-4 h-4 text-emerald-500" />
                   <span>Quick Push Serials</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSheetsModalOpen(true)} className="gap-2 cursor-pointer">
+                <DropdownMenuItem onClick={() => setSheetsModalOpen(true)} className="gap-2 cursor-pointer rounded-lg">
                   <Sliders className="w-4 h-4 text-purple-500" />
                   <span>Column Mapping & Settings</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="outline" size="sm" onClick={() => setManualAddOpen(true)} className="h-9 text-xs gap-1.5 border-border/70 bg-background hover:bg-muted">
+            <Button variant="outline" size="sm" onClick={() => setManualAddOpen(true)} className="h-9 text-xs gap-1.5 border-border/70 bg-background hover:bg-muted rounded-full font-medium shadow-2xs">
               <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
               <span>Manual Serial</span>
             </Button>
 
-            <Button variant="outline" size="sm" onClick={() => setBulkExportOpen(true)} className="h-9 text-xs gap-1.5 border-border/70 bg-background hover:bg-muted">
+            <Button variant="outline" size="sm" onClick={() => setBulkExportOpen(true)} className="h-9 text-xs gap-1.5 border-border/70 bg-background hover:bg-muted rounded-full font-medium shadow-2xs">
               <PackageSearch className="w-3.5 h-3.5 text-muted-foreground" />
               <span>Bulk Labels</span>
             </Button>
@@ -642,7 +643,7 @@ function StockAndSerialsTab() {
           <Button
             size="sm"
             onClick={() => setAddOpen(true)}
-            className="h-9 text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs shrink-0 px-3 sm:px-4"
+            className="h-9 text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs shrink-0 px-3.5 sm:px-4 rounded-full"
           >
             <Plus className="w-4 h-4" />
             <span>Add Stock</span>
@@ -652,9 +653,9 @@ function StockAndSerialsTab() {
 
       {/* 3. Floating Batch Action Dock (When rows are checked) */}
       {selectedIds.length > 0 && (
-        <div className="sticky top-3 sm:top-4 z-20 flex flex-wrap items-center justify-between gap-2 sm:gap-3 p-2.5 sm:px-4 sm:py-3 rounded-xl border border-primary/40 bg-card/95 backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-top-2">
+        <div className="sticky top-3 sm:top-4 z-20 flex flex-wrap items-center justify-between gap-2 sm:gap-3 p-2.5 sm:px-4 sm:py-2.5 rounded-full border border-primary/40 bg-card/95 backdrop-blur-md shadow-xl animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-primary/15 flex items-center justify-center text-primary">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary/15 flex items-center justify-center text-primary">
               <CheckSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
             <span className="text-xs font-semibold text-foreground">
@@ -665,7 +666,7 @@ function StockAndSerialsTab() {
             <Button
               size="sm"
               onClick={() => setPrintCodes(selectedCodes)}
-              className="h-7 sm:h-8 text-xs gap-1 sm:gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-2.5"
+              className="h-7 sm:h-8 text-xs gap-1 sm:gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-3 rounded-full"
             >
               <Printer className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span>Print ({selectedCodes.length})</span>
@@ -673,7 +674,7 @@ function StockAndSerialsTab() {
             <Button
               size="sm"
               variant="outline"
-              className="h-7 sm:h-8 text-xs gap-1 sm:gap-1.5 text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10 px-2"
+              className="h-7 sm:h-8 text-xs gap-1 sm:gap-1.5 text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10 px-3 rounded-full"
               onClick={() => {
                 if (confirm(`Delete ${selectedIds.length} serial(s) permanently?`)) {
                   bulkDelete.mutate(selectedIds);
@@ -688,7 +689,7 @@ function StockAndSerialsTab() {
               size="sm"
               variant="ghost"
               onClick={() => setSelected({})}
-              className="h-7 sm:h-8 text-xs text-muted-foreground hover:text-foreground px-2"
+              className="h-7 sm:h-8 text-xs text-muted-foreground hover:text-foreground px-2.5 rounded-full"
             >
               Clear
             </Button>
@@ -751,11 +752,11 @@ function StockAndSerialsTab() {
               return (
                 <div
                   key={r.id}
-                  className={`p-3 rounded-xl border transition-all ${
+                  className={`p-3 rounded-2xl border transition-all ${
                     isChecked ? "bg-primary/5 border-primary/40 shadow-xs" : "bg-card/70 border-border/60 hover:border-border"
                   }`}
                 >
-                  {/* Top Row: Checkbox + Monospace Serial + Status Pill */}
+                  {/* Top Row: Checkbox + Compact Merged SKU & Serial Pill + Status Pill */}
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <button
@@ -766,13 +767,18 @@ function StockAndSerialsTab() {
                         {isChecked ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4 opacity-50" />}
                       </button>
 
-                      <div className="inline-flex items-center gap-1 font-mono text-xs font-bold text-foreground bg-background px-2 py-0.5 rounded border border-border/60 min-w-0">
-                        <QrCode className="w-3 h-3 text-primary opacity-70 shrink-0" />
-                        <span className="truncate">{r.serial_code}</span>
+                      {/* Compact Merged SKU & Serial Block */}
+                      <div className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-foreground bg-background px-2.5 py-0.5 rounded-full border border-border/70 min-w-0 shadow-2xs">
+                        <QrCode className="w-3 h-3 text-primary opacity-80 shrink-0" />
+                        <span className="truncate">
+                          {r.products?.sku && !r.serial_code.startsWith(r.products.sku)
+                            ? `${r.products.sku} · ${r.serial_code}`
+                            : r.serial_code}
+                        </span>
                         <button
                           type="button"
                           onClick={() => copyToClipboard(r.serial_code)}
-                          className="text-muted-foreground hover:text-foreground shrink-0 ml-0.5"
+                          className="text-muted-foreground hover:text-foreground shrink-0 ml-0.5 p-0.5 rounded-full hover:bg-muted"
                           title="Copy Serial Code"
                         >
                           {copiedCode === r.serial_code ? (
@@ -784,36 +790,27 @@ function StockAndSerialsTab() {
                       </div>
                     </div>
 
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border shrink-0 ${statusCfg.badge}`}>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium border shrink-0 ${statusCfg.badge}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
                       <span>{statusCfg.label}</span>
                     </span>
                   </div>
 
-                  {/* Middle Row: Product Name + SKU + Variant Badges */}
-                  <div className="mt-2 text-xs">
-                    <div className="font-semibold text-foreground truncate" title={r.products?.name ?? "—"}>
-                      {r.products?.name ?? "—"}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                      {r.products?.sku && (
-                        <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40">
-                          SKU: {r.products.sku}
-                        </span>
-                      )}
-                      {(r.product_variants?.size || r.product_variants?.color) && (
-                        <span className="text-[10px] font-medium text-foreground bg-muted/80 px-1.5 py-0.5 rounded border border-border/50">
-                          {[r.product_variants?.size, r.product_variants?.color].filter(Boolean).join(" · ")}
-                        </span>
-                      )}
-                    </div>
+                  {/* Middle Row: Product Name & Variant inline (No extra redundant SKU block) */}
+                  <div className="mt-1.5 text-xs flex items-center justify-between gap-1.5 min-w-0">
+                    <span className="font-medium text-foreground truncate">{r.products?.name ?? "—"}</span>
+                    {(r.product_variants?.size || r.product_variants?.color) && (
+                      <span className="text-[10px] text-muted-foreground font-mono bg-muted/60 px-2 py-0.5 rounded-full border border-border/40 shrink-0">
+                        {[r.product_variants?.size, r.product_variants?.color].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
                   </div>
 
                   {/* Bottom Row: Print Count / Sold info + Quick Action Buttons */}
                   <div className="mt-2.5 pt-2 border-t border-border/50 flex items-center justify-between gap-2 text-xs">
                     <div className="flex items-center gap-1.5 truncate">
                       {r.print_count > 0 ? (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                           <Check className="w-2.5 h-2.5" />
                           <span>Printed {r.print_count}×</span>
                         </span>
@@ -832,7 +829,7 @@ function StockAndSerialsTab() {
                         size="sm"
                         variant="ghost"
                         onClick={() => setPrintCodes([r.serial_code])}
-                        className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                        className="h-7 px-2.5 text-xs gap-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
                         title="Print Label"
                       >
                         <Printer className="w-3.5 h-3.5" />
@@ -842,7 +839,7 @@ function StockAndSerialsTab() {
                         size="sm"
                         variant="ghost"
                         onClick={() => setReassignRow(r)}
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full"
                         title="Reassign / Edit Status"
                       >
                         <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -853,7 +850,7 @@ function StockAndSerialsTab() {
                         onClick={() => {
                           if (confirm(`Delete serial ${r.serial_code}?`)) remove.mutate(r.id);
                         }}
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
                         title="Delete Serial"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -973,15 +970,19 @@ function StockAndSerialsTab() {
                         </button>
                       </td>
 
-                      {/* Serial Code */}
+                      {/* Serial Code (Compact Merged SKU & Serial Block) */}
                       <td className="px-3.5 py-3">
-                        <div className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-foreground tracking-wide bg-background/80 px-2 py-0.5 rounded border border-border/60">
-                          <QrCode className="w-3 h-3 text-primary opacity-70" />
-                          <span>{r.serial_code}</span>
+                        <div className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-foreground tracking-wide bg-background px-2.5 py-1 rounded-full border border-border/70 shadow-2xs">
+                          <QrCode className="w-3 h-3 text-primary opacity-80 shrink-0" />
+                          <span>
+                            {r.products?.sku && !r.serial_code.startsWith(r.products.sku)
+                              ? `${r.products.sku} · ${r.serial_code}`
+                              : r.serial_code}
+                          </span>
                           <button
                             type="button"
                             onClick={() => copyToClipboard(r.serial_code)}
-                            className="text-muted-foreground hover:text-foreground ml-0.5 transition-colors"
+                            className="text-muted-foreground hover:text-foreground ml-0.5 p-0.5 rounded-full hover:bg-muted transition-colors"
                             title="Copy Serial Code"
                           >
                             {copiedCode === r.serial_code ? (
@@ -993,16 +994,11 @@ function StockAndSerialsTab() {
                         </div>
                       </td>
 
-                      {/* Product Name & SKU */}
+                      {/* Product Name */}
                       <td className="px-3.5 py-3 max-w-[280px]">
                         <div className="font-medium text-xs text-foreground truncate" title={r.products?.name ?? "—"}>
                           {r.products?.name ?? "—"}
                         </div>
-                        {r.products?.sku && (
-                          <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
-                            SKU: {r.products.sku}
-                          </div>
-                        )}
                       </td>
 
                       {/* Variant */}
@@ -1447,10 +1443,10 @@ function AddStockDialog({ onClose, onCreated }: { onClose: () => void; onCreated
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className={mode === "bulk" ? "sm:max-w-2xl" : "sm:max-w-lg"}>
-        {/* Luxury Dialog Header */}
-        <DialogHeader className="flex flex-row items-center gap-2.5 sm:gap-3 pb-3 border-b border-border/50">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+      <DialogContent className="sm:max-w-xl max-h-[92vh] w-[95vw] sm:w-full flex flex-col overflow-hidden p-3.5 sm:p-6 rounded-2xl">
+        {/* Header with Title & Icon */}
+        <DialogHeader className="flex flex-row items-center gap-3 pb-3 border-b border-border/50 shrink-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
             <Boxes className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0 flex-1 pr-6 sm:pr-0">
@@ -1463,13 +1459,13 @@ function AddStockDialog({ onClose, onCreated }: { onClose: () => void; onCreated
           </div>
         </DialogHeader>
 
-        <div className="space-y-3.5 pt-1">
+        <div className="space-y-3.5 pt-1 overflow-y-auto flex-1 pr-0.5">
           {/* Luxury Segmented Mode Switcher */}
-          <div className="bg-muted/50 p-1 rounded-xl border border-border/60 grid grid-cols-3 gap-1 text-[11px] sm:text-xs">
+          <div className="bg-muted/50 p-1 rounded-full border border-border/60 grid grid-cols-3 gap-1 text-[11px] sm:text-xs">
             <button
               type="button"
               onClick={() => setMode("auto")}
-              className={`py-1.5 sm:py-2 px-1 sm:px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-1 sm:gap-1.5 ${
+              className={`py-1.5 sm:py-2 px-1 sm:px-3 rounded-full font-medium transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
                 mode === "auto"
                   ? "bg-primary text-primary-foreground shadow-xs font-semibold"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
@@ -1481,7 +1477,7 @@ function AddStockDialog({ onClose, onCreated }: { onClose: () => void; onCreated
             <button
               type="button"
               onClick={() => setMode("manual")}
-              className={`py-1.5 sm:py-2 px-1 sm:px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-1 sm:gap-1.5 ${
+              className={`py-1.5 sm:py-2 px-1 sm:px-3 rounded-full font-medium transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
                 mode === "manual"
                   ? "bg-primary text-primary-foreground shadow-xs font-semibold"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
@@ -1493,7 +1489,7 @@ function AddStockDialog({ onClose, onCreated }: { onClose: () => void; onCreated
             <button
               type="button"
               onClick={() => setMode("bulk")}
-              className={`py-1.5 sm:py-2 px-1 sm:px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-1 sm:gap-1.5 ${
+              className={`py-1.5 sm:py-2 px-1 sm:px-3 rounded-full font-medium transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
                 mode === "bulk"
                   ? "bg-primary text-primary-foreground shadow-xs font-semibold"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
@@ -1580,7 +1576,7 @@ function AddStockDialog({ onClose, onCreated }: { onClose: () => void; onCreated
                         key={preset}
                         type="button"
                         onClick={() => setQuantity(preset)}
-                        className={`py-1.5 px-1 sm:px-2.5 rounded-lg text-[11px] sm:text-xs font-medium border text-center transition-colors ${
+                        className={`py-1.5 px-1 sm:px-2.5 rounded-full text-[11px] sm:text-xs font-medium border text-center transition-colors cursor-pointer ${
                           quantity === preset
                             ? "bg-primary/10 border-primary/40 text-primary font-semibold"
                             : "bg-muted/40 border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -1607,7 +1603,7 @@ function AddStockDialog({ onClose, onCreated }: { onClose: () => void; onCreated
                   </div>
                   <div className="font-mono text-xs font-semibold text-foreground tracking-wide bg-background/80 px-2.5 py-1.5 rounded-lg border border-border/60 truncate">
                     {(() => {
-                      const v = variantId ? selectedProduct.variants?.find((vr: any) => vr.id === variantId) : null;
+                      const v = variantId ? (variants as any[]).find((vr: any) => vr.id === variantId) : null;
                       const pfx = buildCompactSerialPrefix(selectedProduct.sku || selectedProduct.name, v);
                       return `${formatCompactSerialCode(pfx, 1)} → ${formatCompactSerialCode(pfx, quantity)}`;
                     })()}
@@ -1811,14 +1807,14 @@ function AddStockDialog({ onClose, onCreated }: { onClose: () => void; onCreated
         </div>
 
         {/* Action Footer */}
-        <DialogFooter className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-3 border-t border-border/50">
-          <Button variant="outline" onClick={onClose} disabled={busy} className="text-xs h-9 w-full sm:w-auto">
+        <DialogFooter className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-3 border-t border-border/50 shrink-0">
+          <Button variant="outline" onClick={onClose} disabled={busy} className="text-xs h-9 w-full sm:w-auto rounded-full">
             Cancel
           </Button>
           <Button
             onClick={submit}
             disabled={busy || (mode === "bulk" && totalUnits === 0)}
-            className="text-xs h-9 px-4 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs gap-1.5 w-full sm:w-auto"
+            className="text-xs h-9 px-5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs gap-1.5 w-full sm:w-auto rounded-full"
           >
             {busy ? (
               <>
@@ -1885,9 +1881,9 @@ function ManualAddSerialDialog({ onClose, onCreated }: { onClose: () => void; on
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md w-[95vw] sm:w-full p-3.5 sm:p-6 rounded-2xl">
         <DialogHeader className="flex flex-row items-center gap-3 pb-3 border-b border-border/50">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+          <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
             <Pencil className="w-5 h-5" />
           </div>
           <div>
@@ -1961,10 +1957,10 @@ function ManualAddSerialDialog({ onClose, onCreated }: { onClose: () => void; on
         </div>
 
         <DialogFooter className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-3 border-t border-border/50">
-          <Button variant="outline" onClick={onClose} disabled={busy} className="text-xs h-9 w-full sm:w-auto">
+          <Button variant="outline" onClick={onClose} disabled={busy} className="text-xs h-9 w-full sm:w-auto rounded-full">
             Cancel
           </Button>
-          <Button onClick={submit} disabled={busy} className="text-xs h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs w-full sm:w-auto">
+          <Button onClick={submit} disabled={busy} className="text-xs h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs w-full sm:w-auto rounded-full">
             {busy ? "Adding…" : "Add Serial"}
           </Button>
         </DialogFooter>
@@ -2080,9 +2076,9 @@ function ReassignSerialDialog({ row, onClose, onDone }: { row: any; onClose: () 
             </p>
           )}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit} disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
+        <DialogFooter className="flex flex-row items-center justify-between gap-2 pt-2 border-t border-border/50">
+          <Button variant="outline" onClick={onClose} className="rounded-full text-xs h-8">Cancel</Button>
+          <Button onClick={submit} disabled={busy} className="rounded-full text-xs h-8 px-4 font-semibold">{busy ? "Saving…" : "Save"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -2145,51 +2141,53 @@ function BulkExportStickersDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg w-[95vw] sm:w-full rounded-2xl p-3.5 sm:p-6">
         <DialogHeader>
-          <DialogTitle>Bulk export stickers</DialogTitle>
+          <DialogTitle className="text-base font-semibold">Bulk export stickers</DialogTitle>
         </DialogHeader>
 
-        <div className="flex items-center justify-between rounded-lg border border-border p-3">
-          <div>
-            <p className="text-sm font-medium">All products</p>
-            <p className="text-[11px] text-muted-foreground">Export stickers for every serial across the whole catalog</p>
-          </div>
-          <Switch checked={allProducts} onCheckedChange={setAllProducts} />
-        </div>
-
-        {!allProducts && (
-          <div className="space-y-2">
-            <Input placeholder="Search products…" value={search} onChange={(e) => setSearch(e.target.value)} />
-            <div className="max-h-56 overflow-y-auto rounded-lg border border-border divide-y divide-border/60">
-              {(filtered as any[]).map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => toggle(p.id)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/40 transition-colors ${selectedProductIds.includes(p.id) ? "bg-primary/5" : ""}`}
-                >
-                  {selectedProductIds.includes(p.id) ? <CheckSquare className="w-4 h-4 text-primary shrink-0" /> : <Square className="w-4 h-4 text-muted-foreground shrink-0" />}
-                  <span className="truncate">{p.name}</span>
-                  {p.sku && <span className="text-[11px] text-muted-foreground font-mono ml-auto shrink-0">{p.sku}</span>}
-                </button>
-              ))}
+        <div className="space-y-3 py-1">
+          <div className="flex items-center justify-between rounded-xl border border-border p-3">
+            <div>
+              <p className="text-sm font-medium">All products</p>
+              <p className="text-[11px] text-muted-foreground">Export stickers for every serial across the whole catalog</p>
             </div>
-            {selectedProductIds.length > 0 && <p className="text-[11px] text-primary">{selectedProductIds.length} product(s) selected</p>}
+            <Switch checked={allProducts} onCheckedChange={setAllProducts} />
           </div>
-        )}
 
-        <div className="flex items-center justify-between rounded-lg border border-border p-3">
-          <div>
-            <p className="text-sm font-medium">Only remaining (not sold)</p>
-            <p className="text-[11px] text-muted-foreground">Off = include sold/cancelled/returned/defective serials too</p>
+          {!allProducts && (
+            <div className="space-y-2">
+              <Input placeholder="Search products…" value={search} onChange={(e) => setSearch(e.target.value)} className="rounded-full h-9 text-xs" />
+              <div className="max-h-56 overflow-y-auto rounded-xl border border-border divide-y divide-border/60">
+                {(filtered as any[]).map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => toggle(p.id)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/40 transition-colors cursor-pointer ${selectedProductIds.includes(p.id) ? "bg-primary/5" : ""}`}
+                  >
+                    {selectedProductIds.includes(p.id) ? <CheckSquare className="w-4 h-4 text-primary shrink-0" /> : <Square className="w-4 h-4 text-muted-foreground shrink-0" />}
+                    <span className="truncate">{p.name}</span>
+                    {p.sku && <span className="text-[11px] text-muted-foreground font-mono ml-auto shrink-0">{p.sku}</span>}
+                  </button>
+                ))}
+              </div>
+              {selectedProductIds.length > 0 && <p className="text-[11px] text-primary">{selectedProductIds.length} product(s) selected</p>}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between rounded-xl border border-border p-3">
+            <div>
+              <p className="text-sm font-medium">Only remaining (not sold)</p>
+              <p className="text-[11px] text-muted-foreground">Off = include sold/cancelled/returned/defective serials too</p>
+            </div>
+            <Switch checked={onlyAvailable} onCheckedChange={setOnlyAvailable} />
           </div>
-          <Switch checked={onlyAvailable} onCheckedChange={setOnlyAvailable} />
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={resolve} disabled={loading}>
+        <DialogFooter className="flex flex-row items-center justify-between gap-2 pt-2 border-t border-border/50">
+          <Button variant="outline" onClick={onClose} className="rounded-full text-xs h-9">Cancel</Button>
+          <Button onClick={resolve} disabled={loading} className="rounded-full text-xs h-9 px-5 bg-primary text-primary-foreground font-semibold">
             {loading ? "Loading…" : "Continue"}
           </Button>
         </DialogFooter>
@@ -2364,13 +2362,13 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
   return (
     <>
       <Dialog open onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-3xl max-h-[95vh] flex flex-col overflow-hidden">
+        <DialogContent className="sm:max-w-3xl max-h-[95vh] w-[95vw] sm:w-full flex flex-col overflow-hidden p-3.5 sm:p-6 rounded-2xl">
           <DialogHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pb-2 border-b border-border/50 shrink-0">
             <div className="pr-6 sm:pr-0">
               <DialogTitle className="flex items-center gap-2 text-sm sm:text-base text-foreground">
                 <Printer className="w-4 h-4 sm:w-5 sm:h-5 text-foreground shrink-0" />
                 Print Stickers
-                <Badge variant="secondary" className="text-[11px] font-mono">{filteredRows.length}/{allRows.length}</Badge>
+                <Badge variant="secondary" className="text-[11px] font-mono rounded-full">{filteredRows.length}/{allRows.length}</Badge>
               </DialogTitle>
               <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2.5">
                 Single-column roll (POS) or multi-column sheet.
@@ -2388,7 +2386,7 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
               variant="outline"
               size="sm"
               onClick={() => setCustomizeOpen(true)}
-              className="gap-1.5 text-xs h-8 w-full sm:w-auto bg-background hover:bg-muted font-medium border-border text-foreground"
+              className="gap-1.5 text-xs h-8 w-full sm:w-auto bg-background hover:bg-muted font-medium border-border text-foreground rounded-full"
             >
               <Settings2 className="w-3.5 h-3.5 text-foreground" />
               Update Sticker Design
@@ -2396,79 +2394,93 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
           </DialogHeader>
 
           {/* ── Smart Controls Bar: 1-Button Filter + Qty + Layout + Orientation + Preset ── */}
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-muted/30 rounded-xl border border-border/60 p-2 sm:p-2.5 shrink-0">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-muted/30 rounded-2xl border border-border/60 p-2.5 shrink-0 max-w-full overflow-hidden">
+            {/* Top/Left Row: Filter Dropdown and Quantity Stepper side-by-side on the SAME ROW! */}
+            <div className="flex items-center justify-between sm:justify-start gap-2 flex-nowrap min-w-0">
               {/* 1-Button Filter Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 text-xs gap-1.5 border-border/70 bg-background hover:bg-muted font-semibold px-2.5 sm:px-3 shadow-2xs cursor-pointer"
+                    className="h-8 text-xs gap-1.5 border-border/70 bg-background hover:bg-muted font-semibold px-3 rounded-full shadow-2xs cursor-pointer shrink-0"
                   >
                     <Filter className="w-3.5 h-3.5 text-primary" />
                     <span>
                       {filterMode === "unprinted" ? "Unprinted" : filterMode === "printed" ? "Printed" : "All Stock"}
                     </span>
-                    <span className="text-[10px] font-mono font-bold bg-muted px-1.5 py-0.5 rounded text-foreground">
+                    <span className="text-[10px] font-mono font-bold bg-muted px-1.5 py-0.5 rounded-full text-foreground">
                       {filterMode === "unprinted" ? unprintedCount : filterMode === "printed" ? printedCount : allRows.length}
                     </span>
                     <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56 text-xs">
+                <DropdownMenuContent align="start" className="w-56 text-xs rounded-xl">
                   <DropdownMenuLabel className="text-[11px] text-muted-foreground">Filter Stickers</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => { setFilterMode("unprinted"); setQuantity(unprintedCount || allRows.length); }}
-                    className={`flex items-center justify-between text-xs cursor-pointer py-1.5 ${filterMode === "unprinted" ? "bg-accent font-semibold text-accent-foreground" : ""}`}
+                    className={`flex items-center justify-between text-xs cursor-pointer py-1.5 rounded-lg ${filterMode === "unprinted" ? "bg-accent font-semibold text-accent-foreground" : ""}`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
                       <span>Unprinted (Never Printed)</span>
                     </div>
-                    <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded font-bold">{unprintedCount}</span>
+                    <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded-full font-bold">{unprintedCount}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => { setFilterMode("printed"); setQuantity(printedCount || allRows.length); }}
-                    className={`flex items-center justify-between text-xs cursor-pointer py-1.5 ${filterMode === "printed" ? "bg-accent font-semibold text-accent-foreground" : ""}`}
+                    className={`flex items-center justify-between text-xs cursor-pointer py-1.5 rounded-lg ${filterMode === "printed" ? "bg-accent font-semibold text-accent-foreground" : ""}`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-blue-500" />
                       <span>Printed (Already Printed)</span>
                     </div>
-                    <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded font-bold">{printedCount}</span>
+                    <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded-full font-bold">{printedCount}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => { setFilterMode("all"); setQuantity(allRows.length); }}
-                    className={`flex items-center justify-between text-xs cursor-pointer py-1.5 ${filterMode === "all" ? "bg-accent font-semibold text-accent-foreground" : ""}`}
+                    className={`flex items-center justify-between text-xs cursor-pointer py-1.5 rounded-lg ${filterMode === "all" ? "bg-accent font-semibold text-accent-foreground" : ""}`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-muted-foreground" />
                       <span>All Serials</span>
                     </div>
-                    <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded font-bold">{allRows.length}</span>
+                    <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded-full font-bold">{allRows.length}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <div className="h-4 w-px bg-border/50 shrink-0 hidden sm:block" />
-
-              {/* Quantity */}
-              <div className="flex items-center gap-1.5">
-                <Label className="text-xs font-semibold text-foreground shrink-0">Qty:</Label>
+              {/* Quantity Stepper (Stays right next to Filter on the same row) */}
+              <div className="flex items-center gap-1.5 shrink-0 bg-background/80 px-2 py-0.5 rounded-full border border-border/70 shadow-2xs">
+                <Label className="text-[11px] font-semibold text-foreground shrink-0 select-none">Qty:</Label>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button type="button" onClick={() => setQuantity(q => Math.max(1, (typeof q === "number" ? q : allRows.length) - 1))} className="w-6 h-6 rounded border border-border/60 bg-background flex items-center justify-center text-xs text-muted-foreground hover:text-foreground cursor-pointer">−</button>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(q => Math.max(1, (typeof q === "number" ? q : allRows.length) - 1))}
+                    className="w-5 h-5 rounded-full border border-border/60 bg-muted/40 hover:bg-muted flex items-center justify-center text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                  >
+                    −
+                  </button>
                   <input
-                    type="number" min={1} max={allRows.length} value={quantity}
+                    type="number"
+                    min={1}
+                    max={allRows.length}
+                    value={quantity}
                     onChange={e => { const v = parseInt(e.target.value); setQuantity(isNaN(v) ? "" : Math.min(Math.max(1, v), allRows.length)); }}
-                    className="w-12 h-6 text-center text-xs font-mono rounded border border-border/60 bg-background text-foreground focus:outline-none focus:border-foreground"
+                    className="w-9 h-5 text-center text-xs font-mono font-bold bg-transparent text-foreground focus:outline-none"
                   />
-                  <button type="button" onClick={() => setQuantity(q => Math.min(allRows.length, (typeof q === "number" ? q : 1) + 1))} className="w-6 h-6 rounded border border-border/60 bg-background flex items-center justify-center text-xs text-muted-foreground hover:text-foreground cursor-pointer">+</button>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(q => Math.min(allRows.length, (typeof q === "number" ? q : 1) + 1))}
+                    className="w-5 h-5 rounded-full border border-border/60 bg-muted/40 hover:bg-muted flex items-center justify-center text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                  >
+                    +
+                  </button>
                   <button
                     type="button"
                     onClick={() => setQuantity(filterMode === "unprinted" ? unprintedCount : filterMode === "printed" ? printedCount : allRows.length)}
-                    className="text-[10px] text-foreground underline underline-offset-2 cursor-pointer ml-1 hover:no-underline whitespace-nowrap"
+                    className="text-[10px] font-semibold text-primary px-1.5 py-0.2 rounded-full hover:bg-primary/10 transition-colors cursor-pointer whitespace-nowrap"
                   >
                     Max
                   </button>
@@ -2476,14 +2488,15 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Bottom/Right Row: Orientation + Columns + Preset */}
+            <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2">
               {/* Orientation */}
-              <div className="inline-flex rounded-md border border-input p-0.5 bg-background text-[10px]">
+              <div className="inline-flex rounded-full border border-border/70 p-0.5 bg-background text-[10px] shadow-2xs">
                 <button
                   type="button"
                   onClick={() => setOrientation("horizontal")}
-                  className={`px-2 py-0.5 rounded transition-colors font-medium flex items-center gap-1 cursor-pointer ${
-                    orientation === "horizontal" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                  className={`px-2.5 py-1 rounded-full transition-colors font-medium flex items-center gap-1 cursor-pointer ${
+                    orientation === "horizontal" ? "bg-foreground text-background font-semibold" : "text-muted-foreground hover:text-foreground"
                   }`}
                   title="Horizontal (Default)"
                 >
@@ -2493,8 +2506,8 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
                 <button
                   type="button"
                   onClick={() => setOrientation("vertical")}
-                  className={`px-2 py-0.5 rounded transition-colors font-medium flex items-center gap-1 cursor-pointer ${
-                    orientation === "vertical" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                  className={`px-2.5 py-1 rounded-full transition-colors font-medium flex items-center gap-1 cursor-pointer ${
+                    orientation === "vertical" ? "bg-foreground text-background font-semibold" : "text-muted-foreground hover:text-foreground"
                   }`}
                   title="Vertical / 90° Rotated for POS Rolls"
                 >
@@ -2504,9 +2517,16 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
               </div>
 
               {/* Columns */}
-              <div className="inline-flex rounded-md border border-input p-0.5 bg-background text-[10px]">
+              <div className="inline-flex rounded-full border border-border/70 p-0.5 bg-background text-[10px] shadow-2xs">
                 {[{ v: 1, l: "1 Col" }, { v: 2, l: "2 Col" }, { v: 3, l: "3 Col" }, { v: 4, l: "4 Col" }].map(({ v, l }) => (
-                  <button key={v} type="button" onClick={() => setColumns(v)} className={`px-2 py-0.5 rounded transition-colors font-medium flex items-center gap-1 cursor-pointer ${ columns === v ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground" }`}>
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setColumns(v)}
+                    className={`px-2 py-1 rounded-full transition-colors font-medium flex items-center gap-1 cursor-pointer ${
+                      columns === v ? "bg-foreground text-background font-semibold" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
                     {v === 1 && <span className="w-1.5 h-1.5 rounded-full bg-foreground shrink-0" />}{l}
                   </button>
                 ))}
@@ -2515,10 +2535,10 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
               {/* Preset */}
               {presets.length > 0 && (
                 <Select value={selectedPresetId ?? presets.find((p: any) => p.is_active)?.id ?? presets[0]?.id ?? ""} onValueChange={(val) => setSelectedPresetId(val)}>
-                  <SelectTrigger className="h-7 text-[10px] w-[130px] bg-background">
+                  <SelectTrigger className="h-7 text-[10px] w-[130px] bg-background rounded-full border-border/70 shadow-2xs">
                     <SelectValue placeholder="Preset..." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl">
                     {presets.map((p: any) => <SelectItem key={p.id} value={p.id} className="text-xs">{p.name} {p.is_active ? "(Active)" : ""}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -2529,7 +2549,7 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
           {/* Sticker Preview — expands dynamically and scrolls smoothly inside container */}
           <div
             ref={sheetRef}
-            className="print-sheet bg-white border border-border/60 rounded-xl p-4 flex-1 min-h-[260px] max-h-[58vh] overflow-y-auto overflow-x-auto shadow-inner"
+            className="print-sheet bg-white border border-border/60 rounded-2xl p-4 flex-1 min-h-[260px] max-h-[58vh] overflow-y-auto overflow-x-auto shadow-inner"
           >
             {stickerItems.length === 0 ? (
               <div className="py-12 text-center text-muted-foreground text-xs">
@@ -2578,15 +2598,15 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
               <span className="text-foreground font-medium">{filteredRows.length} stickers queued</span>
             </div>
             <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
-              <Button variant="outline" size="sm" onClick={exportJpg} disabled={!!exporting || !filteredRows.length} className="text-xs h-9">
+              <Button variant="outline" size="sm" onClick={exportJpg} disabled={!!exporting || !filteredRows.length} className="text-xs h-9 rounded-full">
                 <FileImage className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
                 {exporting === "jpg" ? "JPG…" : "Export JPG"}
               </Button>
-              <Button variant="outline" size="sm" onClick={exportPdf} disabled={!!exporting || !filteredRows.length} className="text-xs h-9">
+              <Button variant="outline" size="sm" onClick={exportPdf} disabled={!!exporting || !filteredRows.length} className="text-xs h-9 rounded-full">
                 <FileDown className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
                 {exporting === "pdf" ? "PDF…" : "Export PDF"}
               </Button>
-              <Button size="sm" onClick={doPrint} disabled={!filteredRows.length} className="col-span-2 sm:col-span-1 text-xs h-9 bg-foreground text-background hover:opacity-90 font-semibold">
+              <Button size="sm" onClick={doPrint} disabled={!filteredRows.length} className="col-span-2 sm:col-span-1 text-xs h-9 bg-foreground text-background hover:opacity-90 font-semibold rounded-full">
                 <Printer className="w-3.5 h-3.5 mr-1.5" />
                 Print {filteredRows.length > 0 ? `(${filteredRows.length})` : ""}
               </Button>
