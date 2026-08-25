@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Package, Tag, ScanLine, QrCode, Printer, RefreshCw, Plus, Trash2, Upload, Download, Copy, Lock, Unlock, FileUp, Keyboard, Info, Pencil, FileImage, FileDown, Settings2, ExternalLink, Sliders, CheckSquare, Square, PackageSearch, X, CheckCheck, ArrowLeftRight, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Boxes, FileSpreadsheet, TrendingUp, CheckCircle2, Clock, Filter, Check, AlertCircle, AlertTriangle, Eye, Search, MoreHorizontal, Layers, Type, History, TerminalSquare, RotateCw, RectangleHorizontal, FilePlus, ClipboardList, RotateCcw } from "lucide-react";
+import { Package, Tag, ScanLine, QrCode, Printer, RefreshCw, Plus, Trash2, Upload, Download, Copy, Lock, Unlock, FileUp, Keyboard, Info, Pencil, FileImage, FileDown, Settings2, ExternalLink, Sliders, CheckSquare, Square, PackageSearch, X, CheckCheck, ArrowLeftRight, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Boxes, FileSpreadsheet, TrendingUp, CheckCircle2, Clock, Filter, Check, AlertCircle, AlertTriangle, Eye, Search, MoreHorizontal, Layers, Type, History, TerminalSquare, RotateCw, RectangleHorizontal, FilePlus, ClipboardList, RotateCcw, Sparkles } from "lucide-react";
 import { useTabParam } from "@/hooks/use-tab-param";
 import {
   listSerials,
@@ -148,6 +148,7 @@ function StockAndSerialsTab() {
   const saveMapFn = useServerFn(saveSheetMapping);
   const del = useServerFn(deleteSerial);
   const syncFn = useServerFn(syncStockFromSerials);
+  const migrateFn = useServerFn(migrateAllExistingSerialsToCompact);
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string>("all");
@@ -303,7 +304,7 @@ function StockAndSerialsTab() {
   };
 
     const migrateSerials = useMutation({
-    mutationFn: () => useServerFn(migrateAllExistingSerialsToCompact)({}),
+    mutationFn: () => migrateFn({}),
     onSuccess: (res: any) => {
       refetch();
       toast({
