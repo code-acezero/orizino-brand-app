@@ -70,7 +70,7 @@ export const STICKER_DEFAULTS: Required<StickerConfig> = {
   border_style: "solid",
   background_color: "#FFFFFF",
   text_color: "#0F172A",
-  font_family: "'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif",
+  font_family: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
   header_font_size_pt: 6.5,
   footer_font_size_pt: 5.5,
   product_name_font_size_pt: 5.5,
@@ -256,7 +256,14 @@ export function Sticker({ data }: { data: StickerData }) {
           transformOrigin: "center center",
           flexShrink: 0,
           padding: `${c.padding_y_in}in ${c.padding_x_in}in`,
-          fontFamily: c.font_family,
+          fontFamily: c.font_family || "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+          fontSynthesis: "none",
+          WebkitFontSmoothing: "antialiased",
+          MozOsxFontSmoothing: "grayscale",
+          WebkitTextSizeAdjust: "100%",
+          textSizeAdjust: "100%",
+          letterSpacing: "normal",
+          fontVariantNumeric: "tabular-nums",
           color: c.text_color,
           background: c.background_color,
           boxSizing: "border-box",
@@ -342,21 +349,6 @@ export function Sticker({ data }: { data: StickerData }) {
                     >
                       {brand}
                     </span>
-                    {logoSrc ? (
-                      <img
-                        src={logoSrc}
-                        alt=""
-                        className="shrink-0 object-contain ml-0.5"
-                        style={{
-                          height: `${c.header_font_size_pt * 0.95}pt`,
-                          width: `${c.header_font_size_pt * 0.95}pt`,
-                          filter: isDark ? "brightness(0) invert(1)" : "brightness(0)",
-                          verticalAlign: "middle",
-                        }}
-                      />
-                    ) : (
-                      BRAND_CREST_SVG
-                    )}
                   </div>
                 ) : <span />}
 
@@ -472,21 +464,6 @@ export function Sticker({ data }: { data: StickerData }) {
                   >
                     {brand}
                   </span>
-                  {logoSrc ? (
-                    <img
-                      src={logoSrc}
-                      alt=""
-                      className="shrink-0 object-contain ml-0.5"
-                      style={{
-                        height: `${c.header_font_size_pt * 0.95}pt`,
-                        width: `${c.header_font_size_pt * 0.95}pt`,
-                        filter: isDark ? "brightness(0) invert(1)" : "brightness(0)",
-                        verticalAlign: "middle",
-                      }}
-                    />
-                  ) : (
-                    BRAND_CREST_SVG
-                  )}
                 </div>
               ) : <span />}
 

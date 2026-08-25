@@ -2234,17 +2234,19 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
   const [orientation, setOrientation] = useState<"horizontal" | "vertical">("horizontal");
 
   // ── Filter & selection state ───────────────────────────────────────────────
-  type FilterMode = "unprinted" | "never" | "most" | "all" | "manual";
-  const [filterMode, setFilterMode] = useState<FilterMode>("all");
+  type FilterMode = "unprinted" | "printed" | "all";
+  const [filterMode, setFilterMode] = useState<FilterMode>("unprinted");
   const [quantity, setQuantity] = useState<number | "">(codes.length);
-  const [manualSelected, setManualSelected] = useState<Set<string>>(new Set());
+
+  const unprintedCount = useMemo(() => allRows.filter((r: any) => !r.last_printed_at && (r.print_count ?? 0) === 0).length, [allRows]);
+  const printedCount = useMemo(() => allRows.filter((r: any) => (r.print_count ?? 0) > 0 || !!r.last_printed_at).length, [allRows]);
 
   useEffect(() => {
     if (allRows.length > 0) {
-      const neverCount = allRows.filter((r: any) => !r.last_printed_at && (r.print_count ?? 0) === 0).length;
-      if (neverCount > 0) {
-        setFilterMode("never");
-        setQuantity(neverCount);
+      const unprinted = allRows.filter((r: any) => !r.last_printed_at && (r.print_count ?? 0) === 0).length;
+      if (unprinted > 0) {
+        setFilterMode("unprinted");
+        setQuantity(unprinted);
       } else {
         setFilterMode("all");
         setQuantity(allRows.length);
@@ -2252,24 +2254,19 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
     }
   }, [allRows]);
 
-  const neverPrintedCount = useMemo(() => allRows.filter((r: any) => !r.last_printed_at && (r.print_count ?? 0) === 0).length, [allRows]);
-  const printedOnceCount = useMemo(() => allRows.filter((r: any) => (r.print_count ?? 0) > 0).length, [allRows]);
-
   // ── Filtered rows based on mode + quantity cap ─────────────────────────────
   const filteredRows = useMemo(() => {
-    let sorted = [...allRows] as any[];
-    if (filterMode === "never") {
-      sorted = sorted.filter(r => !r.last_printed_at && (r.print_count ?? 0) === 0);
-    } else if (filterMode === "unprinted") {
-      sorted = sorted.sort((a, b) => (a.print_count ?? 0) - (b.print_count ?? 0));
-    } else if (filterMode === "most") {
-      sorted = sorted.sort((a, b) => (b.print_count ?? 0) - (a.print_count ?? 0));
-    } else if (filterMode === "manual") {
-      sorted = sorted.filter(r => manualSelected.has(r.serial_code));
+    let list: any[] = [];
+    if (filterMode === "unprinted") {
+      list = allRows.filter(r => !r.last_printed_at && (r.print_count ?? 0) === 0);
+    } else if (filterMode === "printed") {
+      list = allRows.filter(r => (r.print_count ?? 0) > 0 || !!r.last_printed_at);
+    } else {
+      list = [...allRows];
     }
-    const qty = typeof quantity === "number" && quantity > 0 ? quantity : sorted.length;
-    return sorted.slice(0, qty);
-  }, [allRows, filterMode, quantity, manualSelected]);
+    const qty = typeof quantity === "number" && quantity > 0 ? quantity : list.length;
+    return list.slice(0, qty);
+  }, [allRows, filterMode, quantity]);
 
   const presetsById = useMemo(() => {
     const m = new Map<string, any>();
@@ -2321,9 +2318,11 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
 
   async function markPrinted() {
     try {
-      await markPrintedFn({ data: { codes: printedCodes } });
-      qc.invalidateQueries({ queryKey: ["serials"] });
-      qc.invalidateQueries({ queryKey: ["print-serials"] });
+      if (printedCodes.length > 0) {
+        await markPrintedFn({ data: { codes: printedCodes } });
+        await qc.invalidateQueries({ queryKey: ["serials"] });
+        await qc.invalidateQueries({ queryKey: ["print-serials"] });
+      }
     } catch { /* best-effort — never block the export on this */ }
   }
 
@@ -2362,15 +2361,6 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
     window.print();
   }
 
-  // Filter mode options — clean monochrome icons
-  const filterOptions: { value: FilterMode; label: string; icon: React.ComponentType<{ className?: string }>; desc: string }[] = [
-    { value: "never", label: "Never Printed", icon: FilePlus, desc: `Only serials with 0 prints (${neverPrintedCount})` },
-    { value: "unprinted", label: "Least Printed", icon: ClipboardList, desc: "Lowest print count first" },
-    { value: "most", label: "Most Printed", icon: RotateCcw, desc: "Highest print count first" },
-    { value: "all", label: "All Stock", icon: Package, desc: "All serials in order" },
-    { value: "manual", label: "Manual Pick", icon: CheckSquare, desc: "Select specific ones" },
-  ];
-
   return (
     <>
       <Dialog open onOpenChange={onClose}>
@@ -2385,11 +2375,11 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
               <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2.5">
                 Single-column roll (POS) or multi-column sheet.
                 <span className="text-foreground/90 font-medium inline-flex items-center gap-1">
-                  <FilePlus className="w-3.5 h-3.5 text-muted-foreground" /> {neverPrintedCount} never printed
+                  <FilePlus className="w-3.5 h-3.5 text-muted-foreground" /> {unprintedCount} unprinted
                 </span>
-                {printedOnceCount > 0 && (
+                {printedCount > 0 && (
                   <span className="text-muted-foreground font-medium inline-flex items-center gap-1">
-                    · <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" /> {printedOnceCount} already printed
+                    · <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" /> {printedCount} already printed
                   </span>
                 )}
               </p>
@@ -2405,55 +2395,89 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
             </Button>
           </DialogHeader>
 
-          {/* ── Smart Filter + Controls Bar ─────────────────────────────── */}
-          <div className="space-y-2 shrink-0">
-            {/* Filter mode tabs */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest shrink-0 mr-1">Filter:</span>
-              {filterOptions.map((opt) => {
-                const IconComp = opt.icon;
-                const isSelected = filterMode === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    title={opt.desc}
-                    onClick={() => setFilterMode(opt.value as FilterMode)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
-                      isSelected
-                        ? "bg-foreground text-background border-foreground shadow-xs"
-                        : "bg-background border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
-                    }`}
+          {/* ── Smart Controls Bar: 1-Button Filter + Qty + Layout + Orientation + Preset ── */}
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-muted/30 rounded-xl border border-border/60 p-2 sm:p-2.5 shrink-0">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* 1-Button Filter Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs gap-1.5 border-border/70 bg-background hover:bg-muted font-semibold px-2.5 sm:px-3 shadow-2xs cursor-pointer"
                   >
-                    <IconComp className="w-3.5 h-3.5 shrink-0" />
-                    <span>{opt.label}</span>
-                    {opt.value === "never" && neverPrintedCount > 0 && (
-                      <span className={`text-[9px] font-mono rounded px-1 ${isSelected ? "bg-background/20 text-background" : "bg-muted text-foreground"}`}>
-                        {neverPrintedCount}
-                      </span>
-                    )}
+                    <Filter className="w-3.5 h-3.5 text-primary" />
+                    <span>
+                      {filterMode === "unprinted" ? "Unprinted" : filterMode === "printed" ? "Printed" : "All Stock"}
+                    </span>
+                    <span className="text-[10px] font-mono font-bold bg-muted px-1.5 py-0.5 rounded text-foreground">
+                      {filterMode === "unprinted" ? unprintedCount : filterMode === "printed" ? printedCount : allRows.length}
+                    </span>
+                    <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56 text-xs">
+                  <DropdownMenuLabel className="text-[11px] text-muted-foreground">Filter Stickers</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => { setFilterMode("unprinted"); setQuantity(unprintedCount || allRows.length); }}
+                    className={`flex items-center justify-between text-xs cursor-pointer py-1.5 ${filterMode === "unprinted" ? "bg-accent font-semibold text-accent-foreground" : ""}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
+                      <span>Unprinted (Never Printed)</span>
+                    </div>
+                    <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded font-bold">{unprintedCount}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => { setFilterMode("printed"); setQuantity(printedCount || allRows.length); }}
+                    className={`flex items-center justify-between text-xs cursor-pointer py-1.5 ${filterMode === "printed" ? "bg-accent font-semibold text-accent-foreground" : ""}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      <span>Printed (Already Printed)</span>
+                    </div>
+                    <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded font-bold">{printedCount}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => { setFilterMode("all"); setQuantity(allRows.length); }}
+                    className={`flex items-center justify-between text-xs cursor-pointer py-1.5 ${filterMode === "all" ? "bg-accent font-semibold text-accent-foreground" : ""}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-muted-foreground" />
+                      <span>All Serials</span>
+                    </div>
+                    <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded font-bold">{allRows.length}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <div className="h-4 w-px bg-border/50 shrink-0 hidden sm:block" />
+
+              {/* Quantity */}
+              <div className="flex items-center gap-1.5">
+                <Label className="text-xs font-semibold text-foreground shrink-0">Qty:</Label>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button type="button" onClick={() => setQuantity(q => Math.max(1, (typeof q === "number" ? q : allRows.length) - 1))} className="w-6 h-6 rounded border border-border/60 bg-background flex items-center justify-center text-xs text-muted-foreground hover:text-foreground cursor-pointer">−</button>
+                  <input
+                    type="number" min={1} max={allRows.length} value={quantity}
+                    onChange={e => { const v = parseInt(e.target.value); setQuantity(isNaN(v) ? "" : Math.min(Math.max(1, v), allRows.length)); }}
+                    className="w-12 h-6 text-center text-xs font-mono rounded border border-border/60 bg-background text-foreground focus:outline-none focus:border-foreground"
+                  />
+                  <button type="button" onClick={() => setQuantity(q => Math.min(allRows.length, (typeof q === "number" ? q : 1) + 1))} className="w-6 h-6 rounded border border-border/60 bg-background flex items-center justify-center text-xs text-muted-foreground hover:text-foreground cursor-pointer">+</button>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(filterMode === "unprinted" ? unprintedCount : filterMode === "printed" ? printedCount : allRows.length)}
+                    className="text-[10px] text-foreground underline underline-offset-2 cursor-pointer ml-1 hover:no-underline whitespace-nowrap"
+                  >
+                    Max
                   </button>
-                );
-              })}
+                </div>
+              </div>
             </div>
 
-            {/* Quantity + Layout + Orientation + Preset row */}
-            <div className="flex flex-wrap items-center gap-2 bg-muted/30 rounded-lg border border-border/50 p-2">
-              <Label className="text-xs font-semibold text-foreground whitespace-nowrap shrink-0">Qty:</Label>
-              <div className="flex items-center gap-1 shrink-0">
-                <button type="button" onClick={() => setQuantity(q => Math.max(1, (typeof q === "number" ? q : allRows.length) - 1))} className="w-6 h-6 rounded border border-border/60 bg-background flex items-center justify-center text-xs text-muted-foreground hover:text-foreground cursor-pointer">−</button>
-                <input
-                  type="number" min={1} max={allRows.length} value={quantity}
-                  onChange={e => { const v = parseInt(e.target.value); setQuantity(isNaN(v) ? "" : Math.min(Math.max(1, v), allRows.length)); }}
-                  className="w-12 h-6 text-center text-xs font-mono rounded border border-border/60 bg-background text-foreground focus:outline-none focus:border-foreground"
-                />
-                <button type="button" onClick={() => setQuantity(q => Math.min(allRows.length, (typeof q === "number" ? q : 1) + 1))} className="w-6 h-6 rounded border border-border/60 bg-background flex items-center justify-center text-xs text-muted-foreground hover:text-foreground cursor-pointer">+</button>
-                <button type="button" onClick={() => setQuantity(filterMode === "never" ? neverPrintedCount : allRows.length)} className="text-[10px] text-foreground underline underline-offset-2 cursor-pointer ml-1 hover:no-underline whitespace-nowrap">Max</button>
-              </div>
-
-              <div className="h-4 w-px bg-border/50 shrink-0" />
-
-              <Label className="text-xs font-semibold text-foreground shrink-0">Orientation:</Label>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Orientation */}
               <div className="inline-flex rounded-md border border-input p-0.5 bg-background text-[10px]">
                 <button
                   type="button"
@@ -2479,9 +2503,7 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
                 </button>
               </div>
 
-              <div className="h-4 w-px bg-border/50 shrink-0" />
-
-              <Label className="text-xs font-semibold text-foreground shrink-0">Columns:</Label>
+              {/* Columns */}
               <div className="inline-flex rounded-md border border-input p-0.5 bg-background text-[10px]">
                 {[{ v: 1, l: "1 Col" }, { v: 2, l: "2 Col" }, { v: 3, l: "3 Col" }, { v: 4, l: "4 Col" }].map(({ v, l }) => (
                   <button key={v} type="button" onClick={() => setColumns(v)} className={`px-2 py-0.5 rounded transition-colors font-medium flex items-center gap-1 cursor-pointer ${ columns === v ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground" }`}>
@@ -2489,70 +2511,19 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
                   </button>
                 ))}
               </div>
+
+              {/* Preset */}
               {presets.length > 0 && (
-                <>
-                  <div className="h-4 w-px bg-border/50 shrink-0" />
-                  <Label className="text-[10px] text-muted-foreground shrink-0">Preset:</Label>
-                  <Select value={selectedPresetId ?? presets.find((p: any) => p.is_active)?.id ?? presets[0]?.id ?? ""} onValueChange={(val) => setSelectedPresetId(val)}>
-                    <SelectTrigger className="h-6 text-[10px] w-[140px] bg-background">
-                      <SelectValue placeholder="Preset..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {presets.map((p: any) => <SelectItem key={p.id} value={p.id} className="text-xs">{p.name} {p.is_active ? "(Active)" : ""}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </>
+                <Select value={selectedPresetId ?? presets.find((p: any) => p.is_active)?.id ?? presets[0]?.id ?? ""} onValueChange={(val) => setSelectedPresetId(val)}>
+                  <SelectTrigger className="h-7 text-[10px] w-[130px] bg-background">
+                    <SelectValue placeholder="Preset..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {presets.map((p: any) => <SelectItem key={p.id} value={p.id} className="text-xs">{p.name} {p.is_active ? "(Active)" : ""}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               )}
             </div>
-
-            {/* Manual Picker Panel */}
-            {filterMode === "manual" && (
-              <div className="border border-border/80 rounded-xl bg-card/60 overflow-hidden">
-                <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/40 bg-muted/30">
-                  <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                    <CheckSquare className="w-3.5 h-3.5 text-foreground" />
-                    Pick Stickers
-                    <Badge variant="outline" className="text-[9px] font-mono">{manualSelected.size} selected</Badge>
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setManualSelected(new Set(allRows.map((r: any) => r.serial_code)))} className="text-[10px] text-foreground underline underline-offset-2 cursor-pointer hover:no-underline">All</button>
-                    <span className="text-border">·</span>
-                    <button type="button" onClick={() => setManualSelected(new Set())} className="text-[10px] text-muted-foreground underline underline-offset-2 cursor-pointer hover:no-underline">None</button>
-                  </div>
-                </div>
-                <div className="max-h-[22vh] overflow-y-auto divide-y divide-border/20">
-                  {allRows.map((r: any) => {
-                    const isChecked = manualSelected.has(r.serial_code);
-                    const printCnt = r.print_count ?? 0;
-                    const variantLabel = [r.product_variants?.color, r.product_variants?.size].filter(Boolean).join(" · ");
-                    return (
-                      <button
-                        key={r.serial_code} type="button"
-                        onClick={() => setManualSelected(prev => { const next = new Set(prev); if (next.has(r.serial_code)) next.delete(r.serial_code); else next.add(r.serial_code); return next; })}
-                        className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left transition-colors cursor-pointer ${ isChecked ? "bg-muted/70 hover:bg-muted" : "hover:bg-muted/40" }`}
-                      >
-                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${ isChecked ? "bg-foreground border-foreground" : "border-border" }`}>
-                          {isChecked && <Check className="w-2.5 h-2.5 text-background" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] font-mono text-foreground truncate">{r.serial_code}</span>
-                            {variantLabel && <span className="text-[9px] text-muted-foreground shrink-0">{variantLabel}</span>}
-                          </div>
-                          <span className="text-[10px] text-muted-foreground truncate block">{r.products?.name}</span>
-                        </div>
-                        <div className="shrink-0">
-                          {printCnt === 0
-                            ? <Badge variant="outline" className="text-[9px] bg-muted text-foreground border-border">New</Badge>
-                            : <Badge variant="outline" className="text-[9px] bg-muted text-muted-foreground border-border">×{printCnt}</Badge>
-                          }
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Sticker Preview — expands dynamically and scrolls smoothly inside container */}
@@ -2562,12 +2533,10 @@ export function PrintStickersDialog({ codes, onClose }: { codes: string[]; onClo
           >
             {stickerItems.length === 0 ? (
               <div className="py-12 text-center text-muted-foreground text-xs">
-                <span className="text-2xl block mb-1">
-                  {filterMode === "never" ? "✨" : filterMode === "manual" ? "☑️" : "🔍"}
-                </span>
-                {filterMode === "never" ? "All stock has been printed at least once." :
-                 filterMode === "manual" && manualSelected.size === 0 ? "Select stickers from the list above." :
-                 "No stickers match the current filter."}
+                <span className="text-2xl block mb-1">✨</span>
+                {filterMode === "unprinted"
+                  ? "All serials have been printed. Switch filter to 'Printed' or 'All' to reprint."
+                  : "No stickers match the current filter."}
               </div>
             ) : (
               <>
