@@ -99,7 +99,6 @@ export interface ScannedUnit {
     id: string;
     order_number: string;
     customer_name: string | null;
-    guest_name: string | null;
     guest_phone: string | null;
     status: string;
     total: number;
@@ -117,7 +116,6 @@ interface OrderRecord {
   order_source?: string;
   created_at: string;
   customer_name?: string;
-  guest_name?: string;
   guest_phone?: string;
   guest_email?: string;
   shipping_address?: any;
@@ -236,7 +234,7 @@ export function StatusScanner() {
           .from("orders")
           .select(`
             id, order_number, status, total, subtotal, order_source, created_at,
-            customer_name, guest_name, guest_phone, guest_email, shipping_address,
+            customer_name, guest_phone, guest_email, shipping_address,
             order_items (
               id, product_id, variant_id, product_name, quantity, unit_price
             )

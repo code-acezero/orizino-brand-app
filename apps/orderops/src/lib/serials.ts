@@ -19,7 +19,6 @@ export interface SerialLookupRow {
     id: string;
     order_number: string;
     customer_name: string | null;
-    guest_name: string | null;
     guest_phone: string | null;
     status: string;
     total: number;
@@ -42,7 +41,7 @@ export async function lookupSerial(rawCode: string): Promise<SerialLookupRow | n
       const { data: serialRow } = await sb
         .from("product_serials")
         .select(
-          "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_name, guest_phone, status, total, created_at, shipping_address)",
+          "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_phone, status, total, created_at, shipping_address)",
         )
         .ilike("serial_code", cand)
         .limit(1)
@@ -59,7 +58,7 @@ export async function lookupSerial(rawCode: string): Promise<SerialLookupRow | n
         const { data: fuzzyRow } = await sb
           .from("product_serials")
           .select(
-            "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_name, guest_phone, status, total, created_at, shipping_address)",
+            "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_phone, status, total, created_at, shipping_address)",
           )
           .ilike("serial_code", `%${cand}%`)
           .limit(1)
@@ -92,7 +91,7 @@ export async function lookupSerial(rawCode: string): Promise<SerialLookupRow | n
         const { data: availableSerial } = await sb
           .from("product_serials")
           .select(
-            "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_name, guest_phone, status, total, created_at, shipping_address)",
+            "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_phone, status, total, created_at, shipping_address)",
           )
           .eq("variant_id", variantRow.id)
           .eq("status", "available")
@@ -140,7 +139,7 @@ export async function lookupSerial(rawCode: string): Promise<SerialLookupRow | n
         const { data: availableSerial } = await sb
           .from("product_serials")
           .select(
-            "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_name, guest_phone, status, total, created_at, shipping_address)",
+            "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, products(name, sku, price, compare_at_price, thumbnail), product_variants(size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_phone, status, total, created_at, shipping_address)",
           )
           .eq("product_id", productRow.id)
           .eq("status", "available")

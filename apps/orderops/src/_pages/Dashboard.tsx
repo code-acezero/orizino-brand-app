@@ -47,7 +47,7 @@ export function Dashboard() {
       today.setHours(0, 0, 0, 0);
 
       const [ordersRes, todayOrdersRes, openTicketsRes, stockRes] = (await Promise.all([
-        supabase.from("orders").select("id, order_number, total, status, order_source, created_at, guest_name").order("created_at", { ascending: false }).limit(200),
+        supabase.from("orders").select("id, order_number, total, status, order_source, created_at, customer_name").order("created_at", { ascending: false }).limit(200),
         supabase.from("orders").select("id, total").gte("created_at", today.toISOString()),
         supabase.from("support_conversations").select("id", { count: "exact", head: true }).eq("status", "open"),
         (supabase.from as any)("products").select("stock"),
@@ -350,7 +350,7 @@ export function Dashboard() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground truncate mt-0.5">
-                    {o.guest_name || "Direct Customer"} · <span className="capitalize">{o.order_source || "online"}</span> · {format(new Date(o.created_at), "MMM d, h:mm a")}
+                    {o.customer_name || "Direct Customer"} · <span className="capitalize">{o.order_source || "online"}</span> · {format(new Date(o.created_at), "MMM d, h:mm a")}
                   </p>
                 </div>
               </div>

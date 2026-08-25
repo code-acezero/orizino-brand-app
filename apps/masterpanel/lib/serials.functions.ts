@@ -125,7 +125,7 @@ export const listSerials = createServerFn({ method: "GET" })
     let query = sb
       .from("product_serials")
       .select(
-        "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, print_count, last_printed_at, created_at, products(id, name, sku), product_variants(id, size, color, sku), orders:sold_order_id(id, order_number, customer_name, guest_name, total, status)",
+        "id, serial_code, status, product_id, variant_id, sold_order_id, sold_at, print_count, last_printed_at, created_at, products(id, name, sku), product_variants(id, size, color, sku), orders:sold_order_id(id, order_number, customer_name, total, status)",
       )
       .order("created_at", { ascending: false });
 
